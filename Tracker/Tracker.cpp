@@ -72,11 +72,48 @@ void Tracker::sort_matches_based_on_distance(vector<DMatch> &matches, int low, i
   }
 }
 
+cv::Mat Tracker::convert_from_eigen_to_cv2(Eigen::MatrixX<double> matrix) {
+    cv::Mat out = cv::Mat::zeros(cv::Size(matrix.rows(), matrix.cols()), CV_64FC1);
+    for (int i = 0; i < matrix.rows(); i++) {
+        for (int j = 0; j < matrix.cols(); j++) {
+            out.at<double>(i,j) = matrix(i, j);
+        }
+    }
+    return out;
+}
 
-void Tracker::estimatePose() {}
+Eigen::Matrix4d Tracker::estimate_pose(KeyFrame frame, std::vector<DMatch> matches, std::vector<KeyPoint> keypoints_2, Mat depth, Eigen::Matrix3d K) {
+    vector<Point3d> points_in3d;
+    vector<Point2d> points_in2d;
+    cout << matches.size() << "\n";
+    for (DMatch m : matches) {
+      float d = frame.depth_matrix.ptr<float>(int(frame.keypoints[m.queryIdx].pt.y))[int(frame.keypoints[m.queryIdx].pt.x)];
+      if (d <= 0.01) continue;
+      float new_x = (frame.keypoints[m.queryIdx].pt.x - X_CAMERA_OFFSET) * d / FOCAL_LENGTH;
+      float new_y = (frame.keypoints[m.queryIdx].pt.y - Y_CAMERA_OFFSET) * d / FOCAL_LENGTH;
+      points_in3d.push_back(Point3d(new_x, new_y, d));
+      points_in2d.push_back(keypoints_2[m.trainIdx].pt);
+    }
+    cout << points_in2d.size() << " " << points_in3d.size() << "\n";
+    Mat r, t;
+    // pag 160
+    cv::solvePnP(points_in3d, points_in2d, convert_from_eigen_to_cv2(K), Mat(), r, t, false);
+    Mat R;
+    cv::Rodrigues(r, R);
+    Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            T(i,j) = R.at<double>(i, j);
+        }
+    }
+    for (int i = 0; i < 3; i++) {
+        T(i, 3) = t.at<double>(i);
+    }
+    return T;
+}
 
 
-void Tracker::tracking() {
+void Tracker::tracking(Eigen::Matrix3d K) {
     std::pair<Mat, Mat> pair_frame_depth = get_next_image();
     Mat frame = pair_frame_depth.first;
     Mat depth_image = pair_frame_depth.second;
@@ -92,4 +129,6 @@ void Tracker::tracking() {
             good_matches.push_back(match);
         }
     }
+    cout << estimate_pose(this->last_frame, good_matches, kps, depth_image, K);
+
 }

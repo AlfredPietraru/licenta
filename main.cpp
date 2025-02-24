@@ -31,7 +31,7 @@ int main(int argc, char **argv)
     Graph essential_graph = essential_graph_map_points.first;
     vector<MapPoint> map_points = essential_graph_map_points.second;
     while(1) {
-        tracker->tracking();
+        tracker->tracking(K);
         return 0;   
     }
 }
