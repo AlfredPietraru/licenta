@@ -1,7 +1,7 @@
 cmake_minimum_required( VERSION 3.8 )
 project( main )
-set( CMAKE_CXX_FLAGS "-std=c++11" )
-# set(CMAKE_CXX_FLAGS  "-std=c++17")
+# set( CMAKE_CXX_FLAGS "-std=c++11" )
+set(CMAKE_CXX_FLAGS  "-std=c++17")
 set(OpenGL_GL_PREFERENCE LEGACY)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
@@ -40,10 +40,14 @@ include_directories(${DBoW3_LIBS})
 set(SOURCES
     main.cpp
     Tracker/Tracker.cpp
+    Tracker/BundleAdjustment.cpp
+    utils.cpp
 )
 
 set(HEADERS
     Tracker/Tracker.h
+    utils.h
+    Tracker/BundleAdjustment.h
 )
 
 add_executable(main ${SOURCES} ${HEADERS})

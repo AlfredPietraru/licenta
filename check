@@ -1,0 +1,61 @@
+# class Tracking {
+#     // --- Internal States and Data ---
+#     CameraModel K                      // Camera intrinsics
+#     Map map                             // Global map (keyframes + map points)
+#     Frame currentFrame, lastFrame       // Current and last frames
+#     KeyFrame lastKeyFrame               // Last keyframe
+#     Pose Tcw                            // Current camera pose (4x4 matrix)
+#     int trackingState                   // Tracking status (LOST, OK)
+    
+
+#     function Track(Frame newFrame):
+#         currentFrame = newFrame
+#         ExtractORBFeatures(currentFrame)    // Feature extraction
+#         ComputeDepthMap(currentFrame)       // Extract depth information
+        
+        
+#         if trackingState == OK:
+#             TrackWithLastFrame()            // Feature matching with last frame
+#             OptimizePose()                  // Pose refinement (PnP + RANSAC)
+#             TrackWithLocalMap()             // Use local map points for tracking
+
+#         if CheckMotionThreshold():
+#             InsertNewKeyFrame()             // If motion is large, add new keyframe
+
+#         lastFrame = currentFrame
+
+#     // --- Motion Model Prediction ---
+#     function PredictCameraPose():
+#         if lastFrame has valid pose:
+#             Tcw = MotionModelPredict(lastFrame.Tcw)  // Predict based on previous frame motion
+
+#     function MotionModelPredict(Pose Tcw_last):
+#         return Tcw_last * VelocityEstimate  // Use last frame's motion to estimate the next pose
+
+#     // --- Pose Estimation ---
+#     function TrackWithLastFrame():
+#         matchedPoints = FeatureMatching(lastFrame, currentFrame)
+#         if matchedPoints < threshold:
+#             trackingState = LOST
+#             return
+#         Tcw = EstimatePose(matchedPoints)   // Solve PnP using 2D-3D correspondences
+
+#     function EstimatePose(matchedPoints):
+#         SolvePnP_Depth(matchedPoints)       // Use depth-based PnP (RGB-D advantage!)
+#         return OptimizedPose(matchedPoints) // Further refine with optimization
+
+#     function OptimizePose():
+#         BundleAdjustment(currentFrame, localMapPoints) // Optimize pose using local map
+
+#     // --- Local Map Tracking ---
+#     function TrackWithLocalMap():
+#         localMapPoints = UpdateLocalMap()
+#         matchedPoints = FeatureMatching(localMapPoints, currentFrame)
+#         if matchedPoints < threshold:
+#             trackingState = LOST
+#         else:
+#             Tcw = OptimizePose(matchedPoints)
+
+#     function UpdateLocalMap():
+#         localMapPoints = GetLocalMapPoints(lastKeyFrame)
+#         return localMapPoints

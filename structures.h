@@ -4,15 +4,16 @@
 #include <Eigen/Dense>
 #include <opencv2/core/core.hpp>
 #include <unordered_set>
-
+#include <iostream>
 const double FOCAL_LENGTH = 500.0;
 const double X_CAMERA_OFFSET = 325.1;
 const double Y_CAMERA_OFFSET = 250.7;
 
 class MapPoint {
 public:
-        Eigen::Vector3d wcoord;
-        Eigen::Vector3d view_direction;
+        // homogenous coordinates of world space
+        Eigen::Vector4d wcoord;
+        // Eigen::Vector3d view_direction;
         cv::Mat orb_descriptor;
         double dmax, dmin;
 
@@ -21,13 +22,11 @@ public:
 
         float new_x = (kp.pt.x - X_CAMERA_OFFSET) * depth / FOCAL_LENGTH;
         float new_y = (kp.pt.y - Y_CAMERA_OFFSET) * depth / FOCAL_LENGTH;
-        Eigen::Vector4d word_coordinates = camera_pose * Eigen::Vector4d(new_x, new_y, depth, 1);
-        this->wcoord = Eigen::Vector3d(word_coordinates(0), word_coordinates(1), word_coordinates(2));
-        this->view_direction = (this->wcoord - camera_center).normalized();
+        this->wcoord = camera_pose * Eigen::Vector4d(new_x, new_y, depth, 1);
+        // this->view_direction = (this->wcoord - camera_center).normalized();
         this->orb_descriptor = orb_descriptor;
         this->dmax = depth * 1.2; // inca nicio idee de ce 
         this->dmin = depth * 0.8;  // inca nicio idee de ce 
-
     }
 };
 

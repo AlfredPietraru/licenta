@@ -1,103 +1,101 @@
 #include "Tracker.h"
 
-std::pair<Mat, Mat> Tracker::get_next_image() {
+void Tracker::set_prev_frame() {
+    this->prev_frame = this->current_frame;
+    this->prev_depth = this->current_depth;
+    this->prev_des = this->current_des;
+    this->prev_kps = this->current_kps;
+}
+
+void Tracker::get_next_image() {
     Mat frame;
     cap.read(frame);
     Mat blob = cv::dnn::blobFromImage(frame, 1, Size(224, 224), Scalar(), true, false);
     net.setInput(blob);
     Mat depth = net.forward().reshape(1, 224);
-    return std::pair<Mat, Mat>(frame, depth);
+    this->current_frame = frame;
+    this->current_depth = depth;
 }
 
-std::pair<std::vector<KeyPoint>, Mat> Tracker::compute_features_descriptors(Mat frame) {
-    std::vector<KeyPoint> keypoints;
-    cv::Mat descriptors;
-    fast->detect(frame, keypoints);
-    orb->compute(frame, keypoints, descriptors);
-    return std::pair<std::vector<KeyPoint>, cv::Mat>(keypoints, descriptors);
-} 
-
-Eigen::Vector3d Tracker::compute_camera_center(Eigen::Matrix4d camera_pose) {
-    Eigen::Matrix3d R = Eigen::Matrix3d::Zero();
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            R(i, j) = camera_pose(i, j);
+vector<DMatch> Tracker::match_features_last_frame() {
+    vector<DMatch> matches;
+    this->matcher->match(this->prev_des, this->current_des, matches);
+    vector<DMatch> good_matches; 
+    for (auto match : matches) {
+        if(match.distance < LIMIT_MATCHING) {
+            good_matches.push_back(match);
         }
     }
-    Eigen::Vector3d t = Eigen::Vector3d::Zero();
-    for (int i = 0; i < 3; i++) {
-        t(i) = camera_pose(3, i);
-    }
-    return -R.transpose() * t;
-}
+    return good_matches;
+} 
 
-std::pair<Graph, vector<MapPoint>> Tracker::initialize(Eigen::Matrix3d K) {
+void Tracker::compute_features_descriptors() {
+    std::vector<KeyPoint> keypoints;
+    cv::Mat descriptors;
+    fast->detect(this->current_frame, keypoints);
+    orb->compute(this->current_frame, keypoints, descriptors);
+    this->current_kps = keypoints;
+    this->current_des = descriptors;
+} 
+
+std::pair<Graph, vector<MapPoint>> Tracker::initialize() {
     vector<MapPoint> map_points;
-    std::pair<Mat, Mat> pair_frame_depth = get_next_image();
-    Mat frame = pair_frame_depth.first;
-    Mat depth_image = pair_frame_depth.second;
-    std::pair<std::vector<KeyPoint>, Mat> pair_kp_des = compute_features_descriptors(frame);
-    std::vector<cv::KeyPoint> kps = pair_kp_des.first;
-    Mat des = pair_kp_des.second;
+    get_next_image();
+    compute_features_descriptors();
     Eigen::Matrix4d identity = Eigen::Matrix4d::Identity(); 
-    Eigen::Vector3d camera_center = this->compute_camera_center(identity);
-    for (int i = 0; i < kps.size(); i++) {
-        float depth = depth_image.at<float>((int)kps[i].pt.x, (int)kps[i].pt.y);
+    Eigen::Vector3d camera_center = compute_camera_center(identity);
+    for (int i = 0; i < this->current_kps.size(); i++) {
+        float depth = this->current_depth.at<float>((int)this->current_kps[i].pt.x, (int)this->current_kps[i].pt.y);
         if (depth < 0.001) continue;
-        map_points.push_back(MapPoint(kps[i], depth, identity, camera_center, des.row(i)));
+        map_points.push_back(MapPoint(this->current_kps[i], depth, identity, camera_center, this->current_des.row(i)));
     }
-    this->last_frame = KeyFrame(identity, K, kps, des, depth_image);
-    Graph graph = Graph(this->last_frame);
+    this->last_keyframe = KeyFrame(identity, K, this->current_kps, this->current_des, this->current_depth);
+    Graph graph = Graph(this->last_keyframe);
     return std::pair<Graph, vector<MapPoint>>(graph, map_points);
 }
 
-
-int Tracker::partition(vector<DMatch> &vec, int low, int high) {
-    int i = (low - 1);
-    for (int j = low; j <= high - 1; j++) {
-        if (vec[j].distance < vec[high].distance) {
-            i++;
-            swap(vec[i], vec[j]);
+std::pair<vector<MapPoint>, vector<KeyPoint>> Tracker::correlation_map_point_keypoint_idx(Eigen::Matrix4d& pose, vector<MapPoint> map_points) {
+        vector<MapPoint> observed_map_points;
+        vector<KeyPoint> kps;
+        for (MapPoint mp : map_points) {
+            std::pair<float, float> camera_coordinates = fromWorldToCamera(pose, this->current_depth, mp.wcoord);
+            if (camera_coordinates.first < 0  || camera_coordinates.second < 0) continue;
+            float u = camera_coordinates.first;
+            float v = camera_coordinates.second;
+            int min_hamming_distance = 10000;
+            int current_hamming_distance = -1;
+            KeyPoint right_kp = KeyPoint();
+            for (int i = 0; i < this->current_kps.size(); i++) {
+                if (this->current_kps[i].pt.x - WINDOW > u || this->current_kps[i].pt.x + WINDOW < u) continue;
+                if (this->current_kps[i].pt.y - WINDOW > v || this->current_kps[i].pt.y + WINDOW < v) continue;
+                current_hamming_distance = ComputeHammingDistance(mp.orb_descriptor, this->current_des.row(i));
+                if (current_hamming_distance < min_hamming_distance) {
+                    min_hamming_distance = current_hamming_distance;
+                    right_kp = this->current_kps[i];
+                } 
+            }
+            if (current_hamming_distance == -1) continue;
+            observed_map_points.push_back(mp);
+            kps.push_back(right_kp);
         }
+        return std::pair<vector<MapPoint>, vector<KeyPoint>>(observed_map_points, kps);
     }
-    swap(vec[i + 1], vec[high]);
-    return (i + 1);
-}
 
-void Tracker::sort_matches_based_on_distance(vector<DMatch> &matches, int low, int high) {
-    if (low < high) {
-      int pi = partition(matches, low, high);
-      sort_matches_based_on_distance(matches, low, pi - 1);
-      sort_matches_based_on_distance(matches, pi + 1, high);
-  }
-}
-
-cv::Mat Tracker::convert_from_eigen_to_cv2(Eigen::MatrixX<double> matrix) {
-    cv::Mat out = cv::Mat::zeros(cv::Size(matrix.rows(), matrix.cols()), CV_64FC1);
-    for (int i = 0; i < matrix.rows(); i++) {
-        for (int j = 0; j < matrix.cols(); j++) {
-            out.at<double>(i,j) = matrix(i, j);
-        }
-    }
-    return out;
-}
-
-Eigen::Matrix4d Tracker::estimate_pose(KeyFrame frame, std::vector<DMatch> matches, std::vector<KeyPoint> keypoints_2, Mat depth, Eigen::Matrix3d K) {
+Eigen::Matrix4d Tracker::TrackWithLastFrame(std::vector<MapPoint> map_points) {
+    vector<DMatch> good_matches = this->match_features_last_frame();
     vector<Point3d> points_in3d;
     vector<Point2d> points_in2d;
-    cout << matches.size() << "\n";
-    for (DMatch m : matches) {
-      float d = frame.depth_matrix.ptr<float>(int(frame.keypoints[m.queryIdx].pt.y))[int(frame.keypoints[m.queryIdx].pt.x)];
+    for (DMatch m : good_matches) {
+      float d = this->prev_depth.ptr<float>(int(this->prev_kps[m.queryIdx].pt.y))[int(this->prev_kps[m.queryIdx].pt.x)];
       if (d <= 0.01) continue;
-      float new_x = (frame.keypoints[m.queryIdx].pt.x - X_CAMERA_OFFSET) * d / FOCAL_LENGTH;
-      float new_y = (frame.keypoints[m.queryIdx].pt.y - Y_CAMERA_OFFSET) * d / FOCAL_LENGTH;
+      float new_x = (this->prev_kps[m.queryIdx].pt.x - X_CAMERA_OFFSET) * d / FOCAL_LENGTH;
+      float new_y = (this->prev_kps[m.queryIdx].pt.y - Y_CAMERA_OFFSET) * d / FOCAL_LENGTH;
       points_in3d.push_back(Point3d(new_x, new_y, d));
-      points_in2d.push_back(keypoints_2[m.trainIdx].pt);
+      points_in2d.push_back(this->current_kps[m.trainIdx].pt);
     }
-    cout << points_in2d.size() << " " << points_in3d.size() << "\n";
     Mat r, t;
-    // pag 160
-    cv::solvePnP(points_in3d, points_in2d, convert_from_eigen_to_cv2(K), Mat(), r, t, false);
+    // pag 160 - slambook.en
+    cv::solvePnP(points_in3d, points_in2d, convert_from_eigen_to_cv2(K), Mat() , r, t);
     Mat R;
     cv::Rodrigues(r, R);
     Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
@@ -109,26 +107,20 @@ Eigen::Matrix4d Tracker::estimate_pose(KeyFrame frame, std::vector<DMatch> match
     for (int i = 0; i < 3; i++) {
         T(i, 3) = t.at<double>(i);
     }
-    return T;
+    std::pair<vector<MapPoint>, vector<KeyPoint>> pairr = correlation_map_point_keypoint_idx(T, map_points);
+    this->bundleAdjustment = BundleAdjustment(pairr.first, pairr.second, T);
+    this->bundleAdjustment.solve();
+    cout << T << "\n";
+    return this->bundleAdjustment.return_optimized_pose();
+     
 }
 
 
-void Tracker::tracking(Eigen::Matrix3d K) {
-    std::pair<Mat, Mat> pair_frame_depth = get_next_image();
-    Mat frame = pair_frame_depth.first;
-    Mat depth_image = pair_frame_depth.second;
-    std::pair<std::vector<KeyPoint>, Mat> pair_kp_des = compute_features_descriptors(frame);
-    std::vector<cv::KeyPoint> kps = pair_kp_des.first;
-    Mat des = pair_kp_des.second;
-    vector<DMatch> matches;
-    matcher->match(this->last_frame.orb_descriptors, des, matches);
-    sort_matches_based_on_distance(matches, 0, matches.size() - 1);
-    vector<DMatch> good_matches; 
-    for (auto match : matches) {
-        if(match.distance < LIMIT_MATCHING) {
-            good_matches.push_back(match);
-        }
-    }
-    cout << estimate_pose(this->last_frame, good_matches, kps, depth_image, K);
+void Tracker::tracking(std::vector<MapPoint> map_points) {
+    set_prev_frame();
+    get_next_image();
+    compute_features_descriptors();
+    Eigen::Matrix4d T = TrackWithLastFrame(map_points);
+    cout << T << "\n";
 
 }
