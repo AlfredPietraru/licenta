@@ -42,12 +42,16 @@ set(SOURCES
     Tracker/Tracker.cpp
     Tracker/BundleAdjustment.cpp
     utils.cpp
+    Graph.cpp
+    Map.cpp
 )
 
 set(HEADERS
     Tracker/Tracker.h
     utils.h
     Tracker/BundleAdjustment.h
+    Graph.h
+    Map.h
 )
 
 add_executable(main ${SOURCES} ${HEADERS})

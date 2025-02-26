@@ -55,3 +55,15 @@ std::pair<float, float> fromWorldToCamera(Eigen::Matrix4d &pose, cv::Mat& depth_
     return std::pair<float, float>(u, v);
 }
 
+Eigen::Matrix4d compute_pose_matrix(cv::Mat rotation_matrix, cv::Mat translation) {
+    Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            T(i,j) = rotation_matrix.at<double>(i, j);
+        }
+    }
+    for (int i = 0; i < 3; i++) {
+        T(i, 3) = translation.at<double>(i);
+    }
+    return T;
+}
