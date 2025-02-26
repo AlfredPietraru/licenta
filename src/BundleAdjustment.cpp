@@ -1,4 +1,4 @@
-#include "BundleAdjustment.h"
+#include "../include/BundleAdjustment.h"
 
 class BundleError
 {

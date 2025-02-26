@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "../include/utils.h"
 
 Eigen::MatrixX<double> convert_from_cv2_to_eigen(cv::Mat matrix) {
     Eigen::MatrixXd out_mat(matrix.size().height, matrix.size().width);

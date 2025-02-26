@@ -1,4 +1,4 @@
-#include "Tracker.h"
+#include "../include/Tracker.h"
 
 void Tracker::set_prev_frame() {
     this->prev_frame = this->current_frame;
@@ -16,10 +16,6 @@ void Tracker::get_next_image() {
     Mat depth = net.forward().reshape(1, 224);
     this->current_frame = frame;
     this->current_depth = depth;
-
-}
-
-void add_more_map_points() {
 
 }
 
@@ -57,14 +53,14 @@ std::pair<Graph, Map> Tracker::initialize() {
         if (depth < 0.001) continue;
         map_points.push_back(new MapPoint(this->current_kps[i], depth, this->current_T, camera_center, this->current_des.row(i)));
     }
-    this->last_keyframe = KeyFrame(this->current_T, K, this->current_kps, this->current_des, this->current_depth);
+    this->last_keyframe = new KeyFrame(this->current_T, K, this->current_kps, this->current_des, this->current_depth);
     Graph graph = Graph(this->last_keyframe);
     mapp.add_multiple_map_points(this->last_keyframe, map_points);
     return std::pair<Graph, Map>(graph, mapp);
 }
 
 Eigen::Matrix4d Tracker::Optimize_Pose_Coordinates(Eigen::Matrix4d& pose, Map mapp) {
-        vector<MapPoint*> observed_map_points = mapp.return_map_points_seen_in_frame(pose, this->current_depth);
+        vector<MapPoint*> observed_map_points = mapp.return_map_points_seen_in_frame(this->last_keyframe, pose, this->current_depth);
         if (observed_map_points.size() < 15) {
             std::cout << "we cooked";
         }
@@ -96,16 +92,18 @@ Eigen::Matrix4d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
 void Tracker::tracking_was_lost() {}
 
 
-bool Tracker::Is_KeyFrame_needed() {
+bool Tracker::Is_KeyFrame_needed(Map mapp) {
     this->last_keyframe_added  += 1;
     this->keyframes_from_last_global_relocalization += 1;
     bool no_global_relocalization = this->keyframes_from_last_global_relocalization > 20;
-    bool no_recent_keyframe_added = this->last_keyframe_added > 20;    
-    return no_global_relocalization && no_recent_keyframe_added;
+    bool no_recent_keyframe_added = this->last_keyframe_added > 20;
+    int map_points_seen_in_key_frame = mapp.get_map_points(this->last_keyframe).size();
+    bool current_frame_less_than_80_percent = map_points_seen_in_key_frame > 8 * this->bundleAdjustment.map_points.size();
+    return no_global_relocalization && no_recent_keyframe_added && current_frame_less_than_80_percent;
 }
 
 
-void Tracker::tracking(Map mapp) {
+void Tracker::tracking(Map mapp, vector<KeyFrame*> &key_frames_buffer) {
     set_prev_frame();
     get_next_image();
     compute_features_descriptors();
@@ -119,8 +117,9 @@ void Tracker::tracking(Map mapp) {
         this->current_T = Optimize_Pose_Coordinates(this->current_T, mapp);
         cout << this->current_T << "\n";
     }
-
-    
-    
-
+    if (this->Is_KeyFrame_needed(mapp)) {
+        KeyFrame *new_keyframe = new KeyFrame(this->current_T, this->K,
+                 this->current_kps, this->current_des, this->current_depth);
+        key_frames_buffer.push_back(new_keyframe);
+    }
 }

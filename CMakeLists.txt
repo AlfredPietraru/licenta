@@ -39,19 +39,25 @@ include_directories(${DBoW3_LIBS})
 
 set(SOURCES
     main.cpp
-    Tracker/Tracker.cpp
-    Tracker/BundleAdjustment.cpp
-    utils.cpp
-    Graph.cpp
-    Map.cpp
+    src/BundleAdjustment.cpp
+    src/utils.cpp
+    src/Graph.cpp
+    src/Map.cpp
+    src/LocalMap.cpp
+    src/Tracker.cpp
+    src/MapPoint.cpp
+    src/KeyFrame.cpp
 )
 
 set(HEADERS
-    Tracker/Tracker.h
-    utils.h
-    Tracker/BundleAdjustment.h
-    Graph.h
-    Map.h
+    "include/utils.h"
+    "include/MapPoint.h"
+    "include/KeyFrame.h"
+    "include/Tracker.h"
+    "include/BundleAdjustment.h"
+    "include/Graph.h"
+    "include/Map.h"
+    "include/LocalMap.h"
 )
 
 add_executable(main ${SOURCES} ${HEADERS})

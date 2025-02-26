@@ -5,9 +5,10 @@
 #include <Eigen/Core>
 #include <opencv2/core/core.hpp>
 #include "ceres/ceres.h"
-#include "../utils.h"
+#include "utils.h"
+#include "MapPoint.h"
+#include "KeyFrame.h"
 #include <iostream>
-#include "../structures.h"
 
 class BundleAdjustment
 {

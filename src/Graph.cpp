@@ -1,7 +1,7 @@
-#include "Graph.h"
+#include "../include/Graph.h"
 
 GraphEdge::GraphEdge() {}
-GraphEdge::GraphEdge(KeyFrame kf, int weight) {
+GraphEdge::GraphEdge(KeyFrame *kf, int weight) {
         this->kf = kf;
         this->weight = weight;
 }
@@ -11,7 +11,7 @@ bool GraphEdge::operator ==(const GraphEdge &other) const
 }
 
 Graph::Graph() {}
-Graph::Graph(KeyFrame kf) : kf(kf)
+Graph::Graph(KeyFrame *kf) : kf(kf)
 {
     this->edges = {};
 }

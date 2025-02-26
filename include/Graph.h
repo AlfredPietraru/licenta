@@ -1,19 +1,16 @@
 #ifndef GRAPH_STRUCTURE_H
 #define GRAPH_STRUCTURE_H
-
-#include <Eigen/Core>
-#include <Eigen/Dense>
-#include <opencv2/core/core.hpp>
 #include <unordered_set>
 #include <iostream>
-#include "structures.h"
 #include "utils.h"
+#include "MapPoint.h"
+#include "KeyFrame.h"
 
 struct GraphEdge
 {
-    KeyFrame kf;
+    KeyFrame *kf;
     int weight;
-    GraphEdge(KeyFrame kf, int weight);
+    GraphEdge(KeyFrame *kf, int weight);
     GraphEdge();
 
     bool operator==(const GraphEdge &other) const;
@@ -31,11 +28,11 @@ struct GraphEdgeHash
 class Graph
 {
 public:
-    KeyFrame kf;
+    KeyFrame *kf;
     std::unordered_set<GraphEdge, GraphEdgeHash> edges;
 
     Graph();
-    Graph(KeyFrame kf);
+    Graph(KeyFrame *kf);
     void add_edge(Graph node, int weight);
 };
 

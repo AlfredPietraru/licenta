@@ -3,7 +3,6 @@
 #pragma once
 #include <Eigen/Core>
 #include <opencv2/core/core.hpp>
-
 const double FOCAL_LENGTH = 500.0;
 const double X_CAMERA_OFFSET = 325.1;
 const double Y_CAMERA_OFFSET = 250.7;
