@@ -43,7 +43,7 @@ set(SOURCES
     src/utils.cpp
     src/Graph.cpp
     src/Map.cpp
-    src/LocalMap.cpp
+    src/LocalMapping.cpp
     src/Tracker.cpp
     src/MapPoint.cpp
     src/KeyFrame.cpp
@@ -57,7 +57,7 @@ set(HEADERS
     "include/BundleAdjustment.h"
     "include/Graph.h"
     "include/Map.h"
-    "include/LocalMap.h"
+    "include/LocalMapping.h"
 )
 
 add_executable(main ${SOURCES} ${HEADERS})

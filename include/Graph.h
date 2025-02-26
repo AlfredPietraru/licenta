@@ -6,34 +6,31 @@
 #include "MapPoint.h"
 #include "KeyFrame.h"
 
-struct GraphEdge
-{
-    KeyFrame *kf;
-    int weight;
-    GraphEdge(KeyFrame *kf, int weight);
-    GraphEdge();
-
-    bool operator==(const GraphEdge &other) const;
-};
-
-struct GraphEdgeHash
-{
-    size_t operator()(const GraphEdge &x) const
-    {
-        size_t res = (size_t)&x;
-        return res * (x.weight % 31 + 17);
-    }
-};
-
 class Graph
 {
+    struct GraphEdgeHash
+    {
+        size_t operator()(const std::pair<Graph *, int> &x) const
+        {
+            return ((size_t)&x.first) * 31 + x.second;
+        }
+    };
+
 public:
     KeyFrame *kf;
-    std::unordered_set<GraphEdge, GraphEdgeHash> edges;
+    std::unordered_set<std::pair<Graph *, int>, GraphEdgeHash> edges;
 
-    Graph();
-    Graph(KeyFrame *kf);
-    void add_edge(Graph node, int weight);
+    Graph() {}
+    Graph(KeyFrame *kf)
+    {
+        this->kf = kf;
+        this->edges = {};
+    }
+
+    void add_node_to_graph(Graph *node, int weight);
+    std::vector<Graph *> dfs_get_all_nodes();
+    Graph *find_keyframe_in_graph(KeyFrame *kf);
+    void Add_New_KeyFrame_SpanningTree(KeyFrame *from_graph_kf, KeyFrame *want_to_join_graph_kf, int weight);
 };
 
 #endif

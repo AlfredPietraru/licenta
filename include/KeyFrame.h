@@ -4,7 +4,6 @@
 #include <Eigen/Core>
 #include <opencv2/core/core.hpp>
 #include "utils.h"
-#include "MapPoint.h"
 
 class KeyFrame
 {
@@ -20,7 +19,6 @@ public:
     KeyFrame(Eigen::Matrix4d Tiw, Eigen::Matrix3d intrisics, std::vector<cv::KeyPoint> keypoints,
              cv::Mat orb_descriptors, cv::Mat depth_matrix);
     bool operator ==(const KeyFrame& lhs);
-    bool map_point_belongs_to_keyframe(MapPoint *mp);
 };
 
 namespace std

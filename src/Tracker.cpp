@@ -48,12 +48,13 @@ std::pair<Graph, Map> Tracker::initialize() {
     compute_features_descriptors();
     this->current_T = Eigen::Matrix4d::Identity(); 
     Eigen::Vector3d camera_center = compute_camera_center(this->current_T);
+    this->last_keyframe = new KeyFrame(this->current_T, K, this->current_kps, this->current_des, this->current_depth);
     for (int i = 0; i < this->current_kps.size(); i++) {
         float depth = this->current_depth.at<float>((int)this->current_kps[i].pt.x, (int)this->current_kps[i].pt.y);
         if (depth < 0.001) continue;
-        map_points.push_back(new MapPoint(this->current_kps[i], depth, this->current_T, camera_center, this->current_des.row(i)));
+        map_points.push_back(new MapPoint(this->last_keyframe, this->current_kps[i], depth,
+         this->current_T, camera_center, this->current_des.row(i)));
     }
-    this->last_keyframe = new KeyFrame(this->current_T, K, this->current_kps, this->current_des, this->current_depth);
     Graph graph = Graph(this->last_keyframe);
     mapp.add_multiple_map_points(this->last_keyframe, map_points);
     return std::pair<Graph, Map>(graph, mapp);

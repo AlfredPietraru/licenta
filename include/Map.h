@@ -15,6 +15,7 @@ public:
     void add_multiple_map_points(KeyFrame *frame, std::vector<MapPoint*> new_points);
     std::vector<MapPoint*> get_map_points(KeyFrame *frame);
     std::vector<MapPoint*> return_map_points_seen_in_frame(KeyFrame *frame,  Eigen::Matrix4d& pose, cv::Mat &depth);
+    int check_common_map_points(KeyFrame *kf1, KeyFrame *kf2); 
 };
 
 #endif

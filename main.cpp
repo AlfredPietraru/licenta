@@ -1,5 +1,5 @@
 #include "include/Tracker.h"
-#include "include/LocalMap.h"
+#include "include/LocalMapping.h"
 
 
 int main(int argc, char **argv)
