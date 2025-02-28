@@ -5,7 +5,6 @@
 #include "Graph.h"
 #include "Map.h"
 
-
 class LocalMap {
 public:
     int graph_nodes_nr = 0;
@@ -14,7 +13,7 @@ public:
     Map mapp;
     
     LocalMap(Graph &graph, Map &map);
-    void Add_New_KeyFrame_Graph(std::vector<KeyFrame*> &keyframes_buffer);
+    void Process_new_keyframe(std::vector<KeyFrame*> &keyframes_buffer);
 };
 
 

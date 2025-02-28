@@ -12,7 +12,7 @@ public:
         // Eigen::Vector3d view_direction;
         cv::Mat orb_descriptor;
         double dmax, dmin;
-        std::unordered_set<KeyFrame*> belongs_to_keyframes;
+        std::unordered_map<KeyFrame*, int> belongs_to_keyframes;
 
     MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, double depth, Eigen::Matrix4d camera_pose, 
     Eigen::Vector3d camera_center, cv::Mat orb_descriptor);

@@ -67,7 +67,7 @@ target_link_libraries(main
     ${OpenCV_LIBS}
     ${CERES_LIBRARIES}
     ${Sophus_LIBRARIES}
-    ${DBoW3_LIBS}
+    # ${DBoW3_LIBS}
 )
 
 # /usr/local/lib/libg2o_core.so

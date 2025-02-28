@@ -14,15 +14,15 @@ class BundleAdjustment
 {
 public:
     std::vector<cv::KeyPoint> kps;
-    double data_T[12];
+    double rotation[9];
+    double translation[3];
     Eigen::Matrix4d T;
     std::vector<MapPoint*> map_points;
     double WINDOW = 5;
     
 
     BundleAdjustment() {}
-    BundleAdjustment(std::vector<MapPoint*> map_points, std::vector<cv::KeyPoint> all_keypoints, 
-    cv::Mat descriptors, cv::Mat &depth, Eigen::Matrix4d &T);
+    BundleAdjustment(std::vector<MapPoint*> map_points, KeyFrame *frame);
     Eigen::Matrix4d return_optimized_pose();
     bool enough_points_tracker();
     void solve();

@@ -28,12 +28,14 @@ public:
     }
 
 private:
-    Mat current_frame, current_depth, current_des;
-    Eigen::Matrix4d current_T, prev_T;
-    std::vector<KeyPoint> current_kps;
-    Mat prev_frame, prev_depth, prev_des;
-    std::vector<KeyPoint> prev_kps;
-    KeyFrame *last_keyframe;
+    // Mat current_frame, current_depth, current_des;
+    // Eigen::Matrix4d current_T, prev_T;
+    // std::vector<KeyPoint> current_kps;
+    // Mat prev_frame, prev_depth, prev_des;
+    // std::vector<KeyPoint> prev_kps;
+    KeyFrame *current_kf;
+    KeyFrame* prev_kf;
+    KeyFrame *last_kf_saved;
 
 
     int last_keyframe_added = 0;
@@ -52,13 +54,14 @@ private:
     BundleAdjustment bundleAdjustment;
     
     // important functions
-    Eigen::Matrix4d TrackWithLastFrame(vector<DMatch> good_matches);
-    Eigen::Matrix4d Optimize_Pose_Coordinates(Eigen::Matrix4d& pose, Map mapp);
+    void TrackWithLastFrame(vector<DMatch> good_matches);
+    void Optimize_Pose_Coordinates(Map mapp);
     bool Is_KeyFrame_needed(Map mapp);
 
     // auxiliary functions
     vector<DMatch> match_features_last_frame();
-    void set_prev_frame();
+    void set_prev_key_frame();
+    void get_current_key_frame();
     void get_next_image();
     void compute_features_descriptors();
     void tracking_was_lost();

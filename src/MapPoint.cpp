@@ -1,6 +1,5 @@
 #include "../include/MapPoint.h"
 
-
 MapPoint::MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, double depth, Eigen::Matrix4d camera_pose,
                    Eigen::Vector3d camera_center, cv::Mat orb_descriptor)
 {
