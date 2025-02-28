@@ -42,7 +42,7 @@ public:
 
     static ceres::CostFunction *Create(const double observed_x, const double observed_y, Eigen::Vector4<double> map_coordinate)
     {
-        return (new ceres::AutoDiffCostFunction<BundleError, 2, 12, 4>(
+        return (new ceres::AutoDiffCostFunction<BundleError, 2, 9, 3>(
             new BundleError(observed_x, observed_y, map_coordinate)));
     }
 
@@ -57,7 +57,7 @@ BundleAdjustment::BundleAdjustment(std::vector<MapPoint*> map_points, KeyFrame *
     this->map_points = map_points;
     for (MapPoint *mp : map_points)
     {
-        std::pair<float, float> camera_coordinates = fromWorldToCamera(frame->Tiw, frame->depth_matrix, mp->wcoord);
+        std::pair<float, float> camera_coordinates = frame->fromWorldToImage(mp->wcoord);
         float u = camera_coordinates.first;
         float v = camera_coordinates.second;
         int min_hamming_distance = 10000;
@@ -139,5 +139,5 @@ void BundleAdjustment::solve()
     options.minimizer_progress_to_stdout = true;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
-    std::cout << summary.FullReport() << "\n";
+    // std::cout << summary.FullReport() << "\n";
 }

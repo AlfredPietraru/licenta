@@ -12,9 +12,10 @@ public:
 
     Map();
 
-    std::vector<MapPoint*> get_map_points(KeyFrame *frame);
+    std::vector<MapPoint*> get_map_points(KeyFrame *frame, KeyFrame *reference_kf);
     int check_common_map_points(KeyFrame *kf1, KeyFrame *kf2); 
     void add_map_points(KeyFrame *frame);
+
 };
 
 #endif

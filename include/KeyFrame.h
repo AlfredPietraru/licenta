@@ -2,6 +2,7 @@
 #define KEYFRAME_H
 
 #include <Eigen/Core>
+#include <Eigen/Dense>
 #include <opencv2/core/core.hpp>
 #include "utils.h"
 
@@ -19,6 +20,9 @@ public:
     KeyFrame(Eigen::Matrix4d Tiw, Eigen::Matrix3d intrisics, std::vector<cv::KeyPoint> keypoints,
              cv::Mat orb_descriptors, cv::Mat depth_matrix);
     bool operator ==(const KeyFrame& lhs);
+    Eigen::Vector3d compute_camera_center();
+    std::pair<float, float> fromWorldToImage(Eigen::Vector4d& wcoord);
+    Eigen::Vector4d fromImageToWorld(int kp_idx);
 };
 
 namespace std

@@ -14,10 +14,10 @@ public:
         double dmax, dmin;
         std::unordered_map<KeyFrame*, int> belongs_to_keyframes;
 
-    MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, double depth, Eigen::Matrix4d camera_pose, 
-    Eigen::Vector3d camera_center, cv::Mat orb_descriptor);
+    MapPoint(KeyFrame *keyframe, int idx);
     bool operator ==(const MapPoint& lhs);
     bool map_point_belongs_to_keyframe(KeyFrame *kf);
+    void add_reference_kf(KeyFrame *kf, int idx);
 };
 
 namespace std 
