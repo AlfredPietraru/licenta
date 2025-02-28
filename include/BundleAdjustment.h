@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 #include <opencv2/core/core.hpp>
 #include "ceres/ceres.h"
+#include <sophus/se3.hpp>
 #include "utils.h"
 #include "MapPoint.h"
 #include "KeyFrame.h"
@@ -14,18 +15,16 @@ class BundleAdjustment
 {
 public:
     std::vector<cv::KeyPoint> kps;
-    double rotation[9];
-    double translation[3];
-    Eigen::Matrix4d T;
+    Sophus::SE3d T;
     std::vector<MapPoint*> map_points;
-    double WINDOW = 5;
+    Eigen::Matrix3d R;
+    Eigen::Vector3d t;
+    double WINDOW = 7;
     
 
     BundleAdjustment() {}
     BundleAdjustment(std::vector<MapPoint*> map_points, KeyFrame *frame);
-    Eigen::Matrix4d return_optimized_pose();
-    bool enough_points_tracker();
-    void solve();
+    Sophus::SE3d solve();
 };
 
 #endif

@@ -26,7 +26,7 @@ void MapPoint::add_reference_kf(KeyFrame *kf, int idx) {
 bool MapPoint::map_point_belongs_to_keyframe(KeyFrame *kf)
 {
     if (this->belongs_to_keyframes.find(kf) != this->belongs_to_keyframes.end()) return true;
-    float WINDOW = 5;
+    float WINDOW = 7;
     std::pair<float, float> camera_coordinates = kf->fromWorldToImage(this->wcoord);
     if (camera_coordinates.first < 0 || camera_coordinates.second < 0)
         return false;

@@ -1,4 +1,5 @@
 #include "../include/BundleAdjustment.h"
+#include "../include/rotation.h"
 
 class BundleError
 {
@@ -11,27 +12,11 @@ public:
                                                               observed_y(observation_y), map_coordinate(map_coordinate) {}
 
     template <typename T>
-    bool operator()(const T *const rotation, const T *const translation, T *residuals) const
+    bool operator()(const T *const se3, T *residuals) const
     {
-        Eigen::Matrix4<T> eigen_pose;
-        for (int i = 0; i < 3; i++)
-        {
-            for (int j = 0; j < 3; j++)
-            {
-                eigen_pose(i, j) = rotation[i * 3 + j];
-            }
-        }
-        for (int i = 0; i < 3; i++)
-        {
-            eigen_pose(i, 3) = translation[i];
-        }
-        for (int i = 0; i < 2; i++)
-        {
-            eigen_pose(3, i) = (T)0;
-        }
-        eigen_pose(3, 3) = (T)1;
-
-        const Eigen::Vector4<T> camera_coordinates = eigen_pose * map_coordinate;
+        Sophus::SE3<T> pose = Sophus::SE3<T>::exp(Eigen::Map<const Eigen::Matrix<T, 6, 1>>(se3));
+        
+        const Eigen::Vector3<T> camera_coordinates = pose.matrix3x4() * map_coordinate;
         T d = camera_coordinates(2);
         T x = FOCAL_LENGTH * camera_coordinates(0) / d + X_CAMERA_OFFSET;
         T y = FOCAL_LENGTH * camera_coordinates(1) / d + Y_CAMERA_OFFSET;
@@ -42,7 +27,7 @@ public:
 
     static ceres::CostFunction *Create(const double observed_x, const double observed_y, Eigen::Vector4<double> map_coordinate)
     {
-        return (new ceres::AutoDiffCostFunction<BundleError, 2, 9, 3>(
+        return (new ceres::AutoDiffCostFunction<BundleError, 2, 6>(
             new BundleError(observed_x, observed_y, map_coordinate)));
     }
 
@@ -54,7 +39,9 @@ private:
 
 BundleAdjustment::BundleAdjustment(std::vector<MapPoint*> map_points, KeyFrame *frame)
 {
-    this->map_points = map_points;
+    if (map_points.size() == 0) {
+        return;
+    }
     for (MapPoint *mp : map_points)
     {
         std::pair<float, float> camera_coordinates = frame->fromWorldToImage(mp->wcoord);
@@ -79,65 +66,29 @@ BundleAdjustment::BundleAdjustment(std::vector<MapPoint*> map_points, KeyFrame *
         if (current_hamming_distance == -1)
             continue;
         this->kps.push_back(right_kp);
-    }
-
-    for (int i = 0; i < 3; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            this->rotation[i * 3 + j] = frame->Tiw(i, j);
-        }
-    }
-    for (int i = 0; i < 3; i++) {
-        this->translation[i] = frame->Tiw(i, 3);   
+        this->map_points.push_back(mp);
     }
 }
 
-Eigen::Matrix4d BundleAdjustment::return_optimized_pose()
-{
-    Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
-    // Eigen::Matrix3d R;
-    for (int i = 0; i < 3; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            T(i, j) = this->rotation[i * 3 + j];
-        }
-    }
-    // R = R * ((R.transpose() * R).cwiseSqrt()).inverse();
-    // for (int i = 0; i < 3; i++) {
-    //     for (int j = 0; j < 3; j++) {
-    //         T(i, j) = R(i, j);
-    //     }
-    // }
-    for (int i = 0; i < 3; i++)
-    {
-        T(i, 3) = this->translation[9 + i];
-    }
-
-    return T;
-}
-
-bool BundleAdjustment::enough_points_tracker()
-{
-    return this->map_points.size() > 50;
-}
-
-void BundleAdjustment::solve()
+Sophus::SE3d BundleAdjustment::solve()
 {
     ceres::Problem problem;
-
+    std::cout << this->kps.size() << " " <<  this->map_points.size() << "\n";
     for (int i = 0; i < this->map_points.size(); i++)
     {
         ceres::CostFunction *cost_function;
-        cost_function = BundleError::Create(kps[i].pt.x, kps[i].pt.y, this->map_points[i]->wcoord);
+        cost_function = BundleError::Create(this->kps[i].pt.x, this->kps[i].pt.y, this->map_points[i]->wcoord);
         ceres::LossFunction *loss_function = new ceres::HuberLoss(1.0);
-        problem.AddResidualBlock(cost_function, loss_function, this->rotation, this->translation);
+        // ceres::LossFunction *loss_function = new ceres::CauchyLoss(0.5);
+        problem.AddResidualBlock(cost_function, loss_function, this->T.data());
     }
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
+    options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
     options.minimizer_progress_to_stdout = true;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
-    // std::cout << summary.FullReport() << "\n";
+    std::cout << summary.FullReport() << "\n";
+    return this->T;
+    
 }

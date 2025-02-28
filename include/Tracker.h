@@ -10,6 +10,8 @@
 #include <opencv2/dnn/dnn.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d.hpp>
+#include <sophus/se3.hpp>
+#include <opencv2/core/eigen.hpp>
 #include "Map.h"
 #include "utils.h"
 #include "Graph.h"
@@ -29,7 +31,7 @@ public:
 
 private:
     KeyFrame *current_kf;
-    KeyFrame* prev_kf;
+    KeyFrame* prev_kf = nullptr;
     KeyFrame *reference_kf;
 
 
@@ -49,7 +51,7 @@ private:
     BundleAdjustment bundleAdjustment;
     
     // important functions
-    Eigen::Matrix4d TrackWithLastFrame(vector<DMatch> good_matches);
+    Sophus::SE3d TrackWithLastFrame(vector<DMatch> good_matches);
     void Optimize_Pose_Coordinates(Map mapp);
     bool Is_KeyFrame_needed(Map mapp);
 

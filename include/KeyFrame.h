@@ -3,21 +3,24 @@
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+
 #include <opencv2/core/core.hpp>
 #include "utils.h"
+#include <sophus/se3.hpp>
+
 
 class KeyFrame
 {
 public:
     typedef std::shared_ptr<KeyFrame> Ptr;
-    Eigen::Matrix4d Tiw;
+    Sophus::SE3d Tiw;
     Eigen::Matrix3d intrisics;
     std::vector<cv::KeyPoint> keypoints;
     cv::Mat orb_descriptors;
     cv::Mat depth_matrix;
 
     KeyFrame();
-    KeyFrame(Eigen::Matrix4d Tiw, Eigen::Matrix3d intrisics, std::vector<cv::KeyPoint> keypoints,
+    KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d intrisics, std::vector<cv::KeyPoint> keypoints,
              cv::Mat orb_descriptors, cv::Mat depth_matrix);
     bool operator ==(const KeyFrame& lhs);
     Eigen::Vector3d compute_camera_center();

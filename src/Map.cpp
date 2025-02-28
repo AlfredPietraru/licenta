@@ -13,6 +13,7 @@ std::vector<MapPoint *> Map::get_map_points(KeyFrame *curr_frame, KeyFrame *refe
             out.push_back(mp);
         }
     }
+    std::cout << out.size() << " map points observed here\n";
     return out;
 }
 
@@ -26,6 +27,7 @@ void Map::add_map_points(KeyFrame *frame) {
         current_points_found.push_back(new MapPoint(frame, i));
     }
     if (current_points_found.size() == 0) return;
+    std::cout << current_points_found.size() << " map points created here\n";
     this->map_points.insert(std::pair<KeyFrame*, std::vector<MapPoint*>>(frame, current_points_found));
 }
 

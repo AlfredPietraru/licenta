@@ -11,18 +11,27 @@ void Tracker::get_current_key_frame() {
     net.setInput(blob);
     Mat depth = net.forward().reshape(1, 224);
     int out = 0;
-    depth = depth + Scalar(10);
+
+    // DE STERS IN VIITOR
+    depth = depth + Scalar(100);
     for (int i = 0; i < depth.size().width; i++) {
         for (int j = 0; j < depth.size().height; j++) {
-            if (depth.at<float>(i, j) < 0) out++;
+            if (depth.at<float>(i, j) < 0) {
+                depth.at<float>(i, j) = std::abs(depth.at<float>(i, j));
+            }
         }
     }
+
     // cout << out << " atatea elemente mai mici ca 0 \n";
     std::vector<KeyPoint> keypoints;
     cv::Mat descriptors;
     fast->detect(resized, keypoints);
     orb->compute(resized, keypoints, descriptors);
-    this->current_kf = new KeyFrame(Eigen::Matrix4d::Identity(), K, keypoints, descriptors, depth); 
+    if (this->prev_kf == nullptr) {
+        this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), K, keypoints, descriptors, depth); 
+    } else {
+        this->current_kf = new KeyFrame(this->prev_kf->Tiw, K, keypoints, descriptors, depth);
+    }
 }
 
 void Tracker::set_prev_key_frame() {
@@ -52,28 +61,27 @@ std::pair<Graph, Map> Tracker::initialize() {
 }
 
 void Tracker::Optimize_Pose_Coordinates(Map mapp) {
+    // std::cout << this->reference_kf->Tiw << "\n\n";
+    // std::cout << this->current_kf->Tiw << "\n\n\n\n";
         vector<MapPoint*> observed_map_points = mapp.get_map_points(this->current_kf, this->reference_kf);
         if (observed_map_points.size() < 15) {
-            std::cout << "NOT ENOUGH MAP_POINTS FOUND\n\n\n";
+            std::cout << "NOT ENOUGH MAP_POINTS FOUND\n\n";
+            this->bundleAdjustment = BundleAdjustment({}, this->current_kf);
             return;
-        }
+        } 
         this->bundleAdjustment = BundleAdjustment(observed_map_points, this->current_kf);
-        this->bundleAdjustment.solve();
-        this->current_kf->Tiw = this->bundleAdjustment.return_optimized_pose();
+        this->current_kf->Tiw = this->bundleAdjustment.solve();
     }
 
-Eigen::Matrix4d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
+Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
     vector<Point3d> points_in3d;
     vector<Point2d> points_in2d;
     vector<cv::KeyPoint> kps = this->prev_kf->keypoints;
     cv::Mat depth_matrix = this->prev_kf->depth_matrix;
+    cout << good_matches.size() << "\n";
     for (DMatch m : good_matches) {
-        Eigen::Vector4d val = this->prev_kf->fromImageToWorld(m.queryIdx);
-    //   float d = depth_matrix.at<float>((int)kps[m.queryIdx].pt.y, (int)kps[m.queryIdx].pt.x);
-    //   if (d <= 0.01) continue;
-    //   float new_x = (this->prev_kf->keypoints[m.queryIdx].pt.x - this->prev_kf->intrisics(2, 0)) * d / this->prev_kf->intrisics(0, 0);
-    //   float new_y = (this->prev_kf->keypoints[m.queryIdx].pt.y - this->prev_kf->intrisics(2, 1)) * d / this->prev_kf->intrisics(1, 1);
-    //   points_in3d.push_back(Point3d(new_x, new_y, d));
+      if (m.queryIdx >= kps.size()) continue;
+      Eigen::Vector4d val = this->prev_kf->fromImageToWorld(m.queryIdx);
       points_in3d.push_back(Point3d(val(0), val(1), val(2)));
       points_in2d.push_back(this->current_kf->keypoints[m.trainIdx].pt);
     }
@@ -82,7 +90,11 @@ Eigen::Matrix4d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
     cv::solvePnP(points_in3d, points_in2d, convert_from_eigen_to_cv2(K), Mat() , r, t);
     Mat R;
     cv::Rodrigues(r, R);
-    return compute_pose_matrix(R, t);
+    Eigen::Matrix3d R_eigen;
+    cv::cv2eigen(R, R_eigen);
+    Eigen::Vector3d t_eigen;
+    t_eigen << t.at<double>(0), t.at<double>(1), t.at<double>(2);
+    return Sophus::SE3d(R_eigen,  t_eigen);
 }
 
 void Tracker::tracking_was_lost() {
@@ -108,9 +120,11 @@ void Tracker::tracking(Map mapp, vector<KeyFrame*> &key_frames_buffer) {
     if (good_matches.size() < 50) {
         this->tracking_was_lost();
     } else {
-        Eigen::Matrix4d relative_pose_last_2_frames = TrackWithLastFrame(good_matches);
-        this->current_kf->Tiw = this->prev_kf->Tiw * relative_pose_last_2_frames; 
+        Sophus::SE3d relative_pose_last_2_frames = TrackWithLastFrame(good_matches);
+        this->current_kf->Tiw *= relative_pose_last_2_frames; 
+        std::cout << this->current_kf->Tiw.matrix() << "\n\n";
         Optimize_Pose_Coordinates(mapp);
+        std::cout << this->current_kf->Tiw.matrix() << "\n\n";
     }
     if (this->Is_KeyFrame_needed(mapp)) {
         key_frames_buffer.push_back(this->current_kf);
