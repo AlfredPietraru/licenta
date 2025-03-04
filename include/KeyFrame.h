@@ -24,7 +24,7 @@ public:
              cv::Mat orb_descriptors, cv::Mat depth_matrix);
     bool operator ==(const KeyFrame& lhs);
     Eigen::Vector3d compute_camera_center();
-    std::pair<float, float> fromWorldToImage(Eigen::Vector4d& wcoord);
+    Eigen::Vector3d fromWorldToImage(Eigen::Vector4d& wcoord);
     Eigen::Vector4d fromImageToWorld(int kp_idx);
 };
 

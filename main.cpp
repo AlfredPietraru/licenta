@@ -20,7 +20,6 @@ int main(int argc, char **argv)
     LocalMap localMap = LocalMap(essential_graph, mapp);
     while(1) {
         tracker->tracking(mapp, keyframes_buffer);
-        x = std::getchar();
     }
     return 0;
 }

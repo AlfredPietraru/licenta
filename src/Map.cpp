@@ -13,21 +13,19 @@ std::vector<MapPoint *> Map::get_map_points(KeyFrame *curr_frame, KeyFrame *refe
             out.push_back(mp);
         }
     }
-    std::cout << out.size() << " map points observed here\n";
     return out;
 }
 
 void Map::add_map_points(KeyFrame *frame) {
     std::vector<MapPoint *> current_points_found;
-    Eigen::Vector3d camera_center = frame->compute_camera_center();
     for (int i = 0; i < frame->keypoints.size(); i++) {
         cv::KeyPoint kp = frame->keypoints[i];
-        double depth = frame->depth_matrix.at<float>((int)kp.pt.x, (int)kp.pt.y);
+        float depth = frame->depth_matrix.at<float>((int)kp.pt.x, (int)kp.pt.y);
         if (depth <= 0) continue;
         current_points_found.push_back(new MapPoint(frame, i));
     }
     if (current_points_found.size() == 0) return;
-    std::cout << current_points_found.size() << " map points created here\n";
+    std::cout << current_points_found.size() << " " << frame->keypoints.size() << "\n";
     this->map_points.insert(std::pair<KeyFrame*, std::vector<MapPoint*>>(frame, current_points_found));
 }
 

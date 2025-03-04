@@ -24,7 +24,8 @@ public:
     std::pair<Graph, Map> initialize();
     void tracking(Map map_points, vector<KeyFrame*> &key_frames_buffer);
     Tracker(){
-        double data_vector[9] = {520.9, 0.0, 325.1, 0.0, 521.0, 249.7, 0.0, 0.0, 1.0};
+        // 124.72440945
+        double data_vector[9] = {132.28, 0.0, 110.1, 0.0, 132.28, 115.7, 0.0, 0.0, 1.0};
         cv::Mat K_cv = cv::Mat(3, 3, CV_64F, data_vector);
         this->K = convert_from_cv2_to_eigen(K_cv);
     }

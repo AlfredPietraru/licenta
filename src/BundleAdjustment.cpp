@@ -14,7 +14,12 @@ public:
     template <typename T>
     bool operator()(const T *const se3, T *residuals) const
     {
-        Sophus::SE3<T> pose = Sophus::SE3<T>::exp(Eigen::Map<const Eigen::Matrix<T, 6, 1>>(se3));
+        Eigen::Vector3<T> translation;
+        for (int i = 0; i < 3; i++) {
+            translation(i) = se3[i + 4];
+        }
+        Eigen::Quaternion<T> q(se3[0], se3[1], se3[2], se3[3]); 
+        Sophus::SE3<T> pose = Sophus::SE3<T>(q, translation);
         
         const Eigen::Vector3<T> camera_coordinates = pose.matrix3x4() * map_coordinate;
         T d = camera_coordinates(2);
@@ -44,9 +49,12 @@ BundleAdjustment::BundleAdjustment(std::vector<MapPoint*> map_points, KeyFrame *
     }
     for (MapPoint *mp : map_points)
     {
-        std::pair<float, float> camera_coordinates = frame->fromWorldToImage(mp->wcoord);
-        float u = camera_coordinates.first;
-        float v = camera_coordinates.second;
+        Eigen::Vector3d camera_coordinates = frame->fromWorldToImage(mp->wcoord);
+        for (int i = 0; i < 3; i++) {
+            if (camera_coordinates(i) < 0) continue;
+        }
+        float u = camera_coordinates(0);
+        float v = camera_coordinates(1);
         int min_hamming_distance = 10000;
         int current_hamming_distance = -1;
         cv::KeyPoint right_kp;
@@ -63,7 +71,7 @@ BundleAdjustment::BundleAdjustment(std::vector<MapPoint*> map_points, KeyFrame *
                 right_kp = frame->keypoints[i];
             }
         }
-        if (current_hamming_distance == -1)
+        if (min_hamming_distance == 10000)
             continue;
         this->kps.push_back(right_kp);
         this->map_points.push_back(mp);
@@ -73,7 +81,6 @@ BundleAdjustment::BundleAdjustment(std::vector<MapPoint*> map_points, KeyFrame *
 Sophus::SE3d BundleAdjustment::solve()
 {
     ceres::Problem problem;
-    std::cout << this->kps.size() << " " <<  this->map_points.size() << "\n";
     for (int i = 0; i < this->map_points.size(); i++)
     {
         ceres::CostFunction *cost_function;
