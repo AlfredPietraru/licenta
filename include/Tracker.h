@@ -16,6 +16,7 @@
 #include "utils.h"
 #include "Graph.h"
 #include "BundleAdjustment.h"
+#include "FeatureFinderMatcher.h"
 using namespace std;
 using namespace cv;
 
@@ -46,10 +47,12 @@ private:
     Eigen::Matrix3d K; 
     cv::VideoCapture cap = cv::VideoCapture("../video.mp4");
     cv::dnn::Net net = cv::dnn::readNetFromONNX("../fast_depth.onnx");
-    cv::Ptr<cv::FastFeatureDetector> fast = cv::FastFeatureDetector::create(60, true);
+    cv::Ptr<cv::FastFeatureDetector> fast = cv::FastFeatureDetector::create(50, true);
     cv::Ptr<cv::ORB> orb = cv::ORB::create(500, 1.2F, 8, 30, 0, 2, cv::ORB::HARRIS_SCORE, 5, 20);
     cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
     BundleAdjustment bundleAdjustment;
+    FeatureMatcherFinder *fmf = new FeatureMatcherFinder(cv::Size(224, 224), 16);
+
     
     // important functions
     Sophus::SE3d TrackWithLastFrame(vector<DMatch> good_matches);

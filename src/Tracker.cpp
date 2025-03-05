@@ -1,22 +1,22 @@
 #include "../include/Tracker.h"
 
-
-
 void Tracker::get_current_key_frame() {
     Mat frame;
     cap.read(frame);
-    imshow("Display window", frame);
-    waitKey(0);
     cv::Mat resized;
     cv::resize(frame, resized, cv::Size(224, 224));
     Mat blob = cv::dnn::blobFromImage(resized, 1, Size(224, 224), Scalar(), true, false);
     net.setInput(blob);
     Mat depth = net.forward().reshape(1, 224);
     depth = depth * 10000;
-    std::vector<KeyPoint> keypoints;
-    cv::Mat descriptors;
-    orb->detect(resized, keypoints);
-    orb->compute(resized, keypoints, descriptors);
+    std::vector<KeyPoint> keypoints = this->fmf->extract_keypoints(resized);
+    cv::Mat descriptors = this->fmf->compute_descriptors(resized, keypoints);
+
+    // Mat img2;
+    // cv::drawKeypoints(resized, keypoints, img2, Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
+    // imshow("Display window", img2);
+    // waitKey(0);
+
     if (this->prev_kf == nullptr) {
         this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), K, keypoints, descriptors, depth); 
     } else {

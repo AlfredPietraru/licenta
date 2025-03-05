@@ -40,6 +40,7 @@ include_directories(${DBoW3_LIBS})
 set(SOURCES
     main.cpp
     src/BundleAdjustment.cpp
+    src/FeatureFinderMatcher.cpp
     src/utils.cpp
     src/Graph.cpp
     src/Map.cpp
@@ -58,6 +59,7 @@ set(HEADERS
     "include/Graph.h"
     "include/Map.h"
     "include/LocalMapping.h"
+    "include/FeatureFinderMatcher.h"
 )
 
 add_executable(main ${SOURCES} ${HEADERS})
