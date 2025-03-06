@@ -96,9 +96,9 @@ void Tracker::tracking(Map mapp, vector<KeyFrame*> &key_frames_buffer) {
     } else {
         Sophus::SE3d relative_pose_last_2_frames = TrackWithLastFrame(good_matches);
         this->current_kf->Tiw = relative_pose_last_2_frames * this->current_kf->Tiw;
-        std::cout << this->current_kf->Tiw.rotationMatrix() << "\n"; 
+        // std::cout << this->current_kf->Tiw.matrix() << "\n"; 
         Optimize_Pose_Coordinates(mapp);
-        std::cout << this->current_kf->Tiw.rotationMatrix() << "\n";
+        // std::cout << this->current_kf->Tiw.matrix() << "\n";
 
     }
     if (this->Is_KeyFrame_needed(mapp)) {
