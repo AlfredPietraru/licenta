@@ -18,7 +18,7 @@ public:
         for (int i = 0; i < 3; i++) {
             translation(i) = se3[i + 4];
         }
-        Eigen::Quaternion<T> q(se3[0], se3[1], se3[2], se3[3]); 
+        const Eigen::Quaternion<T> q(se3[0], se3[1], se3[2], se3[3]); 
         Sophus::SE3<T> pose = Sophus::SE3<T>(q, translation);
         
         const Eigen::Vector3<T> camera_coordinates = pose.matrix3x4() * map_coordinate;
@@ -86,7 +86,6 @@ Sophus::SE3d BundleAdjustment::solve()
         ceres::CostFunction *cost_function;
         cost_function = BundleError::Create(this->kps[i].pt.x, this->kps[i].pt.y, this->map_points[i]->wcoord);
         ceres::LossFunction *loss_function = new ceres::HuberLoss(1.0);
-        // ceres::LossFunction *loss_function = new ceres::CauchyLoss(0.5);
         problem.AddResidualBlock(cost_function, loss_function, this->T.data());
     }
     ceres::Solver::Options options;

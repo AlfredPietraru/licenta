@@ -4,8 +4,8 @@
 KeyFrame::KeyFrame(){};
 
 KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d intrisics, std::vector<cv::KeyPoint> keypoints,
-         cv::Mat orb_descriptors, cv::Mat depth_matrix)
-    : Tiw(Tiw), intrisics(intrisics), orb_descriptors(orb_descriptors), keypoints(keypoints), depth_matrix(depth_matrix) {}
+         cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx)
+    : Tiw(Tiw), intrisics(intrisics), orb_descriptors(orb_descriptors), keypoints(keypoints), depth_matrix(depth_matrix), idx(idx) {}
 
 bool KeyFrame::operator==(const KeyFrame &lhs)
 {

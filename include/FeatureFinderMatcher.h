@@ -25,10 +25,11 @@ public:
     int ORB_ITERATIONS = 5;
     int ORB_STEP = 5;
 
-    int LIMIT_MATCHING = 30;
+    int LIMIT_MATCHING = 20;
 
     std::vector<std::vector<cv::Ptr<cv::FastFeatureDetector>>> fast_vector;
-    cv::Ptr<cv::ORB> orb;
+    // cv::Ptr<cv::ORB> orb;
+    cv::Ptr<cv::DescriptorExtractor> orb;
     cv::Ptr<cv::DescriptorMatcher> matcher;
     
     FeatureMatcherFinder() {}

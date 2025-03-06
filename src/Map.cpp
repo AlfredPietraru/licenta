@@ -16,22 +16,14 @@ std::vector<MapPoint*> Map::compute_map_points(KeyFrame *frame) {
 }
 
 Map::Map(KeyFrame *first_kf) {
-    std::vector<MapPoint*> map_points = this->compute_map_points(first_kf);
-    this->map_points.insert(std::pair<KeyFrame*, std::vector<MapPoint*>>(first_kf,  map_points));
-    this->graph.insert(std::pair<KeyFrame*, std::unordered_map<KeyFrame*, int>>(first_kf, {}));
-    this->spanning_tree.insert(std::pair<KeyFrame*, std::unordered_map<KeyFrame*, int>>(first_kf, {}));
-}
-
-
-std::vector<MapPoint *> Map::track_local_map(KeyFrame *curr_kf, KeyFrame *reference_kf) {
-    std::vector<MapPoint *> out;
-
-    return out;
+    std::vector<MapPoint*> kf_map_points = this->compute_map_points(first_kf);
+    this->map_points.push_back(kf_map_points);
+    this->graph.push_back(std::pair<KeyFrame*, std::unordered_map<KeyFrame*, int>>(first_kf, {}));
 }
 
 std::vector<MapPoint *> Map::get_reprojected_map_points(KeyFrame *curr_frame, KeyFrame *reference_kf)
 {
-    std::vector<MapPoint*> reference_map_points = map_points[reference_kf];
+    std::vector<MapPoint*> reference_map_points = this->map_points[reference_kf->idx];
     if ( reference_map_points.size() == 0) return {};
     std::vector<MapPoint*> out;
     for (MapPoint *mp : reference_map_points)
@@ -43,42 +35,44 @@ std::vector<MapPoint *> Map::get_reprojected_map_points(KeyFrame *curr_frame, Ke
     return out;
 }
 
-// DE MODIFICAT NU E BINE
-int Map::check_common_map_points(KeyFrame *kf1, KeyFrame *kf2)
-{
-    std::vector<MapPoint *> first_kf_map_points = this->get_reprojected_map_points(kf1, kf2);
-    std::vector<MapPoint *> second_kf_map_points = this->get_reprojected_map_points(kf2, kf1);
-    int res = 0;
-    if (first_kf_map_points.size() == 0 && second_kf_map_points.size() == 0) return 0;
-    if (first_kf_map_points.size() != 0 && second_kf_map_points.size() == 0)
-    {
-        for (MapPoint *mp : first_kf_map_points)
-        {
-            res += mp->map_point_belongs_to_keyframe(kf2);
-        }
-        return res;
+
+KeyFrame *Map::get_reference_keyframe(KeyFrame *kf) {
+    KeyFrame* last_kf = this->graph.back().first;
+    int last_idx = last_kf->idx;
+    int max = -1;
+    int reference_idx = last_idx;
+    for (int i = 0; i < this->KEYFRAMES_WINDOW; i++) {
+        int current_idx = last_idx - i;
+        if (current_idx < 0) break;
+        std::vector<MapPoint*> reprojected_map_points = get_reprojected_map_points(kf, this->graph[current_idx].first);
+        if (reprojected_map_points.size() > max) {
+            reference_idx = current_idx;
+            max = reprojected_map_points.size();
+        } 
     }
-    if (first_kf_map_points.size() == 0 && second_kf_map_points.size() != 0)
-    {
-        for (MapPoint *mp : second_kf_map_points)
-        {
-            res += mp->map_point_belongs_to_keyframe(kf1);
-        }
-        return res;
+    return this->graph[reference_idx].first;
+}
+
+std::vector<MapPoint*> Map::compute_local_map(KeyFrame *kf) {
+    KeyFrame *reference_kf = get_reference_keyframe(kf);
+    std::unordered_map<KeyFrame*, int> reference_kf_neighbours = this->graph[reference_kf->idx].second;
+    std::vector<MapPoint*> out = get_reprojected_map_points(kf, reference_kf);
+    for (std::pair<KeyFrame*, int> graph_edge : reference_kf_neighbours) {
+        std::vector<MapPoint*> reprojected_map_points = get_reprojected_map_points(kf, graph_edge.first);
+        out.insert(out.end(), reprojected_map_points.begin(), reprojected_map_points.end());
     }
-    std::unordered_set<MapPoint *> first_kf_map_points_seen_from_second;
-    std::unordered_set<MapPoint *> second_kf_map_points_seen_from_second;
-    for (MapPoint *mp : first_kf_map_points)
-    {
-        if (mp->map_point_belongs_to_keyframe(kf2))
-            first_kf_map_points_seen_from_second.insert(mp);
+    return out;
+}
+
+
+// INCOMPLET, vor exista map point-uri duplicate
+std::vector<MapPoint *> Map::track_local_map(KeyFrame *curr_kf) {
+    KeyFrame *reference_kf = get_reference_keyframe(curr_kf);
+    std::unordered_map<KeyFrame*, int> reference_kf_neighbours = this->graph[reference_kf->idx].second;
+    std::vector<MapPoint*> out = get_reprojected_map_points(curr_kf, reference_kf);
+    for (std::pair<KeyFrame*, int> graph_edge : reference_kf_neighbours) {
+        std::vector<MapPoint*> reprojected_map_points = get_reprojected_map_points(curr_kf, graph_edge.first);
+        out.insert(out.end(), reprojected_map_points.begin(), reprojected_map_points.end());
     }
-    for (MapPoint *mp : second_kf_map_points)
-    {
-        if (mp->map_point_belongs_to_keyframe(kf1))
-            second_kf_map_points_seen_from_second.insert(mp);
-    }
-    first_kf_map_points_seen_from_second.insert(second_kf_map_points_seen_from_second.begin(),
-                                                second_kf_map_points_seen_from_second.end());
-    return first_kf_map_points_seen_from_second.size();
+    return out;
 }

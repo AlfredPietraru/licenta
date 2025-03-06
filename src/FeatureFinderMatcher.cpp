@@ -86,7 +86,7 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame)
 cv::Mat FeatureMatcherFinder::compute_descriptors(cv::Mat frame, std::vector<cv::KeyPoint> &kps) {
     std::vector<cv::KeyPoint> copy_kps;
     // copy(kps.begin(), kps.end(), back_inserter(copy_kps));
-    std::cout << kps.size() << "\n\n";
+    // std::cout << kps.size() << "\n\n";
     cv::Mat descriptors;
     int max_iter = 0;
     this->orb->compute(frame, kps, descriptors);

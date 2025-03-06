@@ -12,6 +12,7 @@
 class KeyFrame
 {
 public:
+    int idx;
     typedef std::shared_ptr<KeyFrame> Ptr;
     Sophus::SE3d Tiw;
     Eigen::Matrix3d intrisics;
@@ -21,7 +22,7 @@ public:
 
     KeyFrame();
     KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d intrisics, std::vector<cv::KeyPoint> keypoints,
-             cv::Mat orb_descriptors, cv::Mat depth_matrix);
+             cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx);
     bool operator ==(const KeyFrame& lhs);
     Eigen::Vector3d compute_camera_center();
     Eigen::Vector3d fromWorldToImage(Eigen::Vector4d& wcoord);

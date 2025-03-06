@@ -8,18 +8,20 @@
 
 class Map {
 public:
-    std::unordered_map<KeyFrame*, std::vector<MapPoint*>> map_points;
-    std::unordered_map<KeyFrame*, std::unordered_map<KeyFrame*, int>> graph;
-    std::unordered_map<KeyFrame*, std::unordered_map<KeyFrame*, int>> spanning_tree;
+    int KEYFRAMES_WINDOW = 5; 
+
+    std::vector<std::vector<MapPoint*>> map_points;
+    std::vector<std::pair<KeyFrame*, std::unordered_map<KeyFrame*, int>>> graph;
 
     Map();
-
     Map(KeyFrame *first_kf);
+    
+    std::vector<MapPoint*> track_local_map(KeyFrame *curr_kf);
 
+    KeyFrame *get_reference_keyframe(KeyFrame *kf);
+    std::vector<MapPoint*> compute_local_map(KeyFrame *kf);
     std::vector<MapPoint*> compute_map_points(KeyFrame *kf);
     std::vector<MapPoint*> get_reprojected_map_points(KeyFrame *frame, KeyFrame *reference_kf);
-    std::vector<MapPoint*> track_local_map(KeyFrame *curr_kf, KeyFrame *reference_kf);
-    int check_common_map_points(KeyFrame *kf1, KeyFrame *kf2); 
 };
 
 #endif

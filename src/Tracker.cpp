@@ -18,9 +18,9 @@ void Tracker::get_current_key_frame() {
     waitKey(0);
 
     if (this->prev_kf == nullptr) {
-        this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), K, keypoints, descriptors, depth); 
+        this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), K, keypoints, descriptors, depth, 0); 
     } else {
-        this->current_kf = new KeyFrame(this->prev_kf->Tiw, K, keypoints, descriptors, depth);
+        this->current_kf = new KeyFrame(this->prev_kf->Tiw, K, keypoints, descriptors, depth, this->reference_kf->idx + 1);
     }
 }
 
@@ -32,7 +32,7 @@ Map Tracker::initialize() {
 }
 
 void Tracker::Optimize_Pose_Coordinates(Map mapp) {
-        vector<MapPoint*> observed_map_points = mapp.get_map_points(this->current_kf, this->reference_kf);
+        vector<MapPoint*> observed_map_points = mapp.track_local_map(this->current_kf);
         std::cout << observed_map_points.size() << "\n";
         if (observed_map_points.size() < 15) {
             std::cout << "NOT ENOUGH MAP_POINTS FOUND\n\n";
@@ -90,6 +90,7 @@ void Tracker::tracking(Map mapp, vector<KeyFrame*> &key_frames_buffer) {
     this->prev_kf = this->current_kf;
     this->get_current_key_frame();
     vector<DMatch> good_matches = this->fmf->match_features_last_frame(this->current_kf, this->prev_kf);
+    std::cout << good_matches.size() << " good matches found\n";
     if (good_matches.size() < 50) {
         this->tracking_was_lost();
     } else {

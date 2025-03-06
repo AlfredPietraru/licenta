@@ -14,6 +14,7 @@ public:
         double dmax, dmin;
         std::unordered_map<KeyFrame*, int> belongs_to_keyframes;
 
+    float WINDOW = 5;
     MapPoint(KeyFrame *keyframe, int idx);
     bool operator ==(const MapPoint& lhs);
     bool map_point_belongs_to_keyframe(KeyFrame *kf);
