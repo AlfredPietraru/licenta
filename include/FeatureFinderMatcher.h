@@ -10,6 +10,7 @@
 #include <opencv2/dnn/dnn.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d.hpp>
+#include "KeyFrame.h"
 
 
 class FeatureMatcherFinder {
@@ -19,8 +20,12 @@ public:
     int INITIAL_FAST_INDEX = 50;
     int EACH_CELL_THRESHOLD = 5;
     int FAST_ITERATIONS = 10;
-    int ORB_ITERATIONS = 5;
     int FAST_STEP = 5;
+
+    int ORB_ITERATIONS = 5;
+    int ORB_STEP = 5;
+
+    int LIMIT_MATCHING = 30;
 
     std::vector<std::vector<cv::Ptr<cv::FastFeatureDetector>>> fast_vector;
     cv::Ptr<cv::ORB> orb;
@@ -29,6 +34,7 @@ public:
     FeatureMatcherFinder() {}
     FeatureMatcherFinder(cv::Size frame_size, int window_size);
 
+    std::vector<cv::DMatch> match_features_last_frame(KeyFrame *current_kf, KeyFrame *past_kf);
     std::vector<cv::KeyPoint> extract_keypoints(cv::Mat frame);
     cv::Mat compute_descriptors(cv::Mat frame, std::vector<cv::KeyPoint>& keypoints);
 };

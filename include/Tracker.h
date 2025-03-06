@@ -14,7 +14,6 @@
 #include <opencv2/core/eigen.hpp>
 #include "Map.h"
 #include "utils.h"
-#include "Graph.h"
 #include "BundleAdjustment.h"
 #include "FeatureFinderMatcher.h"
 using namespace std;
@@ -22,7 +21,7 @@ using namespace cv;
 
 class Tracker {
 public:
-    std::pair<Graph, Map> initialize();
+    Map initialize();
     void tracking(Map map_points, vector<KeyFrame*> &key_frames_buffer);
     Tracker(){
         // 124.72440945
@@ -60,8 +59,6 @@ private:
     bool Is_KeyFrame_needed(Map mapp);
 
     // auxiliary functions
-    vector<DMatch> match_features_last_frame();
-    void set_prev_key_frame();
     void get_current_key_frame();
     void tracking_was_lost();
 };

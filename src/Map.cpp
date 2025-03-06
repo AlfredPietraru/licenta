@@ -2,7 +2,34 @@
 
 Map::Map() {}
 
-std::vector<MapPoint *> Map::get_map_points(KeyFrame *curr_frame, KeyFrame *reference_kf)
+std::vector<MapPoint*> Map::compute_map_points(KeyFrame *frame) {
+    std::vector<MapPoint *> current_points_found;
+    for (int i = 0; i < frame->keypoints.size(); i++) {
+        cv::KeyPoint kp = frame->keypoints[i];
+        float depth = frame->depth_matrix.at<float>((int)kp.pt.x, (int)kp.pt.y);
+        if (depth <= 0) continue;
+        current_points_found.push_back(new MapPoint(frame, i));
+    }
+    if (current_points_found.size() == 0) return {};
+    std::cout << current_points_found.size() << " " << frame->keypoints.size() << "\n";
+    return current_points_found;
+}
+
+Map::Map(KeyFrame *first_kf) {
+    std::vector<MapPoint*> map_points = this->compute_map_points(first_kf);
+    this->map_points.insert(std::pair<KeyFrame*, std::vector<MapPoint*>>(first_kf,  map_points));
+    this->graph.insert(std::pair<KeyFrame*, std::unordered_map<KeyFrame*, int>>(first_kf, {}));
+    this->spanning_tree.insert(std::pair<KeyFrame*, std::unordered_map<KeyFrame*, int>>(first_kf, {}));
+}
+
+
+std::vector<MapPoint *> Map::track_local_map(KeyFrame *curr_kf, KeyFrame *reference_kf) {
+    std::vector<MapPoint *> out;
+
+    return out;
+}
+
+std::vector<MapPoint *> Map::get_reprojected_map_points(KeyFrame *curr_frame, KeyFrame *reference_kf)
 {
     std::vector<MapPoint*> reference_map_points = map_points[reference_kf];
     if ( reference_map_points.size() == 0) return {};
@@ -16,24 +43,11 @@ std::vector<MapPoint *> Map::get_map_points(KeyFrame *curr_frame, KeyFrame *refe
     return out;
 }
 
-void Map::add_map_points(KeyFrame *frame) {
-    std::vector<MapPoint *> current_points_found;
-    for (int i = 0; i < frame->keypoints.size(); i++) {
-        cv::KeyPoint kp = frame->keypoints[i];
-        float depth = frame->depth_matrix.at<float>((int)kp.pt.x, (int)kp.pt.y);
-        if (depth <= 0) continue;
-        current_points_found.push_back(new MapPoint(frame, i));
-    }
-    if (current_points_found.size() == 0) return;
-    std::cout << current_points_found.size() << " " << frame->keypoints.size() << "\n";
-    this->map_points.insert(std::pair<KeyFrame*, std::vector<MapPoint*>>(frame, current_points_found));
-}
-
 // DE MODIFICAT NU E BINE
 int Map::check_common_map_points(KeyFrame *kf1, KeyFrame *kf2)
 {
-    std::vector<MapPoint *> first_kf_map_points = this->get_map_points(kf1, kf2);
-    std::vector<MapPoint *> second_kf_map_points = this->get_map_points(kf2, kf1);
+    std::vector<MapPoint *> first_kf_map_points = this->get_reprojected_map_points(kf1, kf2);
+    std::vector<MapPoint *> second_kf_map_points = this->get_reprojected_map_points(kf2, kf1);
     int res = 0;
     if (first_kf_map_points.size() == 0 && second_kf_map_points.size() == 0) return 0;
     if (first_kf_map_points.size() != 0 && second_kf_map_points.size() == 0)

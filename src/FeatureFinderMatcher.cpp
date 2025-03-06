@@ -11,9 +11,21 @@ FeatureMatcherFinder::FeatureMatcherFinder(cv::Size frame_size, int window_size)
         }
         this->fast_vector.push_back(current_vec);
     }
-    this->orb = cv::ORB::create(1000, 1.2F, 8, 30, 0, 2, cv::ORB::HARRIS_SCORE, 5, 20);
+    this->orb = cv::ORB::create(1000, 1.2F, 8, 20, 0, 2, cv::ORB::HARRIS_SCORE, 5, 20);
     this->matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
 }
+
+std::vector<cv::DMatch> FeatureMatcherFinder::match_features_last_frame(KeyFrame *current_kf, KeyFrame *past_kf) {
+    std::vector<cv::DMatch> matches;
+    this->matcher->match(current_kf->orb_descriptors, past_kf->orb_descriptors, matches);
+    std::vector<cv::DMatch> good_matches; 
+    for (auto match : matches) {
+        if(match.distance < LIMIT_MATCHING) {
+            good_matches.push_back(match);
+        }
+    }
+    return good_matches;
+} 
 
 std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame) {
     std::vector<cv::KeyPoint> keypoints;
@@ -71,10 +83,12 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame)
     return keypoints;
 }
 
-cv::Mat FeatureMatcherFinder::compute_descriptors(cv::Mat frame, std::vector<cv::KeyPoint> &keypoints) {
+cv::Mat FeatureMatcherFinder::compute_descriptors(cv::Mat frame, std::vector<cv::KeyPoint> &kps) {
+    std::vector<cv::KeyPoint> copy_kps;
+    // copy(kps.begin(), kps.end(), back_inserter(copy_kps));
+    std::cout << kps.size() << "\n\n";
     cv::Mat descriptors;
-    // std::cout << this->orb->getEdgeThreshold() << "\n\n";
-    this->orb->compute(frame, keypoints, descriptors);
-    // std::cout << keypoints.size() << " " << descriptors.size() << " \n"; 
+    int max_iter = 0;
+    this->orb->compute(frame, kps, descriptors);
     return descriptors;
 }

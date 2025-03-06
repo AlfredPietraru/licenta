@@ -1,5 +1,4 @@
 #include "include/Tracker.h"
-#include "include/LocalMapping.h"
 // #include "DBoW3/DBoW3.h"
 // de folosit sophus pentru estimarea pozitiei
 #include <cstdio> 
@@ -13,11 +12,8 @@ int main(int argc, char **argv)
     // vocab.load("../vocab_larger.yml.gz"); 
     char x;
     Tracker *tracker = new Tracker();
-    std::pair<Graph, Map> essential_graph_map_points = tracker->initialize();
-    Graph essential_graph = essential_graph_map_points.first;
-    Map mapp = essential_graph_map_points.second;
+    Map mapp = tracker->initialize();
     vector<KeyFrame*> keyframes_buffer;
-    LocalMap localMap = LocalMap(essential_graph, mapp);
     while(1) {
         tracker->tracking(mapp, keyframes_buffer);
     }

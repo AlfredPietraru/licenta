@@ -10,12 +10,12 @@ void Tracker::get_current_key_frame() {
     Mat depth = net.forward().reshape(1, 224);
     depth = depth * 10000;
     std::vector<KeyPoint> keypoints = this->fmf->extract_keypoints(resized);
+    Mat img2;
     cv::Mat descriptors = this->fmf->compute_descriptors(resized, keypoints);
-
-    // Mat img2;
-    // cv::drawKeypoints(resized, keypoints, img2, Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
-    // imshow("Display window", img2);
-    // waitKey(0);
+    std::cout << keypoints.size() << " " << descriptors.size() << " \n"; 
+    cv::drawKeypoints(resized, keypoints, img2, Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
+    imshow("Display window", img2);
+    waitKey(0);
 
     if (this->prev_kf == nullptr) {
         this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), K, keypoints, descriptors, depth); 
@@ -24,30 +24,11 @@ void Tracker::get_current_key_frame() {
     }
 }
 
-void Tracker::set_prev_key_frame() {
-    this->prev_kf = this->current_kf;
-}
-
-vector<DMatch> Tracker::match_features_last_frame() {
-    vector<DMatch> matches;
-    this->matcher->match(this->current_kf->orb_descriptors, this->prev_kf->orb_descriptors, matches);
-    vector<DMatch> good_matches; 
-    for (auto match : matches) {
-        if(match.distance < LIMIT_MATCHING) {
-            good_matches.push_back(match);
-        }
-    }
-    return good_matches;
-} 
-
-std::pair<Graph, Map> Tracker::initialize() {
-    Map mapp = Map();
-    vector<MapPoint*> map_points;
+Map Tracker::initialize() {
     this->get_current_key_frame();
-    mapp.add_map_points(this->current_kf);
-    Graph graph = Graph(this->current_kf);
+    Map mapp = Map(this->current_kf);
     this->reference_kf = this->current_kf;
-    return std::pair<Graph, Map>(graph, mapp);
+    return mapp;
 }
 
 void Tracker::Optimize_Pose_Coordinates(Map mapp) {
@@ -106,17 +87,21 @@ bool Tracker::Is_KeyFrame_needed(Map mapp) {
 
 
 void Tracker::tracking(Map mapp, vector<KeyFrame*> &key_frames_buffer) {
-    this->set_prev_key_frame();
+    this->prev_kf = this->current_kf;
     this->get_current_key_frame();
-    vector<DMatch> good_matches = this->match_features_last_frame();
+    vector<DMatch> good_matches = this->fmf->match_features_last_frame(this->current_kf, this->prev_kf);
     if (good_matches.size() < 50) {
         this->tracking_was_lost();
     } else {
         Sophus::SE3d relative_pose_last_2_frames = TrackWithLastFrame(good_matches);
-        this->current_kf->Tiw = relative_pose_last_2_frames * this->current_kf->Tiw; 
+        this->current_kf->Tiw = relative_pose_last_2_frames * this->current_kf->Tiw;
+        std::cout << this->current_kf->Tiw.rotationMatrix() << "\n"; 
         Optimize_Pose_Coordinates(mapp);
+        std::cout << this->current_kf->Tiw.rotationMatrix() << "\n";
+
     }
     if (this->Is_KeyFrame_needed(mapp)) {
+        std::cout << "daa adauga un keyframe aicii\n";
         key_frames_buffer.push_back(this->current_kf);
     }
 }
