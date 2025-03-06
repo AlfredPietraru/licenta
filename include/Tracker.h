@@ -49,7 +49,7 @@ private:
     cv::Ptr<cv::FastFeatureDetector> fast = cv::FastFeatureDetector::create(50, true);
     cv::Ptr<cv::ORB> orb = cv::ORB::create(500, 1.2F, 8, 30, 0, 2, cv::ORB::HARRIS_SCORE, 5, 20);
     cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
-    BundleAdjustment bundleAdjustment;
+    BundleAdjustment *bundleAdjustment = new BundleAdjustment();
     FeatureMatcherFinder *fmf = new FeatureMatcherFinder(cv::Size(224, 224), 16);
 
     

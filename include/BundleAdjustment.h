@@ -14,17 +14,10 @@
 class BundleAdjustment
 {
 public:
-    std::vector<cv::KeyPoint> kps;
-    Sophus::SE3d T;
-    std::vector<MapPoint*> map_points;
-    Eigen::Matrix3d R;
-    Eigen::Vector3d t;
-    double WINDOW = 7;
+    double WINDOW = 5;
     
-
     BundleAdjustment() {}
-    BundleAdjustment(std::vector<MapPoint*> map_points, KeyFrame *frame);
-    Sophus::SE3d solve();
+    Sophus::SE3d solve(Sophus::SE3d T, std::vector<MapPoint*> map_points, std::vector<cv::KeyPoint> kps);
 };
 
 #endif

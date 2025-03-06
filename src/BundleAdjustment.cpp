@@ -26,7 +26,7 @@ public:
         
         const Eigen::Vector3<T> camera_coordinates = pose.matrix3x4() * map_coordinate;
         T d = camera_coordinates(2);
-        if (d < 0) return false;
+        // if (d < 0) return false;
         T x = FOCAL_LENGTH * camera_coordinates(0) / d + X_CAMERA_OFFSET;
         T y = FOCAL_LENGTH * camera_coordinates(1) / d + Y_CAMERA_OFFSET;
         residuals[0] = observed_x - x;
@@ -46,64 +46,29 @@ private:
     Eigen::Vector4<double> map_coordinate;
 };
 
-BundleAdjustment::BundleAdjustment(std::vector<MapPoint*> map_points, KeyFrame *frame)
-{
-    if (map_points.size() == 0) {
-        return;
-    }
-    for (MapPoint *mp : map_points)
-    {
-        Eigen::Vector3d camera_coordinates = frame->fromWorldToImage(mp->wcoord);
-        for (int i = 0; i < 3; i++) {
-            if (camera_coordinates(i) < 0) continue;
-        }
-        float u = camera_coordinates(0);
-        float v = camera_coordinates(1);
-        int min_hamming_distance = 10000;
-        int current_hamming_distance = -1;
-        cv::KeyPoint right_kp;
-        for (int i = 0; i < frame->keypoints.size(); i++)
-        {
-            if (frame->keypoints[i].pt.x - WINDOW > u || frame->keypoints[i].pt.x + WINDOW < u)
-                continue;
-            if (frame->keypoints[i].pt.y - WINDOW > v || frame->keypoints[i].pt.y + WINDOW < v)
-                continue;
-            current_hamming_distance = ComputeHammingDistance(mp->orb_descriptor, frame->orb_descriptors.row(i));
-            if (current_hamming_distance < min_hamming_distance)
-            {
-                min_hamming_distance = current_hamming_distance;
-                right_kp = frame->keypoints[i];
-            }
-        }
-        if (min_hamming_distance == 10000)
-            continue;
-        this->kps.push_back(right_kp);
-        this->map_points.push_back(mp);
-    }
-}
-
-Sophus::SE3d BundleAdjustment::solve()
+Sophus::SE3d BundleAdjustment::solve(Sophus::SE3d T, std::vector<MapPoint*> map_points, std::vector<cv::KeyPoint> kps)
 { 
-    std::cout << this->T.matrix() << "\n";
-    Eigen::Vector3d test_translation;
-    for (int i = 0; i < 3; i++) {
-        test_translation(i) = this->T.data()[i + 4];
-    }
-    Eigen::Quaterniond test_q(this->T.data()[3], this->T.data()[0], this->T.data()[1], this->T.data()[2]); 
-    test_q.normalize();
-    this->T = Sophus::SE3d(test_q, test_translation);
-    std::cout << this->T.matrix() << "\n";
+    // std::cout << T.matrix() << "\n";
+    // Eigen::Vector3d test_translation;
+    // for (int i = 0; i < 3; i++) {
+    //     test_translation(i) = T.data()[i + 4];
+    // }
+    // Eigen::Quaterniond test_q(T.data()[3], T.data()[0], T.data()[1], T.data()[2]); 
+    // test_q.normalize();
+    // T = Sophus::SE3d(test_q, test_translation);
+    // std::cout << T.matrix() << "\n";
 
-    double *data = this->T.data();
+    double *data = T.data();
     ceres::Problem problem;
-    if (this->map_points.size() == 0) return this->T;
-    for (int i = 0; i < this->map_points.size(); i++)
+    if (map_points.size() == 0) return T;
+    for (int i = 0; i < map_points.size(); i++)
     {
         ceres::CostFunction *cost_function;
-        cost_function = BundleError::Create(this->kps[i].pt.x, this->kps[i].pt.y, this->map_points[i]->wcoord);
+        cost_function = BundleError::Create(kps[i].pt.x, kps[i].pt.y, map_points[i]->wcoord);
         ceres::LossFunction *loss_function = new ceres::HuberLoss(1.0);
         problem.AddResidualBlock(cost_function, loss_function, data);
     }
+
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
@@ -117,7 +82,8 @@ Sophus::SE3d BundleAdjustment::solve()
     }
     Eigen::Quaterniond q(data[3], data[0], data[1], data[2]); 
     q.normalize();
-    this->T = Sophus::SE3d(q, translation);
-    return this->T;
+    T = Sophus::SE3d(q, translation);
+    std::cout << T.matrix() << "\n";
+    return T;
     
 }

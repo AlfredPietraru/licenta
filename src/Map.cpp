@@ -11,7 +11,6 @@ std::vector<MapPoint*> Map::compute_map_points(KeyFrame *frame) {
         current_points_found.push_back(new MapPoint(frame, i));
     }
     if (current_points_found.size() == 0) return {};
-    std::cout << current_points_found.size() << " " << frame->keypoints.size() << "\n";
     return current_points_found;
 }
 
@@ -66,13 +65,16 @@ std::vector<MapPoint*> Map::compute_local_map(KeyFrame *kf) {
 
 
 // INCOMPLET, vor exista map point-uri duplicate
-std::vector<MapPoint *> Map::track_local_map(KeyFrame *curr_kf) {
-    KeyFrame *reference_kf = get_reference_keyframe(curr_kf);
-    std::unordered_map<KeyFrame*, int> reference_kf_neighbours = this->graph[reference_kf->idx].second;
-    std::vector<MapPoint*> out = get_reprojected_map_points(curr_kf, reference_kf);
-    for (std::pair<KeyFrame*, int> graph_edge : reference_kf_neighbours) {
-        std::vector<MapPoint*> reprojected_map_points = get_reprojected_map_points(curr_kf, graph_edge.first);
-        out.insert(out.end(), reprojected_map_points.begin(), reprojected_map_points.end());
+std::pair<std::vector<MapPoint*>, std::vector<cv::KeyPoint>> Map::track_local_map(KeyFrame *curr_kf) {
+    std::vector<MapPoint*> local_map = this->compute_local_map(curr_kf);
+    std::cout << local_map.size() << " aiciiiii\n";
+    std::vector<MapPoint*> out_map;
+    std::vector<cv::KeyPoint> kps;
+    for (MapPoint *mp : local_map) {
+        int idx = mp->find_orb_correspondence(curr_kf);
+        if (idx == -1) continue;
+        out_map.push_back(mp);
+        kps.push_back(curr_kf->keypoints[idx]);
     }
-    return out;
+    return std::pair<std::vector<MapPoint*>, std::vector<cv::KeyPoint>>(out_map, kps);
 }

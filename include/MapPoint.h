@@ -19,6 +19,7 @@ public:
     bool operator ==(const MapPoint& lhs);
     bool map_point_belongs_to_keyframe(KeyFrame *kf);
     void add_reference_kf(KeyFrame *kf, int idx);
+    int find_orb_correspondence(KeyFrame *kf);
 };
 
 namespace std 

@@ -12,10 +12,10 @@ void Tracker::get_current_key_frame() {
     std::vector<KeyPoint> keypoints = this->fmf->extract_keypoints(resized);
     Mat img2;
     cv::Mat descriptors = this->fmf->compute_descriptors(resized, keypoints);
-    std::cout << keypoints.size() << " " << descriptors.size() << " \n"; 
+    // std::cout << keypoints.size() << " " << descriptors.size() << " \n"; 
     cv::drawKeypoints(resized, keypoints, img2, Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
     imshow("Display window", img2);
-    waitKey(0);
+    waitKey(100);
 
     if (this->prev_kf == nullptr) {
         this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), K, keypoints, descriptors, depth, 0); 
@@ -30,18 +30,6 @@ Map Tracker::initialize() {
     this->reference_kf = this->current_kf;
     return mapp;
 }
-
-void Tracker::Optimize_Pose_Coordinates(Map mapp) {
-        vector<MapPoint*> observed_map_points = mapp.track_local_map(this->current_kf);
-        std::cout << observed_map_points.size() << "\n";
-        if (observed_map_points.size() < 15) {
-            std::cout << "NOT ENOUGH MAP_POINTS FOUND\n\n";
-            this->bundleAdjustment = BundleAdjustment({}, this->current_kf);
-            return;
-        } 
-        this->bundleAdjustment = BundleAdjustment(observed_map_points, this->current_kf);
-        this->current_kf->Tiw = this->bundleAdjustment.solve();
-    }
 
 Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
     vector<Point3d> points_in3d;
@@ -70,6 +58,16 @@ Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
     return Sophus::SE3d(R_eigen,  t_eigen);
 }
 
+void Tracker::Optimize_Pose_Coordinates(Map mapp) {
+        std::pair<std::vector<MapPoint*>, std::vector<cv::KeyPoint>> observed_map_points = mapp.track_local_map(this->current_kf);
+        std::cout << observed_map_points.first.size() << "\n";
+        if (observed_map_points.first.size() < 15) {
+            std::cout << "NOT ENOUGH MAP_POINTS FOUND\n\n";
+            return;
+        } 
+        this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf->Tiw, observed_map_points.first, observed_map_points.second);
+}
+
 void Tracker::tracking_was_lost() {
     std::cout << "TRACKING WAS LOSTT<< \n\n\n";
 }
@@ -80,9 +78,7 @@ bool Tracker::Is_KeyFrame_needed(Map mapp) {
     this->keyframes_from_last_global_relocalization += 1;
     bool no_global_relocalization = this->keyframes_from_last_global_relocalization > 20;
     bool no_recent_keyframe_added = this->last_keyframe_added > 20;
-    int map_points_seen_in_key_frame = this->bundleAdjustment.map_points.size();
-    bool current_frame_less_than_80_percent = map_points_seen_in_key_frame > 8 * this->bundleAdjustment.map_points.size();
-    return no_global_relocalization && no_recent_keyframe_added && current_frame_less_than_80_percent;
+    return no_global_relocalization && no_recent_keyframe_added;
 }
 
 
@@ -95,7 +91,7 @@ void Tracker::tracking(Map mapp, vector<KeyFrame*> &key_frames_buffer) {
         this->tracking_was_lost();
     } else {
         Sophus::SE3d relative_pose_last_2_frames = TrackWithLastFrame(good_matches);
-        this->current_kf->Tiw = relative_pose_last_2_frames * this->current_kf->Tiw;
+        this->current_kf->Tiw = this->current_kf->Tiw * relative_pose_last_2_frames;
         // std::cout << this->current_kf->Tiw.matrix() << "\n"; 
         Optimize_Pose_Coordinates(mapp);
         // std::cout << this->current_kf->Tiw.matrix() << "\n";

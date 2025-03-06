@@ -16,7 +16,7 @@ public:
     Map();
     Map(KeyFrame *first_kf);
     
-    std::vector<MapPoint*> track_local_map(KeyFrame *curr_kf);
+    std::pair<std::vector<MapPoint*>, std::vector<cv::KeyPoint>> track_local_map(KeyFrame *curr_kf);
 
     KeyFrame *get_reference_keyframe(KeyFrame *kf);
     std::vector<MapPoint*> compute_local_map(KeyFrame *kf);

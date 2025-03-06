@@ -32,11 +32,16 @@ bool MapPoint::map_point_belongs_to_keyframe(KeyFrame *kf)
     }
     // correclty reprojected - 1
     if (this->dmax < point_camera_coordinates(2) || this->dmin > point_camera_coordinates(2)) return false;
-    // distance match values - 3
+    return true;
+}
+
+int MapPoint::find_orb_correspondence(KeyFrame *kf) {
+    Eigen::Vector3d point_camera_coordinates = kf->fromWorldToImage(this->wcoord);
     float u = point_camera_coordinates(0);
     float v = point_camera_coordinates(1);
     int min_hamm_dist = 10000;
     int cur_hamm_dist;
+    int right_idx = -1;
     for (int i = 0; i < kf->keypoints.size(); i++)
     {
         if (kf->keypoints[i].pt.x - this->WINDOW > u || kf->keypoints[i].pt.x + this->WINDOW < u)
@@ -44,9 +49,12 @@ bool MapPoint::map_point_belongs_to_keyframe(KeyFrame *kf)
         if (kf->keypoints[i].pt.y - this->WINDOW > v || kf->keypoints[i].pt.y + this->WINDOW < v)
             continue;
         cur_hamm_dist = ComputeHammingDistance(this->orb_descriptor, kf->orb_descriptors.row(i));
-        min_hamm_dist = cur_hamm_dist < min_hamm_dist ? cur_hamm_dist : min_hamm_dist;
+        if (cur_hamm_dist < min_hamm_dist) {
+            right_idx = i;
+            min_hamm_dist = cur_hamm_dist;
+        }
     }
-    if (min_hamm_dist == 10000) return false;
+    if (min_hamm_dist == 10000) return -1;
     // feature was found - 5
-    return true;
+    return right_idx;
 }
