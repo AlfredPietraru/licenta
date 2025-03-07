@@ -36,6 +36,7 @@ private:
     KeyFrame *reference_kf;
 
 
+    int frames_tracked = 0;
     int last_keyframe_added = 0;
     int keyframes_from_last_global_relocalization = 0;
 

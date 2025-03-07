@@ -17,19 +17,18 @@ class FeatureMatcherFinder {
 public:
     int window;
     int nr_cells;
-    int INITIAL_FAST_INDEX = 50;
     int EACH_CELL_THRESHOLD = 5;
-    int FAST_ITERATIONS = 10;
-    int FAST_STEP = 5;
 
-    int ORB_ITERATIONS = 5;
-    int ORB_STEP = 5;
+    int ORB_EDGE_THRESHOLD = 5;
+    int ORB_ITERATIONS = 10;
+    int FAST_STEP = 5;
+    int FAST_THRESHOLD = 30;
+    int ORB_THRESHOLD_IDX = 5; 
 
     int LIMIT_MATCHING = 30;
 
-    std::vector<std::vector<cv::Ptr<cv::FastFeatureDetector>>> fast_vector;
-    // cv::Ptr<cv::ORB> orb;
-    cv::Ptr<cv::DescriptorExtractor> orb;
+    std::vector<int> nr_features_extracted;
+    cv::Ptr<cv::ORB> orb;
     cv::Ptr<cv::DescriptorMatcher> matcher;
     
     FeatureMatcherFinder() {}

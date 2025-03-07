@@ -4,14 +4,7 @@
 FeatureMatcherFinder::FeatureMatcherFinder(cv::Size frame_size, int window_size) {
     this->nr_cells = frame_size.height / window_size;
     this->window = window_size;
-    for (int i = 0; i < this->nr_cells; i++) {
-        std::vector<cv::Ptr<cv::FastFeatureDetector>> current_vec;
-        for (int j = 0; j < this->nr_cells; j++) {
-            current_vec.push_back(cv::FastFeatureDetector::create(this->INITIAL_FAST_INDEX, true));
-        }
-        this->fast_vector.push_back(current_vec);
-    }
-    this->orb = cv::ORB::create(1000, 1.2F, 8, 5, 0, 2, cv::ORB::HARRIS_SCORE, 5, 5);
+    this->orb = cv::ORB::create(1000, 1.2F, 8, ORB_EDGE_THRESHOLD, 0, 2, cv::ORB::HARRIS_SCORE, ORB_EDGE_THRESHOLD, FAST_THRESHOLD);
     this->matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
 }
 
@@ -30,6 +23,7 @@ std::vector<cv::DMatch> FeatureMatcherFinder::match_features_last_frame(KeyFrame
 std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame) {
     std::vector<cv::KeyPoint> keypoints;
     cv::Mat mask = cv::Mat::zeros(frame.rows, frame.cols, CV_8U);
+    nr_features_extracted.clear();
     for (int i = 0; i < nr_cells; i++) {
         for (int j = 0; j < nr_cells; j++) {
             std::vector<cv::KeyPoint> current_keypoints;
@@ -42,26 +36,29 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame)
             }
             // do stuff
             // ajunge la 0, si dupa NU mai da un kick start ceea ce nu e bine
-            while(max_iter < this->FAST_ITERATIONS) {
-                if (this->fast_vector[i][j]->getThreshold() <= 0) break;
-                this->fast_vector[i][j]->detect(frame, current_keypoints, mask);
-                // std::cout << current_keypoints.size() << " " << this->fast_vector[i][j]->getThreshold() << "  ";
+            while(max_iter < this->ORB_ITERATIONS) {
+                if (this->orb->getFastThreshold() <= 0) {
+                    this->orb->setFastThreshold(FAST_THRESHOLD);
+                } 
+                this->orb->detect(frame, current_keypoints, mask);
+                // std::cout << current_keypoints.size() << " " << this->orb->getFastThreshold() << "  ";
                 if (current_keypoints.size() >= EACH_CELL_THRESHOLD && current_keypoints.size() <= EACH_CELL_THRESHOLD * 2) {
                     // std::cout << "out " << i << " " << j << "\n";
                     break;
                 } 
                 if (current_keypoints.size() < EACH_CELL_THRESHOLD) {
-                    this->fast_vector[i][j]->setThreshold(this->fast_vector[i][j]->getThreshold() - this->FAST_STEP);
+                    this->orb->setFastThreshold(this->orb->getFastThreshold() - this->FAST_STEP);
                     current_keypoints.clear();
                 }
                 if (current_keypoints.size() > EACH_CELL_THRESHOLD * 2) {
-                    this->fast_vector[i][j]->setThreshold(this->fast_vector[i][j]->getThreshold() + this->FAST_STEP);
+                    this->orb->setFastThreshold(this->orb->getFastThreshold() + this->FAST_STEP);
                     current_keypoints.clear();
                 } 
                 max_iter++;
             }
-            // std::cout << " " << this->fast_vector[i][j]->getThreshold() << "\n\n";
+            // std::cout << " " << this->orb->getFastThreshold() << "\n\n";
             keypoints.insert(keypoints.end(), current_keypoints.begin(), current_keypoints.end());
+            nr_features_extracted.push_back(current_keypoints.size());
             // end stuff
             for (int k = nr_cells * i; k < nr_cells * i + this->window; k++) {
                 for (int l = nr_cells * j; l < nr_cells * j + this->window; l++) {
@@ -84,11 +81,8 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame)
 }
 
 cv::Mat FeatureMatcherFinder::compute_descriptors(cv::Mat frame, std::vector<cv::KeyPoint> &kps) {
-    std::vector<cv::KeyPoint> copy_kps;
-    // copy(kps.begin(), kps.end(), back_inserter(copy_kps));
     // std::cout << kps.size() << "\n\n";
     cv::Mat descriptors;
-    int max_iter = 0;
     this->orb->compute(frame, kps, descriptors);
     return descriptors;
 }
