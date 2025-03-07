@@ -11,7 +11,7 @@ FeatureMatcherFinder::FeatureMatcherFinder(cv::Size frame_size, int window_size)
         }
         this->fast_vector.push_back(current_vec);
     }
-    this->orb = cv::ORB::create(1000, 1.2F, 8, 20, 0, 2, cv::ORB::HARRIS_SCORE, 5, 20);
+    this->orb = cv::ORB::create(1000, 1.2F, 8, 5, 0, 2, cv::ORB::HARRIS_SCORE, 5, 5);
     this->matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
 }
 
