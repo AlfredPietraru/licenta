@@ -19,12 +19,10 @@ public:
     int nr_cells;
     int EACH_CELL_THRESHOLD = 5;
 
-    int ORB_EDGE_THRESHOLD = 5;
+    int ORB_EDGE_THRESHOLD = 25;
     int ORB_ITERATIONS = 10;
     int FAST_STEP = 5;
     int FAST_THRESHOLD = 30;
-    int ORB_THRESHOLD_IDX = 5; 
-
     int LIMIT_MATCHING = 30;
 
     std::vector<int> nr_features_extracted;
