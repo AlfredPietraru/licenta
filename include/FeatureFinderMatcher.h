@@ -15,14 +15,15 @@
 
 class FeatureMatcherFinder {
 public:
-    int window;
-    int nr_cells;
+    int nr_cells_row;
+    int nr_cells_collumn;
+    int WINDOW = 16;
     int EACH_CELL_THRESHOLD = 5;
 
     int ORB_EDGE_THRESHOLD = 25;
     int ORB_ITERATIONS = 10;
     int FAST_STEP = 5;
-    int FAST_THRESHOLD = 30;
+    int FAST_THRESHOLD = 40;
     int LIMIT_MATCHING = 30;
 
     std::vector<int> nr_features_extracted;
@@ -30,7 +31,7 @@ public:
     cv::Ptr<cv::DescriptorMatcher> matcher;
     
     FeatureMatcherFinder() {}
-    FeatureMatcherFinder(cv::Size frame_size, int window_size);
+    FeatureMatcherFinder(cv::Mat frame);
 
     std::vector<cv::DMatch> match_features_last_frame(KeyFrame *current_kf, KeyFrame *past_kf);
     std::vector<cv::KeyPoint> extract_keypoints(cv::Mat frame);

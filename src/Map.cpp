@@ -6,8 +6,8 @@ std::vector<MapPoint*> Map::compute_map_points(KeyFrame *frame) {
     std::vector<MapPoint *> current_points_found;
     for (int i = 0; i < frame->keypoints.size(); i++) {
         cv::KeyPoint kp = frame->keypoints[i];
-        float depth = frame->depth_matrix.at<float>((int)kp.pt.x, (int)kp.pt.y);
-        if (depth <= 0) continue;
+        float d = frame->depth_matrix.at<float>(kp.pt.x, kp.pt.y);
+        if (d <= 0) continue;
         current_points_found.push_back(new MapPoint(frame, i));
     }
     if (current_points_found.size() == 0) return {};

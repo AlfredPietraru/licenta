@@ -68,12 +68,12 @@ Sophus::SE3d BundleAdjustment::solve(Sophus::SE3d T, std::vector<MapPoint*> map_
     {
         ceres::CostFunction *cost_function;
         double sigma = std::pow(1.2, kps[i].octave);
-        std::cout << sigma << " ";
+        // std::cout << sigma << " ";
         cost_function = BundleError::Create(kps[i].pt.x, kps[i].pt.y, map_points[i]->wcoord, sigma);
         ceres::LossFunction *loss_function = new ceres::HuberLoss(HUBER_LOSS_VALUE);
         problem.AddResidualBlock(cost_function, loss_function, data);
     }
-    std::cout << "\n";
+    // std::cout << "\n";
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
@@ -89,7 +89,6 @@ Sophus::SE3d BundleAdjustment::solve(Sophus::SE3d T, std::vector<MapPoint*> map_
     Eigen::Quaterniond q(data[3], data[0], data[1], data[2]); 
     q.normalize();
     T = Sophus::SE3d(q, translation);
-    std::cout << T.matrix() << "\n";
     return T;
     
 }

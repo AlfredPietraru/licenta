@@ -5,19 +5,25 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     Mat img2;
     cv::drawKeypoints(frame, keypoints, img2, Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
     imshow("Display window", img2);
-    waitKey(0);
+    waitKey(100);
     cv::Mat descriptors = this->fmf->compute_descriptors(frame, keypoints);
     std::cout << keypoints.size() << " " << descriptors.size() << " \n"; 
     // exit(1);
 
     if (this->prev_kf == nullptr) {
         this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), K, keypoints, descriptors, depth, 0); 
+        // tx ty tz    qx qy qz qw
+        // 1.3001 0.6882 1.5745    0.6818 0.5482 -0.0115 -0.4843
+        // Eigen::Quaterniond q(-0.4843, 0.6818, 0.5482, 0.0115); 
+        // Sophus::Vector3d t(1.3001, 0.6882, 1.5745);
+        // this->current_kf = new KeyFrame(Sophus::SE3d(q, t), K, keypoints, descriptors, depth, 0);
     } else {
         this->current_kf = new KeyFrame(this->prev_kf->Tiw, K, keypoints, descriptors, depth, this->reference_kf->idx + 1);
     }
 }
 
 Map Tracker::initialize(Mat frame, Mat depth) {
+    this->fmf = new FeatureMatcherFinder(frame);
     this->get_current_key_frame(frame, depth);
     Map mapp = Map(this->current_kf);
     this->reference_kf = this->current_kf;
@@ -32,13 +38,17 @@ Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
     vector<cv::KeyPoint> current_kps = this->current_kf->keypoints;
     for (DMatch m : good_matches) {
       if (m.queryIdx >= kps.size() || m.trainIdx >= kps.size()) continue;
-      float d = this->prev_kf->depth_matrix.ptr<float>(int(kps[m.queryIdx].pt.y))[int(kps[m.queryIdx].pt.x)];
-      if (d <= 0) continue;
-      float new_x = (kps[m.queryIdx].pt.x - this->prev_kf->intrisics(0, 2)) * d / this->prev_kf->intrisics(0, 0);
-      float new_y = (kps[m.queryIdx].pt.y - this->prev_kf->intrisics(1, 2)) * d / this->prev_kf->intrisics(1, 1);
-      points_in3d.push_back(Point3d(new_x, new_y, d));
-      points_in2d.push_back(current_kps[m.trainIdx].pt);
+      float dd = this->prev_kf->depth_matrix.at<float>(kps[m.queryIdx].pt.x, kps[m.queryIdx].pt.y);
+    //   uint16_t d = this->prev_kf->depth_matrix.at<uint16_t>(kps[m.queryIdx].pt.y, kps[m.queryIdx].pt.x);
+    //   float dd = d / 5000;
+      if (dd <= 0) continue;
+      std::cout << dd << " ";
+      float new_x = (kps[m.queryIdx].pt.x - this->prev_kf->intrisics(0, 2)) * dd / this->prev_kf->intrisics(0, 0);
+      float new_y = (kps[m.queryIdx].pt.y - this->prev_kf->intrisics(1, 2)) * dd / this->prev_kf->intrisics(1, 1);
+      points_in3d.push_back(Point3d(new_x, new_y, dd));
+      points_in2d.push_back(Point2d(current_kps[m.trainIdx].pt.x, current_kps[m.trainIdx].pt.y));
     }
+    std::cout << "\n";
     Mat r, t;
     // pag 160 - slambook.en
     cv::solvePnPRansac(points_in3d, points_in2d, convert_from_eigen_to_cv2(K), Mat() , r, t);
@@ -87,12 +97,25 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_fr
     if (good_matches.size() < 50) {
         this->tracking_was_lost();
     } else {
+        for (int i = 0; i < 7; i++) {
+            std::cout << this->current_kf->Tiw.data()[i] << " "; 
+        }
+        std::cout << "\n";
         Sophus::SE3d relative_pose_last_2_frames = TrackWithLastFrame(good_matches);
+        // for (int i = 0; i < 7; i++) {
+        //     std::cout << relative_pose_last_2_frames.data()[i] << " "; 
+        // }
+        std::cout << "\n";
         this->current_kf->Tiw = this->current_kf->Tiw * relative_pose_last_2_frames;
-        std::cout << this->current_kf->Tiw.matrix() << "\n"; 
+        for (int i = 0; i < 7; i++) {
+            std::cout << this->current_kf->Tiw.data()[i] << " "; 
+        }
+        std::cout << "\n";
         Optimize_Pose_Coordinates(mapp);
-        std::cout << this->current_kf->Tiw.matrix() << "\n";
-
+        for (int i = 0; i < 7; i++) {
+            std::cout << this->current_kf->Tiw.data()[i] << " "; 
+        }
+        std::cout << "\n";
     }
     if (this->Is_KeyFrame_needed(mapp)) {
         std::cout << "daa adauga un keyframe aicii\n";

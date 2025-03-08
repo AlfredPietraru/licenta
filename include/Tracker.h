@@ -26,6 +26,7 @@ public:
     Tracker(){
         // 124.72440945
         double data_vector[9] = {132.28, 0.0, 110.1, 0.0, 132.28, 115.7, 0.0, 0.0, 1.0};
+        // double data_vector[9] = {525.0, 0.0, 319.5, 0.0, 525.0, 239.5, 0.0, 0.0, 1.0};
         cv::Mat K_cv = cv::Mat(3, 3, CV_64F, data_vector);
         this->K = convert_from_cv2_to_eigen(K_cv);
     }
@@ -45,11 +46,8 @@ private:
     int LIMIT_MATCHING = 30; 
     int WINDOW = 5;
     Eigen::Matrix3d K; 
-    cv::Ptr<cv::FastFeatureDetector> fast = cv::FastFeatureDetector::create(50, true);
-    cv::Ptr<cv::ORB> orb = cv::ORB::create(500, 1.2F, 8, 30, 0, 2, cv::ORB::HARRIS_SCORE, 5, 20);
-    cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
     BundleAdjustment *bundleAdjustment = new BundleAdjustment();
-    FeatureMatcherFinder *fmf = new FeatureMatcherFinder(cv::Size(224, 224), 16);
+    FeatureMatcherFinder *fmf;
 
     
     // important functions
