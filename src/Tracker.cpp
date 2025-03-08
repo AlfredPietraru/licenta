@@ -1,20 +1,12 @@
 #include "../include/Tracker.h"
 
-void Tracker::get_current_key_frame() {
-    Mat frame;
-    cap.read(frame);
-    cv::Mat resized;
-    cv::resize(frame, resized, cv::Size(224, 224));
-    Mat blob = cv::dnn::blobFromImage(resized, 1, Size(224, 224), Scalar(), true, false);
-    net.setInput(blob);
-    Mat depth = net.forward().reshape(1, 224);
-    depth = depth * 10000;
-    std::vector<KeyPoint> keypoints = this->fmf->extract_keypoints(resized);
+void Tracker::get_current_key_frame(Mat frame, Mat depth) {
+    std::vector<KeyPoint> keypoints = this->fmf->extract_keypoints(frame);
     Mat img2;
-    cv::drawKeypoints(resized, keypoints, img2, Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
+    cv::drawKeypoints(frame, keypoints, img2, Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
     imshow("Display window", img2);
     waitKey(0);
-    cv::Mat descriptors = this->fmf->compute_descriptors(resized, keypoints);
+    cv::Mat descriptors = this->fmf->compute_descriptors(frame, keypoints);
     std::cout << keypoints.size() << " " << descriptors.size() << " \n"; 
     // exit(1);
 
@@ -25,8 +17,8 @@ void Tracker::get_current_key_frame() {
     }
 }
 
-Map Tracker::initialize() {
-    this->get_current_key_frame();
+Map Tracker::initialize(Mat frame, Mat depth) {
+    this->get_current_key_frame(frame, depth);
     Map mapp = Map(this->current_kf);
     this->reference_kf = this->current_kf;
     return mapp;
@@ -87,9 +79,9 @@ bool Tracker::Is_KeyFrame_needed(Map mapp) {
 }
 
 
-void Tracker::tracking(Map mapp, vector<KeyFrame*> &key_frames_buffer) {
+void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_frames_buffer) {
     this->prev_kf = this->current_kf;
-    this->get_current_key_frame();
+    this->get_current_key_frame(frame, depth);
     vector<DMatch> good_matches = this->fmf->match_features_last_frame(this->current_kf, this->prev_kf);
     // std::cout << good_matches.size() << " good matches found\n";
     if (good_matches.size() < 50) {

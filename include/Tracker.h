@@ -21,8 +21,8 @@ using namespace cv;
 
 class Tracker {
 public:
-    Map initialize();
-    void tracking(Map map_points, vector<KeyFrame*> &key_frames_buffer);
+    Map initialize(Mat frame, Mat depth);
+    void tracking(Mat frame, Mat depth, Map map_points, vector<KeyFrame*> &key_frames_buffer);
     Tracker(){
         // 124.72440945
         double data_vector[9] = {132.28, 0.0, 110.1, 0.0, 132.28, 115.7, 0.0, 0.0, 1.0};
@@ -45,8 +45,6 @@ private:
     int LIMIT_MATCHING = 30; 
     int WINDOW = 5;
     Eigen::Matrix3d K; 
-    cv::VideoCapture cap = cv::VideoCapture("../video.mp4");
-    cv::dnn::Net net = cv::dnn::readNetFromONNX("../fast_depth.onnx");
     cv::Ptr<cv::FastFeatureDetector> fast = cv::FastFeatureDetector::create(50, true);
     cv::Ptr<cv::ORB> orb = cv::ORB::create(500, 1.2F, 8, 30, 0, 2, cv::ORB::HARRIS_SCORE, 5, 20);
     cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
@@ -60,7 +58,7 @@ private:
     bool Is_KeyFrame_needed(Map mapp);
 
     // auxiliary functions
-    void get_current_key_frame();
+    void get_current_key_frame(Mat frame, Mat depth);
     void tracking_was_lost();
 };
 
