@@ -66,10 +66,9 @@ int main(int argc, char **argv)
     Tracker *tracker = new Tracker();
     cv::Mat frame, resized, normalized_frame;
     cap.read(frame);
-    // de normalizat inputul si de adus in range-ul 0, 1, CE EROARE ELEMENTARAAAA
     cv::resize(frame, resized, cv::Size(224, 224));
     cv::normalize(resized, normalized_frame, 0, 255, cv::NORM_MINMAX);
-    Mat blob = cv::dnn::blobFromImage(normalized_frame, 1, Size(224, 224), Scalar(), true, false);
+    Mat blob = cv::dnn::blobFromImage(normalized_frame, 1, Size(224, 224), cv::Scalar(0.485, 0.456, 0.406), true, false);
     net.setInput(blob);
     Mat depth = net.forward().reshape(1, 224);
     depth *= 10;

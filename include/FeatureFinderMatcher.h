@@ -23,12 +23,13 @@ public:
     int ORB_EDGE_THRESHOLD = 25;
     int ORB_ITERATIONS = 10;
     int FAST_STEP = 5;
-    int FAST_THRESHOLD = 40;
+    int FAST_THRESHOLD = 20;
     int LIMIT_MATCHING = 30;
 
-    std::vector<int> nr_features_extracted;
+    std::vector<int> fast_features_cell;
     cv::Ptr<cv::ORB> orb;
     cv::Ptr<cv::DescriptorMatcher> matcher;
+    cv::Mat mask;
     
     FeatureMatcherFinder() {}
     FeatureMatcherFinder(cv::Mat frame);

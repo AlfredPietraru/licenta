@@ -5,7 +5,7 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     Mat img2;
     cv::drawKeypoints(frame, keypoints, img2, Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
     imshow("Display window", img2);
-    waitKey(100);
+    waitKey(0);
     cv::Mat descriptors = this->fmf->compute_descriptors(frame, keypoints);
     std::cout << keypoints.size() << " " << descriptors.size() << " \n"; 
     // exit(1);
@@ -42,13 +42,11 @@ Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
     //   uint16_t d = this->prev_kf->depth_matrix.at<uint16_t>(kps[m.queryIdx].pt.y, kps[m.queryIdx].pt.x);
     //   float dd = d / 5000;
       if (dd <= 0) continue;
-      std::cout << dd << " ";
       float new_x = (kps[m.queryIdx].pt.x - this->prev_kf->intrisics(0, 2)) * dd / this->prev_kf->intrisics(0, 0);
       float new_y = (kps[m.queryIdx].pt.y - this->prev_kf->intrisics(1, 2)) * dd / this->prev_kf->intrisics(1, 1);
       points_in3d.push_back(Point3d(new_x, new_y, dd));
       points_in2d.push_back(Point2d(current_kps[m.trainIdx].pt.x, current_kps[m.trainIdx].pt.y));
     }
-    std::cout << "\n";
     Mat r, t;
     // pag 160 - slambook.en
     cv::solvePnPRansac(points_in3d, points_in2d, convert_from_eigen_to_cv2(K), Mat() , r, t);

@@ -8,7 +8,7 @@
 
 class Map {
 public:
-    int KEYFRAMES_WINDOW = 3; 
+    int KEYFRAMES_WINDOW = 10; 
 
     std::vector<std::vector<MapPoint*>> map_points;
     std::vector<std::pair<KeyFrame*, std::unordered_map<KeyFrame*, int>>> graph;

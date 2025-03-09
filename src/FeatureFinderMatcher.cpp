@@ -5,8 +5,10 @@ FeatureMatcherFinder::FeatureMatcherFinder(cv::Mat frame){
     this->nr_cells_row = frame.rows / WINDOW;
     this->nr_cells_collumn = frame.cols / WINDOW;
     std::cout << this->nr_cells_row << " " << this->nr_cells_collumn << " celule pe randuri si coloane\n";
-    this->orb = cv::ORB::create(1000, 1.2F, 8, 10, 0, 2, cv::ORB::HARRIS_SCORE, ORB_EDGE_THRESHOLD, FAST_THRESHOLD);
+    this->orb = cv::ORB::create(800, 1.2F, 8, 10, 0, 2, cv::ORB::HARRIS_SCORE, ORB_EDGE_THRESHOLD, FAST_THRESHOLD);
     this->matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
+    this->fast_features_cell = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row, FAST_THRESHOLD);
+    this->mask = cv::Mat::zeros(frame.rows, frame.cols, CV_8U);
 }
 
 std::vector<cv::DMatch> FeatureMatcherFinder::match_features_last_frame(KeyFrame *current_kf, KeyFrame *past_kf) {
@@ -22,9 +24,7 @@ std::vector<cv::DMatch> FeatureMatcherFinder::match_features_last_frame(KeyFrame
 } 
 
 std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame) {
-    std::vector<cv::KeyPoint> keypoints;
-    cv::Mat mask = cv::Mat::zeros(frame.rows, frame.cols, CV_8U); 
-    nr_features_extracted.clear();
+    std::vector<cv::KeyPoint> keypoints; 
     for (int i = 0; i < nr_cells_row; i++) {
         for (int j = 0; j < nr_cells_collumn; j++) {
             std::vector<cv::KeyPoint> current_keypoints;
@@ -38,31 +38,29 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame)
 
             // do stuff
             // ajunge la 0, si dupa NU mai da un kick start ceea ce nu e bine
-            while(max_iter < this->ORB_ITERATIONS) {
-                if (max_iter == 0) {
-                    this->orb->setFastThreshold(FAST_THRESHOLD);
-                }
+            int threshold = this->fast_features_cell[i * nr_cells_row + j];
+            if (threshold <= 0) threshold = FAST_THRESHOLD;
+
+            for (int i = 0; i < this->ORB_ITERATIONS; i++) {
+                this->orb->setFastThreshold(threshold);
                 this->orb->detect(frame, current_keypoints, mask);
                 // std::cout << current_keypoints.size() << " " << this->orb->getFastThreshold() << "  ";
-                if (current_keypoints.size() >= EACH_CELL_THRESHOLD && current_keypoints.size() <= EACH_CELL_THRESHOLD * 3) {
+                if (current_keypoints.size() >= EACH_CELL_THRESHOLD && current_keypoints.size() <= EACH_CELL_THRESHOLD * 2) {
                     // std::cout << "out " << i << " " << j << "\n";
                     break;
-                } 
-                if (current_keypoints.size() < EACH_CELL_THRESHOLD) {
-                    if (this->orb->getFastThreshold() == 5) break;
-                    this->orb->setFastThreshold(this->orb->getFastThreshold() - this->FAST_STEP);
-                    current_keypoints.clear();
+                } else if (current_keypoints.size() < EACH_CELL_THRESHOLD) {
+                    threshold -= this->FAST_STEP;
+                    if (threshold <= 0) break;
+                } else if (current_keypoints.size() > 2 * EACH_CELL_THRESHOLD) {
+                    threshold += this->FAST_STEP;
                 }
-
-                if (current_keypoints.size() > EACH_CELL_THRESHOLD * 3) {
-                    this->orb->setFastThreshold(this->orb->getFastThreshold() + this->FAST_STEP);
-                    current_keypoints.clear();
-                } 
+                this->orb->setFastThreshold(threshold);
+                current_keypoints.clear();
                 max_iter++;
             }
+            this->fast_features_cell[i * nr_cells_row + j] = threshold;
             // std::cout << " " << this->orb->getFastThreshold() << "\n\n";
             keypoints.insert(keypoints.end(), current_keypoints.begin(), current_keypoints.end());
-            nr_features_extracted.push_back(current_keypoints.size());
             // end stuff
             for (int k = WINDOW * i; k < WINDOW * i + WINDOW; k++) {
                 for (int l = WINDOW * j; l < WINDOW * j + WINDOW; l++) {
