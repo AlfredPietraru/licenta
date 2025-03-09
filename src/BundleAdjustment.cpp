@@ -30,13 +30,17 @@ public:
         const Eigen::Vector3<T> camera_coordinates = pose.matrix3x4() * map_coordinate;
         T d = camera_coordinates(2);
         // if (d < 0) return false;
+        Eigen::Vector3<T> val;
         T x = FOCAL_LENGTH * camera_coordinates(0) / d + X_CAMERA_OFFSET;
         T y = FOCAL_LENGTH * camera_coordinates(1) / d + Y_CAMERA_OFFSET;
-        T z = (camera_coordinates(0) - BASELINE) / d + X_CAMERA_OFFSET;
-        Eigen::Vector3<T> val;
         val(0) = (x - observed(0)) / scale_sigma;
         val(1) = (y - observed(1)) / scale_sigma;
-        val(2) = (z - observed(2)) / scale_sigma;  
+        if (observed(2) > -1e-7 && observed(2) < 1e-7) {
+            val(2) = (T)0;
+        } else {
+            T z = (camera_coordinates(0) - BASELINE) / d + X_CAMERA_OFFSET;
+            val(2) = (z - observed(2)) / scale_sigma;  
+        }
         residuals[0] = val.norm(); 
         return true;
     }
@@ -74,7 +78,12 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
         double sigma = std::pow(1.2, kps[i].octave);
         // std::cout << sigma << " ";
         float d = kf->depth_matrix.at<float>(kps[i].pt.x, kps[i].pt.y);
-        cost_function = BundleError::Create(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, d), map_points[i]->wcoord, sigma);
+        if (d <= 0) {
+            std::cout << "pe aici vreodata" << "\n\n\n";
+            cost_function = BundleError::Create(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, 0), map_points[i]->wcoord, sigma);
+        } else {
+            cost_function = BundleError::Create(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, d), map_points[i]->wcoord, sigma);
+        }
         ceres::LossFunction *loss_function = new ceres::HuberLoss(HUBER_LOSS_VALUE);
         problem.AddResidualBlock(cost_function, loss_function, data);
     }

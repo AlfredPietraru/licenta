@@ -8,7 +8,6 @@
 #include "utils.h"
 #include <sophus/se3.hpp>
 
-
 class KeyFrame
 {
 public:
