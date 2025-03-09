@@ -2,13 +2,14 @@
 
 void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     std::vector<KeyPoint> keypoints = this->fmf->extract_keypoints(frame);
+    
     Mat img2;
     cv::drawKeypoints(frame, keypoints, img2, Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
     imshow("Display window", img2);
     waitKey(0);
+    
     cv::Mat descriptors = this->fmf->compute_descriptors(frame, keypoints);
     std::cout << keypoints.size() << " " << descriptors.size() << " \n"; 
-    // exit(1);
     Sophus::SE3d pose_estimation = (this->prev_kf == nullptr) ? Sophus::SE3d(Eigen::Matrix4d::Identity()) : this->prev_kf->Tiw; 
     int idx = (this->prev_kf == nullptr) ? 0 : this->reference_kf->idx + 1;
     this->current_kf = new KeyFrame(pose_estimation, K, keypoints, descriptors, depth, idx);

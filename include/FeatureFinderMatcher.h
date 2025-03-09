@@ -19,11 +19,12 @@ public:
     int nr_cells_collumn;
     int WINDOW = 16;
     int EACH_CELL_THRESHOLD = 5;
-
+    int ORB_FEATURES = 500;
     int ORB_EDGE_THRESHOLD = 25;
     int ORB_ITERATIONS = 10;
     int FAST_STEP = 5;
     int FAST_THRESHOLD = 30;
+    
     int LIMIT_MATCHING = 30;
 
     std::vector<int> fast_features_cell;
