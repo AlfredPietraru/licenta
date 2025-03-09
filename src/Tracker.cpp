@@ -9,17 +9,9 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     cv::Mat descriptors = this->fmf->compute_descriptors(frame, keypoints);
     std::cout << keypoints.size() << " " << descriptors.size() << " \n"; 
     // exit(1);
-
-    if (this->prev_kf == nullptr) {
-        this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), K, keypoints, descriptors, depth, 0); 
-        // tx ty tz    qx qy qz qw
-        // 1.3001 0.6882 1.5745    0.6818 0.5482 -0.0115 -0.4843
-        // Eigen::Quaterniond q(-0.4843, 0.6818, 0.5482, 0.0115); 
-        // Sophus::Vector3d t(1.3001, 0.6882, 1.5745);
-        // this->current_kf = new KeyFrame(Sophus::SE3d(q, t), K, keypoints, descriptors, depth, 0);
-    } else {
-        this->current_kf = new KeyFrame(this->prev_kf->Tiw, K, keypoints, descriptors, depth, this->reference_kf->idx + 1);
-    }
+    Sophus::SE3d pose_estimation = (this->prev_kf == nullptr) ? Sophus::SE3d(Eigen::Matrix4d::Identity()) : this->prev_kf->Tiw; 
+    int idx = (this->prev_kf == nullptr) ? 0 : this->reference_kf->idx + 1;
+    this->current_kf = new KeyFrame(pose_estimation, K, keypoints, descriptors, depth, idx);
 }
 
 Map Tracker::initialize(Mat frame, Mat depth) {
@@ -39,11 +31,9 @@ Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
     for (DMatch m : good_matches) {
       if (m.queryIdx >= kps.size() || m.trainIdx >= kps.size()) continue;
       float dd = this->prev_kf->depth_matrix.at<float>(kps[m.queryIdx].pt.x, kps[m.queryIdx].pt.y);
-    //   uint16_t d = this->prev_kf->depth_matrix.at<uint16_t>(kps[m.queryIdx].pt.y, kps[m.queryIdx].pt.x);
-    //   float dd = d / 5000;
       if (dd <= 0) continue;
-      float new_x = (kps[m.queryIdx].pt.x - this->prev_kf->intrisics(0, 2)) * dd / this->prev_kf->intrisics(0, 0);
-      float new_y = (kps[m.queryIdx].pt.y - this->prev_kf->intrisics(1, 2)) * dd / this->prev_kf->intrisics(1, 1);
+      float new_x = (kps[m.queryIdx].pt.x - this->prev_kf->K(0, 2)) * dd / this->prev_kf->K(0, 0);
+      float new_y = (kps[m.queryIdx].pt.y - this->prev_kf->K(1, 2)) * dd / this->prev_kf->K(1, 1);
       points_in3d.push_back(Point3d(new_x, new_y, dd));
       points_in2d.push_back(Point2d(current_kps[m.trainIdx].pt.x, current_kps[m.trainIdx].pt.y));
     }

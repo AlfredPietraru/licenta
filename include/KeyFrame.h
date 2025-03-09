@@ -14,13 +14,13 @@ public:
     int idx;
     typedef std::shared_ptr<KeyFrame> Ptr;
     Sophus::SE3d Tiw;
-    Eigen::Matrix3d intrisics;
+    Eigen::Matrix3d K;
     std::vector<cv::KeyPoint> keypoints;
     cv::Mat orb_descriptors;
     cv::Mat depth_matrix;
 
     KeyFrame();
-    KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d intrisics, std::vector<cv::KeyPoint> keypoints,
+    KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint> keypoints,
              cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx);
     bool operator ==(const KeyFrame& lhs);
     Eigen::Vector3d compute_camera_center();
@@ -36,7 +36,7 @@ namespace std
         size_t operator()(const KeyFrame &p) const
         {
             size_t mem = (size_t)&p.Tiw;
-            size_t smem = (size_t)&p.intrisics;
+            size_t smem = (size_t)&p.K;
             size_t dmem = (size_t)&p.orb_descriptors;
             return mem ^ smem + mem % smem;
         }

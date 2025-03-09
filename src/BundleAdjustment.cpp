@@ -89,7 +89,7 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
     }
     // std::cout << "\n";
     ceres::Solver::Options options;
-    options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
+    options.linear_solver_type = solver;
     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
     options.minimizer_progress_to_stdout = true;
     options.max_num_iterations = NUMBER_ITERATIONS;
