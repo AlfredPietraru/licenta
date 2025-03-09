@@ -27,7 +27,7 @@ Eigen::Vector3d KeyFrame::fromWorldToImage(Eigen::Vector4d& wcoord) {
 
 Eigen::Vector4d KeyFrame::fromImageToWorld(int kp_idx) {
     cv::KeyPoint kp = this->keypoints[kp_idx];
-    float d = depth_matrix.at<float>(kp.pt.x, kp.pt.y);
+    float d = depth_matrix.at<float>(kp.pt.y, kp.pt.x);
     float new_x = (kp.pt.x - this->K(0, 2)) * d / this->K(0, 0);
     float new_y = (kp.pt.y - this->K(1, 2)) * d / this->K(1, 1);
     return this->Tiw.inverse() *  Eigen::Vector4d(new_x, new_y, d, 1);

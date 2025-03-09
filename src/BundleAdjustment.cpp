@@ -77,7 +77,7 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
         ceres::CostFunction *cost_function;
         double sigma = std::pow(1.2, kps[i].octave);
         // std::cout << sigma << " ";
-        float d = kf->depth_matrix.at<float>(kps[i].pt.x, kps[i].pt.y);
+        float d = kf->depth_matrix.at<float>(kps[i].pt.y, kps[i].pt.x);
         if (d <= 0) {
             std::cout << "pe aici vreodata" << "\n\n\n";
             cost_function = BundleError::Create(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, 0), map_points[i]->wcoord, sigma);
@@ -95,7 +95,7 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
     options.max_num_iterations = NUMBER_ITERATIONS;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
-    std::cout << summary.FullReport() << "\n";
+    // std::cout << summary.FullReport() << "\n";
     Eigen::Vector3d translation;
     for (int i = 0; i < 3; i++) {
         translation(i) = data[i + 4];

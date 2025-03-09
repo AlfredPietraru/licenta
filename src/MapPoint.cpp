@@ -7,10 +7,10 @@ MapPoint::MapPoint(KeyFrame *keyframe, int kp_idx)
     cv::KeyPoint kp = keyframe->keypoints[kp_idx];
     this->wcoord = keyframe->fromImageToWorld(kp_idx);
     double depth = keyframe->depth_matrix.at<float>(kp.pt.y, kp.pt.x);
-    // this->view_direction = (this->wcoord - camera_center).normalized();
+    // this->view_direction = (this->wcoord - keyframe->compute_camera_center()).normalized();
     this->orb_descriptor = keyframe->orb_descriptors.row(kp_idx);
-    this->dmax = depth * 1.2; // inca nicio idee de ce
-    this->dmin = depth * 0.8; // inca nicio idee de ce
+    this->dmax = depth * 1.2; 
+    this->dmin = depth * 0.8; 
 }
 
 bool MapPoint::operator==(const MapPoint &lhs)

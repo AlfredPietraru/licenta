@@ -9,12 +9,12 @@ class MapPoint {
 public:
         // homogenous coordinates of world space
         Eigen::Vector4d wcoord;
-        // Eigen::Vector3d view_direction;
+        Eigen::Vector3d view_direction;
         cv::Mat orb_descriptor;
         double dmax, dmin;
         std::unordered_map<KeyFrame*, int> belongs_to_keyframes;
 
-    float WINDOW = 3;
+    float WINDOW = 5;
     MapPoint(KeyFrame *keyframe, int idx);
     bool operator ==(const MapPoint& lhs);
     bool map_point_belongs_to_keyframe(KeyFrame *kf);
