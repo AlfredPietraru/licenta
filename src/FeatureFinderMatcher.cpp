@@ -5,7 +5,7 @@ FeatureMatcherFinder::FeatureMatcherFinder(cv::Mat frame){
     this->nr_cells_row = frame.rows / WINDOW;
     this->nr_cells_collumn = frame.cols / WINDOW;
     std::cout << this->nr_cells_row << " " << this->nr_cells_collumn << " celule pe randuri si coloane\n";
-    this->orb = cv::ORB::create(800, 1.2F, 8, 10, 0, 2, cv::ORB::HARRIS_SCORE, ORB_EDGE_THRESHOLD, FAST_THRESHOLD);
+    this->orb = cv::ORB::create(500, 1.2F, 8, 10, 0, 2, cv::ORB::HARRIS_SCORE, ORB_EDGE_THRESHOLD, FAST_THRESHOLD);
     this->matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
     this->fast_features_cell = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row, FAST_THRESHOLD);
     this->mask = cv::Mat::zeros(frame.rows, frame.cols, CV_8U);
@@ -39,7 +39,7 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame)
             // do stuff
             // ajunge la 0, si dupa NU mai da un kick start ceea ce nu e bine
             int threshold = this->fast_features_cell[i * nr_cells_row + j];
-            if (threshold <= 0) threshold = FAST_THRESHOLD;
+            if (threshold <= 0) threshold = FAST_THRESHOLD / 2;
 
             for (int i = 0; i < this->ORB_ITERATIONS; i++) {
                 this->orb->setFastThreshold(threshold);

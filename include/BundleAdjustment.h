@@ -18,7 +18,7 @@ public:
     double HUBER_LOSS_VALUE = 1;   
     
     BundleAdjustment() {}
-    Sophus::SE3d solve(Sophus::SE3d T, std::vector<MapPoint*> map_points, std::vector<cv::KeyPoint> kps);
+    Sophus::SE3d solve(KeyFrame *frame, std::vector<MapPoint*> map_points, std::vector<cv::KeyPoint> kps);
 };
 
 #endif

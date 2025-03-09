@@ -23,7 +23,7 @@ public:
     int ORB_EDGE_THRESHOLD = 25;
     int ORB_ITERATIONS = 10;
     int FAST_STEP = 5;
-    int FAST_THRESHOLD = 20;
+    int FAST_THRESHOLD = 30;
     int LIMIT_MATCHING = 30;
 
     std::vector<int> fast_features_cell;

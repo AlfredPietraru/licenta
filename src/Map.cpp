@@ -67,7 +67,6 @@ std::vector<MapPoint*> Map::compute_local_map(KeyFrame *kf) {
 // INCOMPLET, vor exista map point-uri duplicate
 std::pair<std::vector<MapPoint*>, std::vector<cv::KeyPoint>> Map::track_local_map(KeyFrame *curr_kf) {
     std::vector<MapPoint*> local_map = this->compute_local_map(curr_kf);
-    std::cout << local_map.size() << " aiciiiii\n";
     std::vector<MapPoint*> out_map;
     std::vector<cv::KeyPoint> kps;
     for (MapPoint *mp : local_map) {

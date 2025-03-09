@@ -70,7 +70,7 @@ void Tracker::Optimize_Pose_Coordinates(Map mapp) {
             // return;
 
         } 
-        this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf->Tiw, observed_map_points.first, observed_map_points.second);
+        this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, observed_map_points.first, observed_map_points.second);
 }
 
 void Tracker::tracking_was_lost() {
