@@ -7,10 +7,10 @@ KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint
          cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx)
     : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), keypoints(keypoints), depth_matrix(depth_matrix), idx(idx) {}
 
-bool KeyFrame::operator==(const KeyFrame &lhs)
-{
-    return (size_t)this == (size_t)&lhs;
-}
+// bool KeyFrame::operator==(const KeyFrame &lhs)
+// {
+//     return (size_t)this == (size_t)&lhs;
+// }
 
 Eigen::Vector3d KeyFrame::compute_camera_center() {
     return -this->Tiw.rotationMatrix().transpose() * this->Tiw.translation();

@@ -7,16 +7,17 @@ MapPoint::MapPoint(KeyFrame *keyframe, int kp_idx)
     cv::KeyPoint kp = keyframe->keypoints[kp_idx];
     this->wcoord = keyframe->fromImageToWorld(kp_idx);
     double depth = keyframe->depth_matrix.at<float>(kp.pt.y, kp.pt.x);
-    // this->view_direction = (this->wcoord - keyframe->compute_camera_center()).normalized();
+    Eigen::Vector3d wcoord_local = Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(2));
+    this->view_direction = (wcoord_local - keyframe->compute_camera_center()).normalized();
     this->orb_descriptor = keyframe->orb_descriptors.row(kp_idx);
     this->dmax = depth * 1.2; 
     this->dmin = depth * 0.8; 
 }
 
-bool MapPoint::operator==(const MapPoint &lhs)
-{
-    return (size_t)this == (size_t)&lhs;
-}
+// bool MapPoint::operator==(const MapPoint &lhs)
+// {
+//     return (size_t)this == (size_t)&lhs;
+// }
 
 void MapPoint::add_reference_kf(KeyFrame *kf, int idx) {
     this->belongs_to_keyframes.insert(std::pair<KeyFrame*, int>(kf, idx));
