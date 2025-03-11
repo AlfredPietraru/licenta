@@ -1,7 +1,6 @@
 #ifndef MAP_POINT_H
 #define MAP_POINT_H
 
-#include "utils.h"
 #include "KeyFrame.h"
 #include "unordered_set"
 
@@ -15,11 +14,12 @@ public:
         std::unordered_map<KeyFrame*, int> belongs_to_keyframes;
 
     float WINDOW = 5;
-    MapPoint(KeyFrame *keyframe, int idx);
+    MapPoint(KeyFrame *keyframe, int idx, float depth);
     // bool operator ==(const MapPoint& lhs);
     bool map_point_belongs_to_keyframe(KeyFrame *kf);
     void add_reference_kf(KeyFrame *kf, int idx);
     int find_orb_correspondence(KeyFrame *kf);
+    int ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2);
 };
 
 // namespace std 

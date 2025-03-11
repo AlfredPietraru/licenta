@@ -9,10 +9,10 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     // waitKey(0);
     
     cv::Mat descriptors = this->fmf->compute_descriptors(frame, keypoints);
-    std::cout << keypoints.size() << " " << descriptors.size() << " \n"; 
-    Sophus::SE3d pose_estimation = (this->prev_kf == nullptr) ? Sophus::SE3d(Eigen::Matrix4d::Identity()) : this->prev_kf->Tiw; 
+    std::cout << keypoints.size() << " " << descriptors.size() << " keypoints and descriptors \n"; 
+    Sophus::SE3d pose_estimation = (this->prev_kf == nullptr) ? this->initial_pose : this->prev_kf->Tiw; 
     int idx = (this->prev_kf == nullptr) ? 0 : this->reference_kf->idx + 1;
-    this->current_kf = new KeyFrame(pose_estimation, K, keypoints, descriptors, depth, idx);
+    this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, keypoints, descriptors, depth, idx);
 }
 
 Map Tracker::initialize(Mat frame, Mat depth) {
@@ -31,18 +31,20 @@ Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
     vector<cv::KeyPoint> current_kps = this->current_kf->keypoints;
     for (DMatch m : good_matches) {
       if (m.queryIdx >= kps.size() || m.trainIdx >= current_kps.size()) continue;
-      float dd = this->prev_kf->depth_matrix.at<float>(kps[m.queryIdx].pt.y, kps[m.queryIdx].pt.x);
+        float dd = this->prev_kf->compute_depth_in_keypoint(kps[m.queryIdx]);
+        // std::cout << dd << " ";
     //   if (dd <= 0 || dd > 5) continue;
-      if (dd <= 0 || dd > 5) continue;
+      if (dd <= 0) continue;
       float new_x = (kps[m.queryIdx].pt.x - this->prev_kf->K(0, 2)) * dd / this->prev_kf->K(0, 0);
       float new_y = (kps[m.queryIdx].pt.y - this->prev_kf->K(1, 2)) * dd / this->prev_kf->K(1, 1);
       points_in3d.push_back(Point3d(new_x, new_y, dd));
       points_in2d.push_back(Point2d(current_kps[m.trainIdx].pt.x, current_kps[m.trainIdx].pt.y));
     }
-    std::cout << "\n" << points_in3d.size() << " " << points_in2d.size() << "\n";
+    // std::cout << "\n";
+    // std::cout << "\n" << points_in3d.size() << " " << points_in2d.size() << "\n";
     Mat r, t;
     // pag 160 - slambook.en
-    cv::solvePnPRansac(points_in3d, points_in2d, convert_from_eigen_to_cv2(K), Mat() , r, t);
+    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t);
     Mat R;
     cv::Rodrigues(r, R);
     Eigen::Matrix3d R_eigen;
@@ -88,15 +90,15 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_fr
     if (good_matches.size() < 50) {
         this->tracking_was_lost();
     } else {
-        // for (int i = 0; i < 7; i++) {
-        //     std::cout << this->current_kf->Tiw.data()[i] << " "; 
-        // }
-        // std::cout << "\n";
+        for (int i = 0; i < 7; i++) {
+            std::cout << this->current_kf->Tiw.data()[i] << " "; 
+        }
+        std::cout << "\n";
         Sophus::SE3d relative_pose_last_2_frames = TrackWithLastFrame(good_matches);
-        // for (int i = 0; i < 7; i++) {
-        //     std::cout << relative_pose_last_2_frames.data()[i] << " "; 
-        // }
-        // std::cout << "\n";
+        for (int i = 0; i < 7; i++) {
+            std::cout << relative_pose_last_2_frames.data()[i] << " "; 
+        }
+        std::cout << "\n";
         this->current_kf->Tiw = this->current_kf->Tiw * relative_pose_last_2_frames;
         for (int i = 0; i < 7; i++) {
             std::cout << this->current_kf->Tiw.data()[i] << " "; 
@@ -106,7 +108,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_fr
         for (int i = 0; i < 7; i++) {
             std::cout << this->current_kf->Tiw.data()[i] << " "; 
         }
-        std::cout << "\n";
+        std::cout << "\n\n";
     }
     if (this->Is_KeyFrame_needed(mapp)) {
         std::cout << "daa adauga un keyframe aicii\n";

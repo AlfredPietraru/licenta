@@ -17,7 +17,7 @@ class FeatureMatcherFinder {
 public:
     int nr_cells_row;
     int nr_cells_collumn;
-    int WINDOW = 16;
+    int WINDOW = 32;
     int EACH_CELL_THRESHOLD = 5;
     int ORB_FEATURES = 500;
     int ORB_EDGE_THRESHOLD = 25;

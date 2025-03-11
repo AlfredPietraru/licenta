@@ -4,12 +4,14 @@ Map::Map() {}
 
 std::vector<MapPoint*> Map::compute_map_points(KeyFrame *frame) {
     std::vector<MapPoint *> current_points_found;
+    // std::cout << frame->keypoints.size() << " keypoint-uri avute \n";
     for (int i = 0; i < frame->keypoints.size(); i++) {
         cv::KeyPoint kp = frame->keypoints[i];
-        float d = frame->depth_matrix.at<float>(kp.pt.y, kp.pt.x);
-        if (d <= 0) continue;
-        current_points_found.push_back(new MapPoint(frame, i));
+        float dd = frame->compute_depth_in_keypoint(kp);
+        if (dd <= 0) continue;
+        current_points_found.push_back(new MapPoint(frame, i, dd));
     }
+    std::cout << current_points_found.size() <<  " puncte gasite \n";
     if (current_points_found.size() == 0) return {};
     return current_points_found;
 }
@@ -23,6 +25,7 @@ Map::Map(KeyFrame *first_kf) {
 std::vector<MapPoint *> Map::get_reprojected_map_points(KeyFrame *curr_frame, KeyFrame *reference_kf)
 {
     std::vector<MapPoint*> reference_map_points = this->map_points[reference_kf->idx];
+    // std::cout << "\n\n" << reference_map_points.size() << "\n\n";
     if ( reference_map_points.size() == 0) return {};
     std::vector<MapPoint*> out;
     for (MapPoint *mp : reference_map_points)

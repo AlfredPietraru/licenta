@@ -5,14 +5,14 @@
 // de rezolvat corespunzator bundle adjustment, de adaugat
 class BundleError
 {
-    const double FOCAL_LENGTH = 132.28;
-    const double X_CAMERA_OFFSET = 110.1;
-    const double Y_CAMERA_OFFSET = 115.7;
+    // const double FOCAL_LENGTH = 1436.71;
+    // const double X_CAMERA_OFFSET = 757.49;
+    // const double Y_CAMERA_OFFSET = 1017.88;
     const double BASELINE = 0.08;
 
 public:
-    BundleError(Eigen::Vector3d observed, Eigen::Vector4<double> map_coordinate, double scale_sigma) : observed(observed),
-                 map_coordinate(map_coordinate), scale_sigma(scale_sigma) {}
+    BundleError(Eigen::Vector3d observed, Eigen::Vector4<double> map_coordinate, double scale_sigma, Eigen::Matrix3d K) : observed(observed),
+                 map_coordinate(map_coordinate), scale_sigma(scale_sigma), K(K) {}
 
     template <typename T>
     bool operator()(const T *const se3, T *residuals) const
@@ -31,27 +31,28 @@ public:
         T d = camera_coordinates(2);
         // if (d < 0) return false;
         Eigen::Vector3<T> val;
-        T x = FOCAL_LENGTH * camera_coordinates(0) / d + X_CAMERA_OFFSET;
-        T y = FOCAL_LENGTH * camera_coordinates(1) / d + Y_CAMERA_OFFSET;
+        T x = K(0, 0) * camera_coordinates(0) / d + K(0, 2);
+        T y = K(1, 1) * camera_coordinates(1) / d + K(1, 2);
         val(0) = (x - observed(0)) / scale_sigma;
         val(1) = (y - observed(1)) / scale_sigma;
         if (observed(2) > -1e-7 && observed(2) < 1e-7) {
             val(2) = (T)0;
         } else {
-            T z = (camera_coordinates(0) - BASELINE) / d + X_CAMERA_OFFSET;
+            T z = (camera_coordinates(0) - BASELINE) / d + K(0, 2);
             val(2) = (z - observed(2)) / scale_sigma;  
         }
         residuals[0] = val.norm(); 
         return true;
     }
 
-    static ceres::CostFunction *Create(Eigen::Vector3d observed, Eigen::Vector4<double> map_coordinate, double scale_sigma)
+    static ceres::CostFunction *Create(Eigen::Vector3d observed, Eigen::Vector4<double> map_coordinate, double scale_sigma, Eigen::Matrix3d K)
     {
         return (new ceres::AutoDiffCostFunction<BundleError, 1, 6>(
-            new BundleError(observed, map_coordinate, scale_sigma)));
+            new BundleError(observed, map_coordinate, scale_sigma, K)));
     }
 
 private:
+    Eigen::Matrix3d K;
     Eigen::Vector3<double> observed;
     Eigen::Vector4<double> map_coordinate;
     double scale_sigma;
@@ -77,12 +78,14 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
         ceres::CostFunction *cost_function;
         double sigma = std::pow(1.2, kps[i].octave);
         // std::cout << sigma << " ";
-        float d = kf->depth_matrix.at<float>(kps[i].pt.y, kps[i].pt.x);
-        if (d <= 0) {
+        // float dd = kf->depth_matrix.at<float>(kps[i].pt.y, kps[i].pt.x); 
+        uint16_t d = kf->depth_matrix.at<uint16_t>(kps[i].pt.y, kps[i].pt.x);
+        float dd = d / 5000.0;
+        if (dd <= 0) {
             std::cout << "pe aici vreodata" << "\n\n\n";
-            cost_function = BundleError::Create(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, 0), map_points[i]->wcoord, sigma);
+            cost_function = BundleError::Create(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, 0), map_points[i]->wcoord, sigma, kf->K);
         } else {
-            cost_function = BundleError::Create(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, d), map_points[i]->wcoord, sigma);
+            cost_function = BundleError::Create(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, dd), map_points[i]->wcoord, sigma, kf->K);
         }
         ceres::LossFunction *loss_function = new ceres::HuberLoss(HUBER_LOSS_VALUE);
         problem.AddResidualBlock(cost_function, loss_function, data);

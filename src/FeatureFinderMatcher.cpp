@@ -4,7 +4,7 @@
 FeatureMatcherFinder::FeatureMatcherFinder(cv::Mat frame){
     this->nr_cells_row = frame.rows / WINDOW;
     this->nr_cells_collumn = frame.cols / WINDOW;
-    std::cout << this->nr_cells_row << " " << this->nr_cells_collumn << " celule pe randuri si coloane\n";
+    // std::cout << this->nr_cells_row << " " << this->nr_cells_collumn << " celule pe randuri si coloane\n";
     this->orb = cv::ORB::create(ORB_FEATURES, 1.2F, 8, 10, 0, 2, cv::ORB::HARRIS_SCORE, ORB_EDGE_THRESHOLD, FAST_THRESHOLD);
     this->matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
     this->fast_features_cell = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row, FAST_THRESHOLD);
@@ -74,7 +74,7 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame)
     // for (int q = 0; q < keypoints.size(); q++) {
     //     std::cout << keypoints[q].pt.x << " " << keypoints[q].pt.y << "\n";
     // }
-    std::cout << keypoints.size() << "\n";
+    // std::cout << keypoints.size() << "\n";
     // cv::Mat img2;
     // cv::drawKeypoints(frame, keypoints, img2, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
     // imshow("Display window", img2);

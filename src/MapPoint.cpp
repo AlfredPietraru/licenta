@@ -1,23 +1,17 @@
 #include "../include/MapPoint.h"
 #include <iostream>
 
-MapPoint::MapPoint(KeyFrame *keyframe, int kp_idx)
+MapPoint::MapPoint(KeyFrame *keyframe, int kp_idx, float depth)
 {
     this->belongs_to_keyframes.insert(std::pair<KeyFrame*, int>(keyframe, kp_idx));
     cv::KeyPoint kp = keyframe->keypoints[kp_idx];
     this->wcoord = keyframe->fromImageToWorld(kp_idx);
-    double depth = keyframe->depth_matrix.at<float>(kp.pt.y, kp.pt.x);
     Eigen::Vector3d wcoord_local = Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(2));
     this->view_direction = (wcoord_local - keyframe->compute_camera_center()).normalized();
     this->orb_descriptor = keyframe->orb_descriptors.row(kp_idx);
     this->dmax = depth * 1.2; 
     this->dmin = depth * 0.8; 
 }
-
-// bool MapPoint::operator==(const MapPoint &lhs)
-// {
-//     return (size_t)this == (size_t)&lhs;
-// }
 
 void MapPoint::add_reference_kf(KeyFrame *kf, int idx) {
     this->belongs_to_keyframes.insert(std::pair<KeyFrame*, int>(kf, idx));
@@ -32,9 +26,20 @@ bool MapPoint::map_point_belongs_to_keyframe(KeyFrame *kf)
         if (point_camera_coordinates(i) < 0)  return false;
     }
     // correclty reprojected - 1
-    if (this->dmax < point_camera_coordinates(2) || this->dmin > point_camera_coordinates(2)) return false;
+    // std::cout << "aici";
+    // if (this->dmax < point_camera_coordinates(2) || this->dmin > point_camera_coordinates(2)) return false;
     return true;
 }
+
+int MapPoint::ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2) {
+    int distance = 0;
+    for (int i = 0; i < desc1.cols; i++) {
+        uchar v = desc1.at<uchar>(i) ^ desc2.at<uchar>(i); 
+        distance += __builtin_popcount(v);
+    }
+    return distance;
+}
+
 
 int MapPoint::find_orb_correspondence(KeyFrame *kf) {
     Eigen::Vector3d point_camera_coordinates = kf->fromWorldToImage(this->wcoord);

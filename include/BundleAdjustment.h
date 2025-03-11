@@ -6,7 +6,6 @@
 #include <opencv2/core/core.hpp>
 #include "ceres/ceres.h"
 #include <sophus/se3.hpp>
-#include "utils.h"
 #include "MapPoint.h"
 #include "KeyFrame.h"
 #include <iostream>
