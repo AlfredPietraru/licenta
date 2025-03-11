@@ -13,27 +13,12 @@ public:
         double dmax, dmin;
         std::unordered_map<KeyFrame*, int> belongs_to_keyframes;
 
-    float WINDOW = 5;
+    float WINDOW = 5; // that to be the problem? 
     MapPoint(KeyFrame *keyframe, int idx, float depth);
-    // bool operator ==(const MapPoint& lhs);
     bool map_point_belongs_to_keyframe(KeyFrame *kf);
     void add_reference_kf(KeyFrame *kf, int idx);
     int find_orb_correspondence(KeyFrame *kf);
     int ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2);
 };
-
-// namespace std 
-// {
-//     template <>
-//     struct hash<MapPoint>
-//     {
-//         size_t operator()(const MapPoint p) const 
-//         {
-//             size_t mem = (size_t)&p.orb_descriptor;
-//             size_t smem = (size_t)&p.wcoord;
-// 		    return mem ^ smem + mem % smem;
-//         }
-// 	};
-// }
 
 #endif

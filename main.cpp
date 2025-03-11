@@ -56,11 +56,6 @@ int read_img() {
 }
 
 
-
-void read_from_dataset() {
-    
-}
-
 int main(int argc, char **argv)
 {
     std::string rgb_path = "../rgbd_dataset_freiburg1_rpy/rgb";

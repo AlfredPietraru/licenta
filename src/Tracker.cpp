@@ -26,17 +26,15 @@ Map Tracker::initialize(Mat frame, Mat depth) {
 Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
     vector<Point3d> points_in3d;
     vector<Point2d> points_in2d;
-    vector<cv::KeyPoint> kps = this->prev_kf->keypoints;
+    vector<cv::KeyPoint> prev_kps = this->prev_kf->keypoints;
     cv::Mat depth_matrix = this->prev_kf->depth_matrix;
     vector<cv::KeyPoint> current_kps = this->current_kf->keypoints;
     for (DMatch m : good_matches) {
-      if (m.queryIdx >= kps.size() || m.trainIdx >= current_kps.size()) continue;
-        float dd = this->prev_kf->compute_depth_in_keypoint(kps[m.queryIdx]);
-        // std::cout << dd << " ";
-    //   if (dd <= 0 || dd > 5) continue;
+      if (m.queryIdx >= prev_kps.size() || m.trainIdx >= current_kps.size()) continue;
+        float dd = this->prev_kf->compute_depth_in_keypoint(prev_kps[m.queryIdx]);
       if (dd <= 0) continue;
-      float new_x = (kps[m.queryIdx].pt.x - this->prev_kf->K(0, 2)) * dd / this->prev_kf->K(0, 0);
-      float new_y = (kps[m.queryIdx].pt.y - this->prev_kf->K(1, 2)) * dd / this->prev_kf->K(1, 1);
+      float new_x = (prev_kps[m.queryIdx].pt.x - this->prev_kf->K(0, 2)) * dd / this->prev_kf->K(0, 0);
+      float new_y = (prev_kps[m.queryIdx].pt.y - this->prev_kf->K(1, 2)) * dd / this->prev_kf->K(1, 1);
       points_in3d.push_back(Point3d(new_x, new_y, dd));
       points_in2d.push_back(Point2d(current_kps[m.trainIdx].pt.x, current_kps[m.trainIdx].pt.y));
     }
@@ -100,10 +98,6 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_fr
         }
         std::cout << "\n";
         this->current_kf->Tiw = this->current_kf->Tiw * relative_pose_last_2_frames;
-        for (int i = 0; i < 7; i++) {
-            std::cout << this->current_kf->Tiw.data()[i] << " "; 
-        }
-        std::cout << "\n";
         Optimize_Pose_Coordinates(mapp);
         for (int i = 0; i < 7; i++) {
             std::cout << this->current_kf->Tiw.data()[i] << " "; 

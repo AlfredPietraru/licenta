@@ -43,8 +43,8 @@ int MapPoint::ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2)
 
 int MapPoint::find_orb_correspondence(KeyFrame *kf) {
     Eigen::Vector3d point_camera_coordinates = kf->fromWorldToImage(this->wcoord);
-    float u = point_camera_coordinates(0);
-    float v = point_camera_coordinates(1);
+    double u = point_camera_coordinates(0);
+    double v = point_camera_coordinates(1);
     int min_hamm_dist = 10000;
     int cur_hamm_dist;
     int right_idx = -1;

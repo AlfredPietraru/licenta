@@ -45,7 +45,7 @@ public:
         return true;
     }
 
-    static ceres::CostFunction *Create(Eigen::Vector3d observed, Eigen::Vector4<double> map_coordinate, double scale_sigma, Eigen::Matrix3d K)
+    static ceres::CostFunction *Create(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
     {
         return (new ceres::AutoDiffCostFunction<BundleError, 1, 6>(
             new BundleError(observed, map_coordinate, scale_sigma, K)));
@@ -53,13 +53,14 @@ public:
 
 private:
     Eigen::Matrix3d K;
-    Eigen::Vector3<double> observed;
-    Eigen::Vector4<double> map_coordinate;
+    Eigen::Vector3d observed;
+    Eigen::Vector4d map_coordinate;
     double scale_sigma;
 };
 
 Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_points, std::vector<cv::KeyPoint> kps)
 { 
+    if (map_points.size() == 0) return kf->Tiw;
     // std::cout << T.matrix() << "\n";
     // Eigen::Vector3d test_translation;
     // for (int i = 0; i < 3; i++) {
@@ -72,24 +73,26 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
 
     double *data = kf->Tiw.data();
     ceres::Problem problem;
-    if (map_points.size() == 0) return kf->Tiw;
+    int nr_monocular_points = 0;
+    int nr_stereo_points = 0;
     for (int i = 0; i < map_points.size(); i++)
     {
         ceres::CostFunction *cost_function;
         double sigma = std::pow(1.2, kps[i].octave);
         // std::cout << sigma << " ";
-        // float dd = kf->depth_matrix.at<float>(kps[i].pt.y, kps[i].pt.x); 
-        uint16_t d = kf->depth_matrix.at<uint16_t>(kps[i].pt.y, kps[i].pt.x);
-        float dd = d / 5000.0;
+        float dd = kf->compute_depth_in_keypoint(kps[i]);
         if (dd <= 0) {
-            std::cout << "pe aici vreodata" << "\n\n\n";
+            nr_monocular_points ++;
             cost_function = BundleError::Create(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, 0), map_points[i]->wcoord, sigma, kf->K);
         } else {
+            nr_stereo_points++;
             cost_function = BundleError::Create(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, dd), map_points[i]->wcoord, sigma, kf->K);
         }
         ceres::LossFunction *loss_function = new ceres::HuberLoss(HUBER_LOSS_VALUE);
         problem.AddResidualBlock(cost_function, loss_function, data);
     }
+    std::cout << "au fost gasite atatea puncte monoculare " << nr_monocular_points << "\n";
+    std::cout << "au fost gasite atatea puncte stereo " << nr_stereo_points << "\n";
     // std::cout << "\n";
     ceres::Solver::Options options;
     options.linear_solver_type = solver;
@@ -98,14 +101,13 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
     options.max_num_iterations = NUMBER_ITERATIONS;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
-    // std::cout << summary.FullReport() << "\n";
+    std::cout << summary.FullReport() << "\n";
     Eigen::Vector3d translation;
     for (int i = 0; i < 3; i++) {
         translation(i) = data[i + 4];
     }
     Eigen::Quaterniond q(data[3], data[0], data[1], data[2]); 
-    q.normalize();
-    Sophus::SE3d T = Sophus::SE3d(q, translation);
-    return T;
+    q.normalize(); 
+    return Sophus::SE3d(q, translation);
     
 }
