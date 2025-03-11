@@ -15,9 +15,9 @@
 
 class FeatureMatcherFinder {
 public:
+    // int WINDOW = 32;
     int nr_cells_row;
     int nr_cells_collumn;
-    // int WINDOW = 32;
     int WINDOW = 40;
     int EACH_CELL_THRESHOLD = 5;
     int ORB_FEATURES = 500;
@@ -25,8 +25,11 @@ public:
     int ORB_ITERATIONS = 10;
     int FAST_STEP = 5;
     int FAST_THRESHOLD = 30;
+
+    int LOWER_LIMIT_THRESHOLD = 10;
+    int HIGH_LIMIT_THRESHOLD = 60;
     
-    int LIMIT_MATCHING = 30;
+    int LIMIT_MATCHING = 10;
 
     std::vector<int> fast_features_cell;
     std::vector<int> nr_keypoints_found;

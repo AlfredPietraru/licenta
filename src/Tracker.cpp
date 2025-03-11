@@ -9,7 +9,7 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     Mat img2;
     cv::drawKeypoints(frame, keypoints, img2, Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
     imshow("Display window", img2);
-    waitKey(1000);
+    waitKey(0);
     // exit(1);
     Sophus::SE3d pose_estimation = (this->prev_kf == nullptr) ? this->initial_pose : this->prev_kf->Tiw; 
     int idx = (this->prev_kf == nullptr) ? 0 : this->reference_kf->idx + 1;
@@ -95,13 +95,17 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_fr
         std::cout << "\n";
         Sophus::SE3d relative_pose_last_2_frames = TrackWithLastFrame(good_matches);
         this->current_kf->Tiw = this->current_kf->Tiw * relative_pose_last_2_frames;
+        for (int i = 0; i < 7; i++) {
+            std::cout << this->current_kf->Tiw.data()[i] << " "; 
+        }
+        std::cout << "\n";
         Optimize_Pose_Coordinates(mapp);
         for (int i = 0; i < 7; i++) {
             std::cout << this->current_kf->Tiw.data()[i] << " "; 
         }
         std::cout << "\n\n";
     }
-    exit(1);
+    // exit(1);
     if (this->Is_KeyFrame_needed(mapp)) {
         std::cout << "daa adauga un keyframe aicii\n";
         key_frames_buffer.push_back(this->current_kf);

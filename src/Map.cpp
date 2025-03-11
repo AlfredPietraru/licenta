@@ -11,7 +11,7 @@ std::vector<MapPoint*> Map::compute_map_points(KeyFrame *frame) {
         if (dd <= 0) continue;
         current_points_found.push_back(new MapPoint(frame, i, dd));
     }
-    std::cout << current_points_found.size() <<  " puncte gasite \n\n";
+    std::cout << current_points_found.size() <<  " map points create din frame-ul respectiv\n\n";
     if (current_points_found.size() == 0) return {};
     return current_points_found;
 }
@@ -72,7 +72,7 @@ std::vector<MapPoint*> Map::compute_local_map(KeyFrame *kf) {
 std::pair<std::vector<MapPoint*>, std::vector<cv::KeyPoint>> Map::track_local_map(KeyFrame *curr_kf) {
     std::vector<MapPoint*> local_map = this->compute_local_map(curr_kf);
     std::vector<MapPoint*> out_map;
-    std::cout << local_map.size() << " dimensiunea local map initiala\n";
+    std::cout << local_map.size() << " dimensiunea local map initiala inainte de orb correspondence\n";
     std::vector<cv::KeyPoint> kps;
     for (MapPoint *mp : local_map) {
         int idx = mp->find_orb_correspondence(curr_kf);

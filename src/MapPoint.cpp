@@ -25,6 +25,8 @@ bool MapPoint::map_point_belongs_to_keyframe(KeyFrame *kf)
     for (int i = 0; i < 3; i++) {
         if (point_camera_coordinates(i) < 0)  return false;
     }
+    if (point_camera_coordinates(0) > kf->depth_matrix.cols) return false;
+    if (point_camera_coordinates(1) > kf->depth_matrix.rows) return false;
     // correclty reprojected - 1
     // std::cout << "aici";
     // if (this->dmax < point_camera_coordinates(2) || this->dmin > point_camera_coordinates(2)) return false;
@@ -48,6 +50,7 @@ int MapPoint::find_orb_correspondence(KeyFrame *kf) {
     int min_hamm_dist = 10000;
     int cur_hamm_dist;
     int right_idx = -1;
+    // std::cout << u << " " << v << " ";
     for (int i = 0; i < kf->keypoints.size(); i++)
     {
         if (kf->keypoints[i].pt.x - this->WINDOW > u || kf->keypoints[i].pt.x + this->WINDOW < u)
@@ -60,7 +63,7 @@ int MapPoint::find_orb_correspondence(KeyFrame *kf) {
             min_hamm_dist = cur_hamm_dist;
         }
     }
-    // std::cout << min_hamm_dist << " ";
+    // std::cout << min_hamm_dist << "\n";
     if (min_hamm_dist > 50) return -1;
     // feature was found - 5
     return right_idx;
