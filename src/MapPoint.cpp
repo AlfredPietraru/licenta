@@ -63,8 +63,12 @@ int MapPoint::find_orb_correspondence(KeyFrame *kf) {
             min_hamm_dist = cur_hamm_dist;
         }
     }
-    // std::cout << min_hamm_dist << "\n";
+    // std::cout << min_hamm_dist << " ";
     if (min_hamm_dist > 50) return -1;
     // feature was found - 5
     return right_idx;
+}
+
+Eigen::Vector3d MapPoint::get_3d_vector() {
+    return Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(3));
 }

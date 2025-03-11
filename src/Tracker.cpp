@@ -43,13 +43,14 @@ Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
     // std::cout << "\n" << points_in3d.size() << " " << points_in2d.size() << "\n";
     Mat r, t;
     // pag 160 - slambook.en
-    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t);
+    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, 100, 8.0, 0.95);
     Mat R;
     cv::Rodrigues(r, R);
     Eigen::Matrix3d R_eigen;
     cv::cv2eigen(R, R_eigen);
     Eigen::Vector3d t_eigen;
     t_eigen << t.at<double>(0), t.at<double>(1), t.at<double>(2);
+    // Eigen::Vector3d smoothed_tvec = t_eigen * ALPHA + (1 - ALPHA) * this->current_kf->Tiw.translation();
     return Sophus::SE3d(R_eigen,  t_eigen);
 }
 
@@ -92,18 +93,18 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_fr
         for (int i = 0; i < 7; i++) {
             std::cout << this->current_kf->Tiw.data()[i] << " "; 
         }
-        std::cout << "\n";
+        std::cout << " inainte de optimizare \n";
         Sophus::SE3d relative_pose_last_2_frames = TrackWithLastFrame(good_matches);
         this->current_kf->Tiw = this->current_kf->Tiw * relative_pose_last_2_frames;
         for (int i = 0; i < 7; i++) {
             std::cout << this->current_kf->Tiw.data()[i] << " "; 
         }
-        std::cout << "\n";
+        std::cout << " dupa estimarea initiala \n";
         Optimize_Pose_Coordinates(mapp);
         for (int i = 0; i < 7; i++) {
             std::cout << this->current_kf->Tiw.data()[i] << " "; 
         }
-        std::cout << "\n\n";
+        std::cout << " dupa optimizarea BA\n\n";
     }
     // exit(1);
     if (this->Is_KeyFrame_needed(mapp)) {

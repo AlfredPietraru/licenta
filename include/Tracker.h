@@ -37,7 +37,7 @@ private:
     int last_keyframe_added = 0;
     int keyframes_from_last_global_relocalization = 0;
 
-
+    double ALPHA = 0.8;
     Sophus::SE3d initial_pose;
     int LIMIT_MATCHING = 30; 
     int WINDOW = 5;

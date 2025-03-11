@@ -67,6 +67,7 @@ int main(int argc, char **argv)
     K.at<float>(1, 2) = 255.3;
     // Sophus::SE3d initial_pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
     Eigen::Quaterniond q = Eigen::Quaterniond(-0.4843, 0.6818, 0.5482, -0.0115);
+    q.normalize();
     Sophus::SE3d initial_pose = Sophus::SE3d(q, Eigen::Vector3d(1.3001, 0.6882, 1.5745));
     Tracker *tracker = new Tracker(K, initial_pose);
     bool start = true;

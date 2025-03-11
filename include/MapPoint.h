@@ -13,12 +13,13 @@ public:
         double dmax, dmin;
         std::unordered_map<KeyFrame*, int> belongs_to_keyframes;
 
-    float WINDOW = 10; 
+    float WINDOW = 15; 
     MapPoint(KeyFrame *keyframe, int idx, float depth);
     bool map_point_belongs_to_keyframe(KeyFrame *kf);
     void add_reference_kf(KeyFrame *kf, int idx);
     int find_orb_correspondence(KeyFrame *kf);
     int ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2);
+    Eigen::Vector3d get_3d_vector();
 };
 
 #endif
