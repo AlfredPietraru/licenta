@@ -11,8 +11,9 @@ class BundleError
     const double BASELINE = 0.08;
 
 public:
-    BundleError(Eigen::Vector3d observed, Eigen::Vector4<double> map_coordinate, double scale_sigma, Eigen::Matrix3d K) : observed(observed),
-                 map_coordinate(map_coordinate), scale_sigma(scale_sigma), K(K) {}
+    BundleError(Eigen::Vector3d observed, Eigen::Vector4<double> map_coordinate, double scale_sigma, Eigen::Matrix3d K, 
+        bool is_monocular) : observed(observed),
+                 map_coordinate(map_coordinate), scale_sigma(scale_sigma), K(K), is_monocular(is_monocular) {}
 
     template <typename T>
     bool operator()(const T *const se3, T *residuals) const
@@ -33,25 +34,29 @@ public:
         Eigen::Vector3<T> val;
         T x = K(0, 0) * camera_coordinates(0) / d + K(0, 2);
         T y = K(1, 1) * camera_coordinates(1) / d + K(1, 2);
-        val(0) = (x - observed(0)) / scale_sigma;
-        val(1) = (y - observed(1)) / scale_sigma;
-        if (observed(2) > -1e-7 && observed(2) < 1e-7) {
-            val(2) = (T)0;
-        } else {
-            T z = (camera_coordinates(0) - BASELINE) / d + K(0, 2);
-            val(2) = (z - observed(2)) / scale_sigma;  
-        }
-        residuals[0] = val.norm(); 
+        residuals[0] = (x - observed(0)) / scale_sigma;
+        residuals[1] = (y - observed(1)) / scale_sigma;
+
+        if (this->is_monocular) return true;
+        T z_projected = K(0, 0) * (camera_coordinates(0) - BASELINE) / d + K(0, 2);
+        residuals[2] = (z_projected - observed(2)) / scale_sigma;  
         return true;
     }
 
-    static ceres::CostFunction *Create(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
+    static ceres::CostFunction *Create_Monocular(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
     {
-        return (new ceres::AutoDiffCostFunction<BundleError, 1, 6>(
-            new BundleError(observed, map_coordinate, scale_sigma, K)));
+        return (new ceres::AutoDiffCostFunction<BundleError, 2, 6>(
+            new BundleError(observed, map_coordinate, scale_sigma, K, true)));
+    }
+
+    static ceres::CostFunction *Create_Stereo(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
+    {
+        return (new ceres::AutoDiffCostFunction<BundleError, 3, 6>(
+            new BundleError(observed, map_coordinate, scale_sigma, K, false)));
     }
 
 private:
+    bool is_monocular;
     Eigen::Matrix3d K;
     Eigen::Vector3d observed;
     Eigen::Vector4d map_coordinate;
@@ -60,17 +65,8 @@ private:
 
 Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_points, std::vector<cv::KeyPoint> kps)
 { 
+    const double BASELINE = 0.08;
     if (map_points.size() == 0) return kf->Tiw;
-    // std::cout << T.matrix() << "\n";
-    // Eigen::Vector3d test_translation;
-    // for (int i = 0; i < 3; i++) {
-    //     test_translation(i) = T.data()[i + 4];
-    // }
-    // Eigen::Quaterniond test_q(T.data()[3], T.data()[0], T.data()[1], T.data()[2]); 
-    // test_q.normalize();
-    // T = Sophus::SE3d(test_q, test_translation);
-    // std::cout << T.matrix() << "\n";
-
     double *data = kf->Tiw.data();
     ceres::Problem problem;
     int nr_monocular_points = 0;
@@ -79,14 +75,15 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
     {
         ceres::CostFunction *cost_function;
         double sigma = std::pow(1.2, kps[i].octave);
-        // std::cout << sigma << " ";
+        std::cout << sigma << " ";
         float dd = kf->compute_depth_in_keypoint(kps[i]);
         if (dd <= 0) {
             nr_monocular_points ++;
-            cost_function = BundleError::Create(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, 0), map_points[i]->wcoord, sigma, kf->K);
+            cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, 0), map_points[i]->wcoord, sigma, kf->K);
         } else {
             nr_stereo_points++;
-            cost_function = BundleError::Create(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, dd), map_points[i]->wcoord, sigma, kf->K);
+            double fake_right_coordinate = kps[i].pt.x - (kf->K(0, 0) * BASELINE / dd);
+            cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, fake_right_coordinate), map_points[i]->wcoord, sigma, kf->K);
         }
         ceres::LossFunction *loss_function = new ceres::HuberLoss(HUBER_LOSS_VALUE);
         problem.AddResidualBlock(cost_function, loss_function, data);

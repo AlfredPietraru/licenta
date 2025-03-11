@@ -80,5 +80,6 @@ std::pair<std::vector<MapPoint*>, std::vector<cv::KeyPoint>> Map::track_local_ma
         out_map.push_back(mp);
         kps.push_back(curr_kf->keypoints[idx]);
     }
+    std::cout << "\n";
     return std::pair<std::vector<MapPoint*>, std::vector<cv::KeyPoint>>(out_map, kps);
 }

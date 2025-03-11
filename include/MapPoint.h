@@ -13,7 +13,7 @@ public:
         double dmax, dmin;
         std::unordered_map<KeyFrame*, int> belongs_to_keyframes;
 
-    float WINDOW = 5; // that to be the problem? 
+    float WINDOW = 20; 
     MapPoint(KeyFrame *keyframe, int idx, float depth);
     bool map_point_belongs_to_keyframe(KeyFrame *kf);
     void add_reference_kf(KeyFrame *kf, int idx);

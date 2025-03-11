@@ -60,7 +60,8 @@ int MapPoint::find_orb_correspondence(KeyFrame *kf) {
             min_hamm_dist = cur_hamm_dist;
         }
     }
-    if (min_hamm_dist == 10000) return -1;
+    // std::cout << min_hamm_dist << " ";
+    if (min_hamm_dist > 50) return -1;
     // feature was found - 5
     return right_idx;
 }
