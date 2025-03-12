@@ -14,7 +14,7 @@ class BundleAdjustment
 {
 public:
     int NUMBER_ITERATIONS = 100; 
-    double HUBER_LOSS_VALUE = 2; 
+    double HUBER_LOSS_VALUE = 1; 
     ceres::LinearSolverType solver = ceres::LinearSolverType::DENSE_QR;  
     
     BundleAdjustment() {}

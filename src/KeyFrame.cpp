@@ -12,7 +12,7 @@ Eigen::Vector3d KeyFrame::compute_camera_center() {
 }
 
 Eigen::Vector3d KeyFrame::fromWorldToImage(Eigen::Vector4d& wcoord) {
-    Eigen::Vector4d camera_coordinates = this->Tiw * wcoord;
+    Eigen::Vector4d camera_coordinates = this->Tiw.matrix() * wcoord;
     double d = camera_coordinates(2);
     double u = this->K(0, 0) * camera_coordinates(0) / d + this->K(0, 2);
     double v = this->K(1, 1) * camera_coordinates(1) / d + this->K(1, 2);
@@ -34,5 +34,5 @@ Eigen::Vector4d KeyFrame::fromImageToWorld(int kp_idx) {
     float dd = this->compute_depth_in_keypoint(kp);
     double new_x = (kp.pt.x - this->K(0, 2)) * dd / this->K(0, 0);
     double new_y = (kp.pt.y - this->K(1, 2)) * dd / this->K(1, 1);
-    return this->Tiw.inverse() *  Eigen::Vector4d(new_x, new_y, dd, 1);
+    return this->Tiw.inverse().matrix() *  Eigen::Vector4d(new_x, new_y, dd, 1);
 }

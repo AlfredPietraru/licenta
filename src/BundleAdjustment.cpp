@@ -2,14 +2,8 @@
 #include "../include/rotation.h"
 
 
-// de rezolvat corespunzator bundle adjustment, de adaugat
 class BundleError
 {
-    // const double FOCAL_LENGTH = 1436.71;
-    // const double X_CAMERA_OFFSET = 757.49;
-    // const double Y_CAMERA_OFFSET = 1017.88;
-    const double BASELINE = 0.08;
-
 public:
     BundleError(Eigen::Vector3d observed, Eigen::Vector4<double> map_coordinate, double scale_sigma, Eigen::Matrix3d K, 
         bool is_monocular) : observed(observed),
@@ -18,20 +12,31 @@ public:
     template <typename T>
     bool operator()(const T *const se3, T *residuals) const
     {
-        Eigen::Vector3<T> translation;
-        for (int i = 0; i < 3; i++) {
-            translation(i) = se3[i + 4];
-        }
         // de lucrat la bundle adjustment
         // problema cu quaternionii, imi dadeau cu minus unele elemente de pe diagonala principala 
         Eigen::Quaternion<T> q(se3[3], se3[0], se3[1], se3[2]); 
         q.normalize();
-        Sophus::SE3<T> pose = Sophus::SE3<T>(q, translation);
-        
+        Sophus::SE3<T> pose = Sophus::SE3<T>(q, Eigen::Vector3<T>(se3[4] ,se3[5], se3[6]));
+
         const Eigen::Vector3<T> camera_coordinates = pose.matrix3x4() * map_coordinate;
+        // for (int i = 0; i < 7; i++) {
+        //     std::cout << pose.data[i] << " ";
+        // }
+        // std::cout << "\n";
+
+
         T d = camera_coordinates(2);
+        // std::cout << d << " ";
         // if (d < 0) return false;
-        Eigen::Vector3<T> val;
+
+        if (d < T(1e-6)) {
+            residuals[0] = T(1e4); 
+            residuals[1] = T(1e4);
+            if (this->is_monocular) return true;
+            residuals[2] = T(1e4);
+            return true;
+        }
+
         T x = K(0, 0) * camera_coordinates(0) / d + K(0, 2);
         T y = K(1, 1) * camera_coordinates(1) / d + K(1, 2);
         residuals[0] = (x - observed(0)) / scale_sigma;
@@ -56,6 +61,7 @@ public:
     }
 
 private:
+    const double BASELINE = 0.08;
     bool is_monocular;
     Eigen::Matrix3d K;
     Eigen::Vector3d observed;
@@ -67,7 +73,7 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
 { 
     const double BASELINE = 0.08;
     if (map_points.size() == 0) return kf->Tiw;
-    double *data = kf->Tiw.data();
+    // double *data = kf->Tiw.data();
     ceres::Problem problem;
     int nr_monocular_points = 0;
     int nr_stereo_points = 0;
@@ -75,7 +81,7 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
     {
         ceres::CostFunction *cost_function;
         double sigma = std::pow(1.2, kps[i].octave);
-        std::cout << sigma << " ";
+        // std::cout << sigma << " ";
         float dd = kf->compute_depth_in_keypoint(kps[i]);
         if (dd <= 0) {
             nr_monocular_points ++;
@@ -85,14 +91,17 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
             double fake_right_coordinate = kps[i].pt.x - (kf->K(0, 0) * BASELINE / dd);
             cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, fake_right_coordinate), map_points[i]->wcoord, sigma, kf->K);
         }
-        ceres::LossFunction *loss_function = new ceres::HuberLoss(HUBER_LOSS_VALUE);
-        problem.AddResidualBlock(cost_function, loss_function, data);
+        ceres::LossFunction *loss_function = new ceres::CauchyLoss(1.0);
+        problem.AddResidualBlock(cost_function, loss_function, kf->Tiw.data());
     }
     std::cout << "au fost gasite atatea puncte monoculare " << nr_monocular_points << "\n";
     std::cout << "au fost gasite atatea puncte stereo " << nr_stereo_points << "\n";
     // std::cout << "\n";
     ceres::Solver::Options options;
     options.linear_solver_type = solver;
+    options.function_tolerance = 1e-6;
+    options.gradient_tolerance = 1e-6;
+    options.parameter_tolerance = 1e-8;
     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
     options.minimizer_progress_to_stdout = true;
     options.max_num_iterations = NUMBER_ITERATIONS;
@@ -100,11 +109,18 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << "\n";
     Eigen::Vector3d translation;
+    double *data = kf->Tiw.data();
     for (int i = 0; i < 3; i++) {
         translation(i) = data[i + 4];
     }
     Eigen::Quaterniond q(data[3], data[0], data[1], data[2]); 
     q.normalize(); 
-    return Sophus::SE3d(q, translation);
+    Sophus::SE3d new_T = Sophus::SE3d(q, translation);
+    // for (int i = 0; i < map_points.size(); i++) {
+    //     Eigen::Vector4d camera_coord = new_T.matrix() * map_points[i]->wcoord;
+    //     std::cout << camera_coord(2) << " ";
+    // }
+    // std::cout << "\n\n";
+    return new_T;
     
 }
