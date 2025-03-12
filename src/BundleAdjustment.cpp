@@ -12,23 +12,12 @@ public:
     template <typename T>
     bool operator()(const T *const se3, T *residuals) const
     {
-        // de lucrat la bundle adjustment
-        // problema cu quaternionii, imi dadeau cu minus unele elemente de pe diagonala principala 
         Eigen::Quaternion<T> q(se3[3], se3[0], se3[1], se3[2]); 
         q.normalize();
         Sophus::SE3<T> pose = Sophus::SE3<T>(q, Eigen::Vector3<T>(se3[4] ,se3[5], se3[6]));
 
         const Eigen::Vector3<T> camera_coordinates = pose.matrix3x4() * map_coordinate;
-        // for (int i = 0; i < 7; i++) {
-        //     std::cout << pose.data[i] << " ";
-        // }
-        // std::cout << "\n";
-
-
         T d = camera_coordinates(2);
-        // std::cout << d << " ";
-        // if (d < 0) return false;
-
         if (d < T(1e-6)) {
             residuals[0] = T(1e4); 
             residuals[1] = T(1e4);
@@ -50,13 +39,13 @@ public:
 
     static ceres::CostFunction *Create_Monocular(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
     {
-        return (new ceres::AutoDiffCostFunction<BundleError, 2, 6>(
+        return (new ceres::AutoDiffCostFunction<BundleError, 2, 7>(
             new BundleError(observed, map_coordinate, scale_sigma, K, true)));
     }
 
     static ceres::CostFunction *Create_Stereo(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
     {
-        return (new ceres::AutoDiffCostFunction<BundleError, 3, 6>(
+        return (new ceres::AutoDiffCostFunction<BundleError, 3, 7>(
             new BundleError(observed, map_coordinate, scale_sigma, K, false)));
     }
 
@@ -73,7 +62,6 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
 { 
     const double BASELINE = 0.08;
     if (map_points.size() == 0) return kf->Tiw;
-    // double *data = kf->Tiw.data();
     ceres::Problem problem;
     int nr_monocular_points = 0;
     int nr_stereo_points = 0;
@@ -108,19 +96,5 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << "\n";
-    Eigen::Vector3d translation;
-    double *data = kf->Tiw.data();
-    for (int i = 0; i < 3; i++) {
-        translation(i) = data[i + 4];
-    }
-    Eigen::Quaterniond q(data[3], data[0], data[1], data[2]); 
-    q.normalize(); 
-    Sophus::SE3d new_T = Sophus::SE3d(q, translation);
-    // for (int i = 0; i < map_points.size(); i++) {
-    //     Eigen::Vector4d camera_coord = new_T.matrix() * map_points[i]->wcoord;
-    //     std::cout << camera_coord(2) << " ";
-    // }
-    // std::cout << "\n\n";
-    return new_T;
-    
+    return kf->Tiw;
 }
