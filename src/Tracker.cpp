@@ -33,17 +33,22 @@ Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
     for (DMatch m : good_matches) {
       if (m.queryIdx >= prev_kps.size() || m.trainIdx >= current_kps.size()) continue;
         float dd = this->prev_kf->compute_depth_in_keypoint(prev_kps[m.queryIdx]);
+        // std::cout << dd << " ";
       if (dd <= 0) continue;
       float new_x = (prev_kps[m.queryIdx].pt.x - this->prev_kf->K(0, 2)) * dd / this->prev_kf->K(0, 0);
       float new_y = (prev_kps[m.queryIdx].pt.y - this->prev_kf->K(1, 2)) * dd / this->prev_kf->K(1, 1);
       points_in3d.push_back(Point3d(new_x, new_y, dd));
       points_in2d.push_back(Point2d(current_kps[m.trainIdx].pt.x, current_kps[m.trainIdx].pt.y));
     }
+    std::cout << "\n";
+    for (size_t i = 0; i < points_in3d.size(); ++i) {
+        std::cout << "3D: " << points_in3d[i] << " -> 2D: " << points_in2d[i] << "\n";
+    }
     std::cout  << points_in3d.size() << " " << points_in2d.size() << " puncte gasite pentru alogirtmul pnp\n";
     Mat r, t;
     // pag 160 - slambook.en
     vector<int> inliers;
-    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, 100, 8.0, 0.99, inliers);
+    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, 1000, 10.0, 0.90, inliers);
     std::cout << inliers.size() << " inliers found in algorithm\n";
     Mat R;
     cv::Rodrigues(r, R);
@@ -108,7 +113,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_fr
             std::cout << this->current_kf->Tiw.data()[i] << " "; 
         }
         std::cout << " dupa optimizarea BA\n\n";
-        exit(1);
+        // exit(1);
     }
     if (this->Is_KeyFrame_needed(mapp)) {
         std::cout << "daa adauga un keyframe aicii\n";

@@ -22,8 +22,10 @@ Eigen::Vector3d KeyFrame::fromWorldToImage(Eigen::Vector4d& wcoord) {
 
 float KeyFrame::compute_depth_in_keypoint(cv::KeyPoint kp) {
     // float dd = this->prev_kf->depth_matrix.at<float>(kps[m.queryIdx].pt.y, kps[m.queryIdx].pt.x);
-    uint16_t d = this->depth_matrix.at<uint16_t>((int)kp.pt.y, (int)kp.pt.x);
-    float dd = d / 5000.0;
+    int x = std::round(kp.pt.x);
+    int y = std::round(kp.pt.y);
+    uint16_t d = this->depth_matrix.at<uint16_t>(y, x);
+    float dd = d / 5000.0f;
     return dd;
 }
 

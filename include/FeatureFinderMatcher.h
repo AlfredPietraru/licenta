@@ -19,11 +19,11 @@ public:
     int nr_cells_row;
     int nr_cells_collumn;
     int WINDOW = 80;
-    int EACH_CELL_THRESHOLD = 5;
-    int ORB_FEATURES = 1000;
-    int ORB_PATCH_SIZE = 25;
+    int MINIM_KEYPOINTS = 5;
+    int ORB_FEATURES = 1500;
+    int ORB_PATCH_SIZE = 20;
     int GLOBAL_EDGE_THRESHOLD = 20;
-    int ORB_EDGE_THRESHOLD = 10;
+    int ORB_EDGE_THRESHOLD = 20;
     int ORB_ITERATIONS = 10;
     int FAST_STEP = 5;
     int FAST_THRESHOLD = 30;
@@ -31,7 +31,7 @@ public:
     int LOWER_LIMIT_THRESHOLD = 10;
     int HIGH_LIMIT_THRESHOLD = 100;
     
-    int LIMIT_MATCHING = 30;
+    int LIMIT_MATCHING = 20;
 
     std::vector<int> fast_features_cell;
     std::vector<int> nr_keypoints_found;
