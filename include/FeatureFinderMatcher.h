@@ -18,16 +18,18 @@ public:
     // int WINDOW = 32;
     int nr_cells_row;
     int nr_cells_collumn;
-    int WINDOW = 40;
+    int WINDOW = 80;
     int EACH_CELL_THRESHOLD = 5;
-    int ORB_FEATURES = 500;
-    int ORB_EDGE_THRESHOLD = 25;
+    int ORB_FEATURES = 1000;
+    int ORB_PATCH_SIZE = 25;
+    int GLOBAL_EDGE_THRESHOLD = 20;
+    int ORB_EDGE_THRESHOLD = 10;
     int ORB_ITERATIONS = 10;
     int FAST_STEP = 5;
     int FAST_THRESHOLD = 30;
 
     int LOWER_LIMIT_THRESHOLD = 10;
-    int HIGH_LIMIT_THRESHOLD = 60;
+    int HIGH_LIMIT_THRESHOLD = 100;
     
     int LIMIT_MATCHING = 30;
 

@@ -3,23 +3,26 @@
 Map::Map() {}
 
 
-void debug_reprojection(std::vector<MapPoint *> kf_map_points, KeyFrame *first_kf) {
+void debug_reprojection(std::vector<MapPoint *> local_map, std::vector<MapPoint *> out_map, KeyFrame *first_kf) {
     std::vector<cv::KeyPoint> map_points_reprojected;
-    for (MapPoint *mp : kf_map_points)
+    for (MapPoint *mp : local_map)
     {
         Eigen::Vector3d current = first_kf->fromWorldToImage(mp->wcoord);
         map_points_reprojected.push_back(cv::KeyPoint(cv::Point2f(current(0), current(1)), 15));
     }
 
     std::vector<cv::KeyPoint> map_point_matched;
-    for (MapPoint *mp : kf_map_points) {
+    for (MapPoint *mp : out_map) {
         int out = mp->reproject_map_point(first_kf);
         map_point_matched.push_back(first_kf->keypoints[out]);
     }
+    std::cout << local_map.size() << " dimensiune initiala local map\n";
+    std::cout << map_points_reprojected.size() << " map points proiectate pe imagine\n";
+    std::cout <<  map_point_matched.size() << " mapp points cu orb descriptors matched\n";
     cv::Mat img2, img3, img4;
-    cv::drawKeypoints(first_kf->frame, first_kf->keypoints, img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT);
-    cv::drawKeypoints(img2, map_points_reprojected, img3, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
-    cv::drawKeypoints(img3, map_point_matched, img4, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT);
+    cv::drawKeypoints(first_kf->frame, first_kf->keypoints, img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT); //albastru
+    cv::drawKeypoints(img2, map_points_reprojected, img3, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT); //verde
+    cv::drawKeypoints(img3, map_point_matched, img4, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); // rosu
     cv::imshow("Display window", img4);
     cv::waitKey(0);
 
@@ -45,7 +48,7 @@ Map::Map(KeyFrame *first_kf)
     this->map_points.push_back(kf_map_points);
     this->graph.push_back(std::pair<KeyFrame *, std::unordered_map<KeyFrame *, int>>(first_kf, {}));
     
-    debug_reprojection(kf_map_points, first_kf);
+    debug_reprojection(kf_map_points, kf_map_points, first_kf);
 }
 
 std::vector<MapPoint *> Map::get_reprojected_map_points(KeyFrame *curr_frame, KeyFrame *reference_kf)
@@ -84,11 +87,11 @@ std::vector<MapPoint *> Map::compute_local_map(KeyFrame *kf)
 {
     KeyFrame *reference_kf = get_reference_keyframe(kf);
     std::unordered_map<KeyFrame *, int> reference_kf_neighbours = this->graph[reference_kf->idx].second;
-    std::vector<MapPoint *> out = get_reprojected_map_points(kf, reference_kf);
+    std::vector<MapPoint *> out = this->map_points[reference_kf->idx]; 
     for (std::pair<KeyFrame *, int> graph_edge : reference_kf_neighbours)
     {
-        std::vector<MapPoint *> reprojected_map_points = get_reprojected_map_points(kf, graph_edge.first);
-        out.insert(out.end(), reprojected_map_points.begin(), reprojected_map_points.end());
+        std::vector<MapPoint *> map_points_for_keyframe = this->map_points[graph_edge.first->idx]; 
+        out.insert(out.end(), map_points_for_keyframe.begin(), map_points_for_keyframe.end());
     }
     return out;
 }
@@ -101,13 +104,11 @@ std::pair<std::vector<MapPoint *>, std::vector<cv::KeyPoint>> Map::track_local_m
     std::vector<cv::KeyPoint> kps;
     for (MapPoint *mp : local_map)
     {
-        int idx = mp->find_orb_correspondence(curr_kf);
-        if (idx == -1)
-            continue;
+        int idx = mp->reproject_map_point(curr_kf);
+        if (idx == -1) continue;
         out_map.push_back(mp);
         kps.push_back(curr_kf->keypoints[idx]);
     }
-    std::cout << "\n";
-    debug_reprojection(local_map, curr_kf);
+    debug_reprojection(local_map, out_map, curr_kf);
     return std::pair<std::vector<MapPoint *>, std::vector<cv::KeyPoint>>(out_map, kps);
 }

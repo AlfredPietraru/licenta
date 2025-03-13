@@ -82,8 +82,8 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
         ceres::LossFunction *loss_function = new ceres::CauchyLoss(1.0);
         problem.AddResidualBlock(cost_function, loss_function, kf->Tiw.data());
     }
-    std::cout << "au fost gasite atatea puncte monoculare " << nr_monocular_points << "\n";
-    std::cout << "au fost gasite atatea puncte stereo " << nr_stereo_points << "\n\n";
+    // std::cout << "au fost gasite atatea puncte monoculare " << nr_monocular_points << "\n";
+    // std::cout << "au fost gasite atatea puncte stereo " << nr_stereo_points << "\n\n";
     // std::cout << "\n";
     ceres::Solver::Options options;
     options.linear_solver_type = solver;

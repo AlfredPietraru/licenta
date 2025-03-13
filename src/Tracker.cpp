@@ -39,11 +39,11 @@ Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
       points_in3d.push_back(Point3d(new_x, new_y, dd));
       points_in2d.push_back(Point2d(current_kps[m.trainIdx].pt.x, current_kps[m.trainIdx].pt.y));
     }
-    // std::cout << "\n" << points_in3d.size() << " " << points_in2d.size() << "\n";
+    std::cout  << points_in3d.size() << " " << points_in2d.size() << " puncte gasite pentru alogirtmul pnp\n";
     Mat r, t;
     // pag 160 - slambook.en
     vector<int> inliers;
-    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, 50, 8.0, 0.99, inliers);
+    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, 100, 8.0, 0.99, inliers);
     std::cout << inliers.size() << " inliers found in algorithm\n";
     Mat R;
     cv::Rodrigues(r, R);
@@ -56,7 +56,6 @@ Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
 
 void Tracker::Optimize_Pose_Coordinates(Map mapp, cv::Mat frame) {
         std::pair<std::vector<MapPoint*>, std::vector<cv::KeyPoint>> observed_map_points = mapp.track_local_map(this->current_kf);
-        std::cout << observed_map_points.first.size() << " atatea map points gasiteee  \n";
         this->frames_tracked += 1;
         if (observed_map_points.first.size() < 15) {
             std::cout << "NOT ENOUGH MAP_POINTS FOUND\n\n";
@@ -85,7 +84,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_fr
     this->prev_kf = this->current_kf;
     this->get_current_key_frame(frame, depth);
     vector<DMatch> good_matches = this->fmf->match_features_last_frame(this->current_kf, this->prev_kf);
-    // std::cout << good_matches.size() << " good matches found\n";
+    std::cout << good_matches.size() << " good matches found\n";
     if (good_matches.size() < 50) {
         this->tracking_was_lost();
     } else {
@@ -109,8 +108,8 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_fr
             std::cout << this->current_kf->Tiw.data()[i] << " "; 
         }
         std::cout << " dupa optimizarea BA\n\n";
+        exit(1);
     }
-    // exit(1);
     if (this->Is_KeyFrame_needed(mapp)) {
         std::cout << "daa adauga un keyframe aicii\n";
         key_frames_buffer.push_back(this->current_kf);

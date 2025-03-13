@@ -5,8 +5,9 @@ FeatureMatcherFinder::FeatureMatcherFinder(cv::Mat frame){
     this->nr_cells_row = frame.rows / WINDOW;
     this->nr_cells_collumn = frame.cols / WINDOW;
     // std::cout << this->nr_cells_row << " " << this->nr_cells_collumn << " celule pe randuri si coloane\n";
-    this->orb = cv::ORB::create(ORB_FEATURES, 1.2F, 8, 10, 0, 2, cv::ORB::HARRIS_SCORE, ORB_EDGE_THRESHOLD, FAST_THRESHOLD);
-    this->matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
+    this->orb = cv::ORB::create(ORB_FEATURES, 1.2F, 8, ORB_EDGE_THRESHOLD, 0, 2, cv::ORB::HARRIS_SCORE, ORB_PATCH_SIZE, FAST_THRESHOLD);
+    // this->matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
+    this->matcher = cv::BFMatcher::create(cv::NORM_HAMMING, true);
     this->fast_features_cell = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row, FAST_THRESHOLD);
     this->nr_keypoints_found = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row, 0);
     this->mask = cv::Mat::zeros(frame.rows, frame.cols, CV_8U);
@@ -70,6 +71,13 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame)
     }
     // std::cout << keypoints.size() << " keypoints obtinute inainte de filtrare\n";
     cv::KeyPointsFilter::removeDuplicated(keypoints);
+    std::vector<cv::KeyPoint> out_keypoints;
+    for (cv::KeyPoint kp : keypoints) {
+        if (kp.pt.x  < GLOBAL_EDGE_THRESHOLD || kp.pt.x > frame.cols - GLOBAL_EDGE_THRESHOLD) continue;
+        if (kp.pt.y < GLOBAL_EDGE_THRESHOLD || kp.pt.y > frame.rows - GLOBAL_EDGE_THRESHOLD) continue;
+        out_keypoints.push_back(kp);
+
+    } 
     // std::cout << keypoints.size() << " keypoints obtinute dupa filtrare\n\n";
     // std::cout << keypoints.size() << "\n";
 
@@ -81,7 +89,7 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame)
     //     std::cout << this->fast_features_cell[i] << " ";
     // }
     // std::cout << "\n\n\n";
-    return keypoints;
+    return out_keypoints;
 }
 
 cv::Mat FeatureMatcherFinder::compute_descriptors(cv::Mat frame, std::vector<cv::KeyPoint> &kps) {
