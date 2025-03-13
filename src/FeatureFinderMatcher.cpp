@@ -7,31 +7,43 @@ FeatureMatcherFinder::FeatureMatcherFinder(cv::Mat frame){
     // std::cout << this->nr_cells_row << " " << this->nr_cells_collumn << " celule pe randuri si coloane\n";
     this->orb = cv::ORB::create(ORB_FEATURES, 1.2F, 8, ORB_PATCH_SIZE, 0, 2, cv::ORB::HARRIS_SCORE, ORB_EDGE_THRESHOLD, FAST_THRESHOLD);
     // this->matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
-    this->matcher = cv::BFMatcher::create(cv::NORM_HAMMING, true);
+    // this->matcher = cv::BFMatcher::create(cv::NORM_HAMMING, true);
+    this->matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
     this->fast_features_cell = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row, FAST_THRESHOLD);
     this->nr_keypoints_found = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row, 0);
     this->mask = cv::Mat::zeros(frame.rows, frame.cols, CV_8U);
 }
 
 std::vector<cv::DMatch> FeatureMatcherFinder::match_features_last_frame(KeyFrame *current_kf, KeyFrame *past_kf) {
-    std::vector<cv::DMatch> matches;
-    this->matcher->match(current_kf->orb_descriptors, past_kf->orb_descriptors, matches);
+    std::vector< std::vector<cv::DMatch>> knn_matches;
+    cv::Mat desc1_32f, desc2_32f;
+    current_kf->orb_descriptors.convertTo(desc1_32f, CV_32F);
+    past_kf->orb_descriptors.convertTo(desc2_32f, CV_32F);
+    matcher->knnMatch(desc2_32f, desc1_32f, knn_matches, 2 );
+    const float ratio_thresh = 0.8f;
+    std::vector<cv::DMatch> good_matches;
 
-    std::vector<cv::DMatch> good_matches; 
-    for (auto m : matches) {
-        if (m.queryIdx >= 0 && m.queryIdx < past_kf->keypoints.size() &&
-            m.trainIdx >= 0 && m.trainIdx < current_kf->keypoints.size()) {
-                if(m.distance < LIMIT_MATCHING) {
-                    good_matches.push_back(m);
-                }
-            }
+    for (const auto& knn_match : knn_matches) {
+        if (knn_match.size() < 2) continue;
+
+        const auto& best_match = knn_match[0];
+        const auto& second_best_match = knn_match[1];
+
+        if (best_match.distance < ratio_thresh * second_best_match.distance &&
+            best_match.queryIdx >= 0 && best_match.queryIdx < static_cast<int>(current_kf->keypoints.size()) &&
+            best_match.trainIdx >= 0 && best_match.trainIdx < static_cast<int>(past_kf->keypoints.size())) {
+            good_matches.push_back(best_match);
+        }
     }
-    cv::Mat img_matches;
-    std::cout << past_kf->keypoints.size() << " " << current_kf->keypoints.size() << "\n";
-    cv::drawMatches(past_kf->frame, past_kf->keypoints, current_kf->frame, current_kf->keypoints, good_matches, img_matches);
-    // Show the matches
-    cv::imshow("Feature Matches", img_matches);
-    cv::waitKey(0);
+    // std::cout << " acoloooooo\n";
+
+    // cv::Mat img_matches;
+    // std::cout << past_kf->keypoints.size() << " " << current_kf->keypoints.size() << "\n";
+    // std::cout << good_matches.size() << "\n";
+    // cv::drawMatches(past_kf->frame, past_kf->keypoints, current_kf->frame, current_kf->keypoints, good_matches, img_matches);
+    // // Show the matches
+    // cv::imshow("Feature Matches", img_matches);
+    // cv::waitKey(0);
     return good_matches;
 } 
 

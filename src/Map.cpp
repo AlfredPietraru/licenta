@@ -25,7 +25,6 @@ void debug_reprojection(std::vector<MapPoint *> local_map, std::vector<MapPoint 
     cv::drawKeypoints(img3, map_point_matched, img4, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); // rosu
     cv::imshow("Display window", img4);
     cv::waitKey(0);
-
 }
 
 

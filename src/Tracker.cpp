@@ -40,15 +40,15 @@ Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
       points_in3d.push_back(Point3d(new_x, new_y, dd));
       points_in2d.push_back(Point2d(current_kps[m.trainIdx].pt.x, current_kps[m.trainIdx].pt.y));
     }
-    std::cout << "\n";
-    for (size_t i = 0; i < points_in3d.size(); ++i) {
-        std::cout << "3D: " << points_in3d[i] << " -> 2D: " << points_in2d[i] << "\n";
-    }
+    // std::cout << "\n";
+    // for (size_t i = 0; i < points_in3d.size(); ++i) {
+    //     std::cout << "3D: " << points_in3d[i] << " -> 2D: " << points_in2d[i] << "\n";
+    // }
     std::cout  << points_in3d.size() << " " << points_in2d.size() << " puncte gasite pentru alogirtmul pnp\n";
     Mat r, t;
     // pag 160 - slambook.en
     vector<int> inliers;
-    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, 1000, 10.0, 0.90, inliers);
+    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, 100, 15.0, 0.90, inliers); 
     std::cout << inliers.size() << " inliers found in algorithm\n";
     Mat R;
     cv::Rodrigues(r, R);
@@ -108,7 +108,6 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_fr
         }
         std::cout << " dupa estimarea initiala \n";
         Optimize_Pose_Coordinates(mapp, frame);
-        
         for (int i = 0; i < 7; i++) {
             std::cout << this->current_kf->Tiw.data()[i] << " "; 
         }
