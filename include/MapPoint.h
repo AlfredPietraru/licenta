@@ -19,6 +19,7 @@ public:
     void add_reference_kf(KeyFrame *kf, int idx);
     int find_orb_correspondence(KeyFrame *kf);
     int ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2);
+    int reproject_map_point(KeyFrame *kf);
     Eigen::Vector3d get_3d_vector();
 };
 

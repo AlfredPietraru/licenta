@@ -37,7 +37,7 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame)
 
             // do stuff
             // ajunge la 0, si dupa NU mai da un kick start ceea ce nu e bine
-            int threshold = 20;    
+            int threshold = 20;
             for (int iter = 0; iter < this->ORB_ITERATIONS - 1; iter++) {
                 this->orb->setFastThreshold(threshold);
                 this->orb->detect(cell_img, current_keypoints);
@@ -68,9 +68,9 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame)
         }
         // break;
     }
-    std::cout << keypoints.size() << " keypoints obtinute inainte de filtrare\n";
+    // std::cout << keypoints.size() << " keypoints obtinute inainte de filtrare\n";
     cv::KeyPointsFilter::removeDuplicated(keypoints);
-    std::cout << keypoints.size() << " keypoints obtinute dupa filtrare\n\n";
+    // std::cout << keypoints.size() << " keypoints obtinute dupa filtrare\n\n";
     // std::cout << keypoints.size() << "\n";
 
     // for (int i = 0; i < nr_keypoints_found.size(); i++) {

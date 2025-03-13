@@ -29,7 +29,7 @@ public:
     int LOWER_LIMIT_THRESHOLD = 10;
     int HIGH_LIMIT_THRESHOLD = 60;
     
-    int LIMIT_MATCHING = 10;
+    int LIMIT_MATCHING = 30;
 
     std::vector<int> fast_features_cell;
     std::vector<int> nr_keypoints_found;

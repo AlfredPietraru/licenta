@@ -73,3 +73,9 @@ int MapPoint::find_orb_correspondence(KeyFrame *kf) {
 Eigen::Vector3d MapPoint::get_3d_vector() {
     return Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(3));
 }
+
+
+int MapPoint::reproject_map_point(KeyFrame *kf) {
+    int out = this->map_point_belongs_to_keyframe(kf) ?  find_orb_correspondence(kf) : -1; 
+    return out;
+}

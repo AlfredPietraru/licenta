@@ -7,13 +7,13 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     cv::Mat descriptors = this->fmf->compute_descriptors(frame, keypoints);
     std::cout << keypoints.size() << " " << descriptors.size() << " keypoints and descriptors \n"; 
     Mat img2;
-    cv::drawKeypoints(frame, keypoints, img2, Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
-    imshow("Display window", img2);
-    waitKey(500);
+    // cv::drawKeypoints(frame, keypoints, img2, Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
+    // imshow("Display window", img2);
+    // waitKey(0);
     // exit(1);
     Sophus::SE3d pose_estimation = (this->prev_kf == nullptr) ? this->initial_pose : this->prev_kf->Tiw; 
     int idx = (this->prev_kf == nullptr) ? 0 : this->reference_kf->idx + 1;
-    this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, keypoints, descriptors, depth, idx);
+    this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, keypoints, descriptors, depth, idx, frame);
 }
 
 Map Tracker::initialize(Mat frame, Mat depth) {
@@ -39,22 +39,22 @@ Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
       points_in3d.push_back(Point3d(new_x, new_y, dd));
       points_in2d.push_back(Point2d(current_kps[m.trainIdx].pt.x, current_kps[m.trainIdx].pt.y));
     }
-    // std::cout << "\n";
     // std::cout << "\n" << points_in3d.size() << " " << points_in2d.size() << "\n";
     Mat r, t;
     // pag 160 - slambook.en
-    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, 100, 8.0, 0.95);
+    vector<int> inliers;
+    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, 50, 8.0, 0.99, inliers);
+    std::cout << inliers.size() << " inliers found in algorithm\n";
     Mat R;
     cv::Rodrigues(r, R);
     Eigen::Matrix3d R_eigen;
     cv::cv2eigen(R, R_eigen);
     Eigen::Vector3d t_eigen;
     t_eigen << t.at<double>(0), t.at<double>(1), t.at<double>(2);
-    // Eigen::Vector3d smoothed_tvec = t_eigen * ALPHA + (1 - ALPHA) * this->current_kf->Tiw.translation();
     return Sophus::SE3d(R_eigen,  t_eigen);
 }
 
-void Tracker::Optimize_Pose_Coordinates(Map mapp) {
+void Tracker::Optimize_Pose_Coordinates(Map mapp, cv::Mat frame) {
         std::pair<std::vector<MapPoint*>, std::vector<cv::KeyPoint>> observed_map_points = mapp.track_local_map(this->current_kf);
         std::cout << observed_map_points.first.size() << " atatea map points gasiteee  \n";
         this->frames_tracked += 1;
@@ -103,7 +103,8 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_fr
             std::cout << this->current_kf->Tiw.data()[i] << " "; 
         }
         std::cout << " dupa estimarea initiala \n";
-        Optimize_Pose_Coordinates(mapp);
+        Optimize_Pose_Coordinates(mapp, frame);
+        
         for (int i = 0; i < 7; i++) {
             std::cout << this->current_kf->Tiw.data()[i] << " "; 
         }

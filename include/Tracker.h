@@ -24,7 +24,6 @@ public:
     void tracking(Mat frame, Mat depth, Map map_points, vector<KeyFrame*> &key_frames_buffer);
     Tracker(Mat K, Sophus::SE3d initial_pose) : K(K), initial_pose(initial_pose) {
         cv::cv2eigen(K, this->K_eigen);
-
     }
 
 private:
@@ -49,7 +48,7 @@ private:
     
     // important functions
     Sophus::SE3d TrackWithLastFrame(vector<DMatch> good_matches);
-    void Optimize_Pose_Coordinates(Map mapp);
+    void Optimize_Pose_Coordinates(Map mapp, cv::Mat frame);
     bool Is_KeyFrame_needed(Map mapp);
 
     // auxiliary functions

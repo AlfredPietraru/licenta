@@ -83,7 +83,7 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
         problem.AddResidualBlock(cost_function, loss_function, kf->Tiw.data());
     }
     std::cout << "au fost gasite atatea puncte monoculare " << nr_monocular_points << "\n";
-    std::cout << "au fost gasite atatea puncte stereo " << nr_stereo_points << "\n";
+    std::cout << "au fost gasite atatea puncte stereo " << nr_stereo_points << "\n\n";
     // std::cout << "\n";
     ceres::Solver::Options options;
     options.linear_solver_type = solver;
@@ -91,10 +91,10 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
     options.gradient_tolerance = 1e-6;
     options.parameter_tolerance = 1e-8;
     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-    options.minimizer_progress_to_stdout = true;
+    options.minimizer_progress_to_stdout = false;
     options.max_num_iterations = NUMBER_ITERATIONS;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
-    std::cout << summary.FullReport() << "\n";
+    // std::cout << summary.FullReport() << "\n";
     return kf->Tiw;
 }
