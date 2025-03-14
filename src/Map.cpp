@@ -14,13 +14,13 @@ void debug_reprojection(std::vector<MapPoint *> local_map, std::vector<MapPoint 
     std::vector<cv::KeyPoint> map_point_matched;
     for (MapPoint *mp : out_map) {
         int out = mp->reproject_map_point(first_kf);
-        map_point_matched.push_back(first_kf->keypoints[out]);
+        map_point_matched.push_back(first_kf->features[out].get_key_point());
     }
     std::cout << local_map.size() << " dimensiune initiala local map\n";
     std::cout << map_points_reprojected.size() << " map points proiectate pe imagine\n";
     std::cout <<  map_point_matched.size() << " mapp points cu orb descriptors matched\n";
     cv::Mat img2, img3, img4;
-    cv::drawKeypoints(first_kf->frame, first_kf->keypoints, img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT); //albastru
+    cv::drawKeypoints(first_kf->frame, first_kf->get_all_keypoints(), img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT); //albastru
     cv::drawKeypoints(img2, map_points_reprojected, img3, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT); //verde
     cv::drawKeypoints(img3, map_point_matched, img4, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); // rosu
     cv::imshow("Display window", img4);
@@ -31,9 +31,9 @@ void debug_reprojection(std::vector<MapPoint *> local_map, std::vector<MapPoint 
 std::vector<MapPoint *> Map::compute_map_points(KeyFrame *frame)
 {
     std::vector<MapPoint *> current_points_found;
-    for (int i = 0; i < frame->keypoints.size(); i++)
+    for (int i = 0; i < frame->features.size(); i++)
     {
-        cv::KeyPoint kp = frame->keypoints[i];
+        cv::KeyPoint kp = frame->features[i].kp;
         float dd = frame->compute_depth_in_keypoint(kp);
         if (dd <= 0) continue;
         current_points_found.push_back(new MapPoint(frame, i, dd));
@@ -106,7 +106,7 @@ std::pair<std::vector<MapPoint *>, std::vector<cv::KeyPoint>> Map::track_local_m
         int idx = mp->reproject_map_point(curr_kf);
         if (idx == -1) continue;
         out_map.push_back(mp);
-        kps.push_back(curr_kf->keypoints[idx]);
+        kps.push_back(curr_kf->features[idx].get_key_point());
     }
     debug_reprojection(local_map, out_map, curr_kf);
     return std::pair<std::vector<MapPoint *>, std::vector<cv::KeyPoint>>(out_map, kps);

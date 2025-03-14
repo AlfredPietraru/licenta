@@ -40,6 +40,7 @@ include_directories(${DBoW3_LIBS})
 set(SOURCES
     main.cpp
     src/BundleAdjustment.cpp
+    src/Feature.cpp
     src/FeatureFinderMatcher.cpp
     src/Map.cpp
     src/Tracker.cpp
@@ -49,6 +50,7 @@ set(SOURCES
 
 set(HEADERS
     "include/BundleAdjustment.h"
+    "include/Feature.h"
     "include/FeatureFinderMatcher.h"
     "include/Map.h"
     "include/Tracker.h"

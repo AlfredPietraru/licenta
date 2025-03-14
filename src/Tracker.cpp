@@ -27,9 +27,9 @@ Map Tracker::initialize(Mat frame, Mat depth) {
 Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
     vector<Point3d> points_in3d;
     vector<Point2d> points_in2d;
-    vector<cv::KeyPoint> prev_kps = this->prev_kf->keypoints;
+    vector<cv::KeyPoint> prev_kps = this->prev_kf->get_all_keypoints();
     cv::Mat depth_matrix = this->prev_kf->depth_matrix;
-    vector<cv::KeyPoint> current_kps = this->current_kf->keypoints;
+    vector<cv::KeyPoint> current_kps = this->current_kf->get_all_keypoints();
     for (DMatch m : good_matches) {
       if (m.queryIdx >= prev_kps.size() || m.trainIdx >= current_kps.size()) continue;
         float dd = this->prev_kf->compute_depth_in_keypoint(prev_kps[m.queryIdx]);

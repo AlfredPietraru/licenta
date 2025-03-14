@@ -5,7 +5,11 @@ KeyFrame::KeyFrame(){};
 
 KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint> keypoints,
          cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx, cv::Mat frame)
-    : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), keypoints(keypoints), depth_matrix(depth_matrix), idx(idx), frame(frame) {}
+    : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), depth_matrix(depth_matrix), idx(idx), frame(frame) {
+        for (cv::KeyPoint kp : keypoints) {
+            this->features.push_back(Feature(kp, this));
+        }
+    }
 
 Eigen::Vector3d KeyFrame::compute_camera_center() {
     return -this->Tiw.rotationMatrix().transpose() * this->Tiw.translation();
@@ -30,9 +34,18 @@ float KeyFrame::compute_depth_in_keypoint(cv::KeyPoint kp) {
 }
 
 Eigen::Vector4d KeyFrame::fromImageToWorld(int kp_idx) {
-    cv::KeyPoint kp = this->keypoints[kp_idx];
+    cv::KeyPoint kp = this->features[kp_idx].kp;
     float dd = this->compute_depth_in_keypoint(kp);
     double new_x = (kp.pt.x - this->K(0, 2)) * dd / this->K(0, 0);
     double new_y = (kp.pt.y - this->K(1, 2)) * dd / this->K(1, 1);
     return this->Tiw.inverse().matrix() *  Eigen::Vector4d(new_x, new_y, dd, 1);
+}
+
+
+std::vector<cv::KeyPoint> KeyFrame::get_all_keypoints() {
+    std::vector<cv::KeyPoint> out;
+    for (Feature f : this->features) {
+        out.push_back(f.get_key_point());
+    }
+    return out;
 }

@@ -20,7 +20,7 @@ std::vector<cv::DMatch> FeatureMatcherFinder::match_features_last_frame(KeyFrame
     current_kf->orb_descriptors.convertTo(desc1_32f, CV_32F);
     past_kf->orb_descriptors.convertTo(desc2_32f, CV_32F);
     matcher->knnMatch(desc2_32f, desc1_32f, knn_matches, 2 );
-    const float ratio_thresh = 0.8f;
+    const float ratio_thresh = 0.85f;
     std::vector<cv::DMatch> good_matches;
 
     for (const auto& knn_match : knn_matches) {
@@ -30,8 +30,8 @@ std::vector<cv::DMatch> FeatureMatcherFinder::match_features_last_frame(KeyFrame
         const auto& second_best_match = knn_match[1];
 
         if (best_match.distance < ratio_thresh * second_best_match.distance &&
-            best_match.queryIdx >= 0 && best_match.queryIdx < static_cast<int>(current_kf->keypoints.size()) &&
-            best_match.trainIdx >= 0 && best_match.trainIdx < static_cast<int>(past_kf->keypoints.size())) {
+            best_match.queryIdx >= 0 && best_match.queryIdx < static_cast<int>(current_kf->features.size()) &&
+            best_match.trainIdx >= 0 && best_match.trainIdx < static_cast<int>(past_kf->features.size())) {
             good_matches.push_back(best_match);
         }
     }
@@ -39,7 +39,7 @@ std::vector<cv::DMatch> FeatureMatcherFinder::match_features_last_frame(KeyFrame
 
     // cv::Mat img_matches;
     // std::cout << past_kf->keypoints.size() << " " << current_kf->keypoints.size() << "\n";
-    // std::cout << good_matches.size() << "\n";
+    std::cout << good_matches.size() << "\n";
     // cv::drawMatches(past_kf->frame, past_kf->keypoints, current_kf->frame, current_kf->keypoints, good_matches, img_matches);
     // // Show the matches
     // cv::imshow("Feature Matches", img_matches);

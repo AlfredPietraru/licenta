@@ -4,7 +4,7 @@
 MapPoint::MapPoint(KeyFrame *keyframe, int kp_idx, float depth)
 {
     this->belongs_to_keyframes.insert(std::pair<KeyFrame*, int>(keyframe, kp_idx));
-    cv::KeyPoint kp = keyframe->keypoints[kp_idx];
+    cv::KeyPoint kp = keyframe->features[kp_idx].get_key_point();
     this->wcoord = keyframe->fromImageToWorld(kp_idx);
     Eigen::Vector3d wcoord_local = Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(2));
     this->view_direction = (wcoord_local - keyframe->compute_camera_center()).normalized();
@@ -51,11 +51,12 @@ int MapPoint::find_orb_correspondence(KeyFrame *kf) {
     int cur_hamm_dist;
     int right_idx = -1;
     // std::cout << u << " " << v << " ";
-    for (int i = 0; i < kf->keypoints.size(); i++)
+    std::vector<cv::KeyPoint> keypoints = kf->get_all_keypoints();
+    for (int i = 0; i < keypoints.size(); i++)
     {
-        if (kf->keypoints[i].pt.x - this->WINDOW > u || kf->keypoints[i].pt.x + this->WINDOW < u)
+        if (keypoints[i].pt.x - this->WINDOW > u || keypoints[i].pt.x + this->WINDOW < u)
             continue;
-        if (kf->keypoints[i].pt.y - this->WINDOW > v || kf->keypoints[i].pt.y + this->WINDOW < v)
+        if (keypoints[i].pt.y - this->WINDOW > v || keypoints[i].pt.y + this->WINDOW < v)
             continue;
         cur_hamm_dist = ComputeHammingDistance(this->orb_descriptor, kf->orb_descriptors.row(i));
         if (cur_hamm_dist < min_hamm_dist) {
