@@ -7,10 +7,6 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     cv::Mat descriptors = this->fmf->compute_descriptors(frame, keypoints);
     std::cout << keypoints.size() << " " << descriptors.size() << " keypoints and descriptors \n"; 
     Mat img2;
-    // cv::drawKeypoints(frame, keypoints, img2, Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
-    // imshow("Display window", img2);
-    // waitKey(0);
-    // exit(1);
     Sophus::SE3d pose_estimation = (this->prev_kf == nullptr) ? this->initial_pose : this->prev_kf->Tiw; 
     int idx = (this->prev_kf == nullptr) ? 0 : this->reference_kf->idx + 1;
     this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, keypoints, descriptors, depth, idx, frame);
@@ -21,6 +17,7 @@ Map Tracker::initialize(Mat frame, Mat depth) {
     this->get_current_key_frame(frame, depth);
     Map mapp = Map(this->current_kf);
     this->reference_kf = this->current_kf;
+    std::cout << "SFARSIT INITIALIZARE\n";
     return mapp;
 }
 
@@ -40,10 +37,6 @@ Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
       points_in3d.push_back(Point3d(new_x, new_y, dd));
       points_in2d.push_back(Point2d(current_kps[m.trainIdx].pt.x, current_kps[m.trainIdx].pt.y));
     }
-    // std::cout << "\n";
-    // for (size_t i = 0; i < points_in3d.size(); ++i) {
-    //     std::cout << "3D: " << points_in3d[i] << " -> 2D: " << points_in2d[i] << "\n";
-    // }
     std::cout  << points_in3d.size() << " " << points_in2d.size() << " puncte gasite pentru alogirtmul pnp\n";
     Mat r, t;
     // pag 160 - slambook.en
@@ -88,6 +81,9 @@ bool Tracker::Is_KeyFrame_needed(Map mapp) {
 void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_frames_buffer) {
     this->prev_kf = this->current_kf;
     this->get_current_key_frame(frame, depth);
+    std::vector<std::pair<MapPoint*, cv::KeyPoint>> matches = matcher->match_two_consecutive_frames(this->prev_kf, this->current_kf);
+    std::cout << matches.size() << " puncte au fost matchuite\n\n";
+    // exit(1);
     vector<DMatch> good_matches = this->fmf->match_features_last_frame(this->current_kf, this->prev_kf);
     std::cout << good_matches.size() << " good matches found\n";
     if (good_matches.size() < 50) {

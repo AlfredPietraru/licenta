@@ -20,7 +20,7 @@ void MapPoint::add_reference_kf(KeyFrame *kf, int idx) {
 
 bool MapPoint::map_point_belongs_to_keyframe(KeyFrame *kf)
 {
-    if (this->belongs_to_keyframes.find(kf) != this->belongs_to_keyframes.end()) return true;
+    // if (this->belongs_to_keyframes.find(kf) != this->belongs_to_keyframes.end()) return true;
     Eigen::Vector3d point_camera_coordinates = kf->fromWorldToImage(this->wcoord);
     for (int i = 0; i < 3; i++) {
         if (point_camera_coordinates(i) < 0)  return false;
@@ -72,7 +72,7 @@ int MapPoint::find_orb_correspondence(KeyFrame *kf) {
 }
 
 Eigen::Vector3d MapPoint::get_3d_vector() {
-    return Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(3));
+    return Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(2));
 }
 
 

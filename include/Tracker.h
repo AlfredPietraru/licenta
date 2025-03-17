@@ -15,6 +15,8 @@
 #include "Map.h"
 #include "BundleAdjustment.h"
 #include "FeatureFinderMatcher.h"
+#include "OrbMatcher.h"
+
 using namespace std;
 using namespace cv;
 
@@ -44,6 +46,7 @@ private:
     Mat K; 
     BundleAdjustment *bundleAdjustment = new BundleAdjustment();
     FeatureMatcherFinder *fmf;
+    OrbMatcher *matcher = new OrbMatcher();
 
     
     // important functions

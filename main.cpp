@@ -85,23 +85,12 @@ int main(int argc, char **argv)
     
     std::sort(rgb_file_paths.begin(), rgb_file_paths.end());
     std::sort(depth_file_paths.begin(), depth_file_paths.end());
-    // for (int i = 0; i < rgb_file_paths.size(); i++) {
-    //     std::cout << rgb_file_paths[i] << " " << depth_file_paths[i] << "\n";
-    // }
-
     //  CEVA GRESIT LA DEPTH
     for (int i = 0; i < rgb_file_paths.size(); i++) {
         distorted_frame = cv::imread(rgb_file_paths[i], cv::IMREAD_COLOR_RGB);
         depth = cv::imread(depth_file_paths[i], cv::IMREAD_UNCHANGED);
-        // for (int i = 0; i < depth.size().height; i++) {
-        //     for (int j = 0; j < depth.size().width; j++) {
-        //         std::cout << depth.at<uint16_t>(i, j) / 5000.0 << " ";
-        //     }
-        //     std::cout << "\n";
-        // }
         vector<double> distorsion_vector = {0.2624,	-0.9531, -0.0054, 0.0026, 1.1633};
         cv::undistort(distorted_frame, frame, K, distorsion_vector);
-        // std::cout << rgb_file_paths[i]  << " " << frame.size() << " " << depth.size() << " dimensiune imagini \n";
         if (start) {
             mapp = tracker->initialize(frame, depth);
             start = !start;

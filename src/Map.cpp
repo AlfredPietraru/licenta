@@ -4,26 +4,20 @@ Map::Map() {}
 
 
 void debug_reprojection(std::vector<MapPoint *> local_map, std::vector<MapPoint *> out_map, KeyFrame *first_kf) {
-    std::vector<cv::KeyPoint> map_points_reprojected;
-    for (MapPoint *mp : local_map)
-    {
-        Eigen::Vector3d current = first_kf->fromWorldToImage(mp->wcoord);
-        map_points_reprojected.push_back(cv::KeyPoint(cv::Point2f(current(0), current(1)), 15));
-    }
-
     std::vector<cv::KeyPoint> map_point_matched;
     for (MapPoint *mp : out_map) {
         int out = mp->reproject_map_point(first_kf);
+        if (out == -1) continue;
         map_point_matched.push_back(first_kf->features[out].get_key_point());
     }
     std::cout << local_map.size() << " dimensiune initiala local map\n";
-    std::cout << map_points_reprojected.size() << " map points proiectate pe imagine\n";
+    std::cout << out_map.size() << " map points proiectate pe imagine\n";
     std::cout <<  map_point_matched.size() << " mapp points cu orb descriptors matched\n";
     cv::Mat img2, img3, img4;
     cv::drawKeypoints(first_kf->frame, first_kf->get_all_keypoints(), img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT); //albastru
-    cv::drawKeypoints(img2, map_points_reprojected, img3, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT); //verde
-    cv::drawKeypoints(img3, map_point_matched, img4, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); // rosu
-    cv::imshow("Display window", img4);
+    cv::drawKeypoints(img2, map_point_matched, img3, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT); //verde
+    // cv::drawKeypoints(img3, map_point_matched, img4, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); // rosu
+    cv::imshow("Display window", img3);
     cv::waitKey(0);
 }
 
@@ -36,7 +30,9 @@ std::vector<MapPoint *> Map::compute_map_points(KeyFrame *frame)
         cv::KeyPoint kp = frame->features[i].kp;
         float dd = frame->compute_depth_in_keypoint(kp);
         if (dd <= 0) continue;
-        current_points_found.push_back(new MapPoint(frame, i, dd));
+        MapPoint *mp = new MapPoint(frame, i, dd);
+        current_points_found.push_back(mp);
+        frame->features[i].set_map_point(mp);
     }
     return current_points_found; 
 }
