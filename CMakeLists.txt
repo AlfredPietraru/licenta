@@ -46,6 +46,8 @@ set(SOURCES
     src/Tracker.cpp
     src/MapPoint.cpp
     src/KeyFrame.cpp
+    src/Optimizer.cpp
+    src/DataReader.cpp
 )
 
 set(HEADERS
@@ -56,6 +58,8 @@ set(HEADERS
     "include/Tracker.h"
     "include/MapPoint.h"
     "include/KeyFrame.h"
+    "include/Optimizer.h"
+    "include/DataReader.h"
 )
 
 add_executable(main ${SOURCES} ${HEADERS})
