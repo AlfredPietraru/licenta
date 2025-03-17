@@ -12,8 +12,7 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, keypoints, descriptors, depth, idx, frame);
 }
 
-Map Tracker::initialize(Mat frame, Mat depth) {
-    this->fmf = new FeatureMatcherFinder(frame);
+Map Tracker::initialize(Mat frame, Mat depth) { 
     this->get_current_key_frame(frame, depth);
     Map mapp = Map(this->current_kf);
     this->reference_kf = this->current_kf;

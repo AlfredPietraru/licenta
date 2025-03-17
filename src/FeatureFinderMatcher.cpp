@@ -1,17 +1,18 @@
 #include "../include/FeatureFinderMatcher.h"
 
 
-FeatureMatcherFinder::FeatureMatcherFinder(cv::Mat frame){
-    this->nr_cells_row = frame.rows / WINDOW;
-    this->nr_cells_collumn = frame.cols / WINDOW;
+FeatureMatcherFinder::FeatureMatcherFinder(int rows, int cols, int fast_threshold, int orb_edge_threshold) : 
+    FAST_THRESHOLD(fast_threshold),  ORB_EDGE_THRESHOLD(orb_edge_threshold) {
+    this->nr_cells_row = rows / WINDOW;
+    this->nr_cells_collumn = cols / WINDOW;
     // std::cout << this->nr_cells_row << " " << this->nr_cells_collumn << " celule pe randuri si coloane\n";
     this->orb = cv::ORB::create(ORB_FEATURES, 1.2F, 8, ORB_PATCH_SIZE, 0, 2, cv::ORB::HARRIS_SCORE, ORB_EDGE_THRESHOLD, FAST_THRESHOLD);
     // this->matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
     // this->matcher = cv::BFMatcher::create(cv::NORM_HAMMING, true);
     this->matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
-    this->fast_features_cell = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row, FAST_THRESHOLD);
+    this->fast_features_cell = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row, fast_threshold);
     this->nr_keypoints_found = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row, 0);
-    this->mask = cv::Mat::zeros(frame.rows, frame.cols, CV_8U);
+    this->mask = cv::Mat::zeros(rows, cols, CV_8U);
 }
 
 std::vector<cv::DMatch> FeatureMatcherFinder::match_features_last_frame(KeyFrame *current_kf, KeyFrame *past_kf) {

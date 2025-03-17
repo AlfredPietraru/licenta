@@ -15,18 +15,18 @@
 
 class FeatureMatcherFinder {
 public:
-    // int WINDOW = 32;
     int nr_cells_row;
     int nr_cells_collumn;
+    int FAST_THRESHOLD;
+    int ORB_EDGE_THRESHOLD = 20;
+
     int WINDOW = 80;
     int MINIM_KEYPOINTS = 5;
     int ORB_FEATURES = 1500;
     int ORB_PATCH_SIZE = 20;
     int GLOBAL_EDGE_THRESHOLD = 20;
-    int ORB_EDGE_THRESHOLD = 20;
     int ORB_ITERATIONS = 10;
     int FAST_STEP = 5;
-    int FAST_THRESHOLD = 30;
 
     int LOWER_LIMIT_THRESHOLD = 10;
     int HIGH_LIMIT_THRESHOLD = 100;
@@ -40,7 +40,7 @@ public:
     cv::Mat mask;
     
     FeatureMatcherFinder() {}
-    FeatureMatcherFinder(cv::Mat frame);
+    FeatureMatcherFinder(int rows, int cols, int fast_threshold, int orb_edge_threshold);
 
     std::vector<cv::DMatch> match_features_last_frame(KeyFrame *current_kf, KeyFrame *past_kf);
     std::vector<cv::KeyPoint> extract_keypoints(cv::Mat frame);

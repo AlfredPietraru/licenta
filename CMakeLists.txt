@@ -31,9 +31,10 @@ set( DBoW3_LIBS "/usr/local/lib/libDBoW3.a" )
 # include_directories(${G2O_INCLUDE_DIRS})
 
 
-find_package(Sophus REQUIRED)
+FIND_PACKAGE(Sophus REQUIRED)
 include_directories(${Sophus_INCLUDE_DIRS})
 FIND_PACKAGE(DBoW3 REQUIRED) 
+FIND_PACKAGE(yaml-cpp REQUIRED)
 include_directories(${DBoW3_LIBS})
 
 
@@ -47,6 +48,7 @@ set(SOURCES
     src/MapPoint.cpp
     src/KeyFrame.cpp
     src/OrbMatcher.cpp
+    src/config.cpp
 )
 
 set(HEADERS
@@ -58,12 +60,15 @@ set(HEADERS
     "include/MapPoint.h"
     "include/KeyFrame.h"
     "include/OrbMatcher.h"
+    "include/config.h"
 )
+
 
 add_executable(main ${SOURCES} ${HEADERS})
 
 target_link_libraries(main
     fmt::fmt
+    yaml-cpp
     ${OpenCV_LIBS}
     ${CERES_LIBRARIES}
     ${Sophus_LIBRARIES}
