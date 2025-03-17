@@ -11,8 +11,8 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-    std::string rgb_path = "../rgbd_dataset_freiburg1_rpy/rgb";
-    std::string depth_path = "../rgbd_dataset_freiburg1_rpy/depth";
+    std::string rgb_path = "../rgbd_dataset_freiburg1_xyz/rgb";
+    std::string depth_path = "../rgbd_dataset_freiburg1_xyz/depth";
     Config cfg = loadConfig("../config.yaml");
     Tracker *tracker = new Tracker(cfg);
     bool start = true;
@@ -30,10 +30,13 @@ int main(int argc, char **argv)
     
     std::sort(rgb_file_paths.begin(), rgb_file_paths.end());
     std::sort(depth_file_paths.begin(), depth_file_paths.end());
-    //  CEVA GRESIT LA DEPTH
     for (int i = 0; i < rgb_file_paths.size(); i++) {
+        std::cout << rgb_file_paths[i] << " " << depth_file_paths[i] << "\n";
         distorted_frame = cv::imread(rgb_file_paths[i], cv::IMREAD_COLOR_RGB);
         depth = cv::imread(depth_file_paths[i], cv::IMREAD_UNCHANGED);
+        // cv::imshow("distorted_image", distorted_frame);
+        // cv::imshow("Depth Map", depth);
+        // cv::waitKey(0);
         cv::undistort(distorted_frame, frame, cfg.K, cfg.distortion);
         if (start) {
             mapp = tracker->initialize(frame, depth);

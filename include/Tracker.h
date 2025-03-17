@@ -59,7 +59,7 @@ private:
 
     
     // important functions
-    Sophus::SE3d TrackWithLastFrame(vector<DMatch> good_matches);
+    // Sophus::SE3d TrackWithLastFrame(vector<DMatch> good_matches);
     Sophus::SE3d TrackWithLastFrame(std::vector<std::pair<MapPoint*, cv::KeyPoint>> matches);
     void Optimize_Pose_Coordinates(Map mapp, cv::Mat frame);
     bool Is_KeyFrame_needed(Map mapp);

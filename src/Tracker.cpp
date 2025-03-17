@@ -16,40 +16,7 @@ Map Tracker::initialize(Mat frame, Mat depth) {
     this->get_current_key_frame(frame, depth);
     Map mapp = Map(this->current_kf);
     this->reference_kf = this->current_kf;
-    std::cout << "SFARSIT INITIALIZARE\n";
     return mapp;
-}
-
-Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
-    vector<Point3d> points_in3d;
-    vector<Point2d> points_in2d;
-    vector<cv::KeyPoint> prev_kps = this->prev_kf->get_all_keypoints();
-    cv::Mat depth_matrix = this->prev_kf->depth_matrix;
-    vector<cv::KeyPoint> current_kps = this->current_kf->get_all_keypoints();
-    for (DMatch m : good_matches) {
-      if (m.queryIdx >= prev_kps.size() || m.trainIdx >= current_kps.size()) continue;
-        float dd = this->prev_kf->compute_depth_in_keypoint(prev_kps[m.queryIdx]);
-        // std::cout << dd << " ";
-      if (dd <= 0) continue;
-      float new_x = (prev_kps[m.queryIdx].pt.x - this->prev_kf->K(0, 2)) * dd / this->prev_kf->K(0, 0);
-      float new_y = (prev_kps[m.queryIdx].pt.y - this->prev_kf->K(1, 2)) * dd / this->prev_kf->K(1, 1);
-      points_in3d.push_back(Point3d(new_x, new_y, dd));
-      points_in2d.push_back(Point2d(current_kps[m.trainIdx].pt.x, current_kps[m.trainIdx].pt.y));
-    }
-    std::cout  << points_in3d.size() << " " << points_in2d.size() << " puncte gasite pentru alogirtmul pnp\n";
-    Mat r, t;
-    // pag 160 - slambook.en
-    vector<int> inliers;
-    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, this->ransac_iteration, 
-        this->optimizer_window, this->ransac_confidence, inliers); 
-    std::cout << inliers.size() << " inliers found in algorithm\n";
-    Mat R;
-    cv::Rodrigues(r, R);
-    Eigen::Matrix3d R_eigen;
-    cv::cv2eigen(R, R_eigen);
-    Eigen::Vector3d t_eigen;
-    t_eigen << t.at<double>(0), t.at<double>(1), t.at<double>(2);
-    return Sophus::SE3d(R_eigen,  t_eigen);
 }
 
 Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint*, cv::KeyPoint>> matches) {
@@ -68,7 +35,8 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint*, cv::Ke
     Mat r, t;
     // pag 160 - slambook.en
     vector<int> inliers;
-    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, 1000, this->optimizer_window, 0.99, inliers); 
+    // cv::solvePnP(points_in3d, points_in2d, K, cv::Mat(), r, t, false);
+    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, false, this->ransac_iteration, this->optimizer_window, this->ransac_confidence, inliers); 
     std::cout << inliers.size() << " inliers found in algorithm\n";
     Mat R;
     cv::Rodrigues(r, R);
@@ -114,9 +82,10 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_fr
     this->prev_kf = this->current_kf;
     this->get_current_key_frame(frame, depth);
     VelocityEstimation();
-    std::vector<std::pair<MapPoint*, cv::KeyPoint>> matches = matcher->match_two_consecutive_frames(this->prev_kf, this->current_kf, this->optimizer_window);
+    std::vector<std::pair<MapPoint*, cv::KeyPoint>> matches = matcher->match_two_consecutive_frames(this->prev_kf,
+             this->current_kf, this->optimizer_window);
     std::cout << matches.size() << " puncte au fost matchuite\n\n";
-    if (matches.size() < 50) {
+    if (matches.size() < 20) {
         this->tracking_was_lost();
     } else {
         for (int i = 0; i < 7; i++) {
@@ -124,11 +93,11 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_fr
         }
         std::cout << " inainte de optimizare \n";
         Sophus::SE3d relative_pose_last_2_frames = TrackWithLastFrame(matches);
-        for (int i = 0; i < 7; i++) {
-            std::cout << relative_pose_last_2_frames.data()[i] << " "; 
-        }
+        // for (int i = 0; i < 7; i++) {
+        //     std::cout << relative_pose_last_2_frames.data()[i] << " "; 
+        // }
         std::cout << " modificarea intre frame-uri \n";
-        this->current_kf->Tiw = this->current_kf->Tiw * relative_pose_last_2_frames;
+        this->current_kf->Tiw = relative_pose_last_2_frames;
         for (int i = 0; i < 7; i++) {
             std::cout << this->current_kf->Tiw.data()[i] << " "; 
         }
@@ -145,3 +114,36 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_fr
         key_frames_buffer.push_back(this->current_kf);
     }
 }
+
+
+// Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
+//     vector<Point3d> points_in3d;
+//     vector<Point2d> points_in2d;
+//     vector<cv::KeyPoint> prev_kps = this->prev_kf->get_all_keypoints();
+//     cv::Mat depth_matrix = this->prev_kf->depth_matrix;
+//     vector<cv::KeyPoint> current_kps = this->current_kf->get_all_keypoints();
+//     for (DMatch m : good_matches) {
+//       if (m.queryIdx >= prev_kps.size() || m.trainIdx >= current_kps.size()) continue;
+//         float dd = this->prev_kf->compute_depth_in_keypoint(prev_kps[m.queryIdx]);
+//         // std::cout << dd << " ";
+//       if (dd <= 0) continue;
+//       float new_x = (prev_kps[m.queryIdx].pt.x - this->prev_kf->K(0, 2)) * dd / this->prev_kf->K(0, 0);
+//       float new_y = (prev_kps[m.queryIdx].pt.y - this->prev_kf->K(1, 2)) * dd / this->prev_kf->K(1, 1);
+//       points_in3d.push_back(Point3d(new_x, new_y, dd));
+//       points_in2d.push_back(Point2d(current_kps[m.trainIdx].pt.x, current_kps[m.trainIdx].pt.y));
+//     }
+//     std::cout  << points_in3d.size() << " " << points_in2d.size() << " puncte gasite pentru alogirtmul pnp\n";
+//     Mat r, t;
+//     // pag 160 - slambook.en
+//     vector<int> inliers;
+//     cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, this->ransac_iteration, 
+//         this->optimizer_window, this->ransac_confidence, inliers); 
+//     std::cout << inliers.size() << " inliers found in algorithm\n";
+//     Mat R;
+//     cv::Rodrigues(r, R);
+//     Eigen::Matrix3d R_eigen;
+//     cv::cv2eigen(R, R_eigen);
+//     Eigen::Vector3d t_eigen;
+//     t_eigen << t.at<double>(0), t.at<double>(1), t.at<double>(2);
+//     return Sophus::SE3d(R_eigen,  t_eigen);
+// }

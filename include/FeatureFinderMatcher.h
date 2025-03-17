@@ -26,6 +26,7 @@ public:
     int fast_lower_limit;
     int fast_higher_limit;
     int fast_threshold;
+    int interlaping;
 
     std::vector<int> fast_features_cell;
     std::vector<int> nr_keypoints_found;

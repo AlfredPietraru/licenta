@@ -8,18 +8,19 @@ Tracker:
 ORB:
   num_features: 1000
   edge_threshold: 20
-  patch_size: 25
-  fast_threshold: 20
+  patch_size: 10
+  fast_threshold: 30
   min_keypoints_cell: 5
   feature_window: 80
   orb_iterations: 10
   fast_step: 5
   fast_lower_limit: 10
   fast_higher_limit: 80
+  interlaping: 2
 
 # RANSAC for PnP
 PnP:
-  reprojection_window: 8
+  reprojection_window: 10
   ransac_iterations: 100
   confidence: 0.99
 

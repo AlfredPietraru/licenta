@@ -31,6 +31,7 @@ struct Config {
     int fast_lower_limit;
     int fast_higher_limit;
     int fast_threshold;
+    int interlaping;
 
     int reprojection_window;
     int ransac_iterations;

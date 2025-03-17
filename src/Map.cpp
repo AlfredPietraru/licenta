@@ -42,8 +42,8 @@ Map::Map(KeyFrame *first_kf)
     std::vector<MapPoint *> kf_map_points = this->compute_map_points(first_kf);
     this->map_points.push_back(kf_map_points);
     this->graph.push_back(std::pair<KeyFrame *, std::unordered_map<KeyFrame *, int>>(first_kf, {}));
-    
     debug_reprojection(kf_map_points, kf_map_points, first_kf, 15);
+    std::cout << "SFARSIT INITIALIZARE\n";
 }
 
 std::vector<MapPoint *> Map::get_reprojected_map_points(KeyFrame *curr_frame, KeyFrame *reference_kf)

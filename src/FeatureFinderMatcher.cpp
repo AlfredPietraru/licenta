@@ -13,6 +13,7 @@ FeatureMatcherFinder::FeatureMatcherFinder(int rows, int cols, Config cfg) {
     this->fast_lower_limit = cfg.fast_lower_limit;
     this->fast_higher_limit = cfg.fast_higher_limit;
     this->fast_threshold = cfg.fast_threshold;
+    this->interlaping = cfg.interlaping;
     this->matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
 }
 
@@ -50,13 +51,13 @@ std::vector<cv::DMatch> FeatureMatcherFinder::match_features_last_frame(KeyFrame
 } 
 
 std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame) {
-    std::vector<cv::KeyPoint> keypoints;  
+    std::vector<cv::KeyPoint> keypoints;
     // std::cout << nr_cells_row << " " << nr_cells_collumn << "\n";
-    for (int i = 0; i < nr_cells_row * 4 - 3; i++) {
-        for (int j = 0; j < nr_cells_collumn * 4 - 3; j++) {
+    for (int i = 0; i < nr_cells_row * interlaping - interlaping + 1; i++) {
+        for (int j = 0; j < nr_cells_collumn * interlaping - interlaping + 1; j++) {
             std::vector<cv::KeyPoint> current_keypoints;
             // std::cout << i << " " << j << "\n";
-            cv::Rect roi(j * this->window / 4, i * this->window / 4, this->window, this->window);
+            cv::Rect roi(j * this->window / interlaping, i * this->window / interlaping, this->window, this->window);
             // std::cout << roi << "\n";
             cv::Mat cell_img = frame(roi).clone();
 
@@ -93,8 +94,8 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame)
             // cv::waitKey(0);
             // std::cout << "\n";
             for (auto &kp : current_keypoints) {
-                kp.pt.x += j * window / 4;
-                kp.pt.y += i * window / 4;
+                kp.pt.x += j * window / interlaping;
+                kp.pt.y += i * window / interlaping;
             }
             // for (cv::KeyPoint kp : current_keypoints) {
             //     std::cout << kp.pt << " ";
