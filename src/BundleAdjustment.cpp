@@ -10,42 +10,48 @@ public:
                  map_coordinate(map_coordinate), scale_sigma(scale_sigma), K(K), is_monocular(is_monocular) {}
 
     template <typename T>
-    bool operator()(const T *const se3, T *residuals) const
+    bool operator()(const T *const q, const T *const t, T *residuals) const
     {
-        Eigen::Quaternion<T> q(se3[3], se3[0], se3[1], se3[2]); 
-        q.normalize();
-        Sophus::SE3<T> pose = Sophus::SE3<T>(q, Eigen::Vector3<T>(se3[4] ,se3[5], se3[6]));
 
-        const Eigen::Vector3<T> camera_coordinates = pose.matrix3x4() * map_coordinate;
-        T d = camera_coordinates(2);
-        if (d < T(1e-6)) {
-            residuals[0] = T(1e4); 
-            residuals[1] = T(1e4);
-            if (this->is_monocular) return true;
-            residuals[2] = T(1e4);
-            return true;
-        }
+        // ceres::EigenQuaternionParameterization()
+        T map_coordinate_world[3];
+        map_coordinate_world[0] = (T)map_coordinate(0);
+        map_coordinate_world[1] = (T)map_coordinate(1);
+        map_coordinate_world[2] = (T)map_coordinate(2);
+        T camera_coordinates[3];
+        ceres::QuaternionRotatePoint(q, map_coordinate_world, camera_coordinates);
+        camera_coordinates[0] += t[0];
+        camera_coordinates[1] += t[1];
+        camera_coordinates[2] += t[2];
+        T d = camera_coordinates[2];
+        // if (d < T(1e-6)) {
+        //     residuals[0] = T(1e4); 
+        //     residuals[1] = T(1e4);
+        //     if (this->is_monocular) return true;
+        //     residuals[2] = T(1e4);
+        //     return true;
+        // }
 
-        T x = K(0, 0) * camera_coordinates(0) / d + K(0, 2);
-        T y = K(1, 1) * camera_coordinates(1) / d + K(1, 2);
+        T x = K(0, 0) * camera_coordinates[0] / d + K(0, 2);
+        T y = K(1, 1) * camera_coordinates[1] / d + K(1, 2);
         residuals[0] = (x - observed(0)) / scale_sigma;
         residuals[1] = (y - observed(1)) / scale_sigma;
 
         if (this->is_monocular) return true;
-        T z_projected = K(0, 0) * (camera_coordinates(0) - BASELINE) / d + K(0, 2);
+        T z_projected = K(0, 0) * (camera_coordinates[0] - BASELINE) / d + K(0, 2);
         residuals[2] = (z_projected - observed(2)) / scale_sigma;  
         return true;
     }
 
     static ceres::CostFunction *Create_Monocular(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
     {
-        return (new ceres::AutoDiffCostFunction<BundleError, 2, 7>(
+        return (new ceres::AutoDiffCostFunction<BundleError, 2, 4, 3>(
             new BundleError(observed, map_coordinate, scale_sigma, K, true)));
     }
 
     static ceres::CostFunction *Create_Stereo(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
     {
-        return (new ceres::AutoDiffCostFunction<BundleError, 3, 7>(
+        return (new ceres::AutoDiffCostFunction<BundleError, 3, 4, 3>(
             new BundleError(observed, map_coordinate, scale_sigma, K, false)));
     }
 
@@ -58,35 +64,46 @@ private:
     double scale_sigma;
 };
 
-Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_points, std::vector<cv::KeyPoint> kps)
+Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<std::pair<MapPoint *, cv::KeyPoint>> matches)
 { 
     const double BASELINE = 0.08;
-    if (map_points.size() == 0) return kf->Tiw;
+    if (matches.size() == 0) return kf->Tiw;
     ceres::Problem problem;
     int nr_monocular_points = 0;
     int nr_stereo_points = 0;
-    for (int i = 0; i < map_points.size(); i++)
+    double q[4];
+    q[0] = kf->Tiw.unit_quaternion().w();
+    q[1] = kf->Tiw.unit_quaternion().x();
+    q[2] = kf->Tiw.unit_quaternion().y();
+    q[3] = kf->Tiw.unit_quaternion().z();
+    double t[3];
+    t[0] = kf->Tiw.translation().x();
+    t[1] = kf->Tiw.translation().y();
+    t[2] = kf->Tiw.translation().z();
+
+    for (int i = 0; i < matches.size(); i++)
     {
         ceres::CostFunction *cost_function;
-        double sigma = std::pow(1.2, kps[i].octave);
+        double sigma = std::pow(1.2, matches[i].second.octave);
         // std::cout << sigma << " ";
-        float dd = kf->compute_depth_in_keypoint(kps[i]);
+        float dd = kf->compute_depth_in_keypoint(matches[i].second);
+        cv::KeyPoint kp = matches[i].second;
         if (dd <= 0) {
             nr_monocular_points ++;
-            cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, 0), map_points[i]->wcoord, sigma, kf->K);
+            cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kp.pt.x, kp.pt.y, 0), matches[i].first->wcoord, sigma, kf->K);
         } else {
             nr_stereo_points++;
-            double fake_right_coordinate = kps[i].pt.x - (kf->K(0, 0) * BASELINE / dd);
-            cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kps[i].pt.x, kps[i].pt.y, fake_right_coordinate), map_points[i]->wcoord, sigma, kf->K);
+            double fake_right_coordinate = kp.pt.x - (kf->K(0, 0) * BASELINE / dd);
+            cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kp.pt.x, kp.pt.y, fake_right_coordinate), matches[i].first->wcoord, sigma, kf->K);
         }
         ceres::LossFunction *loss_function = new ceres::CauchyLoss(1.0);
-        problem.AddResidualBlock(cost_function, loss_function, kf->Tiw.data());
+        problem.AddResidualBlock(cost_function, loss_function, q, t);
     }
     // std::cout << "au fost gasite atatea puncte monoculare " << nr_monocular_points << "\n";
     // std::cout << "au fost gasite atatea puncte stereo " << nr_stereo_points << "\n\n";
     // std::cout << "\n";
-    ceres::Solver::Options options;
-    options.linear_solver_type = solver;
+    ceres::Solver::Options options;  
+    options.linear_solver_type =  ceres::LinearSolverType::SPARSE_NORMAL_CHOLESKY;
     options.function_tolerance = 1e-6;
     options.gradient_tolerance = 1e-6;
     options.parameter_tolerance = 1e-8;
@@ -97,5 +114,5 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << "\n";
-    return kf->Tiw;
+    return Sophus::SE3d(Eigen::Quaterniond(q[0], q[1], q[2], q[3]), Eigen::Vector3d(t[0], t[1], t[2]));
 }

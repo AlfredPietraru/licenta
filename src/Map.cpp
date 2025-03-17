@@ -93,18 +93,18 @@ std::vector<MapPoint *> Map::compute_local_map(KeyFrame *kf)
 }
 
 // INCOMPLET, vor exista map point-uri duplicate
-std::pair<std::vector<MapPoint *>, std::vector<cv::KeyPoint>> Map::track_local_map(KeyFrame *curr_kf, int window)
+std::vector<std::pair<MapPoint*, cv::KeyPoint>> Map::track_local_map(KeyFrame *curr_kf, int window)
 {
+    std::vector<std::pair<MapPoint*, cv::KeyPoint>> out;
     std::vector<MapPoint *> local_map = this->compute_local_map(curr_kf);
     std::vector<MapPoint *> out_map;
-    std::vector<cv::KeyPoint> kps;
     for (MapPoint *mp : local_map)
     {
         int idx = mp->reproject_map_point(curr_kf, window, this->orb_descriptor_value);
         if (idx == -1) continue;
         out_map.push_back(mp);
-        kps.push_back(curr_kf->features[idx].get_key_point());
+        out.push_back(std::pair<MapPoint*, cv::KeyPoint>(mp, curr_kf->features[idx].get_key_point()));
     }
     debug_reprojection(local_map, out_map, curr_kf, window);
-    return std::pair<std::vector<MapPoint *>, std::vector<cv::KeyPoint>>(out_map, kps);
+    return out;
 }

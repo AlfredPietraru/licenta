@@ -15,10 +15,9 @@ class BundleAdjustment
 public:
     int NUMBER_ITERATIONS = 100; 
     double HUBER_LOSS_VALUE = 1; 
-    ceres::LinearSolverType solver = ceres::LinearSolverType::DENSE_QR;  
     
     BundleAdjustment() {}
-    Sophus::SE3d solve(KeyFrame *frame, std::vector<MapPoint*> map_points, std::vector<cv::KeyPoint> kps);
+    Sophus::SE3d solve(KeyFrame *frame, std::vector<std::pair<MapPoint *, cv::KeyPoint>> matches);
 };
 
 #endif
