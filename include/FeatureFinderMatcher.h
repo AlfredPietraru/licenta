@@ -26,26 +26,11 @@ public:
     int fast_lower_limit;
     int fast_higher_limit;
     int fast_threshold;
-    // int FAST_THRESHOLD;
-    // int ORB_EDGE_THRESHOLD = 20;
-    // int ORB_PATCH_SIZE = 20;
-    // int ORB_FEATURES = 1500;
-    // int MINIM_KEYPOINTS = 5;
-    // int WINDOW = 80;
-    // int ORB_ITERATIONS = 10;
-    // int FAST_STEP = 5;
-
-
-    // int LOWER_LIMIT_THRESHOLD = 10;
-    // int HIGH_LIMIT_THRESHOLD = 100;
-    
-    // int LIMIT_MATCHING = 20;
 
     std::vector<int> fast_features_cell;
     std::vector<int> nr_keypoints_found;
     cv::Ptr<cv::ORB> orb;
     cv::Ptr<cv::DescriptorMatcher> matcher;
-    cv::Mat mask;
     
     FeatureMatcherFinder() {}
     FeatureMatcherFinder(int rows, int cols, Config cfg);

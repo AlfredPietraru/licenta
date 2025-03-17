@@ -40,7 +40,8 @@ Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
     Mat r, t;
     // pag 160 - slambook.en
     vector<int> inliers;
-    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, 100, this->optimizer_window, 0.99, inliers); 
+    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, this->ransac_iteration, 
+        this->optimizer_window, this->ransac_confidence, inliers); 
     std::cout << inliers.size() << " inliers found in algorithm\n";
     Mat R;
     cv::Rodrigues(r, R);

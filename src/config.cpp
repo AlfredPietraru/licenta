@@ -13,7 +13,6 @@ Config loadConfig(const std::string &filename) {
     cfg.initial_translation = Eigen::Vector3d(t_yaml[0].as<double>(), t_yaml[1].as<double>(), 
         t_yaml[2].as<double>());
     cfg.initial_pose = Sophus::SE3d(cfg.initial_rotation, cfg.initial_translation);
-    cfg.reprojection_window = config["Tracker"]["reprojection_window"].as<int>();
     
     // ORB parameters
     cfg.num_features = config["ORB"]["num_features"].as<int>();
@@ -23,15 +22,14 @@ Config loadConfig(const std::string &filename) {
     cfg.fast_step = config["ORB"]["fast_step"].as<int>();
     cfg.fast_threshold = config["ORB"]["fast_threshold"].as<int>();
     cfg.min_keypoints_cell = config["ORB"]["min_keypoints_cell"].as<int>();
-
     cfg.orb_iterations = config["ORB"]["orb_iterations"].as<int>();
     cfg.fast_lower_limit = config["ORB"]["fast_lower_limit"].as<int>();
     cfg.fast_higher_limit = config["ORB"]["fast_higher_limit"].as<int>();
-    std::cout << cfg.reprojection_window << "\n\n\n";
     
     // PnP RANSAC parameters
+    cfg.reprojection_window = config["PnP"]["reprojection_window"].as<int>();
     cfg.ransac_iterations = config["PnP"]["ransac_iterations"].as<int>();
-    cfg.reprojection_error = config["PnP"]["reprojection_error"].as<double>();
+    cfg.confidence = config["PnP"]["confidence"].as<double>();
     
     auto K_yaml = config["Camera"]["K"];
     cfg.K = cv::Mat(3, 3, CV_64F);

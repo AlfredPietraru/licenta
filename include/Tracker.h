@@ -32,7 +32,9 @@ public:
         this->fmf = new FeatureMatcherFinder(480, 640, cfg);
         this->bundleAdjustment = new BundleAdjustment();
         this->matcher = new OrbMatcher();
-        this->optimizer_window = 8;
+        this->optimizer_window = cfg.reprojection_window;
+        this->ransac_iteration = cfg.ransac_iterations;
+        this->ransac_confidence = cfg.confidence;
     }
 
 private:
@@ -43,6 +45,8 @@ private:
     Eigen::Matrix3d K_eigen;
     Sophus::SE3d initial_pose;
     int optimizer_window;
+    int ransac_iteration;
+    float ransac_confidence;
 
 
     int frames_tracked = 0;

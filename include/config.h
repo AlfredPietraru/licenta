@@ -14,7 +14,6 @@ struct Config {
     Eigen::Quaterniond initial_rotation;
     Eigen::Vector3d initial_translation;
     Sophus::SE3d initial_pose;
-    int reprojection_window;
 
     // ORB
     int num_features;
@@ -33,8 +32,9 @@ struct Config {
     int fast_higher_limit;
     int fast_threshold;
 
+    int reprojection_window;
     int ransac_iterations;
-    double reprojection_error;
+    float confidence;
 };
 
 Config loadConfig(const std::string &filename);

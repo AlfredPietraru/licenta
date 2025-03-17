@@ -1,5 +1,4 @@
 Tracker:
-  reprojection_window: 15
   # first is w, x, y, z similar with order in Eigen::Quaternion();
   initial_rotation: [-0.4843, 0.6818, 0.5482, -0.0115]
   initial_translation: [1.3001, 0.6882, 1.5745]
@@ -11,7 +10,6 @@ ORB:
   edge_threshold: 20
   patch_size: 25
   fast_threshold: 20
-  
   min_keypoints_cell: 5
   feature_window: 80
   orb_iterations: 10
@@ -21,8 +19,8 @@ ORB:
 
 # RANSAC for PnP
 PnP:
-  ransac_iterations: 1000
-  reprojection_error: 2.0
+  reprojection_window: 8
+  ransac_iterations: 100
   confidence: 0.99
 
 # Keyframe insertion
