@@ -91,7 +91,8 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<MapPoint*> map_po
     options.gradient_tolerance = 1e-6;
     options.parameter_tolerance = 1e-8;
     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-    options.minimizer_progress_to_stdout = false;
+    // options.minimizer_progress_to_stdout = true;
+    // options.check_gradients = true;
     options.max_num_iterations = NUMBER_ITERATIONS;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);

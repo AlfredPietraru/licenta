@@ -12,9 +12,9 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, keypoints, descriptors, depth, idx, frame);
 }
 
-Map Tracker::initialize(Mat frame, Mat depth) { 
+Map Tracker::initialize(Mat frame, Mat depth, Config cfg) { 
     this->get_current_key_frame(frame, depth);
-    Map mapp = Map(this->current_kf);
+    Map mapp = Map(this->current_kf, cfg);
     this->reference_kf = this->current_kf;
     return mapp;
 }
@@ -35,8 +35,8 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint*, cv::Ke
     Mat r, t;
     // pag 160 - slambook.en
     vector<int> inliers;
-    // cv::solvePnP(points_in3d, points_in2d, K, cv::Mat(), r, t, false);
-    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, false, this->ransac_iteration, this->optimizer_window, this->ransac_confidence, inliers); 
+    cv::solvePnP(points_in3d, points_in2d, K, cv::Mat(), r, t, false);
+    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, this->ransac_iteration, this->optimizer_window, this->ransac_confidence, inliers); 
     std::cout << inliers.size() << " inliers found in algorithm\n";
     Mat R;
     cv::Rodrigues(r, R);

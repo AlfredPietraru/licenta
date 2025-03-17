@@ -36,6 +36,7 @@ struct Config {
     int reprojection_window;
     int ransac_iterations;
     float confidence;
+    int orb_descriptor_value;
 };
 
 Config loadConfig(const std::string &filename);

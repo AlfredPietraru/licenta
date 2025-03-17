@@ -39,7 +39,7 @@ int main(int argc, char **argv)
         // cv::waitKey(0);
         cv::undistort(distorted_frame, frame, cfg.K, cfg.distortion);
         if (start) {
-            mapp = tracker->initialize(frame, depth);
+            mapp = tracker->initialize(frame, depth, cfg);
             start = !start;
             continue;
         }

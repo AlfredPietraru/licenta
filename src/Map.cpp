@@ -3,10 +3,10 @@
 Map::Map() {}
 
 
-void debug_reprojection(std::vector<MapPoint *> local_map, std::vector<MapPoint *> out_map, KeyFrame *first_kf, int window) {
+void Map::debug_reprojection(std::vector<MapPoint *> local_map, std::vector<MapPoint *> out_map, KeyFrame *first_kf, int window) {
     std::vector<cv::KeyPoint> map_point_matched;
     for (MapPoint *mp : out_map) {
-        int out = mp->reproject_map_point(first_kf, window);
+        int out = mp->reproject_map_point(first_kf, window, orb_descriptor_value);
         if (out == -1) continue;
         map_point_matched.push_back(first_kf->features[out].get_key_point());
     }
@@ -37,8 +37,9 @@ std::vector<MapPoint *> Map::compute_map_points(KeyFrame *frame)
     return current_points_found; 
 }
 
-Map::Map(KeyFrame *first_kf)
+Map::Map(KeyFrame *first_kf, Config cfg)
 {
+    this->orb_descriptor_value = orb_descriptor_value;
     std::vector<MapPoint *> kf_map_points = this->compute_map_points(first_kf);
     this->map_points.push_back(kf_map_points);
     this->graph.push_back(std::pair<KeyFrame *, std::unordered_map<KeyFrame *, int>>(first_kf, {}));
@@ -99,7 +100,7 @@ std::pair<std::vector<MapPoint *>, std::vector<cv::KeyPoint>> Map::track_local_m
     std::vector<cv::KeyPoint> kps;
     for (MapPoint *mp : local_map)
     {
-        int idx = mp->reproject_map_point(curr_kf, window);
+        int idx = mp->reproject_map_point(curr_kf, window, this->orb_descriptor_value);
         if (idx == -1) continue;
         out_map.push_back(mp);
         kps.push_back(curr_kf->features[idx].get_key_point());

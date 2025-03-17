@@ -12,16 +12,18 @@
 #include <opencv2/calib3d.hpp>
 #include "MapPoint.h"
 #include "KeyFrame.h"
+#include "config.h"
 
 class Map {
 public:
-    int KEYFRAMES_WINDOW = 10; 
+    int KEYFRAMES_WINDOW = 10;
+    int orb_descriptor_value; 
 
     std::vector<std::vector<MapPoint*>> map_points;
     std::vector<std::pair<KeyFrame*, std::unordered_map<KeyFrame*, int>>> graph;
 
     Map();
-    Map(KeyFrame *first_kf);
+    Map(KeyFrame *first_kf, Config cfg);
     
     std::pair<std::vector<MapPoint*>, std::vector<cv::KeyPoint>> track_local_map(KeyFrame *curr_kf, int window);
 
@@ -29,6 +31,7 @@ public:
     std::vector<MapPoint*> compute_local_map(KeyFrame *kf);
     std::vector<MapPoint*> compute_map_points(KeyFrame *kf);
     std::vector<MapPoint*> get_reprojected_map_points(KeyFrame *frame, KeyFrame *reference_kf);
+    void debug_reprojection(std::vector<MapPoint *> local_map, std::vector<MapPoint *> out_map, KeyFrame *first_kf, int window);
 };
 
 #endif

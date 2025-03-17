@@ -31,6 +31,7 @@ Keyframe:
 
 # Map filtering
 Map:
+  orb_descriptor_value: 40
   min_observations: 3
   max_depth_ratio: 1.5
 

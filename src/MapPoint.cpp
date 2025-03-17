@@ -49,7 +49,7 @@ int MapPoint::ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2)
 }
 
 
-int MapPoint::find_orb_correspondence(KeyFrame *kf, int window) {
+int MapPoint::find_orb_correspondence(KeyFrame *kf, int window, int orb_descriptor_value) {
     Eigen::Vector3d point_camera_coordinates = kf->fromWorldToImage(this->wcoord);
     double u = point_camera_coordinates(0);
     double v = point_camera_coordinates(1);
@@ -72,7 +72,7 @@ int MapPoint::find_orb_correspondence(KeyFrame *kf, int window) {
     }
     // std::cout << min_hamm_dist << " ";
     // if (min_hamm_dist == 10000) return -1;
-    if (min_hamm_dist > 40) return -1;
+    if (min_hamm_dist > orb_descriptor_value) return -1;
     // feature was found - 5
     return right_idx;
 }
@@ -82,7 +82,7 @@ Eigen::Vector3d MapPoint::get_3d_vector() {
 }
 
 
-int MapPoint::reproject_map_point(KeyFrame *kf, int window) {
-    int out = this->map_point_belongs_to_keyframe(kf) ?  find_orb_correspondence(kf, window) : -1; 
+int MapPoint::reproject_map_point(KeyFrame *kf, int window, int orb_descriptor_value) {
+    int out = this->map_point_belongs_to_keyframe(kf) ?  find_orb_correspondence(kf, window, orb_descriptor_value) : -1; 
     return out;
 }

@@ -1,6 +1,7 @@
 #include "../include/OrbMatcher.h"
 
-std::vector<std::pair<MapPoint*, cv::KeyPoint>> OrbMatcher::match_two_consecutive_frames(KeyFrame *pref_kf, KeyFrame *curr_kf, int window) {
+std::vector<std::pair<MapPoint*, cv::KeyPoint>> OrbMatcher::match_two_consecutive_frames(KeyFrame *pref_kf, KeyFrame *curr_kf,
+         int window) {
     // for (int i = 0; i < 7; i++) {
     //     std::cout << pref_kf->Tiw.data()[i] << " "; 
     // }
@@ -27,7 +28,7 @@ std::vector<std::pair<MapPoint*, cv::KeyPoint>> OrbMatcher::match_two_consecutiv
             idx_mp_null++;
             continue;
         }
-        int kp_idx = mp->reproject_map_point(curr_kf, window);
+        int kp_idx = mp->reproject_map_point(curr_kf, window, orb_descriptor_value);
         if (kp_idx == -1) {
             invalid_kp_idx++;
             continue;

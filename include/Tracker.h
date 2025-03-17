@@ -23,7 +23,7 @@ using namespace cv;
 
 class Tracker {
 public:
-    Map initialize(Mat frame, Mat depth);
+    Map initialize(Mat frame, Mat depth, Config cfg);
     void tracking(Mat frame, Mat depth, Map map_points, vector<KeyFrame*> &key_frames_buffer);
     Tracker(Config cfg) {
         this->K = cfg.K;
@@ -31,7 +31,7 @@ public:
         this->initial_pose = cfg.initial_pose;
         this->fmf = new FeatureMatcherFinder(480, 640, cfg);
         this->bundleAdjustment = new BundleAdjustment();
-        this->matcher = new OrbMatcher();
+        this->matcher = new OrbMatcher(cfg.orb_descriptor_value);
         this->optimizer_window = cfg.reprojection_window;
         this->ransac_iteration = cfg.ransac_iterations;
         this->ransac_confidence = cfg.confidence;
