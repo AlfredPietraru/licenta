@@ -14,11 +14,7 @@ int main(int argc, char **argv)
     std::string rgb_path = "../rgbd_dataset_freiburg1_rpy/rgb";
     std::string depth_path = "../rgbd_dataset_freiburg1_rpy/depth";
     Config cfg = loadConfig("../config.yaml");
-    // Sophus::SE3d initial_pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
-    Eigen::Quaterniond q = Eigen::Quaterniond(-0.4843, 0.6818, 0.5482, -0.0115);
-    q.normalize();
-    Sophus::SE3d initial_pose = Sophus::SE3d(q, Eigen::Vector3d(1.3001, 0.6882, 1.5745));
-    Tracker *tracker = new Tracker(cfg.K, initial_pose, cfg);
+    Tracker *tracker = new Tracker(cfg);
     bool start = true;
     Map mapp;
     Mat distorted_frame, frame, depth; 

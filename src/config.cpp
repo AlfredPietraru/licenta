@@ -4,12 +4,29 @@
 Config loadConfig(const std::string &filename) {
     YAML::Node config = YAML::LoadFile(filename);
     Config cfg;
-
     // Tracker
+    auto q_yaml = config["Tracker"]["initial_rotation"];
+    cfg.initial_rotation = Eigen::Quaterniond(q_yaml[0].as<double>(), q_yaml[1].as<double>(),
+             q_yaml[2].as<double>(), q_yaml[3].as<double>());
+    cfg.initial_rotation.normalize();
+    auto t_yaml = config["Tracker"]["initial_translation"];
+    cfg.initial_translation = Eigen::Vector3d(t_yaml[0].as<double>(), t_yaml[1].as<double>(), 
+        t_yaml[2].as<double>());
+    cfg.initial_pose = Sophus::SE3d(cfg.initial_rotation, cfg.initial_translation);
     cfg.reprojection_window = config["Tracker"]["reprojection_window"].as<int>();
     
     // ORB parameters
     cfg.num_features = config["ORB"]["num_features"].as<int>();
+    cfg.feature_window = config["ORB"]["feature_window"].as<int>();
+    cfg.edge_threshold = config["ORB"]["edge_threshold"].as<int>();
+    cfg.patch_size = config["ORB"]["patch_size"].as<int>();
+    cfg.fast_step = config["ORB"]["fast_step"].as<int>();
+    cfg.fast_threshold = config["ORB"]["fast_threshold"].as<int>();
+    cfg.min_keypoints_cell = config["ORB"]["min_keypoints_cell"].as<int>();
+
+    cfg.orb_iterations = config["ORB"]["orb_iterations"].as<int>();
+    cfg.fast_lower_limit = config["ORB"]["fast_lower_limit"].as<int>();
+    cfg.fast_higher_limit = config["ORB"]["fast_higher_limit"].as<int>();
     std::cout << cfg.reprojection_window << "\n\n\n";
     
     // PnP RANSAC parameters

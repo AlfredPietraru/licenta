@@ -1,18 +1,19 @@
 #include "../include/FeatureFinderMatcher.h"
 
 
-FeatureMatcherFinder::FeatureMatcherFinder(int rows, int cols, int fast_threshold, int orb_edge_threshold) : 
-    FAST_THRESHOLD(fast_threshold),  ORB_EDGE_THRESHOLD(orb_edge_threshold) {
-    this->nr_cells_row = rows / WINDOW;
-    this->nr_cells_collumn = cols / WINDOW;
-    // std::cout << this->nr_cells_row << " " << this->nr_cells_collumn << " celule pe randuri si coloane\n";
-    this->orb = cv::ORB::create(ORB_FEATURES, 1.2F, 8, ORB_PATCH_SIZE, 0, 2, cv::ORB::HARRIS_SCORE, ORB_EDGE_THRESHOLD, FAST_THRESHOLD);
-    // this->matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
-    // this->matcher = cv::BFMatcher::create(cv::NORM_HAMMING, true);
+FeatureMatcherFinder::FeatureMatcherFinder(int rows, int cols, Config cfg) {
+    this->nr_cells_row = rows / cfg.feature_window;
+    this->nr_cells_collumn = cols / cfg.feature_window;
+    this->window = cfg.feature_window;
+    this->orb = cv::ORB::create(cfg.num_features, 1.2F, 8, cfg.edge_threshold, 0, 2, cv::ORB::HARRIS_SCORE, cfg.patch_size, cfg.fast_threshold);
+    this->orb_edge_threshold = cfg.edge_threshold;
+    this->fast_step = cfg.fast_step;
+    this->orb_iterations = cfg.orb_iterations;
+    this->minim_keypoints = cfg.min_keypoints_cell;
+    this->fast_lower_limit = cfg.fast_lower_limit;
+    this->fast_higher_limit = cfg.fast_higher_limit;
+    this->fast_threshold = cfg.fast_threshold;
     this->matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
-    this->fast_features_cell = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row, fast_threshold);
-    this->nr_keypoints_found = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row, 0);
-    this->mask = cv::Mat::zeros(rows, cols, CV_8U);
 }
 
 std::vector<cv::DMatch> FeatureMatcherFinder::match_features_last_frame(KeyFrame *current_kf, KeyFrame *past_kf) {
@@ -55,27 +56,27 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame)
         for (int j = 0; j < nr_cells_collumn * 4 - 3; j++) {
             std::vector<cv::KeyPoint> current_keypoints;
             // std::cout << i << " " << j << "\n";
-            cv::Rect roi(j * WINDOW / 4, i * WINDOW / 4, WINDOW, WINDOW);
+            cv::Rect roi(j * this->window / 4, i * this->window / 4, this->window, this->window);
             // std::cout << roi << "\n";
             cv::Mat cell_img = frame(roi).clone();
 
             // do stuff
             // ajunge la 0, si dupa NU mai da un kick start ceea ce nu e bine
-            int threshold = 20;
-            for (int iter = 0; iter < this->ORB_ITERATIONS - 1; iter++) {
+            int threshold = this->fast_threshold;
+            for (int iter = 0; iter < this->orb_iterations - 1; iter++) {
                 this->orb->setFastThreshold(threshold);
                 this->orb->detect(cell_img, current_keypoints);
                 // std::cout << current_keypoints.size() << " " << this->orb->getFastThreshold() << "  ";
-                if (current_keypoints.size() >= MINIM_KEYPOINTS && current_keypoints.size() <= MINIM_KEYPOINTS * 2) {
+                if (current_keypoints.size() >= minim_keypoints && current_keypoints.size() <= minim_keypoints * 2) {
                     // std::cout << "out " << i << " " << j << "\n";
                     break;
-                } else if (current_keypoints.size() < MINIM_KEYPOINTS) {
-                    if (threshold == LOWER_LIMIT_THRESHOLD) break;
-                    threshold -= this->FAST_STEP;
+                } else if (current_keypoints.size() < minim_keypoints) {
+                    if (threshold == this->fast_lower_limit) break;
+                    threshold -= this->fast_step;
                      
-                } else if (current_keypoints.size() > 2 * MINIM_KEYPOINTS) {
-                    if (threshold == HIGH_LIMIT_THRESHOLD) break;
-                    threshold += this->FAST_STEP;
+                } else if (current_keypoints.size() > 2 * minim_keypoints) {
+                    if (threshold == this->fast_higher_limit) break;
+                    threshold += this->fast_step;
                 }
                 this->orb->setFastThreshold(threshold);
                 current_keypoints.clear();
@@ -92,8 +93,8 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame)
             // cv::waitKey(0);
             // std::cout << "\n";
             for (auto &kp : current_keypoints) {
-                kp.pt.x += j * WINDOW / 4;
-                kp.pt.y += i * WINDOW / 4;
+                kp.pt.x += j * window / 4;
+                kp.pt.y += i * window / 4;
             }
             // for (cv::KeyPoint kp : current_keypoints) {
             //     std::cout << kp.pt << " ";
@@ -108,7 +109,7 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame)
     }
     // std::cout << keypoints.size() << " keypoints obtinute inainte de filtrare\n";
     cv::KeyPointsFilter::removeDuplicated(keypoints);
-    cv::KeyPointsFilter::runByImageBorder(keypoints, frame.size(), GLOBAL_EDGE_THRESHOLD);
+    cv::KeyPointsFilter::runByImageBorder(keypoints, frame.size(), this->orb_edge_threshold);
     // std::cout << keypoints.size() << " keypoints obtinute dupa filtrare\n\n";
     // std::cout << keypoints.size() << "\n";
 

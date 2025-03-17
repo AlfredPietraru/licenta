@@ -25,9 +25,11 @@ class Tracker {
 public:
     Map initialize(Mat frame, Mat depth);
     void tracking(Mat frame, Mat depth, Map map_points, vector<KeyFrame*> &key_frames_buffer);
-    Tracker(Mat K, Sophus::SE3d initial_pose, Config cfg) : K(K), initial_pose(initial_pose) {
-        cv::cv2eigen(K, this->K_eigen);
-        this->fmf = new FeatureMatcherFinder(480, 640, 10, 10);
+    Tracker(Config cfg) {
+        this->K = cfg.K;
+        cv::cv2eigen(cfg.K, this->K_eigen);
+        this->initial_pose = cfg.initial_pose;
+        this->fmf = new FeatureMatcherFinder(480, 640, cfg);
         this->bundleAdjustment = new BundleAdjustment();
         this->matcher = new OrbMatcher();
         this->optimizer_window = 8;
