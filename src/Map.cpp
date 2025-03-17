@@ -39,7 +39,7 @@ std::vector<MapPoint *> Map::compute_map_points(KeyFrame *frame)
 
 Map::Map(KeyFrame *first_kf, Config cfg)
 {
-    this->orb_descriptor_value = orb_descriptor_value;
+    this->orb_descriptor_value = cfg.orb_descriptor_value;
     std::vector<MapPoint *> kf_map_points = this->compute_map_points(first_kf);
     this->map_points.push_back(kf_map_points);
     this->graph.push_back(std::pair<KeyFrame *, std::unordered_map<KeyFrame *, int>>(first_kf, {}));

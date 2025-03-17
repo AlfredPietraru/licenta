@@ -33,7 +33,6 @@ Config loadConfig(const std::string &filename) {
     cfg.confidence = config["PnP"]["confidence"].as<double>();
 
     cfg.orb_descriptor_value = config["Map"]["orb_descriptor_value"].as<int>();
-    std::cout << cfg.orb_descriptor_value << "\n\n\n\n";
     
     auto K_yaml = config["Camera"]["K"];
     cfg.K = cv::Mat(3, 3, CV_64F);

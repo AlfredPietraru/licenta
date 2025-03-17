@@ -81,7 +81,7 @@ void Tracker::VelocityEstimation() {
 void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_frames_buffer) {
     this->prev_kf = this->current_kf;
     this->get_current_key_frame(frame, depth);
-    VelocityEstimation();
+    // VelocityEstimation();
     std::vector<std::pair<MapPoint*, cv::KeyPoint>> matches = matcher->match_two_consecutive_frames(this->prev_kf,
              this->current_kf, this->optimizer_window);
     std::cout << matches.size() << " puncte au fost matchuite\n\n";
@@ -96,7 +96,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_fr
         // for (int i = 0; i < 7; i++) {
         //     std::cout << relative_pose_last_2_frames.data()[i] << " "; 
         // }
-        std::cout << " modificarea intre frame-uri \n";
+        // std::cout << " modificarea intre frame-uri \n";
         this->current_kf->Tiw = relative_pose_last_2_frames;
         for (int i = 0; i < 7; i++) {
             std::cout << this->current_kf->Tiw.data()[i] << " "; 

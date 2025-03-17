@@ -9,30 +9,30 @@ ORB:
   num_features: 1000
   edge_threshold: 20
   patch_size: 10
-  fast_threshold: 30
+  fast_threshold: 20
   min_keypoints_cell: 5
   feature_window: 80
   orb_iterations: 10
   fast_step: 5
   fast_lower_limit: 10
   fast_higher_limit: 80
-  interlaping: 2
+  interlaping: 3
 
 # RANSAC for PnP
 PnP:
-  reprojection_window: 10
+  reprojection_window: 8
   ransac_iterations: 100
   confidence: 0.99
 
 # Keyframe insertion
 Keyframe:
-  min_inliers: 50
+  min_inliers: 10
   max_keyframes: 100
 
 # Map filtering
 Map:
-  orb_descriptor_value: 40
-  min_observations: 3
+  orb_descriptor_value: 30
+  min_observations: 3 
   max_depth_ratio: 1.5
 
 Camera:

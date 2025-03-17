@@ -31,6 +31,7 @@ public:
         this->initial_pose = cfg.initial_pose;
         this->fmf = new FeatureMatcherFinder(480, 640, cfg);
         this->bundleAdjustment = new BundleAdjustment();
+        std::cout << cfg.orb_descriptor_value << "\n\n";
         this->matcher = new OrbMatcher(cfg.orb_descriptor_value);
         this->optimizer_window = cfg.reprojection_window;
         this->ransac_iteration = cfg.ransac_iterations;
