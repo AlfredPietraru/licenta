@@ -30,6 +30,7 @@ public:
     Eigen::Vector4d fromImageToWorld(int kp_idx);
     float compute_depth_in_keypoint(cv::KeyPoint kp);
     std::vector<cv::KeyPoint> get_all_keypoints(); 
+    Eigen::Vector3d get_viewing_direction();
 };
 
 #endif

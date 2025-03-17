@@ -3,10 +3,10 @@
 Map::Map() {}
 
 
-void debug_reprojection(std::vector<MapPoint *> local_map, std::vector<MapPoint *> out_map, KeyFrame *first_kf) {
+void debug_reprojection(std::vector<MapPoint *> local_map, std::vector<MapPoint *> out_map, KeyFrame *first_kf, int window) {
     std::vector<cv::KeyPoint> map_point_matched;
     for (MapPoint *mp : out_map) {
-        int out = mp->reproject_map_point(first_kf);
+        int out = mp->reproject_map_point(first_kf, window);
         if (out == -1) continue;
         map_point_matched.push_back(first_kf->features[out].get_key_point());
     }
@@ -43,7 +43,7 @@ Map::Map(KeyFrame *first_kf)
     this->map_points.push_back(kf_map_points);
     this->graph.push_back(std::pair<KeyFrame *, std::unordered_map<KeyFrame *, int>>(first_kf, {}));
     
-    debug_reprojection(kf_map_points, kf_map_points, first_kf);
+    debug_reprojection(kf_map_points, kf_map_points, first_kf, 15);
 }
 
 std::vector<MapPoint *> Map::get_reprojected_map_points(KeyFrame *curr_frame, KeyFrame *reference_kf)
@@ -92,18 +92,18 @@ std::vector<MapPoint *> Map::compute_local_map(KeyFrame *kf)
 }
 
 // INCOMPLET, vor exista map point-uri duplicate
-std::pair<std::vector<MapPoint *>, std::vector<cv::KeyPoint>> Map::track_local_map(KeyFrame *curr_kf)
+std::pair<std::vector<MapPoint *>, std::vector<cv::KeyPoint>> Map::track_local_map(KeyFrame *curr_kf, int window)
 {
     std::vector<MapPoint *> local_map = this->compute_local_map(curr_kf);
     std::vector<MapPoint *> out_map;
     std::vector<cv::KeyPoint> kps;
     for (MapPoint *mp : local_map)
     {
-        int idx = mp->reproject_map_point(curr_kf);
+        int idx = mp->reproject_map_point(curr_kf, window);
         if (idx == -1) continue;
         out_map.push_back(mp);
         kps.push_back(curr_kf->features[idx].get_key_point());
     }
-    debug_reprojection(local_map, out_map, curr_kf);
+    debug_reprojection(local_map, out_map, curr_kf, window);
     return std::pair<std::vector<MapPoint *>, std::vector<cv::KeyPoint>>(out_map, kps);
 }

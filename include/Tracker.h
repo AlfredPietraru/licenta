@@ -31,19 +31,19 @@ public:
 private:
     KeyFrame *current_kf;
     KeyFrame* prev_kf = nullptr;
-    KeyFrame *reference_kf;
+    KeyFrame *reference_kf = nullptr;
 
 
     int frames_tracked = 0;
     int last_keyframe_added = 0;
     int keyframes_from_last_global_relocalization = 0;
 
-    double ALPHA = 0.8;
     Sophus::SE3d initial_pose;
     int LIMIT_MATCHING = 30; 
     int WINDOW = 5;
     Eigen::Matrix3d K_eigen;
     Mat K; 
+    int optimizer_window = 8;
     BundleAdjustment *bundleAdjustment = new BundleAdjustment();
     FeatureMatcherFinder *fmf;
     OrbMatcher *matcher = new OrbMatcher();
@@ -51,8 +51,10 @@ private:
     
     // important functions
     Sophus::SE3d TrackWithLastFrame(vector<DMatch> good_matches);
+    Sophus::SE3d TrackWithLastFrame(std::vector<std::pair<MapPoint*, cv::KeyPoint>> matches);
     void Optimize_Pose_Coordinates(Map mapp, cv::Mat frame);
     bool Is_KeyFrame_needed(Map mapp);
+    void VelocityEstimation();
 
     // auxiliary functions
     void get_current_key_frame(Mat frame, Mat depth);

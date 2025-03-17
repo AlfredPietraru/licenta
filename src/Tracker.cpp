@@ -41,7 +41,34 @@ Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
     Mat r, t;
     // pag 160 - slambook.en
     vector<int> inliers;
-    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, 100, 15.0, 0.90, inliers); 
+    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, 100, this->optimizer_window, 0.99, inliers); 
+    std::cout << inliers.size() << " inliers found in algorithm\n";
+    Mat R;
+    cv::Rodrigues(r, R);
+    Eigen::Matrix3d R_eigen;
+    cv::cv2eigen(R, R_eigen);
+    Eigen::Vector3d t_eigen;
+    t_eigen << t.at<double>(0), t.at<double>(1), t.at<double>(2);
+    return Sophus::SE3d(R_eigen,  t_eigen);
+}
+
+Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint*, cv::KeyPoint>> matches) {
+    vector<Point3d> points_in3d;
+    vector<Point2d> points_in2d;
+    vector<cv::KeyPoint> prev_kps = this->prev_kf->get_all_keypoints();
+    cv::Mat depth_matrix = this->prev_kf->depth_matrix;
+    vector<cv::KeyPoint> current_kps = this->current_kf->get_all_keypoints();
+    for (std::pair<MapPoint*, cv::KeyPoint> pair : matches) {
+        MapPoint *mp = pair.first;
+        cv::KeyPoint kp = pair.second;
+        points_in3d.push_back(Point3d(mp->wcoord(0), mp->wcoord(1), mp->wcoord(2)));
+        points_in2d.push_back(Point2d(kp.pt.x, kp.pt.y));
+    }
+    std::cout  << points_in3d.size() << " " << points_in2d.size() << " puncte gasite pentru alogirtmul pnp\n";
+    Mat r, t;
+    // pag 160 - slambook.en
+    vector<int> inliers;
+    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat() , r, t, true, 1000, this->optimizer_window, 0.99, inliers); 
     std::cout << inliers.size() << " inliers found in algorithm\n";
     Mat R;
     cv::Rodrigues(r, R);
@@ -53,7 +80,7 @@ Sophus::SE3d Tracker::TrackWithLastFrame(vector<DMatch> good_matches) {
 }
 
 void Tracker::Optimize_Pose_Coordinates(Map mapp, cv::Mat frame) {
-        std::pair<std::vector<MapPoint*>, std::vector<cv::KeyPoint>> observed_map_points = mapp.track_local_map(this->current_kf);
+        std::pair<std::vector<MapPoint*>, std::vector<cv::KeyPoint>> observed_map_points = mapp.track_local_map(this->current_kf, this->optimizer_window);
         this->frames_tracked += 1;
         if (observed_map_points.first.size() < 15) {
             std::cout << "NOT ENOUGH MAP_POINTS FOUND\n\n";
@@ -77,23 +104,26 @@ bool Tracker::Is_KeyFrame_needed(Map mapp) {
     return no_global_relocalization && no_recent_keyframe_added;
 }
 
+void Tracker::VelocityEstimation() {
+    Sophus::SE3d mVelocity = this->current_kf->Tiw * this->prev_kf->Tiw.inverse();
+    this->current_kf->Tiw = mVelocity * this->prev_kf->Tiw;
+}
+
 
 void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame*> &key_frames_buffer) {
     this->prev_kf = this->current_kf;
     this->get_current_key_frame(frame, depth);
-    std::vector<std::pair<MapPoint*, cv::KeyPoint>> matches = matcher->match_two_consecutive_frames(this->prev_kf, this->current_kf);
+    VelocityEstimation();
+    std::vector<std::pair<MapPoint*, cv::KeyPoint>> matches = matcher->match_two_consecutive_frames(this->prev_kf, this->current_kf, this->optimizer_window);
     std::cout << matches.size() << " puncte au fost matchuite\n\n";
-    // exit(1);
-    vector<DMatch> good_matches = this->fmf->match_features_last_frame(this->current_kf, this->prev_kf);
-    std::cout << good_matches.size() << " good matches found\n";
-    if (good_matches.size() < 50) {
+    if (matches.size() < 50) {
         this->tracking_was_lost();
     } else {
         for (int i = 0; i < 7; i++) {
             std::cout << this->current_kf->Tiw.data()[i] << " "; 
         }
         std::cout << " inainte de optimizare \n";
-        Sophus::SE3d relative_pose_last_2_frames = TrackWithLastFrame(good_matches);
+        Sophus::SE3d relative_pose_last_2_frames = TrackWithLastFrame(matches);
         for (int i = 0; i < 7; i++) {
             std::cout << relative_pose_last_2_frames.data()[i] << " "; 
         }

@@ -49,3 +49,7 @@ std::vector<cv::KeyPoint> KeyFrame::get_all_keypoints() {
     }
     return out;
 }
+
+Eigen::Vector3d KeyFrame::get_viewing_direction() {
+    return Tiw.rotationMatrix().col(2).normalized(); 
+}

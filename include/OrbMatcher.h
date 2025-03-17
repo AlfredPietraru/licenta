@@ -17,7 +17,7 @@
 class OrbMatcher {
 public:
     OrbMatcher(){}
-    std::vector<std::pair<MapPoint*, cv::KeyPoint>> match_two_consecutive_frames(KeyFrame *prev_kf, KeyFrame *curr_kf); 
+    std::vector<std::pair<MapPoint*, cv::KeyPoint>> match_two_consecutive_frames(KeyFrame *prev_kf, KeyFrame *curr_kf, int window); 
 };
 
 #endif
