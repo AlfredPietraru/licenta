@@ -10,6 +10,8 @@
 #include "Feature.h"
 
 
+class MapPoint;
+
 class KeyFrame
 {
 public:
@@ -32,6 +34,7 @@ public:
     float compute_depth_in_keypoint(cv::KeyPoint kp);
     std::vector<cv::KeyPoint> get_all_keypoints(); 
     Eigen::Vector3d get_viewing_direction();
+    void correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature*>& matches);
 };
 
 #endif

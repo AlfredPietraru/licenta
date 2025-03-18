@@ -36,6 +36,7 @@ public:
         this->optimizer_window = cfg.reprojection_window;
         this->ransac_iteration = cfg.ransac_iterations;
         this->ransac_confidence = cfg.confidence;
+        this->minim_points_found = cfg.minim_points_found;
     }
 
 private:
@@ -48,6 +49,7 @@ private:
     int optimizer_window;
     int ransac_iteration;
     float ransac_confidence;
+    int minim_points_found;
 
 
     int frames_tracked = 0;
@@ -72,7 +74,6 @@ private:
     void tracking_was_lost();
     void reject_outlier(std::unordered_map<MapPoint *, Feature*>& matches, std::unordered_map<MapPoint *, Feature*>& inliers);
     std::unordered_map<MapPoint *, Feature*> get_outliers(std::vector<std::pair<MapPoint *, Feature*>>& matches, vector<int> inliers);
-    void correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature*>& matches);
 };
 
 #endif

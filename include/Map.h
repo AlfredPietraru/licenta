@@ -32,7 +32,7 @@ public:
     std::vector<MapPoint*> compute_local_map(KeyFrame *kf);
     std::vector<MapPoint*> compute_map_points(KeyFrame *kf);
     std::vector<MapPoint*> get_reprojected_map_points(KeyFrame *frame, KeyFrame *reference_kf);
-    void debug_reprojection(std::vector<MapPoint *> local_map, std::vector<MapPoint *> out_map, KeyFrame *first_kf, int window);
+    void debug_reprojection(std::vector<MapPoint *> local_map, std::unordered_map<MapPoint *, Feature*> out_map, KeyFrame *first_kf, int window);
 };
 
 #endif

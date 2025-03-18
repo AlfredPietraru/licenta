@@ -3,9 +3,10 @@
 Map::Map() {}
 
 
-void Map::debug_reprojection(std::vector<MapPoint *> local_map, std::vector<MapPoint *> out_map, KeyFrame *first_kf, int window) {
+void Map::debug_reprojection(std::vector<MapPoint *> local_map, std::unordered_map<MapPoint *, Feature*> out_map, KeyFrame *first_kf, int window) {
     std::vector<cv::KeyPoint> map_point_matched;
-    for (MapPoint *mp : out_map) {
+    for (auto it = out_map.begin(); it != out_map.end(); it++) {
+        MapPoint *mp = it->first;
         int out = mp->reproject_map_point(first_kf, window, orb_descriptor_value);
         if (out == -1) continue;
         map_point_matched.push_back(first_kf->features[out].get_key_point());
@@ -18,7 +19,7 @@ void Map::debug_reprojection(std::vector<MapPoint *> local_map, std::vector<MapP
     cv::drawKeypoints(img2, map_point_matched, img3, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT); //verde
     // cv::drawKeypoints(img3, map_point_matched, img4, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); // rosu
     cv::imshow("Display window", img3);
-    cv::waitKey(500);
+    cv::waitKey(100);
 }
 
 
@@ -27,8 +28,7 @@ std::vector<MapPoint *> Map::compute_map_points(KeyFrame *frame)
     std::vector<MapPoint *> current_points_found;
     for (int i = 0; i < frame->features.size(); i++)
     {
-        cv::KeyPoint kp = frame->features[i].kp;
-        float dd = frame->compute_depth_in_keypoint(kp);
+        float dd = frame->compute_depth_in_keypoint(frame->features[i].kp);
         if (dd <= 0) continue;
         MapPoint *mp = new MapPoint(frame, i, dd);
         current_points_found.push_back(mp);
@@ -43,7 +43,7 @@ Map::Map(KeyFrame *first_kf, Config cfg)
     std::vector<MapPoint *> kf_map_points = this->compute_map_points(first_kf);
     this->map_points.push_back(kf_map_points);
     this->graph.push_back(std::pair<KeyFrame *, std::unordered_map<KeyFrame *, int>>(first_kf, {}));
-    debug_reprojection(kf_map_points, kf_map_points, first_kf, 15);
+    // debug_reprojection(kf_map_points, kf_map_points, first_kf, 15);
     std::cout << "SFARSIT INITIALIZARE\n";
 }
 
@@ -97,14 +97,12 @@ std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf,
 {
     std::unordered_map<MapPoint *, Feature*> out;
     std::vector<MapPoint *> local_map = this->compute_local_map(curr_kf);
-    std::vector<MapPoint *> out_map;
     for (MapPoint *mp : local_map)
     {
         int idx = mp->reproject_map_point(curr_kf, window, this->orb_descriptor_value);
         if (idx == -1) continue;
-        out_map.push_back(mp);
         out.insert(std::pair<MapPoint*, Feature*>(mp, &curr_kf->features[idx]));
     }
-    debug_reprojection(local_map, out_map, curr_kf, window);
+    debug_reprojection(local_map, out, curr_kf, window);
     return out;
 }

@@ -13,6 +13,7 @@ Config loadConfig(const std::string &filename) {
     cfg.initial_translation = Eigen::Vector3d(t_yaml[0].as<double>(), t_yaml[1].as<double>(), 
         t_yaml[2].as<double>());
     cfg.initial_pose = Sophus::SE3d(cfg.initial_rotation, cfg.initial_translation);
+    cfg.minim_points_found = config["Tracker"]["minim_points_found"].as<int>();
     
     // ORB parameters
     cfg.num_features = config["ORB"]["num_features"].as<int>();

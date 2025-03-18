@@ -14,6 +14,7 @@ struct Config {
     Eigen::Quaterniond initial_rotation;
     Eigen::Vector3d initial_translation;
     Sophus::SE3d initial_pose;
+    int minim_points_found;
 
     // ORB
     int num_features;

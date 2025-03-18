@@ -24,9 +24,6 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint *, Featu
 {
     vector<Point3d> points_in3d;
     vector<Point2d> points_in2d;
-    vector<cv::KeyPoint> prev_kps = this->prev_kf->get_all_keypoints();
-    cv::Mat depth_matrix = this->prev_kf->depth_matrix;
-    vector<cv::KeyPoint> current_kps = this->current_kf->get_all_keypoints();
     for (std::pair<MapPoint *, Feature*> pair : matches)
     {
         MapPoint *mp = pair.first;
@@ -77,11 +74,6 @@ void Tracker::reject_outlier(std::unordered_map<MapPoint *, Feature*>& matches, 
     std::cout << matches.size() << " nr map point matched dupa rejectare outliere\n";
 }
 
-void Tracker::correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature*>& matches) {
-    for (auto it = matches.begin(); it != matches.end(); it++) {
-        it->second->set_map_point(it->first);
-    }
-}
 
 
 
@@ -93,7 +85,7 @@ void Tracker::Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint
     reject_outlier(observed_map_points, outliers);
     
     this->frames_tracked += 1;
-    if (observed_map_points.size() < 15)
+    if (observed_map_points.size() < this->minim_points_found)
     {
         std::cout << "NOT ENOUGH MAP_POINTS FOUND\n\n";
         std::cout << this->frames_tracked << "\n";
@@ -102,7 +94,7 @@ void Tracker::Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint
     }
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, observed_map_points);
     std::unordered_map<MapPoint *, Feature*> improved_points = mapp.track_local_map(this->current_kf, this->optimizer_window);
-    correlate_map_points_to_features_current_frame(improved_points);
+    this->current_kf->correlate_map_points_to_features_current_frame(improved_points);
 }
 
 void Tracker::tracking_was_lost()
@@ -135,7 +127,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame *> &key_f
     std::vector<std::pair<MapPoint *, Feature*>> matches = matcher->match_two_consecutive_frames(this->prev_kf,
                                                                                 this->current_kf, this->optimizer_window);
     std::cout << matches.size() << " puncte au fost matchuite\n\n";
-    if (matches.size() < 20)
+    if (matches.size() < this->minim_points_found)
     {
         this->tracking_was_lost();
         return;
