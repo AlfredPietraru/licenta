@@ -1,6 +1,6 @@
 #include "../include/OrbMatcher.h"
 
-std::vector<std::pair<MapPoint*, cv::KeyPoint>> OrbMatcher::match_two_consecutive_frames(KeyFrame *pref_kf, KeyFrame *curr_kf,
+std::vector<std::pair<MapPoint*, Feature*>> OrbMatcher::match_two_consecutive_frames(KeyFrame *pref_kf, KeyFrame *curr_kf,
          int window) {
     // for (int i = 0; i < 7; i++) {
     //     std::cout << pref_kf->Tiw.data()[i] << " "; 
@@ -18,7 +18,7 @@ std::vector<std::pair<MapPoint*, cv::KeyPoint>> OrbMatcher::match_two_consecutiv
     //     std::cout << curr_kf->Tiw.data()[i] << " "; 
     // }
     // std::cout << " helped current \n";
-    std::vector<std::pair<MapPoint*, cv::KeyPoint>> out;
+    std::vector<std::pair<MapPoint*, Feature*>> out;
     std::cout << pref_kf->features.size() << " features size in prev\n";
     int idx_mp_null = 0;
     int invalid_kp_idx = 0;
@@ -33,7 +33,7 @@ std::vector<std::pair<MapPoint*, cv::KeyPoint>> OrbMatcher::match_two_consecutiv
             invalid_kp_idx++;
             continue;
         }
-        out.push_back(std::pair<MapPoint*, cv::KeyPoint>(mp, curr_kf->features[kp_idx].get_key_point()));
+        out.push_back(std::pair<MapPoint*, Feature*>(mp, &curr_kf->features[kp_idx]));
     }
     std::cout << idx_mp_null << " " << invalid_kp_idx << " " << "problematic values\n";
     return out;

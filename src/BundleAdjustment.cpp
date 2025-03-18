@@ -64,7 +64,7 @@ private:
     double scale_sigma;
 };
 
-Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *, cv::KeyPoint> matches)
+Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *, Feature*> matches)
 { 
     const double BASELINE = 0.08;
     if (matches.size() == 0) return kf->Tiw;
@@ -84,10 +84,10 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
     for (auto it = matches.begin(); it != matches.end(); it++)
     {
         ceres::CostFunction *cost_function;
-        double sigma = std::pow(1.2, it->second.octave);
+        cv::KeyPoint kp = it->second->get_key_point();
+        double sigma = std::pow(1.2, kp.octave);
         // std::cout << sigma << " ";
-        float dd = kf->compute_depth_in_keypoint(it->second);
-        cv::KeyPoint kp = it->second;
+        float dd = kf->compute_depth_in_keypoint(kp);
         if (dd <= 0) {
             nr_monocular_points ++;
             cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kp.pt.x, kp.pt.y, 0), it->first->wcoord, sigma, kf->K);

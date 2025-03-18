@@ -20,19 +20,19 @@ Map Tracker::initialize(Mat frame, Mat depth, Config cfg)
     return mapp;
 }
 
-Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint *, cv::KeyPoint>> matches, vector<int> &inliers)
+Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint *, Feature*>> matches, vector<int> &inliers)
 {
     vector<Point3d> points_in3d;
     vector<Point2d> points_in2d;
     vector<cv::KeyPoint> prev_kps = this->prev_kf->get_all_keypoints();
     cv::Mat depth_matrix = this->prev_kf->depth_matrix;
     vector<cv::KeyPoint> current_kps = this->current_kf->get_all_keypoints();
-    for (std::pair<MapPoint *, cv::KeyPoint> pair : matches)
+    for (std::pair<MapPoint *, Feature*> pair : matches)
     {
         MapPoint *mp = pair.first;
-        cv::KeyPoint kp = pair.second;
+        cv::KeyPoint kp = pair.second->get_key_point();
         points_in3d.push_back(Point3d(mp->wcoord(0), mp->wcoord(1), mp->wcoord(2)));
-        points_in2d.push_back(Point2d(kp.pt.x, kp.pt.y));
+        points_in2d.push_back(Point2d( kp.pt.x, kp.pt.y));
     }
     std::cout << points_in3d.size() << " " << points_in2d.size() << " puncte gasite pentru alogirtmul pnp\n";
     Mat r, t;
@@ -49,9 +49,9 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint *, cv::K
     return Sophus::SE3d(R_eigen, t_eigen);
 }
 
-std::unordered_map<MapPoint *, cv::KeyPoint> Tracker::get_outliers(std::vector<std::pair<MapPoint *, cv::KeyPoint>>& matches,
+std::unordered_map<MapPoint *, Feature*> Tracker::get_outliers(std::vector<std::pair<MapPoint *, Feature*>>& matches,
          vector<int> inliers) {
-            std::unordered_map<MapPoint *, cv::KeyPoint> res;
+            std::unordered_map<MapPoint *, Feature*> res;
             int inlier_idx = 0;
             for (int i = 0; i < matches.size(); i++) {
                 if (i == inliers[inlier_idx]) {
@@ -63,20 +63,28 @@ std::unordered_map<MapPoint *, cv::KeyPoint> Tracker::get_outliers(std::vector<s
             return res;
 } 
 
-void Tracker::reject_outlier(std::unordered_map<MapPoint *, cv::KeyPoint>& matches, std::unordered_map<MapPoint *, cv::KeyPoint>& outliers) {
+void Tracker::reject_outlier(std::unordered_map<MapPoint *, Feature*>& matches, std::unordered_map<MapPoint*, Feature*>& outliers) {
+    std::cout << matches.size() << " nr map point matched inainte de rejectare outliere\n";
     for (auto it = outliers.begin(); it != outliers.end(); it++) {
         if (matches.find(it->first) == matches.end()) continue;
         matches.erase(it->first);
+    }
+    std::cout << matches.size() << " nr map point matched dupa rejectare outliere\n";
+}
+
+void Tracker::correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature*>& matches) {
+    for (auto it = matches.begin(); it != matches.end(); it++) {
+        it->second->set_map_point(it->first);
     }
 }
 
 
 
-void Tracker::Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint *, cv::KeyPoint>> matches, vector<int> inliers)
+void Tracker::Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint *, Feature*>> matches, vector<int> inliers)
 {
     // merge these 2, we have to reject the outliers
-    std::unordered_map<MapPoint *, cv::KeyPoint> outliers = get_outliers(matches, inliers);
-    std::unordered_map<MapPoint *, cv::KeyPoint> observed_map_points = mapp.track_local_map(this->current_kf, this->optimizer_window);
+    std::unordered_map<MapPoint *, Feature*> outliers = get_outliers(matches, inliers);
+    std::unordered_map<MapPoint *, Feature*> observed_map_points = mapp.track_local_map(this->current_kf, this->optimizer_window);
     reject_outlier(observed_map_points, outliers);
     
     this->frames_tracked += 1;
@@ -88,6 +96,8 @@ void Tracker::Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint
         // return;
     }
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, observed_map_points);
+    std::unordered_map<MapPoint *, Feature*> improved_points = mapp.track_local_map(this->current_kf, this->optimizer_window);
+    correlate_map_points_to_features_current_frame(improved_points);
 }
 
 void Tracker::tracking_was_lost()
@@ -115,7 +125,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame *> &key_f
     this->prev_kf = this->current_kf;
     this->get_current_key_frame(frame, depth);
     // VelocityEstimation();
-    std::vector<std::pair<MapPoint *, cv::KeyPoint>> matches = matcher->match_two_consecutive_frames(this->prev_kf,
+    std::vector<std::pair<MapPoint *, Feature*>> matches = matcher->match_two_consecutive_frames(this->prev_kf,
                                                                                                      this->current_kf, this->optimizer_window);
     std::cout << matches.size() << " puncte au fost matchuite\n\n";
     if (matches.size() < 20)
@@ -142,7 +152,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame *> &key_f
     }
     std::cout << " dupa estimarea initiala \n";
     Optimize_Pose_Coordinates(mapp,  matches, inliers);
-    exit(1);
+    // exit(1);
     for (int i = 0; i < 7; i++)
     {
         std::cout << this->current_kf->Tiw.data()[i] << " ";

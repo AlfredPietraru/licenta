@@ -6,6 +6,7 @@
 
 #include <opencv2/core/core.hpp>
 #include <sophus/se3.hpp>
+#include <unordered_set>
 #include "Feature.h"
 
 

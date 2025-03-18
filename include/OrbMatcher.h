@@ -20,7 +20,7 @@ public:
     OrbMatcher(int orb_descriptor_value){
         this->orb_descriptor_value = orb_descriptor_value;
     }
-    std::vector<std::pair<MapPoint*, cv::KeyPoint>> match_two_consecutive_frames(KeyFrame *prev_kf, KeyFrame *curr_kf, int window); 
+    std::vector<std::pair<MapPoint*, Feature*>> match_two_consecutive_frames(KeyFrame *prev_kf, KeyFrame *curr_kf, int window); 
 };
 
 #endif

@@ -18,7 +18,7 @@ void Map::debug_reprojection(std::vector<MapPoint *> local_map, std::vector<MapP
     cv::drawKeypoints(img2, map_point_matched, img3, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT); //verde
     // cv::drawKeypoints(img3, map_point_matched, img4, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); // rosu
     cv::imshow("Display window", img3);
-    cv::waitKey(0);
+    cv::waitKey(500);
 }
 
 
@@ -93,9 +93,9 @@ std::vector<MapPoint *> Map::compute_local_map(KeyFrame *kf)
 }
 
 // INCOMPLET, vor exista map point-uri duplicate
-std::unordered_map<MapPoint *, cv::KeyPoint> Map::track_local_map(KeyFrame *curr_kf, int window)
+std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf, int window)
 {
-    std::unordered_map<MapPoint *, cv::KeyPoint> out;
+    std::unordered_map<MapPoint *, Feature*> out;
     std::vector<MapPoint *> local_map = this->compute_local_map(curr_kf);
     std::vector<MapPoint *> out_map;
     for (MapPoint *mp : local_map)
@@ -103,7 +103,7 @@ std::unordered_map<MapPoint *, cv::KeyPoint> Map::track_local_map(KeyFrame *curr
         int idx = mp->reproject_map_point(curr_kf, window, this->orb_descriptor_value);
         if (idx == -1) continue;
         out_map.push_back(mp);
-        out.insert(std::pair<MapPoint*, cv::KeyPoint>(mp, curr_kf->features[idx].get_key_point()));
+        out.insert(std::pair<MapPoint*, Feature*>(mp, &curr_kf->features[idx]));
     }
     debug_reprojection(local_map, out_map, curr_kf, window);
     return out;
