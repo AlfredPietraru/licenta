@@ -35,12 +35,17 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint *, Featu
         points_in2d.push_back(Point2d( kp.pt.x, kp.pt.y));
     }
     std::cout << points_in3d.size() << " " << points_in2d.size() << " puncte gasite pentru alogirtmul pnp\n";
-    Mat r, t;
+    cv::Mat r, t, R;
+    Eigen::Matrix3d rotationMatrix = this->current_kf->Tiw.rotationMatrix();
+    cv::Mat rotationMat(3, 3, CV_64F);
+    cv::eigen2cv(rotationMatrix, rotationMat);
+    cv::Rodrigues(rotationMat, r);
+    Eigen::Vector3d translationVector = this->current_kf->Tiw.translation();
+    t = (cv::Mat_<double>(3, 1) << translationVector(0), translationVector(1), translationVector(2));
     // pag 160 - slambook.en
-    cv::solvePnP(points_in3d, points_in2d, K, cv::Mat(), r, t, false);
     cv::solvePnPRansac(points_in3d, points_in2d, K, Mat(), r, t, true, this->ransac_iteration, this->optimizer_window,
                        this->ransac_confidence, inliers);
-    Mat R;
+    std::cout << inliers.size() << " inliere intalnite\n";
     cv::Rodrigues(r, R);
     Eigen::Matrix3d R_eigen;
     cv::cv2eigen(R, R_eigen);
@@ -103,6 +108,8 @@ void Tracker::Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint
 void Tracker::tracking_was_lost()
 {
     std::cout << "TRACKING WAS LOSTT<< \n\n\n";
+    std::cout << this->frames_tracked << "\n";
+    exit(1);
 }
 
 bool Tracker::Is_KeyFrame_needed(Map mapp)
@@ -126,7 +133,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map mapp, vector<KeyFrame *> &key_f
     this->get_current_key_frame(frame, depth);
     // VelocityEstimation();
     std::vector<std::pair<MapPoint *, Feature*>> matches = matcher->match_two_consecutive_frames(this->prev_kf,
-                                                                                                     this->current_kf, this->optimizer_window);
+                                                                                this->current_kf, this->optimizer_window);
     std::cout << matches.size() << " puncte au fost matchuite\n\n";
     if (matches.size() < 20)
     {
