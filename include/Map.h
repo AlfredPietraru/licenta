@@ -25,7 +25,7 @@ public:
     Map();
     Map(KeyFrame *first_kf, Config cfg);
     
-    std::vector<std::pair<MapPoint*, cv::KeyPoint>> track_local_map(KeyFrame *curr_kf, int window);
+    std::unordered_map<MapPoint *, cv::KeyPoint> track_local_map(KeyFrame *curr_kf, int window);
 
     KeyFrame *get_reference_keyframe(KeyFrame *kf);
     std::vector<MapPoint*> compute_local_map(KeyFrame *kf);

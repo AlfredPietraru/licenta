@@ -70,8 +70,8 @@ private:
     // auxiliary functions
     void get_current_key_frame(Mat frame, Mat depth);
     void tracking_was_lost();
-    void reject_outlier(std::vector<std::pair<MapPoint *, cv::KeyPoint>>& matches, std::vector<std::pair<MapPoint *, cv::KeyPoint>>& inliers);
-    std::vector<std::pair<MapPoint *, cv::KeyPoint>> get_outliers(std::vector<std::pair<MapPoint *, cv::KeyPoint>>& matches, vector<int> inliers);
+    void reject_outlier(std::unordered_map<MapPoint *, cv::KeyPoint>& matches, std::unordered_map<MapPoint *, cv::KeyPoint>& inliers);
+    std::unordered_map<MapPoint *, cv::KeyPoint> get_outliers(std::vector<std::pair<MapPoint *, cv::KeyPoint>>& matches, vector<int> inliers);
 };
 
 #endif

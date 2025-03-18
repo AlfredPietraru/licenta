@@ -49,23 +49,25 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint *, cv::K
     return Sophus::SE3d(R_eigen, t_eigen);
 }
 
-std::vector<std::pair<MapPoint *, cv::KeyPoint>> Tracker::get_outliers(std::vector<std::pair<MapPoint *, cv::KeyPoint>>& matches,
+std::unordered_map<MapPoint *, cv::KeyPoint> Tracker::get_outliers(std::vector<std::pair<MapPoint *, cv::KeyPoint>>& matches,
          vector<int> inliers) {
-            std::vector<std::pair<MapPoint *, cv::KeyPoint>> res;
+            std::unordered_map<MapPoint *, cv::KeyPoint> res;
             int inlier_idx = 0;
             for (int i = 0; i < matches.size(); i++) {
                 if (i == inliers[inlier_idx]) {
                     inlier_idx++;
                     continue;
-                } 
-                res.push_back(matches[i]);
+                }
+                res.insert(matches[i]); 
             }
             return res;
 } 
 
-
-void Tracker::reject_outlier(std::vector<std::pair<MapPoint *, cv::KeyPoint>>& matches, std::vector<std::pair<MapPoint *, cv::KeyPoint>>& inliers) {
-
+void Tracker::reject_outlier(std::unordered_map<MapPoint *, cv::KeyPoint>& matches, std::unordered_map<MapPoint *, cv::KeyPoint>& outliers) {
+    for (auto it = outliers.begin(); it != outliers.end(); it++) {
+        if (matches.find(it->first) == matches.end()) continue;
+        matches.erase(it->first);
+    }
 }
 
 
@@ -73,8 +75,9 @@ void Tracker::reject_outlier(std::vector<std::pair<MapPoint *, cv::KeyPoint>>& m
 void Tracker::Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint *, cv::KeyPoint>> matches, vector<int> inliers)
 {
     // merge these 2, we have to reject the outliers
-    std::vector<std::pair<MapPoint *, cv::KeyPoint>> outliers = get_outliers(matches, inliers);
-    std::vector<std::pair<MapPoint *, cv::KeyPoint>> observed_map_points = mapp.track_local_map(this->current_kf, this->optimizer_window);
+    std::unordered_map<MapPoint *, cv::KeyPoint> outliers = get_outliers(matches, inliers);
+    std::unordered_map<MapPoint *, cv::KeyPoint> observed_map_points = mapp.track_local_map(this->current_kf, this->optimizer_window);
+    reject_outlier(observed_map_points, outliers);
     
     this->frames_tracked += 1;
     if (observed_map_points.size() < 15)

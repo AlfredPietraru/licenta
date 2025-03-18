@@ -2,6 +2,7 @@
 #include "../include/rotation.h"
 
 
+// AZI STUDIEZ LIBRARIA CERES
 class BundleError
 {
 public:
@@ -12,8 +13,6 @@ public:
     template <typename T>
     bool operator()(const T *const q, const T *const t, T *residuals) const
     {
-
-        // ceres::EigenQuaternionParameterization()
         T map_coordinate_world[3];
         map_coordinate_world[0] = (T)map_coordinate(0);
         map_coordinate_world[1] = (T)map_coordinate(1);
@@ -24,20 +23,21 @@ public:
         camera_coordinates[1] += t[1];
         camera_coordinates[2] += t[2];
         T d = camera_coordinates[2];
-        // if (d < T(1e-6)) {
-        //     residuals[0] = T(1e4); 
-        //     residuals[1] = T(1e4);
-        //     if (this->is_monocular) return true;
-        //     residuals[2] = T(1e4);
-        //     return true;
-        // }
+
+        if (d < T(1e-6)) {
+            residuals[0] = T(1e4); 
+            residuals[1] = T(1e4);
+            if (this->is_monocular) return true;
+            residuals[2] = T(1e4);
+            return true;
+        }
 
         T x = K(0, 0) * camera_coordinates[0] / d + K(0, 2);
         T y = K(1, 1) * camera_coordinates[1] / d + K(1, 2);
         residuals[0] = (x - observed(0)) / scale_sigma;
         residuals[1] = (y - observed(1)) / scale_sigma;
-
         if (this->is_monocular) return true;
+
         T z_projected = K(0, 0) * (camera_coordinates[0] - BASELINE) / d + K(0, 2);
         residuals[2] = (z_projected - observed(2)) / scale_sigma;  
         return true;
@@ -45,13 +45,13 @@ public:
 
     static ceres::CostFunction *Create_Monocular(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
     {
-        return (new ceres::AutoDiffCostFunction<BundleError, 2, 4, 3>(
+        return (new ceres::NumericDiffCostFunction<BundleError, ceres::RIDDERS, 2, 4, 3>(
             new BundleError(observed, map_coordinate, scale_sigma, K, true)));
     }
 
     static ceres::CostFunction *Create_Stereo(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
     {
-        return (new ceres::AutoDiffCostFunction<BundleError, 3, 4, 3>(
+        return (new ceres::NumericDiffCostFunction<BundleError, ceres::RIDDERS, 3, 4, 3>(
             new BundleError(observed, map_coordinate, scale_sigma, K, false)));
     }
 
@@ -64,7 +64,7 @@ private:
     double scale_sigma;
 };
 
-Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<std::pair<MapPoint *, cv::KeyPoint>> matches)
+Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *, cv::KeyPoint> matches)
 { 
     const double BASELINE = 0.08;
     if (matches.size() == 0) return kf->Tiw;
@@ -81,31 +81,32 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::vector<std::pair<MapPoin
     t[1] = kf->Tiw.translation().y();
     t[2] = kf->Tiw.translation().z();
 
-    for (int i = 0; i < matches.size(); i++)
+    for (auto it = matches.begin(); it != matches.end(); it++)
     {
         ceres::CostFunction *cost_function;
-        double sigma = std::pow(1.2, matches[i].second.octave);
+        double sigma = std::pow(1.2, it->second.octave);
         // std::cout << sigma << " ";
-        float dd = kf->compute_depth_in_keypoint(matches[i].second);
-        cv::KeyPoint kp = matches[i].second;
+        float dd = kf->compute_depth_in_keypoint(it->second);
+        cv::KeyPoint kp = it->second;
         if (dd <= 0) {
             nr_monocular_points ++;
-            cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kp.pt.x, kp.pt.y, 0), matches[i].first->wcoord, sigma, kf->K);
+            cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kp.pt.x, kp.pt.y, 0), it->first->wcoord, sigma, kf->K);
         } else {
             nr_stereo_points++;
             double fake_right_coordinate = kp.pt.x - (kf->K(0, 0) * BASELINE / dd);
-            cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kp.pt.x, kp.pt.y, fake_right_coordinate), matches[i].first->wcoord, sigma, kf->K);
+            cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kp.pt.x, kp.pt.y, fake_right_coordinate), it->first->wcoord, sigma, kf->K);
         }
         ceres::LossFunction *loss_function = new ceres::CauchyLoss(1.0);
         problem.AddResidualBlock(cost_function, loss_function, q, t);
     }
-    // std::cout << "au fost gasite atatea puncte monoculare " << nr_monocular_points << "\n";
-    // std::cout << "au fost gasite atatea puncte stereo " << nr_stereo_points << "\n\n";
-    // std::cout << "\n";
+    std::cout << "au fost gasite atatea puncte monoculare " << nr_monocular_points << "\n";
+    std::cout << "au fost gasite atatea puncte stereo " << nr_stereo_points << "\n\n";
+    std::cout << "\n";
     ceres::Solver::Options options;  
     options.linear_solver_type =  ceres::LinearSolverType::SPARSE_NORMAL_CHOLESKY;
-    options.function_tolerance = 1e-6;
-    options.gradient_tolerance = 1e-6;
+    // options.linear_solver_ordering_type = ceres::AMD;
+    options.function_tolerance = 1e-7;
+    options.gradient_tolerance = 1e-7;
     options.parameter_tolerance = 1e-8;
     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
     options.minimizer_progress_to_stdout = true;
