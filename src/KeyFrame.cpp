@@ -8,9 +8,15 @@ KeyFrame::KeyFrame(){};
 KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint> keypoints,
          cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx, cv::Mat frame)
     : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), depth_matrix(depth_matrix), idx(idx), frame(frame) {
-        for (cv::KeyPoint kp : keypoints) {
+        this->grid = cv::Mat::zeros(frame.rows, frame.cols, CV_32S);
+        this->grid += cv::Scalar(-1);
+        for (int i = 0; i < keypoints.size(); i++) {
+            cv::KeyPoint kp = keypoints[i];
             this->features.push_back(Feature(kp, this));
+            this->grid.at<int>(lround(kp.pt.y), lround(kp.pt.x)) = i;  
         }
+        // std::cout << this->grid << "\n";
+        // std::cout << this->grid.size << "\n";
     }
 
 Eigen::Vector3d KeyFrame::compute_camera_center() {
@@ -74,5 +80,25 @@ std::vector<MapPoint *> KeyFrame::return_map_points() {
         out.push_back(mp);
     }
     return out;
+}
+
+std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, double v, int window) {
+    std::vector<int> kps_idx;
+    int u_min = lround(u - window);
+    u_min = (u_min < 0) ? 0 : (u_min > this->frame.cols) ? this->frame.cols : u_min;   
+    int u_max = lround(u + window);
+    u_max = (u_max < 0) ? 0 : (u_max > this->frame.cols) ? this->frame.cols : u_max;
+    int v_min = round(v - window);
+    v_min = (v_min < 0) ? 0 : (v_min > this->frame.rows) ? this->frame.rows : v_min;
+    int v_max = lround(v + window);
+    v_max = (v_max < 0) ? 0 : (v_max > this->frame.rows) ? this->frame.rows : v_max;
+    // std::cout << u_min << " " << u_max << " " << v_min << " " << v_max << " " << u << " " << v << "\n";
+    for (int i = v_min; i < v_max; i++) {
+        for (int j = u_min; j < u_max; j++) {
+            if (this->grid.at<int>(i, j) == -1) continue;
+            kps_idx.push_back(this->grid.at<int>(i, j));
+        }
+    }
+    return kps_idx;
 }
 

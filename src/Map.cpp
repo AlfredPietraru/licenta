@@ -57,7 +57,6 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
     }
 
     int start_idx = (this->keyframes.size() > this->KEYFRAMES_WINDOW) ? this->keyframes.size() - this->KEYFRAMES_WINDOW : 0;
-    std::cout << start_idx << " acesta a fost start_idx\n";
     for (int i = start_idx; i < this->keyframes.size(); i++) {
         KeyFrame *current_kf = this->keyframes[i];
         if (current_kf == nullptr) {
@@ -76,7 +75,6 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
         edges_new_keyframe.insert({current_kf, common_values});
     }   
     this->keyframes.push_back(new_kf);
-    std::cout << this->keyframes.size() << " a facut adaugarea unui nou punct\n";
     this->graph.insert({new_kf, edges_new_keyframe});
 }
 
@@ -144,7 +142,7 @@ std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf,
         if (idx == -1) continue;
         out.insert(std::pair<MapPoint*, Feature*>(mp, &curr_kf->features[idx]));
     }
-    // this->matcher->debug_reprojection(local_map, out, curr_kf, window, this->orb_descriptor_value);
-    this->debug_map(reference_kf);
+    this->matcher->debug_reprojection(local_map, out, curr_kf, window, this->orb_descriptor_value);
+    // this->debug_map(reference_kf);
     return out;
 }

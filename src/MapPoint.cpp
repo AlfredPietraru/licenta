@@ -41,19 +41,30 @@ int MapPoint::reproject_map_point(KeyFrame *kf, int window, int orb_descriptor_v
     int cur_hamm_dist;
     int out = -1;
 
-    for (int i = 0; i < kf->features.size(); i++)
-    {
-        cv::KeyPoint kp = kf->get_keypoint(i);  
-        if (kp.pt.x - window > u || kp.pt.x + window < u)
-            continue;
-        if (kp.pt.y - window > v || kp.pt.y + window < v)
-            continue;
-        cur_hamm_dist = ComputeHammingDistance(this->orb_descriptor, kf->orb_descriptors.row(i));
+    std::vector<int> kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, window);
+    if (kps_idx.size() == 0) return -1;
+    for (int idx : kps_idx) {
+        cur_hamm_dist = ComputeHammingDistance(this->orb_descriptor, kf->orb_descriptors.row(idx));
         if (cur_hamm_dist < min_hamm_dist) {
-            out = i;
+            out = idx;
             min_hamm_dist = cur_hamm_dist;
         }
     }
+
+
+    // for (int i = 0; i < kf->features.size(); i++)
+    // {
+    //     cv::KeyPoint kp = kf->get_keypoint(i);  
+    //     if (kp.pt.x - window > u || kp.pt.x + window < u)
+    //         continue;
+    //     if (kp.pt.y - window > v || kp.pt.y + window < v)
+    //         continue;
+    //     cur_hamm_dist = ComputeHammingDistance(this->orb_descriptor, kf->orb_descriptors.row(i));
+    //     if (cur_hamm_dist < min_hamm_dist) {
+    //         out = i;
+    //         min_hamm_dist = cur_hamm_dist;
+    //     }
+    // }
     if (min_hamm_dist > orb_descriptor_value) return -1;
     return out;
     // feature was found - 5

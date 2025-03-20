@@ -21,6 +21,7 @@ public:
     std::vector<Feature> features;
     std::unordered_set<MapPoint*> map_points;
     int nr_map_points = 0;
+    cv::Mat grid;
     cv::Mat orb_descriptors;
     cv::Mat frame;
     cv::Mat depth_matrix;
@@ -37,6 +38,7 @@ public:
     void correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature*>& matches);
     std::vector<MapPoint *> return_map_points();
     cv::KeyPoint get_keypoint(int idx);
+    std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window); 
 };
 
 #endif

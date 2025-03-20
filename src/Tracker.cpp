@@ -93,6 +93,7 @@ void Tracker::Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint
     this->frames_tracked += 1;
     if (observed_map_points.size() < this->minim_points_found)
     {
+        std::cout << observed_map_points.size() << " atatea map points in momentul in care a crapat\n";
         std::cout << "NOT ENOUGH MAP_POINTS FOUND\n\n";
         std::cout << this->frames_tracked << "\n";
         exit(1);
