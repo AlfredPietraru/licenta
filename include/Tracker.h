@@ -24,14 +24,13 @@ using namespace cv;
 class Tracker {
 public:
     Map initialize(Mat frame, Mat depth, Config cfg);
-    void tracking(Mat frame, Mat depth, Map map_points, vector<KeyFrame*> &key_frames_buffer);
+    void tracking(Mat frame, Mat depth, Map& map_points);
     Tracker(Config cfg) {
         this->K = cfg.K;
         cv::cv2eigen(cfg.K, this->K_eigen);
         this->initial_pose = cfg.initial_pose;
         this->fmf = new FeatureMatcherFinder(480, 640, cfg);
         this->bundleAdjustment = new BundleAdjustment();
-        std::cout << cfg.orb_descriptor_value << "\n\n";
         this->matcher = new OrbMatcher(cfg.orb_descriptor_value, cfg.reprojection_window, cfg.orb_descriptor_value);
         this->optimizer_window = cfg.reprojection_window;
         this->ransac_iteration = cfg.ransac_iterations;
@@ -67,7 +66,7 @@ private:
     // Sophus::SE3d TrackWithLastFrame(vector<DMatch> good_matches);
     Sophus::SE3d TrackWithLastFrame(std::vector<std::pair<MapPoint*, Feature*>> matches, std::vector<int> &inliers);
     void Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint*, Feature*>> matches, std::vector<int> inliers);
-    bool Is_KeyFrame_needed();
+    bool Is_KeyFrame_needed(std::vector<std::pair<MapPoint*, Feature*>>& matches);
     void VelocityEstimation();
 
 

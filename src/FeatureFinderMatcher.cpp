@@ -42,7 +42,7 @@ std::vector<cv::DMatch> FeatureMatcherFinder::match_features_last_frame(KeyFrame
 
     // cv::Mat img_matches;
     // std::cout << past_kf->keypoints.size() << " " << current_kf->keypoints.size() << "\n";
-    std::cout << good_matches.size() << "\n";
+    // std::cout << good_matches.size() << "\n";
     // cv::drawMatches(past_kf->frame, past_kf->keypoints, current_kf->frame, current_kf->keypoints, good_matches, img_matches);
     // // Show the matches
     // cv::imshow("Feature Matches", img_matches);

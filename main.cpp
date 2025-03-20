@@ -18,7 +18,6 @@ int main(int argc, char **argv)
     bool start = true;
     Map mapp;
     Mat distorted_frame, frame, depth; 
-    vector<KeyFrame*> keyframes_buffer;
     vector<std::string> rgb_file_paths;
     vector<std::string> depth_file_paths;
     for (std::filesystem::__cxx11::directory_entry entry : fs::directory_iterator(rgb_path)) {
@@ -43,7 +42,7 @@ int main(int argc, char **argv)
             start = !start;
             continue;
         }
-        tracker->tracking(frame, depth, mapp, keyframes_buffer);
+        tracker->tracking(frame, depth, mapp);
     }
 }
 

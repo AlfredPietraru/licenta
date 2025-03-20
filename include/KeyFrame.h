@@ -16,10 +16,10 @@ class KeyFrame
 {
 public:
     int idx;
-    typedef std::shared_ptr<KeyFrame> Ptr;
     Sophus::SE3d Tiw;
     Eigen::Matrix3d K;
     std::vector<Feature> features;
+    std::unordered_set<MapPoint*> map_points;
     int nr_map_points = 0;
     cv::Mat orb_descriptors;
     cv::Mat frame;
@@ -35,7 +35,7 @@ public:
     std::vector<cv::KeyPoint> get_all_keypoints(); 
     Eigen::Vector3d get_viewing_direction();
     void correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature*>& matches);
-    std::vector<MapPoint *> compute_map_points();
+    std::vector<MapPoint *> return_map_points();
 };
 
 #endif

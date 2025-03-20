@@ -77,12 +77,11 @@ int MapPoint::find_orb_correspondence(KeyFrame *kf, int window, int orb_descript
     return right_idx;
 }
 
-Eigen::Vector3d MapPoint::get_3d_vector() {
-    return Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(2));
-}
-
-
 int MapPoint::reproject_map_point(KeyFrame *kf, int window, int orb_descriptor_value) {
     int out = this->map_point_belongs_to_keyframe(kf) ?  find_orb_correspondence(kf, window, orb_descriptor_value) : -1; 
     return out;
+}
+
+Eigen::Vector3d MapPoint::get_3d_vector() {
+    return Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(2));
 }

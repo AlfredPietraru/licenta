@@ -2,7 +2,7 @@ Tracker:
   # first is w, x, y, z similar with order in Eigen::Quaternion();
   initial_rotation: [-0.4843, 0.6818, 0.5482, -0.0115]
   initial_translation: [1.3001, 0.6882, 1.5745]
-  minim_points_found: 20
+  minim_points_found: 50
 
 
 # Feature extraction parameter

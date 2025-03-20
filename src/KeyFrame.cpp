@@ -62,3 +62,13 @@ void KeyFrame::correlate_map_points_to_features_current_frame(std::unordered_map
     }
 }
 
+std::vector<MapPoint *> KeyFrame::return_map_points() {
+    std::vector<MapPoint *> out;
+    for (int i = 0; i < this->features.size(); i++) {
+        MapPoint *mp = this->features[i].get_map_point();
+        if (mp == nullptr) continue;
+        out.push_back(mp);
+    }
+    return out;
+}
+

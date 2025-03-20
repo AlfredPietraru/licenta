@@ -99,9 +99,9 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
         ceres::LossFunction *loss_function = new ceres::CauchyLoss(1.0);
         problem.AddResidualBlock(cost_function, loss_function, q, t);
     }
-    std::cout << "au fost gasite atatea puncte monoculare " << nr_monocular_points << "\n";
-    std::cout << "au fost gasite atatea puncte stereo " << nr_stereo_points << "\n\n";
-    std::cout << "\n";
+    // std::cout << "au fost gasite atatea puncte monoculare " << nr_monocular_points << "\n";
+    // std::cout << "au fost gasite atatea puncte stereo " << nr_stereo_points << "\n\n";
+    // std::cout << "\n";
     ceres::Solver::Options options;  
     options.linear_solver_type =  ceres::LinearSolverType::SPARSE_NORMAL_CHOLESKY;
     // options.linear_solver_ordering_type = ceres::AMD;
@@ -109,11 +109,11 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
     options.gradient_tolerance = 1e-7;
     options.parameter_tolerance = 1e-8;
     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-    options.minimizer_progress_to_stdout = true;
-    options.check_gradients = true;
+    // options.minimizer_progress_to_stdout = true;
+    // options.check_gradients = true;
     options.max_num_iterations = NUMBER_ITERATIONS;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
-    std::cout << summary.FullReport() << "\n";
+    // std::cout << summary.FullReport() << "\n";
     return Sophus::SE3d(Eigen::Quaterniond(q[0], q[1], q[2], q[3]), Eigen::Vector3d(t[0], t[1], t[2]));
 }
