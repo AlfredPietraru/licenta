@@ -64,7 +64,7 @@ private:
     double scale_sigma;
 };
 
-Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *, Feature*> matches)
+Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *, Feature*>& matches)
 { 
     const double BASELINE = 0.08;
     if (matches.size() == 0) return kf->Tiw;

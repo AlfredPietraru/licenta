@@ -27,8 +27,8 @@ public:
     cv::Mat depth_matrix;
 
     KeyFrame();
-    KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint> keypoints,
-             cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx, cv::Mat frame);
+    KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint>& keypoints,
+             cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx, cv::Mat& frame);
     Eigen::Vector3d compute_camera_center();
     Eigen::Vector3d fromWorldToImage(Eigen::Vector4d& wcoord);
     Eigen::Vector4d fromImageToWorld(int kp_idx);

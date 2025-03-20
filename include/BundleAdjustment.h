@@ -17,7 +17,7 @@ public:
     double HUBER_LOSS_VALUE = 1; 
     
     BundleAdjustment() {}
-    Sophus::SE3d solve(KeyFrame *frame, std::unordered_map<MapPoint *, Feature*> matches);
+    Sophus::SE3d solve(KeyFrame *frame, std::unordered_map<MapPoint *, Feature*>& matches);
 };
 
 #endif

@@ -5,8 +5,8 @@ class MapPoint;
 
 KeyFrame::KeyFrame(){};
 
-KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint> keypoints,
-         cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx, cv::Mat frame)
+KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint>& keypoints,
+         cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx, cv::Mat& frame)
     : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), depth_matrix(depth_matrix), idx(idx), frame(frame) {
         this->grid = cv::Mat::zeros(frame.rows, frame.cols, CV_32S);
         this->grid += cv::Scalar(-1);

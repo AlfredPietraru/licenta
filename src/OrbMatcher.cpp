@@ -76,7 +76,7 @@ int OrbMatcher::get_number_common_mappoints_between_keyframes(KeyFrame *kf1, Key
 }
 
 
-void OrbMatcher::debug_reprojection(std::unordered_set<MapPoint *> local_map, std::unordered_map<MapPoint *, Feature*> out_map, KeyFrame *first_kf, int window, int orb_descriptor_value) {
+void OrbMatcher::debug_reprojection(std::unordered_set<MapPoint *>& local_map, std::unordered_map<MapPoint *, Feature*>& out_map, KeyFrame *first_kf, int window, int orb_descriptor_value) {
     std::vector<cv::KeyPoint> map_point_matched;
     for (auto it = out_map.begin(); it != out_map.end(); it++) {
         MapPoint *mp = it->first;

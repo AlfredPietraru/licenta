@@ -50,7 +50,7 @@ std::vector<cv::DMatch> FeatureMatcherFinder::match_features_last_frame(KeyFrame
     return good_matches;
 } 
 
-std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat frame) {
+std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat& frame) {
     std::vector<cv::KeyPoint> keypoints;
     // std::cout << nr_cells_row << " " << nr_cells_collumn << "\n";
     for (int i = 0; i < nr_cells_row * interlaping - interlaping + 1; i++) {

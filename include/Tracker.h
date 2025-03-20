@@ -64,8 +64,8 @@ private:
     
     // important functions
     // Sophus::SE3d TrackWithLastFrame(vector<DMatch> good_matches);
-    Sophus::SE3d TrackWithLastFrame(std::vector<std::pair<MapPoint*, Feature*>> matches, std::vector<int> &inliers);
-    void Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint*, Feature*>> matches, std::vector<int> inliers);
+    Sophus::SE3d TrackWithLastFrame(std::vector<std::pair<MapPoint*, Feature*>>& matches, std::vector<int> &inliers);
+    void Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint*, Feature*>>& matches, std::vector<int>& inliers);
     bool Is_KeyFrame_needed(std::vector<std::pair<MapPoint*, Feature*>>& matches);
     void VelocityEstimation();
 
@@ -74,7 +74,7 @@ private:
     void get_current_key_frame(Mat frame, Mat depth);
     void tracking_was_lost();
     void reject_outlier(std::unordered_map<MapPoint *, Feature*>& matches, std::unordered_map<MapPoint *, Feature*>& inliers);
-    std::unordered_map<MapPoint *, Feature*> get_outliers(std::vector<std::pair<MapPoint *, Feature*>>& matches, vector<int> inliers);
+    std::unordered_map<MapPoint *, Feature*> get_outliers(std::vector<std::pair<MapPoint *, Feature*>>& matches, vector<int>& inliers);
 };
 
 #endif

@@ -29,7 +29,7 @@ Map Tracker::initialize(Mat frame, Mat depth, Config cfg)
     return mapp;
 }
 
-Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint *, Feature*>> matches, vector<int> &inliers)
+Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint *, Feature*>>& matches, vector<int> &inliers)
 {
     vector<Point3d> points_in3d;
     vector<Point2d> points_in2d;
@@ -61,7 +61,7 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint *, Featu
 }
 
 std::unordered_map<MapPoint *, Feature*> Tracker::get_outliers(std::vector<std::pair<MapPoint *, Feature*>>& matches,
-         vector<int> inliers) {
+         vector<int>& inliers) {
     std::unordered_map<MapPoint *, Feature*> res;
     int inlier_idx = 0;
     for (int i = 0; i < matches.size(); i++) {
@@ -83,7 +83,7 @@ void Tracker::reject_outlier(std::unordered_map<MapPoint *, Feature*>& matches, 
     // std::cout << matches.size() << " nr map point matched dupa rejectare outliere\n";
 }
 
-void Tracker::Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint *, Feature*>> matches, vector<int> inliers)
+void Tracker::Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint *, Feature*>>& matches, vector<int>& inliers)
 {
     // merge these 2, we have to reject the outliers
     std::unordered_map<MapPoint *, Feature*> outliers = get_outliers(matches, inliers);
