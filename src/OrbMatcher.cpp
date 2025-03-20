@@ -1,27 +1,10 @@
 #include "../include/OrbMatcher.h"
 
 std::vector<std::pair<MapPoint*, Feature*>> OrbMatcher::match_two_consecutive_frames(KeyFrame *pref_kf, KeyFrame *curr_kf) {
-    // for (int i = 0; i < 7; i++) {
-    //     std::cout << pref_kf->Tiw.data()[i] << " "; 
-    // }
-    // std::cout << " prev_kf \n";
-    // double angle_rad = -10.0 * M_PI / 180.0;
-    // Eigen::Quaterniond help_quat = Eigen::Quaterniond(cos(angle_rad / 2), 0, 0, sin(angle_rad / 2));
-    // Sophus::SE3d help_pose = Sophus::SE3d(help_quat, Eigen::Vector3d(0, 0, 0));
-    // for (int i = 0; i < 7; i++) {
-    //     std::cout << curr_kf->Tiw.data()[i] << " "; 
-    // }
-    // std::cout << " current_kf \n";
-    // curr_kf->Tiw = curr_kf->Tiw * help_pose;
-    // for (int i = 0; i < 7; i++) {
-    //     std::cout << curr_kf->Tiw.data()[i] << " "; 
-    // }
-    // std::cout << " helped current \n";
     int MAX_NUMBER_ITERATIONS = 6;
     int WINDOW_INCREASE_FACTOR = 3;
     int ORB_DESCRIPTOR_INCREASE_FACTOR = 5;
     std::vector<std::pair<MapPoint*, Feature*>> out;
-    // std::cout << pref_kf->features.size() << " features size in prev\n";
     int idx_mp_null = 0;
     int invalid_kp_idx = 0;
     for (Feature f : pref_kf->features) {
@@ -42,7 +25,6 @@ std::vector<std::pair<MapPoint*, Feature*>> OrbMatcher::match_two_consecutive_fr
             kp_idx = mp->reproject_map_point(curr_kf, current_window, current_orb_descriptor_value);
             if (kp_idx != -1) break;
         }
-        // AICI DE ADAUGAT LOGICA DE EXTINDERE PENTRU A GASI UN DESCRIPTOR VALID
         if (kp_idx == -1) {
             invalid_kp_idx++;
             continue;
@@ -59,7 +41,7 @@ std::vector<MapPoint *> OrbMatcher::get_reprojected_map_points(KeyFrame *curr_fr
     for (int i = 0; i < reference_kf->features.size(); i++) {
         MapPoint *mp = reference_kf->features[i].get_map_point();
         if (mp == nullptr) continue;
-        if (mp->map_point_belongs_to_keyframe(curr_frame)) out.push_back(mp);
+        if (mp->reproject_map_point(curr_frame, this->window, this->orb_descriptor_value) != -1) out.push_back(mp);
     }
     return out;
 }
@@ -71,7 +53,7 @@ int OrbMatcher::get_number_common_mappoints_between_keyframes(KeyFrame *kf1, Key
         MapPoint *mp = kf1->features[i].get_map_point();
         if (mp == nullptr) continue;
         if (kf2->map_points.find(mp) == kf2->map_points.end()) {
-            if (mp->map_point_belongs_to_keyframe(kf2)) {
+            if (mp->reproject_map_point(kf2, this->window, this->orb_descriptor_value) != -1) {
                 common_map_points.insert(mp);
                 out += 1;
             }
@@ -85,7 +67,7 @@ int OrbMatcher::get_number_common_mappoints_between_keyframes(KeyFrame *kf1, Key
         MapPoint *mp = kf2->features[i].get_map_point();
         if (mp == nullptr) continue;
         if (common_map_points.find(mp) != common_map_points.end()) continue;
-        if (mp->map_point_belongs_to_keyframe(kf1)) {
+        if (mp->reproject_map_point(kf1, this->window, this->orb_descriptor_value) != -1) {
             common_map_points.insert(mp);
             out += 1;
         }
