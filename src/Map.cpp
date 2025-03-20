@@ -111,14 +111,14 @@ KeyFrame *Map::get_reference_keyframe(KeyFrame *kf)
     return this->keyframes[reference_idx];
 }
 
-std::vector<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
+std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
 {
     KeyFrame *reference_kf = get_reference_keyframe(current_frame);
     std::cout <<  reference_kf->idx << " compute local map reference_idx gasit\n";
     if (this->graph.find(reference_kf) == this->graph.end()) {
         std::cout << " CEVA NU E BINE NU GASESTE KEY FRAME IN COMPUTE LOCAL MAP\n";
     }
-    std::vector<MapPoint *> out = reference_kf->return_map_points();
+    std::unordered_set<MapPoint *> out = reference_kf->map_points;
     std::cout <<  this->graph[reference_kf].size() << " nr de vecini asociati\n";
     for (std::pair<KeyFrame *, int> graph_edge : this->graph[reference_kf])
     {
@@ -127,9 +127,12 @@ std::vector<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
             std::cout << " nu e bine ca e null\n";
             continue;
         }
-        std::vector<MapPoint *> map_points_for_keyframe = curr_kf->return_map_points();  
-        out.insert(out.end(), map_points_for_keyframe.begin(), map_points_for_keyframe.end());
+        std::unordered_set<MapPoint *> map_points_for_keyframe = curr_kf->map_points;  
+        for (auto it = map_points_for_keyframe.begin(); it != map_points_for_keyframe.end(); it++) {
+            out.insert(*it);
+        }
     }
+    std::cout << reference_kf->map_points.size() << " "  << out.size() << " dimensiune map points\n";
     return out;
 }
 
@@ -143,7 +146,7 @@ std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf,
         if (idx == -1) continue;
         out.insert(std::pair<MapPoint*, Feature*>(mp, &curr_kf->features[idx]));
     }
-    this->matcher->debug_reprojection(local_map, out, curr_kf, window, this->orb_descriptor_value);
+    // this->matcher->debug_reprojection(local_map, out, curr_kf, window, this->orb_descriptor_value);
     // this->debug_map(reference_kf);
     return out;
 }
