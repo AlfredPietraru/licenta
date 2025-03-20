@@ -20,7 +20,7 @@ public:
     Sophus::SE3d Tiw;
     Eigen::Matrix3d K;
     std::vector<Feature> features;
-    // std::vector<cv::KeyPoint> keypoints;
+    int nr_map_points = 0;
     cv::Mat orb_descriptors;
     cv::Mat frame;
     cv::Mat depth_matrix;
@@ -35,6 +35,7 @@ public:
     std::vector<cv::KeyPoint> get_all_keypoints(); 
     Eigen::Vector3d get_viewing_direction();
     void correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature*>& matches);
+    std::vector<MapPoint *> compute_map_points();
 };
 
 #endif

@@ -34,6 +34,7 @@ std::vector<MapPoint *> Map::compute_map_points(KeyFrame *frame)
         current_points_found.push_back(mp);
         frame->features[i].set_map_point(mp);
     }
+    frame->nr_map_points = current_points_found.size();
     return current_points_found; 
 }
 
@@ -43,7 +44,6 @@ Map::Map(KeyFrame *first_kf, Config cfg)
     std::vector<MapPoint *> kf_map_points = this->compute_map_points(first_kf);
     this->map_points.push_back(kf_map_points);
     this->graph.push_back(std::pair<KeyFrame *, std::unordered_map<KeyFrame *, int>>(first_kf, {}));
-    // debug_reprojection(kf_map_points, kf_map_points, first_kf, 15);
     std::cout << "SFARSIT INITIALIZARE\n";
 }
 

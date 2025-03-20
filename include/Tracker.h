@@ -32,11 +32,12 @@ public:
         this->fmf = new FeatureMatcherFinder(480, 640, cfg);
         this->bundleAdjustment = new BundleAdjustment();
         std::cout << cfg.orb_descriptor_value << "\n\n";
-        this->matcher = new OrbMatcher(cfg.orb_descriptor_value);
+        this->matcher = new OrbMatcher(cfg.orb_descriptor_value, cfg.reprojection_window, cfg.orb_descriptor_value);
         this->optimizer_window = cfg.reprojection_window;
         this->ransac_iteration = cfg.ransac_iterations;
         this->ransac_confidence = cfg.confidence;
         this->minim_points_found = cfg.minim_points_found;
+        this->orb_descriptor_value = cfg.orb_descriptor_value;
     }
 
 private:
@@ -47,6 +48,7 @@ private:
     Eigen::Matrix3d K_eigen;
     Sophus::SE3d initial_pose;
     int optimizer_window;
+    int orb_descriptor_value;
     int ransac_iteration;
     float ransac_confidence;
     int minim_points_found;
@@ -65,7 +67,7 @@ private:
     // Sophus::SE3d TrackWithLastFrame(vector<DMatch> good_matches);
     Sophus::SE3d TrackWithLastFrame(std::vector<std::pair<MapPoint*, Feature*>> matches, std::vector<int> &inliers);
     void Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint*, Feature*>> matches, std::vector<int> inliers);
-    bool Is_KeyFrame_needed(Map mapp);
+    bool Is_KeyFrame_needed();
     void VelocityEstimation();
 
 

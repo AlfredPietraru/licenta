@@ -16,11 +16,12 @@
 
 class OrbMatcher {
 public:
+    int minim_points_found;
+    int window;
     int orb_descriptor_value;
-    OrbMatcher(int orb_descriptor_value){
-        this->orb_descriptor_value = orb_descriptor_value;
-    }
-    std::vector<std::pair<MapPoint*, Feature*>> match_two_consecutive_frames(KeyFrame *prev_kf, KeyFrame *curr_kf, int window); 
+    OrbMatcher(int minim_points_found, int window, int orb_descriptor_value) : minim_points_found(minim_points_found), window(window), 
+        orb_descriptor_value(orb_descriptor_value) {}
+    std::vector<std::pair<MapPoint*, Feature*>> match_two_consecutive_frames(KeyFrame *prev_kf, KeyFrame *curr_kf); 
 };
 
 #endif
