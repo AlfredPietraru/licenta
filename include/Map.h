@@ -21,7 +21,7 @@ public:
     int KEYFRAMES_WINDOW = 10;
     int orb_descriptor_value; 
     OrbMatcher* matcher;
-    // vector<MapPoint*> local_map;
+    std::vector<MapPoint*> local_map;
     // std::vector<std::vector<MapPoint*>> map_points;
     std::vector<KeyFrame*> keyframes;
     std::unordered_map<KeyFrame*, std::unordered_map<KeyFrame*, int>> graph;

@@ -53,6 +53,7 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
     if (this->keyframes.size() == 0) {
         this->keyframes.push_back(new_kf);
         this->graph.insert({new_kf, edges_new_keyframe});
+        local_map = this->compute_local_map(new_kf);
         return;
     }
 
@@ -76,6 +77,7 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
     }   
     this->keyframes.push_back(new_kf);
     this->graph.insert({new_kf, edges_new_keyframe});
+    local_map = this->compute_local_map(new_kf);
 }
 
 Map::Map(OrbMatcher *matcher, KeyFrame *first_kf, Config cfg)
@@ -135,7 +137,6 @@ std::vector<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
 std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf, int window, KeyFrame *reference_kf)
 {
     std::unordered_map<MapPoint *, Feature*> out;
-    std::vector<MapPoint *> local_map = this->compute_local_map(curr_kf);
     for (MapPoint *mp : local_map)
     {
         int idx = mp->reproject_map_point(curr_kf, window, this->orb_descriptor_value);
