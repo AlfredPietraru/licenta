@@ -41,12 +41,12 @@ int MapPoint::reproject_map_point(KeyFrame *kf, int window, int orb_descriptor_v
     int cur_hamm_dist;
     int out = -1;
 
-    std::vector<cv::KeyPoint> keypoints = kf->get_all_keypoints();
-    for (int i = 0; i < keypoints.size(); i++)
+    for (int i = 0; i < kf->features.size(); i++)
     {
-        if (keypoints[i].pt.x - window > u || keypoints[i].pt.x + window < u)
+        cv::KeyPoint kp = kf->get_keypoint(i);  
+        if (kp.pt.x - window > u || kp.pt.x + window < u)
             continue;
-        if (keypoints[i].pt.y - window > v || keypoints[i].pt.y + window < v)
+        if (kp.pt.y - window > v || kp.pt.y + window < v)
             continue;
         cur_hamm_dist = ComputeHammingDistance(this->orb_descriptor, kf->orb_descriptors.row(i));
         if (cur_hamm_dist < min_hamm_dist) {

@@ -144,7 +144,7 @@ std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf,
         if (idx == -1) continue;
         out.insert(std::pair<MapPoint*, Feature*>(mp, &curr_kf->features[idx]));
     }
-    this->matcher->debug_reprojection(local_map, out, curr_kf, window, this->orb_descriptor_value);
+    // this->matcher->debug_reprojection(local_map, out, curr_kf, window, this->orb_descriptor_value);
     this->debug_map(reference_kf);
     return out;
 }

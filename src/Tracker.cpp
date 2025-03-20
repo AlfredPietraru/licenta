@@ -130,6 +130,7 @@ void Tracker::VelocityEstimation()
 
 void Tracker::tracking(Mat frame, Mat depth, Map& mapp)
 {
+    std::cout << this->frames_tracked << " atatea frame-uri urmarite\n";
     this->prev_kf = this->current_kf;
     this->get_current_key_frame(frame, depth);
     // VelocityEstimation();

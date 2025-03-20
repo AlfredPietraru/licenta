@@ -36,6 +36,7 @@ public:
     Eigen::Vector3d get_viewing_direction();
     void correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature*>& matches);
     std::vector<MapPoint *> return_map_points();
+    cv::KeyPoint get_keypoint(int idx);
 };
 
 #endif

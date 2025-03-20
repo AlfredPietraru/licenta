@@ -43,6 +43,10 @@ Eigen::Vector4d KeyFrame::fromImageToWorld(int kp_idx) {
     return this->Tiw.inverse().matrix() *  Eigen::Vector4d(new_x, new_y, dd, 1);
 }
 
+cv::KeyPoint KeyFrame::get_keypoint(int idx) {
+    return this->features[idx].get_key_point();
+}
+
 
 std::vector<cv::KeyPoint> KeyFrame::get_all_keypoints() {
     std::vector<cv::KeyPoint> out;
