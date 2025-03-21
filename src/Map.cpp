@@ -67,6 +67,7 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
         int common_values = this->matcher->get_number_common_mappoints_between_keyframes(new_kf, current_kf); 
         if (common_values < 15) {
             std::cout << "AU FOST GASITE MAI PUTIN DE 15 PUNCTE COMUNE INTRE FRAME-uri\n";
+            continue;
         }
         if (graph.find(current_kf) == graph.end()) {
             std::cout << " NU A FOST GASIT KEYFRAME-ul in graph\n";

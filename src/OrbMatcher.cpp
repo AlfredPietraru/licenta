@@ -7,12 +7,7 @@ std::vector<std::pair<MapPoint*, Feature*>> OrbMatcher::match_two_consecutive_fr
     std::vector<std::pair<MapPoint*, Feature*>> out;
     int idx_mp_null = 0;
     int invalid_kp_idx = 0;
-    for (Feature f : pref_kf->features) {
-        MapPoint *mp = f.get_map_point();
-        if (mp == nullptr)  {
-            idx_mp_null++;
-            continue;
-        }
+    for (MapPoint *mp : pref_kf->map_points) {
         int kp_idx = mp->reproject_map_point(curr_kf, window, orb_descriptor_value);
         int current_window = window;
         int current_orb_descriptor_value = orb_descriptor_value;
@@ -31,6 +26,31 @@ std::vector<std::pair<MapPoint*, Feature*>> OrbMatcher::match_two_consecutive_fr
         }
         out.push_back(std::pair<MapPoint*, Feature*>(mp, &curr_kf->features[kp_idx]));
     }
+
+    // for (Feature f : pref_kf->features) {
+    //     MapPoint *mp = f.get_map_point();
+    //     if (mp == nullptr)  {
+    //         idx_mp_null++;
+    //         continue;
+    //     }
+    //     int kp_idx = mp->reproject_map_point(curr_kf, window, orb_descriptor_value);
+    //     int current_window = window;
+    //     int current_orb_descriptor_value = orb_descriptor_value;
+    //     for (int i = 0; i < MAX_NUMBER_ITERATIONS; i++) {
+    //         if (i % 2 == 0) {
+    //             current_window += WINDOW_INCREASE_FACTOR;
+    //         } else {
+    //             current_orb_descriptor_value += ORB_DESCRIPTOR_INCREASE_FACTOR;
+    //         }
+    //         kp_idx = mp->reproject_map_point(curr_kf, current_window, current_orb_descriptor_value);
+    //         if (kp_idx != -1) break;
+    //     }
+    //     if (kp_idx == -1) {
+    //         invalid_kp_idx++;
+    //         continue;
+    //     }
+    //     out.push_back(std::pair<MapPoint*, Feature*>(mp, &curr_kf->features[kp_idx]));
+    // }
     // std::cout << idx_mp_null << " " << invalid_kp_idx << " " << "problematic values\n";
     return out;
 }
@@ -38,20 +58,21 @@ std::vector<std::pair<MapPoint*, Feature*>> OrbMatcher::match_two_consecutive_fr
 std::vector<MapPoint *> OrbMatcher::get_reprojected_map_points(KeyFrame *curr_frame, KeyFrame *reference_kf)
 {
     std::vector<MapPoint *> out;
-    for (int i = 0; i < reference_kf->features.size(); i++) {
-        MapPoint *mp = reference_kf->features[i].get_map_point();
-        if (mp == nullptr) continue;
+    for (MapPoint *mp : reference_kf->map_points) {
         if (mp->reproject_map_point(curr_frame, this->window, this->orb_descriptor_value) != -1) out.push_back(mp);
     }
+    // for (int i = 0; i < reference_kf->features.size(); i++) {
+    //     MapPoint *mp = reference_kf->features[i].get_map_point();
+    //     if (mp == nullptr) continue;
+    //     if (mp->reproject_map_point(curr_frame, this->window, this->orb_descriptor_value) != -1) out.push_back(mp);
+    // }
     return out;
 }
 
 int OrbMatcher::get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2) {
     std::unordered_set<MapPoint*> common_map_points;
     int out = 0;
-    for (int i = 0; i < kf1->features.size(); i++) {
-        MapPoint *mp = kf1->features[i].get_map_point();
-        if (mp == nullptr) continue;
+    for (MapPoint *mp : kf1->map_points) {
         if (kf2->map_points.find(mp) == kf2->map_points.end()) {
             if (mp->reproject_map_point(kf2, this->window, this->orb_descriptor_value) != -1) {
                 common_map_points.insert(mp);
@@ -63,15 +84,14 @@ int OrbMatcher::get_number_common_mappoints_between_keyframes(KeyFrame *kf1, Key
         }
     }
 
-    for (int i = 0; i < kf2->features.size(); i++) {
-        MapPoint *mp = kf2->features[i].get_map_point();
-        if (mp == nullptr) continue;
+    for (MapPoint *mp : kf2->map_points) {
         if (common_map_points.find(mp) != common_map_points.end()) continue;
         if (mp->reproject_map_point(kf1, this->window, this->orb_descriptor_value) != -1) {
             common_map_points.insert(mp);
             out += 1;
         }
     }
+    
     return out;
 }
 

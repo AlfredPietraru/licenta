@@ -69,6 +69,7 @@ Eigen::Vector3d KeyFrame::get_viewing_direction() {
 void KeyFrame::correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature*>& matches) {
     for (auto it = matches.begin(); it != matches.end(); it++) {
         it->second->set_map_point(it->first);
+        this->map_points.insert(it->first);
     }
 }
 
