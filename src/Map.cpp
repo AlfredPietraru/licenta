@@ -22,6 +22,7 @@ std::vector<MapPoint *> Map::compute_map_points(KeyFrame *frame)
     int null_values = 0;
     int negative_depth = 0;
     std::vector<MapPoint *> current_points_found;
+    Eigen::Vector3d camera_center = frame->compute_camera_center();
     for (int i = 0; i < frame->features.size(); i++)
     {
         if (frame->features[i].get_map_point() != nullptr) {
@@ -33,7 +34,9 @@ std::vector<MapPoint *> Map::compute_map_points(KeyFrame *frame)
             negative_depth++;
             continue;  
         } 
-        MapPoint *mp = new MapPoint(frame, i, dd);
+        Eigen::Vector4d wcoord = frame->fromImageToWorld(i);
+        MapPoint *mp = new MapPoint(frame, frame->features[i].kp, camera_center, wcoord, 
+                frame->orb_descriptors.row(i), i, dd);
         current_points_found.push_back(mp);
         frame->features[i].set_map_point(mp);
         frame->map_points.insert(mp);

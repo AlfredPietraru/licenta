@@ -1,14 +1,14 @@
 #include "../include/MapPoint.h"
 #include <iostream>
 
-MapPoint::MapPoint(KeyFrame *keyframe, int kp_idx, float depth)
+MapPoint::MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord, cv::Mat orb_descriptor,
+         int kp_idx, float depth)
 {
     this->belongs_to_keyframes.insert(std::pair<KeyFrame*, int>(keyframe, kp_idx));
-    cv::KeyPoint kp = keyframe->features[kp_idx].get_key_point();
-    this->wcoord = keyframe->fromImageToWorld(kp_idx);
+    this->wcoord = wcoord;
     Eigen::Vector3d wcoord_local = Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(2));
-    this->view_direction = (wcoord_local - keyframe->compute_camera_center()).normalized();
-    this->orb_descriptor = keyframe->orb_descriptors.row(kp_idx);
+    this->view_direction = (wcoord_local - camera_center).normalized();
+    this->orb_descriptor = orb_descriptor;
     this->dmax = depth * 1.2; 
     this->dmin = depth * 0.8; 
 }
