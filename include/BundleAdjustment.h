@@ -13,11 +13,12 @@
 class BundleAdjustment
 {
 public:
-    int NUMBER_ITERATIONS = 100; 
+    int NUMBER_ITERATIONS = 50; 
     double HUBER_LOSS_VALUE = 1; 
     
     BundleAdjustment() {}
     Sophus::SE3d solve(KeyFrame *frame, std::unordered_map<MapPoint *, Feature*>& matches);
+    // Sophus::SE3d solve(KeyFrame *kf, std::vector<std::pair<MapPoint *, Feature*>>& matches);
 };
 
 #endif
