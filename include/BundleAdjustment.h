@@ -13,7 +13,7 @@
 class BundleAdjustment
 {
 public:
-    int NUMBER_ITERATIONS = 50; 
+    int NUMBER_ITERATIONS = 30; 
     double HUBER_LOSS_VALUE = 1; 
     
     BundleAdjustment() {}

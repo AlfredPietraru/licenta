@@ -15,7 +15,6 @@ int main(int argc, char **argv)
     std::string depth_path = "../rgbd_dataset_freiburg1_xyz/depth";
     Config cfg = loadConfig("../config.yaml");
     Tracker *tracker = new Tracker(cfg);
-    bool start = true;
     Map mapp;
     Mat distorted_frame, frame, depth; 
     vector<std::string> rgb_file_paths;
@@ -29,19 +28,16 @@ int main(int argc, char **argv)
     
     std::sort(rgb_file_paths.begin(), rgb_file_paths.end());
     std::sort(depth_file_paths.begin(), depth_file_paths.end());
-    for (int i = 0; i < rgb_file_paths.size(); i++) {
-        std::cout << rgb_file_paths[i] << " " << depth_file_paths[i] << "\n";
+    std::cout << 0 << " "  << rgb_file_paths[0] << " " << depth_file_paths[0] << "\n";
+    distorted_frame = cv::imread(rgb_file_paths[0], cv::IMREAD_COLOR_RGB);
+    depth = cv::imread(depth_file_paths[0], cv::IMREAD_UNCHANGED);
+    cv::undistort(distorted_frame, frame, cfg.K, cfg.distortion);
+    mapp = tracker->initialize(frame, depth, cfg);
+    for (int i = 1; i < rgb_file_paths.size(); i++) {
+        std::cout << i << " "  << rgb_file_paths[i] << " " << depth_file_paths[i] << "\n";
         distorted_frame = cv::imread(rgb_file_paths[i], cv::IMREAD_COLOR_RGB);
         depth = cv::imread(depth_file_paths[i], cv::IMREAD_UNCHANGED);
-        // cv::imshow("distorted_image", distorted_frame);
-        // cv::imshow("Depth Map", depth);
-        // cv::waitKey(0);
         cv::undistort(distorted_frame, frame, cfg.K, cfg.distortion);
-        if (start) {
-            mapp = tracker->initialize(frame, depth, cfg);
-            start = !start;
-            continue;
-        }
         tracker->tracking(frame, depth, mapp);
     }
 }

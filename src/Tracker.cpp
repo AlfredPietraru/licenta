@@ -51,6 +51,7 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint *, Featu
     // pag 160 - slambook.en
     cv::solvePnPRansac(points_in3d, points_in2d, K, Mat(), r, t, true, this->ransac_iteration, this->optimizer_window,
     this->ransac_confidence, inliers);
+    // cv::solvePnP(points_in3d, points_in2d, K, Mat(), r, t, true, cv::SOLVEPNP_EPNP);
     // std::cout << inliers.size() << " inliere intalnite\n";
     cv::Rodrigues(r, R);
     Eigen::Matrix3d R_eigen;
@@ -86,9 +87,9 @@ void Tracker::reject_outlier(std::unordered_map<MapPoint *, Feature*>& matches, 
 void Tracker::Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint *, Feature*>>& matches, vector<int>& inliers)
 {
     // merge these 2, we have to reject the outliers
-    std::unordered_map<MapPoint *, Feature*> outliers = get_outliers(matches, inliers);
+    // std::unordered_map<MapPoint *, Feature*> outliers = get_outliers(matches, inliers);
     std::unordered_map<MapPoint *, Feature*> observed_map_points = mapp.track_local_map(this->current_kf, this->optimizer_window, this->reference_kf);
-    reject_outlier(observed_map_points, outliers);
+    // reject_outlier(observed_map_points, outliers);
     
     this->frames_tracked += 1;
     if (observed_map_points.size() < this->minim_points_found)
@@ -136,7 +137,7 @@ void Tracker::VelocityEstimation()
 
 void Tracker::tracking(Mat frame, Mat depth, Map& mapp)
 {
-    std::cout << this->frames_tracked << " atatea frame-uri urmarite\n";
+    // std::cout << this->frames_tracked << " atatea frame-uri urmarite\n";
     this->prev_kf = this->current_kf;
     this->get_current_key_frame(frame, depth);
     // VelocityEstimation();

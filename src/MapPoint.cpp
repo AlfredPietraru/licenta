@@ -14,7 +14,7 @@ MapPoint::MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_c
 }
 
 void MapPoint::add_reference_kf(KeyFrame *kf, int idx) {
-    this->belongs_to_keyframes.insert(std::pair<KeyFrame*, int>(kf, idx));
+    this->belongs_to_keyframes.insert({kf, idx});
 }
 
 int inline::MapPoint::ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2) {
@@ -50,28 +50,8 @@ int MapPoint::reproject_map_point(KeyFrame *kf, int window, int orb_descriptor_v
             min_hamm_dist = cur_hamm_dist;
         }
     }
-
-
-    // for (int i = 0; i < kf->features.size(); i++)
-    // {
-    //     cv::KeyPoint kp = kf->get_keypoint(i);  
-    //     if (kp.pt.x - window > u || kp.pt.x + window < u)
-    //         continue;
-    //     if (kp.pt.y - window > v || kp.pt.y + window < v)
-    //         continue;
-    //     cur_hamm_dist = ComputeHammingDistance(this->orb_descriptor, kf->orb_descriptors.row(i));
-    //     if (cur_hamm_dist < min_hamm_dist) {
-    //         out = i;
-    //         min_hamm_dist = cur_hamm_dist;
-    //     }
-    // }
     if (min_hamm_dist > orb_descriptor_value) return -1;
-    return out;
-    // feature was found - 5
-    // Eigen::Vector3d camera_center = kf->compute_camera_center();
-    // Eigen::Vector3d camera_to_point = this->get_3d_vector() - camera_center;
-    // Eigen::Vector3d camera_normal = kf->get_viewing_direction();
-    // if (camera_to_point.dot(camera_normal) < 0) return false; 
+    return out; 
 }
 
 Eigen::Vector3d MapPoint::get_3d_vector() {

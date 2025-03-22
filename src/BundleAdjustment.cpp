@@ -101,6 +101,7 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
     // options.gradient_tolerance = 1e-7;
     // options.parameter_tolerance = 1e-8;
     // options.gradient_check_relative_precision = 1e-8;
+    options.function_tolerance = 1e-5;
     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
     options.use_inner_iterations = true;
     options.minimizer_progress_to_stdout = false;

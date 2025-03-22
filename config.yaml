@@ -22,7 +22,7 @@ ORB:
 # RANSAC for PnP
 PnP:
   reprojection_window: 8
-  ransac_iterations: 100
+  ransac_iterations: 20
   confidence: 0.99
 
 # Map filtering
