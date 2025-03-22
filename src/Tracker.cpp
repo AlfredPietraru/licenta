@@ -106,8 +106,7 @@ void Tracker::Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint
         if (selected_observations.size() == this->minim_points_found) break;
     }
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, selected_observations);
-    std::unordered_map<MapPoint *, Feature*> improved_points = mapp.track_local_map(this->current_kf, this->optimizer_window, this->reference_kf);
-    this->current_kf->correlate_map_points_to_features_current_frame(improved_points);
+    this->current_kf->correlate_map_points_to_features_current_frame(observed_map_points);
 }
 
 void Tracker::tracking_was_lost()
