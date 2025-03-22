@@ -1,7 +1,4 @@
 #include "../include/KeyFrame.h"
-#include <iostream>
-
-class MapPoint;
 
 KeyFrame::KeyFrame(){};
 
@@ -10,10 +7,12 @@ KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint
     : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), depth_matrix(depth_matrix), idx(idx), frame(frame) {
         this->grid = cv::Mat::zeros(frame.rows, frame.cols, CV_32S);
         this->grid += cv::Scalar(-1);
+        this->maximum_possible_map_points = keypoints.size();
         for (int i = 0; i < keypoints.size(); i++) {
             cv::KeyPoint kp = keypoints[i];
-            this->features.push_back(Feature(kp, this));
-            this->grid.at<int>(lround(kp.pt.y), lround(kp.pt.x)) = i;  
+            this->features.push_back(Feature(kp, orb_descriptors.row(i), this, i));
+            this->grid.at<int>(lround(kp.pt.y), lround(kp.pt.x)) = i;
+            if(this->compute_depth_in_keypoint(kp) < 0) this->maximum_possible_map_points--;
         }
         // std::cout << this->grid << "\n";
         // std::cout << this->grid.size << "\n";
@@ -70,6 +69,7 @@ void KeyFrame::correlate_map_points_to_features_current_frame(std::unordered_map
     for (auto it = matches.begin(); it != matches.end(); it++) {
         it->second->set_map_point(it->first);
         this->map_points.insert(it->first);
+        this->currently_matched_points++;
     }
 }
 

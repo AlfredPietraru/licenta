@@ -8,6 +8,7 @@
 #include <sophus/se3.hpp>
 #include <unordered_set>
 #include "Feature.h"
+#include <iostream>
 
 
 class MapPoint;
@@ -20,7 +21,8 @@ public:
     Eigen::Matrix3d K;
     std::vector<Feature> features;
     std::unordered_set<MapPoint*> map_points;
-    int nr_map_points = 0;
+    int maximum_possible_map_points = 0;
+    int currently_matched_points = 0;
     cv::Mat grid;
     cv::Mat orb_descriptors;
     cv::Mat frame;

@@ -51,7 +51,7 @@ private:
     double scale_sigma;
 };
 
-Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *, Feature*>& matches)
+Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *, Feature*>& matches, int maximum_selected)
 {
     const double BASELINE = 0.08;
     if (matches.size() == 0)
@@ -69,8 +69,9 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
     t[1] = kf->Tiw.translation().y();
     t[2] = kf->Tiw.translation().z();
     // std::cout << matches.size() << "\n";
+    int nr_selected = 0;
     for (auto it = matches.begin(); it != matches.end(); it++)
-    {
+    {   
         ceres::CostFunction *cost_function;
         cv::KeyPoint kp = it->second->get_key_point();
         double sigma = std::pow(1.2, kp.octave);
@@ -89,6 +90,8 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
         }
         ceres::LossFunction *loss_function = new ceres::CauchyLoss(1.0);
         problem.AddResidualBlock(cost_function, loss_function, angle_axis, t);
+        nr_selected ++;
+        if (nr_selected == maximum_selected) break;
     }
 
     // std::cout << "au fost gasite atatea puncte monoculare " << nr_monocular_points << "\n";

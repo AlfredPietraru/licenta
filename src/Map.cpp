@@ -42,7 +42,6 @@ std::vector<MapPoint *> Map::compute_map_points(KeyFrame *frame)
         frame->map_points.insert(mp);
     }
     std::cout << current_points_found.size() << " " << frame->features.size() << " " << null_values << " " << negative_depth << " debug compute map points\n"; 
-    frame->nr_map_points = current_points_found.size();
     if (current_points_found.size() == 0) {
         std::cout << "CEVA NU E BINE NU S-AU CREAT PUNCTELE\n";
     }
@@ -137,17 +136,22 @@ std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
 }
 
 // INCOMPLET, vor exista map point-uri duplicate
-std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf, int window)
+std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf, std::unordered_map<MapPoint *, Feature*>& matches,  int window)
 {
     std::unordered_map<MapPoint *, Feature*> out;
     for (MapPoint *mp : local_map)
     {
         int idx = mp->reproject_map_point(curr_kf, window, this->orb_descriptor_value);
-        if (idx == -1) continue;
+        if (idx == -1) continue; 
         if (curr_kf->features[idx].get_map_point() != nullptr) continue;
         out.insert({mp, &curr_kf->features[idx]});
+        curr_kf->currently_matched_points++;
+        if (curr_kf->currently_matched_points == curr_kf->maximum_possible_map_points) break;
     }
-    // this->matcher->debug_reprojection(local_map, out, curr_kf, window, this->orb_descriptor_value);
+    for (auto it = matches.begin(); it != matches.end(); it++) {
+        out.insert({it->first, it->second});
+    }
+    this->matcher->debug_reprojection(local_map, out, curr_kf, window, this->orb_descriptor_value);
     // this->debug_map(reference_kf);
     return out;
 }

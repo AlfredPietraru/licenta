@@ -15,17 +15,17 @@ int inline::OrbMatcher::ComputeHammingDistance(const cv::Mat &desc1, const cv::M
 
 
 
-std::vector<std::pair<MapPoint*, Feature*>> OrbMatcher::match_two_consecutive_frames(KeyFrame *pref_kf, KeyFrame *curr_kf) {
+std::unordered_map<MapPoint*, Feature*> OrbMatcher::match_two_consecutive_frames(KeyFrame *pref_kf, KeyFrame *curr_kf) {
     int MAX_NUMBER_ITERATIONS = 4;
     int WINDOW_INCREASE_FACTOR = 3;
     int ORB_DESCRIPTOR_INCREASE_FACTOR = 5;
-    std::vector<std::pair<MapPoint*, Feature*>> out;
+    std::unordered_map<MapPoint*, Feature*> out;
     int idx_mp_null = 0;
     int invalid_kp_idx = 0;
     for (MapPoint *mp : pref_kf->map_points) {
         int kp_idx = mp->reproject_map_point(curr_kf, window, orb_descriptor_value);
         if (kp_idx != -1) {
-            out.push_back(std::pair<MapPoint*, Feature*>(mp, &curr_kf->features[kp_idx]));
+            out.insert({mp, &curr_kf->features[kp_idx]});
             continue;
         }
         int current_window = window;
@@ -39,11 +39,12 @@ std::vector<std::pair<MapPoint*, Feature*>> OrbMatcher::match_two_consecutive_fr
             kp_idx = mp->reproject_map_point(curr_kf, current_window, current_orb_descriptor_value);
             if (kp_idx != -1) break;
         }
+
         if (kp_idx == -1) {
             invalid_kp_idx++;
             continue;
         }
-        out.push_back(std::pair<MapPoint*, Feature*>(mp, &curr_kf->features[kp_idx]));
+        out.insert({mp, &curr_kf->features[kp_idx]});
     }
     return out;
 }
@@ -102,5 +103,5 @@ void OrbMatcher::debug_reprojection(std::unordered_set<MapPoint *>& local_map, s
     cv::drawKeypoints(img2, map_point_matched, img3, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT); //verde
     // cv::drawKeypoints(img3, map_point_matched, img4, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); // rosu
     cv::imshow("Display window", img3);
-    cv::waitKey(0);
+    cv::waitKey(100);
 }

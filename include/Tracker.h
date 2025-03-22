@@ -64,9 +64,8 @@ private:
     
     // important functions
     // Sophus::SE3d TrackWithLastFrame(vector<DMatch> good_matches);
-    Sophus::SE3d TrackWithLastFrame(std::vector<std::pair<MapPoint*, Feature*>>& matches);
-    void Optimize_Pose_Coordinates(Map mapp);
-    bool Is_KeyFrame_needed(std::vector<std::pair<MapPoint*, Feature*>>& matches);
+    Sophus::SE3d TrackWithLastFrame(std::unordered_map<MapPoint *, Feature*>& matches);
+    bool Is_KeyFrame_needed(std::unordered_map<MapPoint *, Feature*>& matches);
     void VelocityEstimation();
 
 
