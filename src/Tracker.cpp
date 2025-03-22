@@ -42,11 +42,11 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint *, Featu
     }
     // std::cout << points_in3d.size() << " " << points_in2d.size() << " puncte gasite pentru alogirtmul pnp\n";
     cv::Mat r, t, R;
-    Eigen::Matrix3d rotationMatrix = this->current_kf->Tiw.rotationMatrix();
+    Eigen::Matrix3d rotationMatrix = this->prev_kf->Tiw.rotationMatrix();
     cv::Mat rotationMat(3, 3, CV_64F);
     cv::eigen2cv(rotationMatrix, rotationMat);
     cv::Rodrigues(rotationMat, r);
-    Eigen::Vector3d translationVector = this->current_kf->Tiw.translation();
+    Eigen::Vector3d translationVector = this->prev_kf->Tiw.translation();
     t = (cv::Mat_<double>(3, 1) << translationVector(0), translationVector(1), translationVector(2));
     // pag 160 - slambook.en
     cv::solvePnPRansac(points_in3d, points_in2d, K, Mat(), r, t, true, this->ransac_iteration, this->optimizer_window,
@@ -100,7 +100,12 @@ void Tracker::Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint
         // return;
     }
 
-    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, observed_map_points);
+    std::unordered_map<MapPoint*, Feature*> selected_observations;
+    for (auto it = observed_map_points.begin(); it != observed_map_points.end(); it++) {
+        selected_observations.insert({it->first, it->second});
+        if (selected_observations.size() == this->minim_points_found) break;
+    }
+    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, selected_observations);
     std::unordered_map<MapPoint *, Feature*> improved_points = mapp.track_local_map(this->current_kf, this->optimizer_window, this->reference_kf);
     this->current_kf->correlate_map_points_to_features_current_frame(improved_points);
 }
@@ -144,7 +149,6 @@ void Tracker::tracking(Mat frame, Mat depth, Map& mapp)
         this->reference_kf = this->current_kf;
         this->last_keyframe_added = 0;
         this->keyframes_from_last_global_relocalization = 0;
-        // exit(1);
         std::cout << "\n\n";
         return;
     } else if(matches.size() < this->minim_points_found)

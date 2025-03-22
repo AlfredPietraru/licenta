@@ -18,9 +18,6 @@ public:
         camera_coordinates[0] += t[0];
         camera_coordinates[1] += t[1];
         camera_coordinates[2] += t[2];
-        // if (std::abs(camera_coordinates[2]) < 1e-1) {
-        //     std::cout << "AICIIIIIIIIIII";
-        // }
         T inv_d = T(1) / camera_coordinates[2];
         T x = K(0, 0) * camera_coordinates[0] * inv_d + K(0, 2);
         T y = K(1, 1) * camera_coordinates[1] * inv_d + K(1, 2);
@@ -67,15 +64,11 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
     angle_axis[0] = kf->Tiw.angleX();
     angle_axis[1] = kf->Tiw.angleY();
     angle_axis[2] = kf->Tiw.angleZ();
-    for (int i = 0; i < 3; i++) {
-        std::cout << angle_axis[i] << " ";
-    }
-    std::cout << '\n';
     double t[3];
     t[0] = kf->Tiw.translation().x();
     t[1] = kf->Tiw.translation().y();
     t[2] = kf->Tiw.translation().z();
-    std::cout << matches.size() << "\n";
+    // std::cout << matches.size() << "\n";
     for (auto it = matches.begin(); it != matches.end(); it++)
     {
         ceres::CostFunction *cost_function;
@@ -98,9 +91,9 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
         problem.AddResidualBlock(cost_function, loss_function, angle_axis, t);
     }
 
-    std::cout << "au fost gasite atatea puncte monoculare " << nr_monocular_points << "\n";
-    std::cout << "au fost gasite atatea puncte stereo " << nr_stereo_points << "\n\n";
-    std::cout << "\n";
+    // std::cout << "au fost gasite atatea puncte monoculare " << nr_monocular_points << "\n";
+    // std::cout << "au fost gasite atatea puncte stereo " << nr_stereo_points << "\n\n";
+    // std::cout << "\n";
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
     // options.linear_solver_ordering_type = ceres::AMD;
@@ -115,69 +108,9 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
     options.max_num_iterations = NUMBER_ITERATIONS;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
-    std::cout << summary.FullReport() << "\n";
-    for (int i = 0; i < 3; i++) {
-        std::cout << angle_axis[i] << " ";
-    }
-    std::cout << "\n";
+    // std::cout << summary.FullReport() << "\n";
     Eigen::Vector3d angle_axis_eigen(angle_axis[0], angle_axis[1], angle_axis[2]);  
 Eigen::AngleAxisd aa(angle_axis_eigen.norm(), angle_axis_eigen.normalized());
 Eigen::Quaterniond quaternion(aa);
     return Sophus::SE3d(quaternion, Eigen::Vector3d(t[0], t[1], t[2]));
 }
-
-// Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *, Feature*>& matches)
-// {
-//     const double BASELINE = 0.08;
-//     if (matches.size() == 0) return kf->Tiw;
-//     ceres::Problem problem;
-//     int nr_monocular_points = 0;
-//     int nr_stereo_points = 0;
-//     double q[4];
-//     q[0] = kf->Tiw.unit_quaternion().w();
-//     q[1] = kf->Tiw.unit_quaternion().x();
-//     q[2] = kf->Tiw.unit_quaternion().y();
-//     q[3] = kf->Tiw.unit_quaternion().z();
-//     double t[3];
-//     t[0] = kf->Tiw.translation().x();
-//     t[1] = kf->Tiw.translation().y();
-//     t[2] = kf->Tiw.translation().z();
-
-//     for (auto it = matches.begin(); it != matches.end(); it++)
-//     {
-//         ceres::CostFunction *cost_function;
-//         cv::KeyPoint kp = it->second->get_key_point();
-//         double sigma = std::pow(1.2, kp.octave);
-//         // std::cout << sigma << " ";
-//         float dd = kf->compute_depth_in_keypoint(kp);
-//         if (dd <= 0) {
-//             nr_monocular_points ++;
-//             cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kp.pt.x, kp.pt.y, 0), it->first->wcoord, sigma, kf->K);
-//         } else {
-//             nr_stereo_points++;
-//             double fake_right_coordinate = kp.pt.x - (kf->K(0, 0) * BASELINE / dd);
-//             cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kp.pt.x, kp.pt.y, fake_right_coordinate), it->first->wcoord, sigma, kf->K);
-//         }
-//         ceres::LossFunction *loss_function = new ceres::CauchyLoss(1.0);
-//         problem.AddResidualBlock(cost_function, loss_function, q, t);
-//     }
-//     std::cout << "au fost gasite atatea puncte monoculare " << nr_monocular_points << "\n";
-//     std::cout << "au fost gasite atatea puncte stereo " << nr_stereo_points << "\n\n";
-//     std::cout << "\n";
-//     ceres::Solver::Options options;
-//     options.linear_solver_type =  ceres::LinearSolverType::DENSE_QR;
-//     // options.linear_solver_ordering_type = ceres::AMD;
-//     options.function_tolerance = 1e-7;
-//     options.gradient_tolerance = 1e-7;
-//     options.parameter_tolerance = 1e-8;
-//     options.gradient_check_relative_precision = 1e-8;
-//     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-//     options.minimizer_progress_to_stdout = true;
-//     options.check_gradients = true;
-//     options.max_num_iterations = NUMBER_ITERATIONS;
-//     ceres::Solver::Summary summary;
-//     ceres::Solve(options, &problem, &summary);
-//     std::cout << summary.FullReport() << "\n";
-//     exit(1);
-//     return Sophus::SE3d(Eigen::Quaterniond(q[0], q[1], q[2], q[3]), Eigen::Vector3d(t[0], t[1], t[2]));
-// }

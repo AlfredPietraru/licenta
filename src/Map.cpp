@@ -97,10 +97,8 @@ KeyFrame *Map::get_reference_keyframe(KeyFrame *kf)
     int start_idx = (this->keyframes.size() > this->KEYFRAMES_WINDOW) ? this->keyframes.size() - this->KEYFRAMES_WINDOW : 0;
     int max = -1;
     int reference_idx = start_idx;
-    std::cout << this->keyframes.size() << " nr de keyframe-uri avute\n";
     for (int i = start_idx; i < this->keyframes.size(); i++)
     {
-        std::cout << this->keyframes[i]->idx << " index curent analizat\n";
         std::vector<MapPoint *> reprojected_map_points = this->matcher->get_reprojected_map_points(kf, this->keyframes[i]);
         if (reprojected_map_points.size() == 0) {
             std::cout << "NU E BINE SA NU EXISTE NICIUN PUNCT NEPROIECTAT";
@@ -118,12 +116,10 @@ KeyFrame *Map::get_reference_keyframe(KeyFrame *kf)
 std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
 {
     KeyFrame *reference_kf = get_reference_keyframe(current_frame);
-    std::cout <<  reference_kf->idx << " compute local map reference_idx gasit\n";
     if (this->graph.find(reference_kf) == this->graph.end()) {
         std::cout << " CEVA NU E BINE NU GASESTE KEY FRAME IN COMPUTE LOCAL MAP\n";
     }
     std::unordered_set<MapPoint *> out = reference_kf->map_points;
-    std::cout <<  this->graph[reference_kf].size() << " nr de vecini asociati\n";
     for (std::pair<KeyFrame *, int> graph_edge : this->graph[reference_kf])
     {
         KeyFrame *curr_kf = graph_edge.first;
