@@ -26,6 +26,7 @@ public:
     void debug_reprojection(std::unordered_set<MapPoint *>& local_map, std::unordered_map<MapPoint *, Feature*>& out_map, KeyFrame *first_kf, 
         int window, int orb_descriptor_value);
     int get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2);
+    int ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2);
 };
 
 #endif

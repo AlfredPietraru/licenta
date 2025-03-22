@@ -29,7 +29,7 @@ Map Tracker::initialize(Mat frame, Mat depth, Config cfg)
     return mapp;
 }
 
-Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint *, Feature*>>& matches, vector<int> &inliers)
+Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint *, Feature*>>& matches)
 {
     vector<Point3d> points_in3d;
     vector<Point2d> points_in2d;
@@ -49,6 +49,7 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::vector<std::pair<MapPoint *, Featu
     Eigen::Vector3d translationVector = this->prev_kf->Tiw.translation();
     t = (cv::Mat_<double>(3, 1) << translationVector(0), translationVector(1), translationVector(2));
     // pag 160 - slambook.en
+    std::vector<int> inliers;
     cv::solvePnPRansac(points_in3d, points_in2d, K, Mat(), r, t, true, this->ransac_iteration, this->optimizer_window,
     this->ransac_confidence, inliers);
     // cv::solvePnP(points_in3d, points_in2d, K, Mat(), r, t, true, cv::SOLVEPNP_EPNP);
@@ -75,22 +76,10 @@ std::unordered_map<MapPoint *, Feature*> Tracker::get_outliers(std::vector<std::
     return res;
 } 
 
-void Tracker::reject_outlier(std::unordered_map<MapPoint *, Feature*>& matches, std::unordered_map<MapPoint*, Feature*>& outliers) {
-    // std::cout << matches.size() << " nr map point matched inainte de rejectare outliere\n";
-    for (auto it = outliers.begin(); it != outliers.end(); it++) {
-        if (matches.find(it->first) == matches.end()) continue;
-        matches.erase(it->first);
-    }
-    // std::cout << matches.size() << " nr map point matched dupa rejectare outliere\n";
-}
-
-void Tracker::Optimize_Pose_Coordinates(Map mapp, std::vector<std::pair<MapPoint *, Feature*>>& matches, vector<int>& inliers)
+void Tracker::Optimize_Pose_Coordinates(Map mapp)
 {
     // merge these 2, we have to reject the outliers
-    // std::unordered_map<MapPoint *, Feature*> outliers = get_outliers(matches, inliers);
-    std::unordered_map<MapPoint *, Feature*> observed_map_points = mapp.track_local_map(this->current_kf, this->optimizer_window, this->reference_kf);
-    // reject_outlier(observed_map_points, outliers);
-    
+    std::unordered_map<MapPoint *, Feature*> observed_map_points = mapp.track_local_map(this->current_kf, this->optimizer_window);
     this->frames_tracked += 1;
     if (observed_map_points.size() < this->minim_points_found)
     {
@@ -157,14 +146,13 @@ void Tracker::tracking(Mat frame, Mat depth, Map& mapp)
         this->tracking_was_lost();
         return;
     }
-    std::vector<int> inliers;
     // print_pose(this->current_kf->Tiw, "inainte de optimizare");
 
-    this->current_kf->Tiw = TrackWithLastFrame(matches, inliers);
+    this->current_kf->Tiw = TrackWithLastFrame(matches);
 
     // std::cout << inliers.size() << " inliers found in algorithm\n";
     // print_pose(this->current_kf->Tiw, "dupa estimarea initiala");
 
-    Optimize_Pose_Coordinates(mapp,  matches, inliers);
+    Optimize_Pose_Coordinates(mapp);
     // print_pose(this->current_kf->Tiw, "dupa optimizarea BA");
 }

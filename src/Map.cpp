@@ -137,13 +137,14 @@ std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
 }
 
 // INCOMPLET, vor exista map point-uri duplicate
-std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf, int window, KeyFrame *reference_kf)
+std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf, int window)
 {
     std::unordered_map<MapPoint *, Feature*> out;
     for (MapPoint *mp : local_map)
     {
         int idx = mp->reproject_map_point(curr_kf, window, this->orb_descriptor_value);
         if (idx == -1) continue;
+        if (curr_kf->features[idx].get_map_point() != nullptr) continue;
         out.insert({mp, &curr_kf->features[idx]});
     }
     // this->matcher->debug_reprojection(local_map, out, curr_kf, window, this->orb_descriptor_value);

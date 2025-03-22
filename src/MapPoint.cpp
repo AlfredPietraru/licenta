@@ -4,7 +4,7 @@
 MapPoint::MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord, cv::Mat orb_descriptor,
          int kp_idx, float depth)
 {
-    this->belongs_to_keyframes.insert(std::pair<KeyFrame*, int>(keyframe, kp_idx));
+    this->belongs_to_keyframes.insert({keyframe, kp_idx});
     this->wcoord = wcoord;
     Eigen::Vector3d wcoord_local = Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(2));
     this->view_direction = (wcoord_local - camera_center).normalized();
