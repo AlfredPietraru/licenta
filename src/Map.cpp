@@ -104,7 +104,7 @@ void Map::track_local_map(KeyFrame *curr_kf, std::unordered_map<MapPoint *, Feat
 {
     // return this->matcher->match_frame_map_points(curr_kf, local_map);
     curr_kf->currently_matched_points = matches.size();
-    std::cout << curr_kf->currently_matched_points << " " << curr_kf->maximum_possible_map_points << " de testat cum evolueaza track local map\n";
+    // std::cout << curr_kf->currently_matched_points << " " << curr_kf->maximum_possible_map_points << " de testat cum evolueaza track local map\n";
     std::unordered_map<MapPoint *, Feature*> out;
     for (MapPoint *mp : local_map) {
         Eigen::Vector3d point_camera_coordinates =  curr_kf->fromWorldToImage(mp->wcoord);
@@ -138,6 +138,6 @@ void Map::track_local_map(KeyFrame *curr_kf, std::unordered_map<MapPoint *, Feat
         }
         if (curr_kf->currently_matched_points == curr_kf->maximum_possible_map_points) break;
     }
-    std::cout << curr_kf->currently_matched_points << " " << curr_kf->maximum_possible_map_points << " rezultat dupa track local map\n";
+    // std::cout << curr_kf->currently_matched_points << " " << curr_kf->maximum_possible_map_points << " rezultat dupa track local map\n";
     // this->matcher->debug_reprojection(local_map, matches, curr_kf, window, this->orb_descriptor_value);
 }

@@ -49,6 +49,7 @@ set(SOURCES
     src/KeyFrame.cpp
     src/OrbMatcher.cpp
     src/config.cpp
+    src/TumDatasetReader.cpp
 )
 
 set(HEADERS
@@ -61,6 +62,7 @@ set(HEADERS
     "include/KeyFrame.h"
     "include/OrbMatcher.h"
     "include/config.h"
+    "include/TumDatasetReader.h"
 )
 
 

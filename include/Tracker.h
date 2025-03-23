@@ -24,7 +24,7 @@ using namespace cv;
 class Tracker {
 public:
     Map initialize(Mat frame, Mat depth, Config cfg);
-    void tracking(Mat frame, Mat depth, Map& map_points);
+    void tracking(Mat frame, Mat depth, Map& map_points, Sophus::SE3d ground_truth_pose);
     Tracker(Config cfg) {
         this->K = cfg.K;
         cv::cv2eigen(cfg.K, this->K_eigen);

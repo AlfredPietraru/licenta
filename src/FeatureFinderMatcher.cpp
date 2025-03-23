@@ -32,8 +32,8 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat& frame
 
             // do stuff
             // ajunge la 0, si dupa NU mai da un kick start ceea ce nu e bine
-            int threshold = this->fast_threshold;
-            // int threshold = this->fast_features_cell[i * nr_cells_collumn * interlaping + j];
+            // int threshold = this->fast_threshold;
+            int threshold = this->fast_features_cell[i * nr_cells_collumn * interlaping + j];
             for (int iter = 0; iter < this->orb_iterations - 1; iter++) {
                 this->orb->setFastThreshold(threshold);
                 this->orb->detect(cell_img, current_keypoints);
@@ -67,7 +67,7 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat& frame
             // }
             // std::cout << "\n";
             // std::cout << " " << this->fast_features_cell[i * nr_cells_collumn + j] << " " << this->orb->getFastThreshold() << "\n\n";
-            // this->fast_features_cell[i * nr_cells_collumn * interlaping + j] = threshold;
+            this->fast_features_cell[i * nr_cells_collumn * interlaping + j] = threshold;
             keypoints.insert(keypoints.end(), current_keypoints.begin(), current_keypoints.end());
 
             // break;

@@ -1,5 +1,11 @@
 #include "../include/Tracker.h"
 
+double computeAPE(const Sophus::SE3d &estimated, const Sophus::SE3d &ground_truth) {
+    Sophus::SE3d relative = ground_truth.inverse() * estimated;
+    return relative.log().norm();  // Lie algebra norm
+}
+
+
 void print_pose(Sophus::SE3d pose, std::string message) {
     for (int i = 0; i < 7; i++) {
         std::cout << pose.data()[i] << " ";
@@ -13,8 +19,13 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth)
     std::vector<KeyPoint> keypoints = this->fmf->extract_keypoints(frame);
 
     cv::Mat descriptors = this->fmf->compute_descriptors(frame, keypoints);
+    // Rect r=Rect(0,0,80,80);
+    // rectangle(frame,r,Scalar(0,255,0),1,8,0);
     // std::cout << keypoints.size() << " " << descriptors.size() << " keypoints and descriptors \n";
-    Mat img2;
+    // Mat img2;
+    // cv::drawKeypoints(frame, keypoints, img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT); //albastru
+    // cv::imshow("Display window", img2);
+    // cv::waitKey(0);
     Sophus::SE3d pose_estimation = (this->prev_kf == nullptr) ? this->initial_pose : this->prev_kf->Tiw;
     int idx = (this->prev_kf == nullptr) ? 0 : this->reference_kf->idx + 1;
     this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, keypoints, descriptors, depth, idx, frame);
@@ -100,7 +111,7 @@ void Tracker::VelocityEstimation()
     this->current_kf->Tiw = mVelocity * this->prev_kf->Tiw;
 }
 
-void Tracker::tracking(Mat frame, Mat depth, Map& mapp)
+void Tracker::tracking(Mat frame, Mat depth, Map& mapp, Sophus::SE3d ground_truth_pose)
 {
     // std::cout << this->frames_tracked << " atatea frame-uri urmarite\n";
     this->prev_kf = this->current_kf;
@@ -108,6 +119,14 @@ void Tracker::tracking(Mat frame, Mat depth, Map& mapp)
     this->frames_tracked += 1;
     // VelocityEstimation();
     std::unordered_map<MapPoint *, Feature*> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf->map_points);
+    // vector<cv::KeyPoint> keypoints;
+    // for (auto it = matches.begin(); it != matches.end(); it++) {
+    //     keypoints.push_back(it->second->get_key_point());
+    // }
+    // cv::Mat img2;
+    // cv::drawKeypoints(frame, keypoints, img2, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); //albastru
+    // cv::imshow("Display window", img2);
+    // cv::waitKey(0);
     if (matches.size() < 20)
     {
         std::cout << matches.size() << " atatea map points in momentul in care a crapat\n";
@@ -118,10 +137,11 @@ void Tracker::tracking(Mat frame, Mat depth, Map& mapp)
     }
     this->current_kf->Tiw = TrackWithLastFrame(matches);
     mapp.track_local_map(this->current_kf, matches, this->optimizer_window);
-    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches, this->minim_points_found);
+    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches, 100);
     this->current_kf->correlate_map_points_to_features_current_frame(matches);
     //  trebuie de verificat aici\n;
     // std::cout << matches.size() << " gasite dupa proiectare local Map\n";
+    std::cout << computeAPE(this->current_kf->Tiw, ground_truth_pose) << " current difference between position\n";
     if (this->Is_KeyFrame_needed(matches))
     {
         std::cout << "DAAA UN KEYFRAME A FOST ADAUGAT\n\n\n";
