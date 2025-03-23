@@ -36,7 +36,7 @@ public:
     FeatureMatcherFinder() {}
     FeatureMatcherFinder(int rows, int cols, Config cfg);
 
-    std::vector<cv::DMatch> match_features_last_frame(KeyFrame *current_kf, KeyFrame *past_kf);
+    // std::vector<cv::DMatch> match_features_last_frame(KeyFrame *current_kf, KeyFrame *past_kf);
     std::vector<cv::KeyPoint> extract_keypoints(cv::Mat& frame);
     cv::Mat compute_descriptors(cv::Mat frame, std::vector<cv::KeyPoint>& keypoints);
 };
