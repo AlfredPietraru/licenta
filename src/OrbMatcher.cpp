@@ -103,5 +103,5 @@ void OrbMatcher::debug_reprojection(std::unordered_set<MapPoint *>& local_map, s
     cv::drawKeypoints(img2, map_point_matched, img3, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT); //verde
     // cv::drawKeypoints(img3, map_point_matched, img4, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); // rosu
     cv::imshow("Display window", img3);
-    cv::waitKey(100);
+    cv::waitKey(0);
 }

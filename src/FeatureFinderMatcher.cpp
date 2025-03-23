@@ -14,6 +14,7 @@ FeatureMatcherFinder::FeatureMatcherFinder(int rows, int cols, Config cfg) {
     this->fast_higher_limit = cfg.fast_higher_limit;
     this->fast_threshold = cfg.fast_threshold;
     this->interlaping = cfg.interlaping;
+    this->fast_features_cell = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row * this->interlaping, this->fast_threshold);
     this->matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
 }
 
@@ -63,7 +64,8 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat& frame
 
             // do stuff
             // ajunge la 0, si dupa NU mai da un kick start ceea ce nu e bine
-            int threshold = this->fast_threshold;
+            // int threshold = this->fast_threshold
+            int threshold = this->fast_features_cell[i * nr_cells_collumn * interlaping + j];
             for (int iter = 0; iter < this->orb_iterations - 1; iter++) {
                 this->orb->setFastThreshold(threshold);
                 this->orb->detect(cell_img, current_keypoints);
@@ -84,14 +86,9 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat& frame
             }
             this->orb->setFastThreshold(threshold);
             this->orb->detect(cell_img, current_keypoints);
-
             // for (cv::KeyPoint kp : current_keypoints) {
             //     std::cout << kp.pt << " ";
             // }
-            // cv::Mat current;
-            // cv::drawKeypoints(cell_img, current_keypoints, current, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT);
-            // imshow("Display window", current);
-            // cv::waitKey(0);
             // std::cout << "\n";
             for (auto &kp : current_keypoints) {
                 kp.pt.x += j * window / interlaping;
@@ -102,6 +99,7 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat& frame
             // }
             // std::cout << "\n";
             // std::cout << " " << this->fast_features_cell[i * nr_cells_collumn + j] << " " << this->orb->getFastThreshold() << "\n\n";
+            this->fast_features_cell[i * nr_cells_collumn * interlaping + j] = threshold;
             keypoints.insert(keypoints.end(), current_keypoints.begin(), current_keypoints.end());
 
             // break;

@@ -16,7 +16,7 @@ ORB:
   orb_iterations: 10
   fast_step: 5
   fast_lower_limit: 10
-  fast_higher_limit: 80
+  fast_higher_limit: 100
   interlaping: 2
 
 # RANSAC for PnP

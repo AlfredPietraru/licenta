@@ -123,15 +123,9 @@ void Tracker::tracking(Mat frame, Mat depth, Map& mapp)
         this->tracking_was_lost();
         return;
     }
-    // print_pose(this->current_kf->Tiw, "inainte de optimizare");
-
     this->current_kf->Tiw = TrackWithLastFrame(matches);
     this->current_kf->correlate_map_points_to_features_current_frame(matches);
-
-    // std::cout << inliers.size() << " inliers found in algorithm\n";
-    // print_pose(this->current_kf->Tiw, "dupa estimarea initiala");
     std::unordered_map<MapPoint *, Feature*> observed_map_points = mapp.track_local_map(this->current_kf, matches, this->optimizer_window);
-    // merge matches + observerd_map_points;
     if (observed_map_points.size() < this->minim_points_found)
     {
         std::cout << observed_map_points.size() << " atatea map points in momentul in care a crapat\n";
@@ -139,9 +133,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map& mapp)
         std::cout << "NOT ENOUGH MAP_POINTS FOUND\n\n";
         std::cout << this->frames_tracked << "\n";
         exit(1);
-        // return;
     }
-    
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, observed_map_points, this->minim_points_found);
     this->current_kf->correlate_map_points_to_features_current_frame(observed_map_points);
     // print_pose(this->current_kf->Tiw, "dupa optimizarea BA");
