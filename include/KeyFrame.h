@@ -9,7 +9,6 @@
 #include <unordered_set>
 #include "Feature.h"
 #include <iostream>
-#include "MapPoint.h"
 
 class KeyFrame
 {

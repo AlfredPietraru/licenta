@@ -2,10 +2,10 @@
 #define MAP_POINT_H
 #include "iostream"
 #include "vector"
+#include <iostream>
 #include "opencv2/core.hpp"
 #include "Eigen/Core"
 #include "unordered_set"
-
 class KeyFrame;
 
 class MapPoint {

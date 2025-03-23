@@ -1,5 +1,4 @@
 #include "../include/MapPoint.h"
-#include <iostream>
 
 MapPoint::MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord, cv::Mat orb_descriptor,
          int kp_idx, float depth)

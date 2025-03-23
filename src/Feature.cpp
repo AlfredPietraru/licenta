@@ -9,33 +9,26 @@ int inline::Feature::ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat 
     return distance;
 }
 
-Feature::Feature(cv::KeyPoint kp, cv::Mat descriptor, KeyFrame *frame, MapPoint *mp, int idx) : kp(kp), frame(frame), 
+Feature::Feature(cv::KeyPoint kp, cv::Mat descriptor, MapPoint *mp, int idx) : kp(kp), 
     mp(mp), idx(idx), descriptor(descriptor) {}
 
-Feature::Feature(cv::KeyPoint kp, cv::Mat descriptor, KeyFrame *frame, int idx) : kp(kp), frame(frame), 
-    mp(nullptr), idx(idx), descriptor(descriptor) {}
+Feature::Feature(cv::KeyPoint kp, cv::Mat descriptor, int idx) : kp(kp), mp(nullptr), idx(idx), descriptor(descriptor) {}
 
 void Feature::set_map_point(MapPoint *mp) {
-    if (mp != nullptr) {
-        this->mp = mp;    
+    if (mp == nullptr) {
+        this->mp = mp;
+        this->current_hamming_distance = ComputeHammingDistance(mp->orb_descriptor, descriptor);    
     } else {
-        std::cout << "Map Point-ul asociat este NULL\n";
-    }
-}
-void Feature::set_key_frame(KeyFrame *frame) {
-    if (frame != nullptr) {
-        this->frame = frame;
-    } else {
-        std::cout << "FRAME-UL ASOCIAT ESTE NULL\n";
+        int new_hamming_distance = ComputeHammingDistance(mp->orb_descriptor, descriptor);
+        if (new_hamming_distance < current_hamming_distance) {
+            this->mp = mp;
+            this->current_hamming_distance = new_hamming_distance; 
+        }
     }
 }
 
 MapPoint* Feature::get_map_point() {
     return this->mp;
-}
-
-KeyFrame* Feature::get_key_frame() {
-    return this->frame;
 }
 
 cv::KeyPoint Feature::get_key_point() {

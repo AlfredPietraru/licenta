@@ -108,6 +108,20 @@ void Tracker::tracking(Mat frame, Mat depth, Map& mapp)
     this->frames_tracked += 1;
     // VelocityEstimation();
     std::unordered_map<MapPoint *, Feature*> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf->map_points);
+    if (matches.size() < 20)
+    {
+        std::cout << matches.size() << " atatea map points in momentul in care a crapat\n";
+        this->tracking_was_lost();
+        std::cout << "NOT ENOUGH MAP_POINTS FOUND\n\n";
+        std::cout << this->frames_tracked << "\n";
+        exit(1);
+    }
+    this->current_kf->Tiw = TrackWithLastFrame(matches);
+    mapp.track_local_map(this->current_kf, matches, this->optimizer_window);
+    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches, this->minim_points_found);
+    this->current_kf->correlate_map_points_to_features_current_frame(matches);
+    //  trebuie de verificat aici\n;
+    // std::cout << matches.size() << " gasite dupa proiectare local Map\n";
     if (this->Is_KeyFrame_needed(matches))
     {
         std::cout << "DAAA UN KEYFRAME A FOST ADAUGAT\n\n\n";
@@ -116,27 +130,10 @@ void Tracker::tracking(Mat frame, Mat depth, Map& mapp)
         this->last_keyframe_added = 0;
         this->keyframes_from_last_global_relocalization = 0;
         return;
-    } else if(matches.size() < 15)
+    } else if(matches.size() < this->minim_points_found)
     {
         std::cout << matches.size() << " puncte au fost matchuite\n\n";
         this->tracking_was_lost();
         return;
     }
-    this->current_kf->Tiw = TrackWithLastFrame(matches);
-    // this->current_kf->correlate_map_points_to_features_current_frame(matches);
-    std::unordered_map<MapPoint *, Feature*> observed_map_points = mapp.track_local_map(this->current_kf, matches, this->optimizer_window);
-    for (auto it = matches.begin(); it != matches.end(); it++) {
-        observed_map_points.insert({it->first, it->second});
-    }
-    if (observed_map_points.size() < this->minim_points_found)
-    {
-        std::cout << observed_map_points.size() << " atatea map points in momentul in care a crapat\n";
-        this->tracking_was_lost();
-        std::cout << "NOT ENOUGH MAP_POINTS FOUND\n\n";
-        std::cout << this->frames_tracked << "\n";
-        exit(1);
-    }
-    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, observed_map_points, this->minim_points_found);
-    this->current_kf->correlate_map_points_to_features_current_frame(observed_map_points);
-    // print_pose(this->current_kf->Tiw, "dupa optimizarea BA");
 }
