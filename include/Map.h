@@ -33,7 +33,6 @@ public:
 
     KeyFrame *get_reference_keyframe(KeyFrame *kf);
     std::unordered_set<MapPoint *> compute_local_map(KeyFrame *current_frame);
-    std::vector<MapPoint*> compute_map_points(KeyFrame *kf);
     void add_new_keyframe(KeyFrame *kf); 
     void debug_map(KeyFrame *kf);
 };

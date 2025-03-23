@@ -17,40 +17,8 @@ void Map::debug_map(KeyFrame *kf) {
     }
 }
 
-std::vector<MapPoint *> Map::compute_map_points(KeyFrame *frame)
-{
-    int null_values = 0;
-    int negative_depth = 0;
-    std::vector<MapPoint *> current_points_found;
-    Eigen::Vector3d camera_center = frame->compute_camera_center();
-    for (int i = 0; i < frame->features.size(); i++)
-    {
-        if (frame->features[i].get_map_point() != nullptr) {
-            null_values++;
-            continue;
-        }
-        float dd = frame->compute_depth_in_keypoint(frame->features[i].kp);
-        if (dd <= 0) {
-            negative_depth++;
-            continue;  
-        } 
-        Eigen::Vector4d wcoord = frame->fromImageToWorld(i);
-        MapPoint *mp = new MapPoint(frame, frame->features[i].kp, camera_center, wcoord, 
-                frame->orb_descriptors.row(i), i, dd);
-        current_points_found.push_back(mp);
-        frame->features[i].set_map_point(mp);
-        frame->map_points.insert(mp);
-    }
-    std::cout << current_points_found.size() << " " << frame->features.size() << " " << null_values << " " << negative_depth << " debug compute map points\n"; 
-    if (current_points_found.size() == 0) {
-        std::cout << "CEVA NU E BINE NU S-AU CREAT PUNCTELE\n";
-    }
-    std::cout << current_points_found.size() << " puncte create\n";
-    return current_points_found; 
-}
-
 void Map::add_new_keyframe(KeyFrame *new_kf) {
-    this->compute_map_points(new_kf);
+    new_kf->compute_map_points();
     std::unordered_map<KeyFrame*, int> edges_new_keyframe;
     if (this->keyframes.size() == 0) {
         this->keyframes.push_back(new_kf);
@@ -139,6 +107,6 @@ std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf,
     for (auto it = matches.begin(); it != matches.end(); it++) {
         out.insert({it->first, it->second});
     }
-    this->matcher->debug_reprojection(local_map, out, curr_kf, window, this->orb_descriptor_value);
+    // this->matcher->debug_reprojection(local_map, out, curr_kf, window, this->orb_descriptor_value);
     return out;
 }

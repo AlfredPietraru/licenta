@@ -93,3 +93,36 @@ std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, dou
     return kps_idx;
 }
 
+
+std::vector<MapPoint *> KeyFrame::compute_map_points()
+{
+    int null_values = 0;
+    int negative_depth = 0;
+    std::vector<MapPoint *> current_points_found;
+    Eigen::Vector3d camera_center = this->compute_camera_center();
+    for (int i = 0; i < this->features.size(); i++)
+    {
+        if (this->features[i].get_map_point() != nullptr) {
+            null_values++;
+            continue;
+        }
+        float dd = this->compute_depth_in_keypoint(this->features[i].kp);
+        if (dd <= 0) {
+            negative_depth++;
+            continue;  
+        } 
+        Eigen::Vector4d wcoord = this->fromImageToWorld(i);
+        MapPoint *mp = new MapPoint(this, this->features[i].kp, camera_center, wcoord, 
+                this->orb_descriptors.row(i), i, dd);
+        current_points_found.push_back(mp);
+        this->features[i].set_map_point(mp);
+        this->map_points.insert(mp);
+    }
+    std::cout << current_points_found.size() << " " << this->features.size() << " " << null_values << " " << negative_depth << " debug compute map points\n"; 
+    if (current_points_found.size() == 0) {
+        std::cout << "CEVA NU E BINE NU S-AU CREAT PUNCTELE\n";
+    }
+    std::cout << current_points_found.size() << " puncte create\n";
+    return current_points_found; 
+}
+

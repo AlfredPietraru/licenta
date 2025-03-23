@@ -9,9 +9,7 @@
 #include <unordered_set>
 #include "Feature.h"
 #include <iostream>
-
-
-class MapPoint;
+#include "MapPoint.h"
 
 class KeyFrame
 {
@@ -38,7 +36,7 @@ public:
     std::vector<cv::KeyPoint> get_all_keypoints(); 
     Eigen::Vector3d get_viewing_direction();
     void correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature*>& matches);
-    // std::vector<MapPoint *> return_map_points();
+    std::vector<MapPoint *> compute_map_points();
     cv::KeyPoint get_keypoint(int idx);
     std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window); 
 };
