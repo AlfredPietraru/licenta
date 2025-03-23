@@ -26,7 +26,7 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
         local_map = this->compute_local_map(new_kf);
         return;
     }
-
+    
     int start_idx = (this->keyframes.size() > this->KEYFRAMES_WINDOW) ? this->keyframes.size() - this->KEYFRAMES_WINDOW : 0;
     for (int i = start_idx; i < this->keyframes.size(); i++) {
         KeyFrame *current_kf = this->keyframes[i];
@@ -66,8 +66,7 @@ KeyFrame *Map::get_reference_keyframe(KeyFrame *kf)
     int reference_idx = start_idx;
     for (int i = start_idx; i < this->keyframes.size(); i++)
     {
-        std::unordered_map<MapPoint*, Feature*> reprojected_map_points = this->matcher->match_frame_map_points(kf, 
-                this->keyframes[i]->map_points, false);
+        std::unordered_map<MapPoint*, Feature*> reprojected_map_points = this->matcher->match_frame_map_points(kf, this->keyframes[i]->map_points);
         if (reprojected_map_points.size() == 0) continue;
         if (reprojected_map_points.size() > max)
         {
@@ -103,10 +102,14 @@ std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
 
 std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf, std::unordered_map<MapPoint *, Feature*>& matches,  int window)
 {
-    std::unordered_map<MapPoint *, Feature*> out = this->matcher->match_frame_map_points(curr_kf, local_map, true);
-    for (auto it = matches.begin(); it != matches.end(); it++) {
-        out.insert({it->first, it->second});
-    }
+    std::unordered_map<MapPoint *, Feature*> out = this->matcher->match_frame_map_points(curr_kf, local_map);
+    // for (auto it = matches.begin(); it != matches.end(); it++) {
+    //     out.insert({it->first, it->second});
+    // }
+    // if (keep_count) {
+    //     kf->currently_matched_points++;
+    //     if (kf->currently_matched_points == kf->maximum_possible_map_points) break;
+    // }
     // this->matcher->debug_reprojection(local_map, out, curr_kf, window, this->orb_descriptor_value);
     return out;
 }

@@ -107,15 +107,14 @@ void Tracker::tracking(Mat frame, Mat depth, Map& mapp)
     this->get_current_key_frame(frame, depth);
     this->frames_tracked += 1;
     // VelocityEstimation();
-    std::unordered_map<MapPoint *, Feature*> matches = matcher->match_two_consecutive_frames(this->prev_kf, this->current_kf);
+    std::unordered_map<MapPoint *, Feature*> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf->map_points);
     if (this->Is_KeyFrame_needed(matches))
     {
-        std::cout << "DAAA UN KEYFRAME A FOST ADAUGAT\n";
+        std::cout << "DAAA UN KEYFRAME A FOST ADAUGAT\n\n\n";
         mapp.add_new_keyframe(this->current_kf);
         this->reference_kf = this->current_kf;
         this->last_keyframe_added = 0;
         this->keyframes_from_last_global_relocalization = 0;
-        std::cout << "\n\n";
         return;
     } else if(matches.size() < 15)
     {
@@ -124,8 +123,11 @@ void Tracker::tracking(Mat frame, Mat depth, Map& mapp)
         return;
     }
     this->current_kf->Tiw = TrackWithLastFrame(matches);
-    this->current_kf->correlate_map_points_to_features_current_frame(matches);
+    // this->current_kf->correlate_map_points_to_features_current_frame(matches);
     std::unordered_map<MapPoint *, Feature*> observed_map_points = mapp.track_local_map(this->current_kf, matches, this->optimizer_window);
+    for (auto it = matches.begin(); it != matches.end(); it++) {
+        observed_map_points.insert({it->first, it->second});
+    }
     if (observed_map_points.size() < this->minim_points_found)
     {
         std::cout << observed_map_points.size() << " atatea map points in momentul in care a crapat\n";

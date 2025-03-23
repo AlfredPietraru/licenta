@@ -18,7 +18,7 @@
 
 class Map {
 public:
-    int KEYFRAMES_WINDOW = 10;
+    int KEYFRAMES_WINDOW = 5;
     int orb_descriptor_value; 
     OrbMatcher* matcher;
     std::unordered_set<MapPoint *> local_map;
