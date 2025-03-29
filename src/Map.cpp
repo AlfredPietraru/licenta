@@ -102,7 +102,6 @@ std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
 
 void Map::track_local_map(KeyFrame *curr_kf, std::unordered_map<MapPoint *, Feature*>& matches,  int window)
 {
-    // return this->matcher->match_frame_map_points(curr_kf, local_map);
     curr_kf->currently_matched_points = matches.size();
     // std::cout << curr_kf->currently_matched_points << " " << curr_kf->maximum_possible_map_points << " de testat cum evolueaza track local map\n";
     std::unordered_map<MapPoint *, Feature*> out;
@@ -129,13 +128,12 @@ void Map::track_local_map(KeyFrame *curr_kf, std::unordered_map<MapPoint *, Feat
             }
         }
         if (min_hamm_dist > orb_descriptor_value || out_idx == -1) continue;
+        if (!mp->is_safe_to_use) continue;
         // map point is valid
         if (matches.find(mp) == matches.end()) {
             matches.insert({mp, &curr_kf->features[out_idx]});
             curr_kf->currently_matched_points++;
-        } else {
-            
-        }
+        } 
         if (curr_kf->currently_matched_points == curr_kf->maximum_possible_map_points) break;
     }
     // std::cout << curr_kf->currently_matched_points << " " << curr_kf->maximum_possible_map_points << " rezultat dupa track local map\n";

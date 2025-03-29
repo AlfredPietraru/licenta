@@ -10,9 +10,10 @@ KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint
         this->maximum_possible_map_points = keypoints.size();
         for (int i = 0; i < keypoints.size(); i++) {
             cv::KeyPoint kp = keypoints[i];
-            this->features.push_back(Feature(kp, orb_descriptors.row(i), i));
+            double depth = this->compute_depth_in_keypoint(kp);
+            this->features.push_back(Feature(kp, orb_descriptors.row(i), i, depth));
             this->grid.at<int>(lround(kp.pt.y), lround(kp.pt.x)) = i;
-            if(this->compute_depth_in_keypoint(kp) < 0) this->maximum_possible_map_points--;
+            if(depth < 0) this->maximum_possible_map_points--;
         }
         // std::cout << this->grid << "\n";
         // std::cout << this->grid.size << "\n";
@@ -97,6 +98,8 @@ std::vector<MapPoint *> KeyFrame::compute_map_points()
 {
     int null_values = 0;
     int negative_depth = 0;
+    int close_map_points = 0;
+    int far_map_poins = 0;
     std::vector<MapPoint *> current_points_found;
     Eigen::Vector3d camera_center = this->compute_camera_center();
     for (int i = 0; i < this->features.size(); i++)
@@ -116,8 +119,11 @@ std::vector<MapPoint *> KeyFrame::compute_map_points()
         current_points_found.push_back(mp);
         this->features[i].set_map_point(mp);
         this->map_points.insert(mp);
+        if (mp->is_safe_to_use) close_map_points++;
+        if (!mp->is_safe_to_use) far_map_poins++;
     }
     std::cout << current_points_found.size() << " " << this->features.size() << " " << null_values << " " << negative_depth << " debug compute map points\n"; 
+    std::cout << close_map_points << " " << far_map_poins << " close and far map points \n";
     if (current_points_found.size() == 0) {
         std::cout << "CEVA NU E BINE NU S-AU CREAT PUNCTELE\n";
     }

@@ -1,18 +1,41 @@
 #include "../include/Tracker.h"
 
-double computeAPE(const Sophus::SE3d &estimated, const Sophus::SE3d &ground_truth) {
+void compute_difference_between_positions(const Sophus::SE3d &estimated, const Sophus::SE3d &ground_truth)
+{
     Sophus::SE3d relative = ground_truth.inverse() * estimated;
-    return relative.log().norm();  // Lie algebra norm
+    double APE = relative.log().norm();
+
+    Eigen::Vector3d angle_axis = relative.so3().log(); // Rotation vector (Lie Algebra)
+    double angle_diff_x = std::abs(angle_axis.x()) * 180.0 / M_PI;
+    double angle_diff_y = std::abs(angle_axis.y()) * 180.0 / M_PI;
+    double angle_diff_z = std::abs(angle_axis.z()) * 180.0 / M_PI;
+
+    Eigen::Quaterniond q_rel = relative.unit_quaternion();
+    double total_angle_diff = 2.0 * std::acos(q_rel.w()) * 180.0 / M_PI;
+    if (total_angle_diff > 180.0) {
+        total_angle_diff = 360.0 - total_angle_diff;
+    }
+
+    Eigen::Vector3d t_rel = relative.translation();
+    double translation_diff = t_rel.norm();
+
+    std::cout << "APE score: " << APE << "\n";
+    std::cout << "Rotation Difference (Total): " << total_angle_diff << " degrees\n";
+    std::cout << "Rotation Difference (X): " << angle_diff_x << " degrees\n";
+    std::cout << "Rotation Difference (Y): " << angle_diff_y << " degrees\n";
+    std::cout << "Rotation Difference (Z): " << angle_diff_z << " degrees\n";
+    std::cout << "Translation Difference: " << translation_diff << " meters\n";
 }
 
 
-void print_pose(Sophus::SE3d pose, std::string message) {
-    for (int i = 0; i < 7; i++) {
+void print_pose(Sophus::SE3d pose, std::string message)
+{
+    for (int i = 0; i < 7; i++)
+    {
         std::cout << pose.data()[i] << " ";
     }
     std::cout << message << "\n";
 }
-
 
 void Tracker::get_current_key_frame(Mat frame, Mat depth)
 {
@@ -31,7 +54,6 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth)
     this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, keypoints, descriptors, depth, idx, frame);
 }
 
-
 Map Tracker::initialize(Mat frame, Mat depth, Config cfg)
 {
     this->get_current_key_frame(frame, depth);
@@ -40,16 +62,16 @@ Map Tracker::initialize(Mat frame, Mat depth, Config cfg)
     return mapp;
 }
 
-Sophus::SE3d Tracker::TrackWithLastFrame(std::unordered_map<MapPoint *, Feature*>& matches)
+Sophus::SE3d Tracker::TrackWithLastFrame(std::unordered_map<MapPoint *, Feature *> &matches)
 {
     vector<Point3d> points_in3d;
     vector<Point2d> points_in2d;
-    for (std::pair<MapPoint *, Feature*> pair : matches)
+    for (std::pair<MapPoint *, Feature *> pair : matches)
     {
         MapPoint *mp = pair.first;
         cv::KeyPoint kp = pair.second->get_key_point();
         points_in3d.push_back(Point3d(mp->wcoord(0), mp->wcoord(1), mp->wcoord(2)));
-        points_in2d.push_back(Point2d( kp.pt.x, kp.pt.y));
+        points_in2d.push_back(Point2d(kp.pt.x, kp.pt.y));
     }
     // std::cout << points_in3d.size() << " " << points_in2d.size() << " puncte gasite pentru alogirtmul pnp\n";
     cv::Mat r, t, R;
@@ -62,7 +84,7 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::unordered_map<MapPoint *, Feature*
     // pag 160 - slambook.en
     std::vector<int> inliers;
     cv::solvePnPRansac(points_in3d, points_in2d, K, Mat(), r, t, true, this->ransac_iteration, this->optimizer_window,
-    this->ransac_confidence, inliers);
+                       this->ransac_confidence, inliers);
     // cv::solvePnP(points_in3d, points_in2d, K, Mat(), r, t, true, cv::SOLVEPNP_EPNP);
     // std::cout << inliers.size() << " inliere intalnite\n";
     cv::Rodrigues(r, R);
@@ -73,19 +95,22 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::unordered_map<MapPoint *, Feature*
     return Sophus::SE3d(R_eigen, t_eigen);
 }
 
-std::unordered_map<MapPoint *, Feature*> Tracker::get_outliers(std::vector<std::pair<MapPoint *, Feature*>>& matches,
-         vector<int>& inliers) {
-    std::unordered_map<MapPoint *, Feature*> res;
+std::unordered_map<MapPoint *, Feature *> Tracker::get_outliers(std::vector<std::pair<MapPoint *, Feature *>> &matches,
+                                                                vector<int> &inliers)
+{
+    std::unordered_map<MapPoint *, Feature *> res;
     int inlier_idx = 0;
-    for (int i = 0; i < matches.size(); i++) {
-        if (i == inliers[inlier_idx]) {
+    for (int i = 0; i < matches.size(); i++)
+    {
+        if (i == inliers[inlier_idx])
+        {
             inlier_idx++;
             continue;
         }
-        res.insert(matches[i]); 
+        res.insert(matches[i]);
     }
     return res;
-} 
+}
 
 void Tracker::tracking_was_lost()
 {
@@ -94,12 +119,12 @@ void Tracker::tracking_was_lost()
     exit(1);
 }
 
-bool Tracker::Is_KeyFrame_needed(std::unordered_map<MapPoint *, Feature*>& matches)
+bool Tracker::Is_KeyFrame_needed(std::unordered_map<MapPoint *, Feature *> &matches)
 {
     this->last_keyframe_added += 1;
     this->keyframes_from_last_global_relocalization += 1;
-    bool still_enough_map_points_tracked = matches.size() > this->minim_points_found;  
-    bool too_few_map_points_compared_to_kf = reference_kf->map_points.size() / 10 > matches.size(); 
+    bool still_enough_map_points_tracked = matches.size() > this->minim_points_found;
+    bool too_few_map_points_compared_to_kf = reference_kf->map_points.size() / 10 > matches.size();
     bool no_global_relocalization = this->keyframes_from_last_global_relocalization > 20;
     bool no_recent_keyframe_added = this->last_keyframe_added > 20;
     return no_global_relocalization && no_recent_keyframe_added && still_enough_map_points_tracked && too_few_map_points_compared_to_kf;
@@ -111,22 +136,26 @@ void Tracker::VelocityEstimation()
     this->current_kf->Tiw = mVelocity * this->prev_kf->Tiw;
 }
 
-void Tracker::tracking(Mat frame, Mat depth, Map& mapp, Sophus::SE3d ground_truth_pose)
+void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_truth_pose)
 {
     // std::cout << this->frames_tracked << " atatea frame-uri urmarite\n";
     this->prev_kf = this->current_kf;
     this->get_current_key_frame(frame, depth);
     this->frames_tracked += 1;
     // VelocityEstimation();
-    std::unordered_map<MapPoint *, Feature*> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf->map_points);
+    std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf->map_points);
+    std::cout << matches.size() << " atatea map points calculate\n";
+    
     // vector<cv::KeyPoint> keypoints;
     // for (auto it = matches.begin(); it != matches.end(); it++) {
     //     keypoints.push_back(it->second->get_key_point());
     // }
-    // cv::Mat img2;
-    // cv::drawKeypoints(frame, keypoints, img2, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); //albastru
-    // cv::imshow("Display window", img2);
+    // cv::Mat img2, img3;
+    // cv::drawKeypoints(this->current_kf->frame, this->current_kf->get_all_keypoints(), img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT);
+    // cv::drawKeypoints(img2, keypoints, img3, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); 
+    // cv::imshow("Display window", img3);
     // cv::waitKey(0);
+
     if (matches.size() < 20)
     {
         std::cout << matches.size() << " atatea map points in momentul in care a crapat\n";
@@ -137,11 +166,12 @@ void Tracker::tracking(Mat frame, Mat depth, Map& mapp, Sophus::SE3d ground_trut
     }
     this->current_kf->Tiw = TrackWithLastFrame(matches);
     mapp.track_local_map(this->current_kf, matches, this->optimizer_window);
-    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches, 100);
+    // std::cout << computeAPE(this->current_kf->Tiw, ground_truth_pose) << " current difference between position before BA\n";
+    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches, 1000);
     this->current_kf->correlate_map_points_to_features_current_frame(matches);
     //  trebuie de verificat aici\n;
     // std::cout << matches.size() << " gasite dupa proiectare local Map\n";
-    std::cout << computeAPE(this->current_kf->Tiw, ground_truth_pose) << " current difference between position\n";
+    compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     if (this->Is_KeyFrame_needed(matches))
     {
         std::cout << "DAAA UN KEYFRAME A FOST ADAUGAT\n\n\n";
@@ -150,10 +180,12 @@ void Tracker::tracking(Mat frame, Mat depth, Map& mapp, Sophus::SE3d ground_trut
         this->last_keyframe_added = 0;
         this->keyframes_from_last_global_relocalization = 0;
         return;
-    } else if(matches.size() < this->minim_points_found)
+    }
+    else if (matches.size() < this->minim_points_found)
     {
         std::cout << matches.size() << " puncte au fost matchuite\n\n";
         this->tracking_was_lost();
         return;
     }
+    // exit(1);
 }

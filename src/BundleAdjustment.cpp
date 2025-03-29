@@ -1,7 +1,7 @@
 #include "../include/BundleAdjustment.h"
 #include "../include/rotation.h"
 
-// AZI STUDIEZ LIBRARIA CERES
+
 class BundleError
 {
 public:
@@ -25,7 +25,8 @@ public:
         residuals[1] = (y - observed(1)) / scale_sigma;
         if (this->is_monocular) return true;
 
-        T z_projected = K(0, 0) * (camera_coordinates[0] - BASELINE) * inv_d + K(0, 2);
+        // AM SCHIMBAT LOGICA PENTRU z_projected
+        T z_projected = camera_coordinates[0] - K(0, 0) * BASELINE * inv_d;
         residuals[2] = (z_projected - observed(2)) / scale_sigma;
         return true;
     }
@@ -54,30 +55,30 @@ private:
 Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *, Feature*>& matches, int maximum_selected)
 {
     const double BASELINE = 0.08;
-    if (matches.size() == 0)
-        return kf->Tiw;
+    if (matches.size() == 0) return kf->Tiw;
+
     ceres::Problem problem;
     int nr_monocular_points = 0;
     int nr_stereo_points = 0;
     double angle_axis[3];
+    Eigen::Vector3d angle_axis_sophus = kf->Tiw.so3().log();
+    angle_axis[0] = angle_axis_sophus[0];
+    angle_axis[1] = angle_axis_sophus[1];
+    angle_axis[2] = angle_axis_sophus[2];
     
-    angle_axis[0] = kf->Tiw.angleX();
-    angle_axis[1] = kf->Tiw.angleY();
-    angle_axis[2] = kf->Tiw.angleZ();
     double t[3];
     t[0] = kf->Tiw.translation().x();
     t[1] = kf->Tiw.translation().y();
     t[2] = kf->Tiw.translation().z();
     // std::cout << matches.size() << "\n";
     int nr_selected = 0;
+    ceres::LossFunction *loss_function = new ceres::CauchyLoss(1.0);
     for (auto it = matches.begin(); it != matches.end(); it++)
     {   
         ceres::CostFunction *cost_function;
         cv::KeyPoint kp = it->second->get_key_point();
         double sigma = std::pow(1.2, kp.octave);
-        // std::cout << sigma << " ";
-        float dd = kf->compute_depth_in_keypoint(kp);
-        if (dd <= 0)
+        if (it->second->depth <= 0)
         {
             nr_monocular_points++;
             cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kp.pt.x, kp.pt.y, 0), it->first->wcoord, sigma, kf->K);
@@ -85,36 +86,32 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
         else
         {
             nr_stereo_points++;
-            double fake_right_coordinate = kp.pt.x - (kf->K(0, 0) * BASELINE / dd);
+            double fake_right_coordinate = kp.pt.x - (kf->K(0, 0) * BASELINE / it->second->depth);
             cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kp.pt.x, kp.pt.y, fake_right_coordinate), it->first->wcoord, sigma, kf->K);
         }
-        ceres::LossFunction *loss_function = new ceres::CauchyLoss(1.0);
         problem.AddResidualBlock(cost_function, loss_function, angle_axis, t);
         nr_selected ++;
         if (nr_selected == maximum_selected) break;
     }
-
     // std::cout << "au fost gasite atatea puncte monoculare " << nr_monocular_points << "\n";
     // std::cout << "au fost gasite atatea puncte stereo " << nr_stereo_points << "\n\n";
     // std::cout << "\n";
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
-    // options.linear_solver_ordering_type = ceres::AMD;
-    // options.function_tolerance = 1e-7;
-    // options.gradient_tolerance = 1e-7;
-    // options.parameter_tolerance = 1e-8;
-    // options.gradient_check_relative_precision = 1e-8;
-    options.function_tolerance = 1e-5;
+    options.function_tolerance = 1e-7;
+    options.gradient_tolerance = 1e-7;
+    options.parameter_tolerance = 1e-8;
+    options.gradient_check_relative_precision = 1e-8;
     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
     options.use_inner_iterations = true;
-    options.minimizer_progress_to_stdout = false;
-    options.check_gradients = false;
+    // options.check_gradients = true;
+    // options.minimizer_progress_to_stdout = true;
     options.max_num_iterations = NUMBER_ITERATIONS;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     // std::cout << summary.FullReport() << "\n";
     Eigen::Vector3d angle_axis_eigen(angle_axis[0], angle_axis[1], angle_axis[2]);  
-Eigen::AngleAxisd aa(angle_axis_eigen.norm(), angle_axis_eigen.normalized());
-Eigen::Quaterniond quaternion(aa);
+    Eigen::AngleAxisd aa(angle_axis_eigen.norm(), angle_axis_eigen.normalized());
+    Eigen::Quaterniond quaternion(aa);
     return Sophus::SE3d(quaternion, Eigen::Vector3d(t[0], t[1], t[2]));
 }

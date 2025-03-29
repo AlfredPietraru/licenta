@@ -92,42 +92,7 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat& frame
 }
 
 cv::Mat FeatureMatcherFinder::compute_descriptors(cv::Mat frame, std::vector<cv::KeyPoint> &kps) {
-    // cv::Mat descriptors = cv::Mat::zeros(cv::Size(32, kps.size()), CV_64F);
-    // std::cout << descriptors.size() << "\n";
-    // std::cout << descriptors.size().height << " " << descriptors.size().width << "\n";
-    // // this->orb->compute(frame, kps, descriptors);
-    // int kps_idx = 0;
-    // int descriptor_idx = 0;
-    // for (int i = 0; i < nr_cells_row; i++) {
-    //     for (int j = 0; j < nr_cells_collumn; j++) {
-    //         std::vector<cv::KeyPoint> current_kps;
-    //         cv::Mat current_descriptors;
-    //         int kps_found_in_cell = this->nr_keypoints_found[i * nr_cells_row + j];
-    //         copy(kps.begin() + kps_idx, kps.begin() + kps_idx + kps_found_in_cell, back_inserter(current_kps));
-    //         this->orb->setFastThreshold(this->fast_features_cell[i * nr_cells_row + j]);
-    //         kps_idx += kps_found_in_cell;
-    //         this->orb->compute(frame, current_kps, current_descriptors);
-    //         if (current_descriptors.size().height == 0) continue;
-    //         for (int q = 0; q < current_descriptors.size().height; q++) {
-    //             descriptors.row(descriptor_idx + q) = current_descriptors.row(q);
-    //         }
-    //         descriptor_idx += current_descriptors.size().height;
-    //     }
-    // }
-    
-    // if (descriptor_idx < descriptors.size().height) {
-    //     std::cout << descriptor_idx << " waiiiii trebuie de modificat\n";
-    // }
-    // // std::cout << descriptors << "\n";
-    // cv::Mat dst_roi = descriptors(cv::Rect(0, 0, 32, descriptor_idx));
-    // // std::cout << dst_roi.row(100) << "\n\n";
-    // // std::cout << descriptors.row(100) << "\n";
-
-    // std::cout << this->orb->getFastThreshold() << "\n";
     cv::Mat descriptors;
     this->orb->compute(frame, kps, descriptors);
-    //  for (int q = 0; q < kps.size(); q++) {
-    //     std::cout << kps[q].pt.x << " " << kps[q].pt.y << "\n";
-    // }
     return descriptors;
 }

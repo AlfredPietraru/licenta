@@ -1,5 +1,7 @@
 #include "../include/MapPoint.h"
 
+
+
 MapPoint::MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord, cv::Mat orb_descriptor,
          int kp_idx, float depth)
 {
@@ -9,7 +11,8 @@ MapPoint::MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_c
     this->view_direction = (wcoord_local - camera_center).normalized();
     this->orb_descriptor = orb_descriptor;
     this->dmax = depth * 1.2; 
-    this->dmin = depth * 0.8; 
+    this->dmin = depth * 0.8;
+    this->is_safe_to_use = depth < BASELINE * 40 && depth > 0;
 }
 
 void MapPoint::add_reference_kf(KeyFrame *kf, int idx) {
