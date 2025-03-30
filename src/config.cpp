@@ -17,7 +17,7 @@ Config loadConfig(const std::string &filename) {
     
     // ORB parameters
     cfg.num_features = config["ORB"]["num_features"].as<int>();
-    cfg.feature_window = config["ORB"]["feature_window"].as<int>();
+    cfg.split_size = config["ORB"]["split_size"].as<int>();
     cfg.edge_threshold = config["ORB"]["edge_threshold"].as<int>();
     cfg.patch_size = config["ORB"]["patch_size"].as<int>();
     cfg.fast_step = config["ORB"]["fast_step"].as<int>();
@@ -26,7 +26,6 @@ Config loadConfig(const std::string &filename) {
     cfg.orb_iterations = config["ORB"]["orb_iterations"].as<int>();
     cfg.fast_lower_limit = config["ORB"]["fast_lower_limit"].as<int>();
     cfg.fast_higher_limit = config["ORB"]["fast_higher_limit"].as<int>();
-    cfg.interlaping = config["ORB"]["interlaping"].as<int>();
     
     // PnP RANSAC parameters
     cfg.reprojection_window = config["PnP"]["reprojection_window"].as<int>();

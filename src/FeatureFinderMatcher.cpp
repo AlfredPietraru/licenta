@@ -1,10 +1,11 @@
 #include "../include/FeatureFinderMatcher.h"
 
-
-FeatureMatcherFinder::FeatureMatcherFinder(int rows, int cols, Config cfg) {
-    this->nr_cells_row = rows / cfg.feature_window;
-    this->nr_cells_collumn = cols / cfg.feature_window;
-    this->window = cfg.feature_window;
+FeatureMatcherFinder::FeatureMatcherFinder(int rows, int cols, Config cfg)
+{
+    this->splits = cfg.split_size;
+    this->nr_cells_row = rows / cfg.split_size;
+    this->nr_cells_collumn = cols / cfg.split_size;
+    this->fast = cv::FastFeatureDetector::create(cfg.fast_threshold, true, cv::FastFeatureDetector::TYPE_9_16);
     this->orb = cv::ORB::create(cfg.num_features, 1.2F, 8, cfg.edge_threshold, 0, 2, cv::ORB::HARRIS_SCORE, cfg.patch_size, cfg.fast_threshold);
     this->orb_edge_threshold = cfg.edge_threshold;
     this->fast_step = cfg.fast_step;
@@ -13,86 +14,96 @@ FeatureMatcherFinder::FeatureMatcherFinder(int rows, int cols, Config cfg) {
     this->fast_lower_limit = cfg.fast_lower_limit;
     this->fast_higher_limit = cfg.fast_higher_limit;
     this->fast_threshold = cfg.fast_threshold;
-    this->interlaping = cfg.interlaping;
-    this->fast_features_cell = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row * this->interlaping, this->fast_threshold);
+    this->fast_features_cell = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row, this->fast_threshold);
     this->matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
 }
 
-
-std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat& frame) {
-    std::vector<cv::KeyPoint> keypoints;
-    // std::cout << nr_cells_row << " " << nr_cells_collumn << "\n";
-    for (int i = 0; i < nr_cells_row * interlaping - interlaping + 1; i++) {
-        for (int j = 0; j < nr_cells_collumn * interlaping - interlaping + 1; j++) {
-            std::vector<cv::KeyPoint> current_keypoints;
-            // std::cout << i << " " << j << "\n";
-            cv::Rect roi(j * this->window / interlaping, i * this->window / interlaping, this->window, this->window);
-            // std::cout << roi << "\n";
-            cv::Mat cell_img = frame(roi).clone();
-
-            // do stuff
-            // ajunge la 0, si dupa NU mai da un kick start ceea ce nu e bine
-            // int threshold = this->fast_threshold;
-            int threshold = this->fast_features_cell[i * nr_cells_collumn * interlaping + j];
-            for (int iter = 0; iter < this->orb_iterations - 1; iter++) {
-                this->orb->setFastThreshold(threshold);
-                this->orb->detect(cell_img, current_keypoints);
-                // std::cout << current_keypoints.size() << " " << this->orb->getFastThreshold() << "  ";
-                if (current_keypoints.size() >= minim_keypoints && current_keypoints.size() <= minim_keypoints * 2) {
-                    // std::cout << "out " << i << " " << j << "\n";
-                    break;
-                } else if (current_keypoints.size() < minim_keypoints) {
-                    if (threshold == this->fast_lower_limit) break;
-                    threshold -= this->fast_step;
-                     
-                } else if (current_keypoints.size() > 2 * minim_keypoints) {
-                    if (threshold == this->fast_higher_limit) break;
-                    threshold += this->fast_step;
-                }
-                this->orb->setFastThreshold(threshold);
-                current_keypoints.clear();
-            }
-            this->orb->setFastThreshold(threshold);
-            this->orb->detect(cell_img, current_keypoints);
-            // for (cv::KeyPoint kp : current_keypoints) {
-            //     std::cout << kp.pt << " ";
-            // }
-            // std::cout << "\n";
-            for (auto &kp : current_keypoints) {
-                kp.pt.x += j * window / interlaping;
-                kp.pt.y += i * window / interlaping;
-            }
-            // for (cv::KeyPoint kp : current_keypoints) {
-            //     std::cout << kp.pt << " ";
-            // }
-            // std::cout << "\n";
-            // std::cout << " " << this->fast_features_cell[i * nr_cells_collumn + j] << " " << this->orb->getFastThreshold() << "\n\n";
-            this->fast_features_cell[i * nr_cells_collumn * interlaping + j] = threshold;
-            keypoints.insert(keypoints.end(), current_keypoints.begin(), current_keypoints.end());
-
-            // break;
+std::vector<cv::KeyPoint> FeatureMatcherFinder::get_keypoints_current_sub_image(cv::Mat &sub_img, int i, int j)
+{
+    std::vector<cv::KeyPoint> kps;
+    int threshold = this->fast_features_cell[i * this->nr_cells_collumn + j];
+    for (int iter = 0; iter < this->orb_iterations - 1; iter++)
+    {
+        this->orb->setFastThreshold(threshold);
+        this->orb->detect(sub_img, kps);
+        if (kps.size() >= 2 * minim_keypoints && kps.size() <= minim_keypoints * 4)
+        {
+            // std::cout << "out " << i << " " << j << "\n";
+            break;
         }
-        // break;
+        else if (kps.size() < 2 * minim_keypoints)
+        {
+            if (threshold == this->fast_lower_limit)
+                break;
+            threshold -= this->fast_step;
+        }
+        else if (kps.size() > 4 * minim_keypoints)
+        {
+            if (threshold == this->fast_higher_limit)
+                break;
+            threshold += this->fast_step;
+        }
+        this->orb->setFastThreshold(threshold);
+        kps.clear();
     }
-    // std::cout << keypoints.size() << " keypoints obtinute inainte de filtrare\n";
-    cv::KeyPointsFilter::removeDuplicated(keypoints);
-    cv::KeyPointsFilter::runByImageBorder(keypoints, frame.size(), this->orb_edge_threshold);
-    // std::cout << keypoints.size() << " keypoints obtinute dupa filtrare\n\n";
-    // std::cout << keypoints.size() << "\n";
+    this->orb->setFastThreshold(threshold);
+    this->fast->detect(sub_img, kps);
+    for (auto &kp : kps)
+    {
+        kp.pt.x += j * this->nr_cells_collumn;
+        kp.pt.y += i * this->nr_cells_row;
+    }
+    this->fast_features_cell[i * nr_cells_collumn + j] = threshold; 
 
-    // for (int i = 0; i < nr_keypoints_found.size(); i++) {
-    //     std::cout << this->nr_keypoints_found[i] << " ";
-    // }
-    // std::cout << "\n\n";
-    // for (int i = 0; i < fast_features_cell.size(); i++) {
-    //     std::cout << this->fast_features_cell[i] << " ";
-    // }
-    // std::cout << "\n\n\n";
+    if (kps.size() <= 2 * minim_keypoints) return kps;    
+    for (int i = 0; i < kps.size() - 1; i++)
+    {
+            for (int j = i + 1; j < kps.size(); j++)
+            {
+                if (kps[i].response < kps[j].response)
+                {
+                    cv::KeyPoint aux = kps[i];
+                    kps[i] = kps[j];
+                    kps[j] = aux;
+                }
+            }
+    }
+    return std::vector<cv::KeyPoint>(kps.begin(), kps.begin() + 2 * minim_keypoints);
+}
+
+std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat &frame)
+{
+    cv::Mat grayMat;
+    cv::cvtColor(frame, grayMat, cv::COLOR_RGB2GRAY);
+    std::vector<cv::KeyPoint> keypoints;
+    for (int i = 0; i < this->splits - 1; i++)
+    {
+        for (int j = 0; j < this->splits - 1; j++)
+        {
+            cv::Rect roi(j * nr_cells_collumn, i * nr_cells_row, nr_cells_collumn, nr_cells_row);
+            cv::Mat sub_img = grayMat(roi).clone();
+            std::vector<cv::KeyPoint> current_keypoints = get_keypoints_current_sub_image(sub_img, i, j);
+            if (current_keypoints.size() == 0) continue;
+            // std::cout << current_keypoints.size() << "\n";
+            keypoints.insert(keypoints.end(), current_keypoints.begin(), current_keypoints.end());
+        }
+    }
+    std::cout << keypoints.size() << " keypoints obtinute inainte de filtrare\n";
+    cv::KeyPointsFilter::runByImageBorder(keypoints, frame.size(), 20);
+    std::cout << keypoints.size() << " keypoints obtinute dupa filtrare\n\n";
     return keypoints;
 }
 
-cv::Mat FeatureMatcherFinder::compute_descriptors(cv::Mat frame, std::vector<cv::KeyPoint> &kps) {
+cv::Mat FeatureMatcherFinder::compute_descriptors(cv::Mat frame, std::vector<cv::KeyPoint> &kps)
+{
     cv::Mat descriptors;
+    // int points_above_threshold = 0;
+    // for (int i = 0; i < kps.size(); i++)
+    // {
+    //     if (kps[i].response > 30)
+    //         points_above_threshold++;
+    // }
+    // std::cout << "puncte sunt valide " << points_above_threshold << " \n";
     this->orb->compute(frame, kps, descriptors);
     return descriptors;
 }

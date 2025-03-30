@@ -102,47 +102,10 @@ void OrbMatcher::debug_reprojection(std::unordered_set<MapPoint *>& local_map, s
     cv::waitKey(100);
 }
 
-std::unordered_map<MapPoint*, Feature*> OrbMatcher::match_frame_map_points(KeyFrame* kf, std::vector<MapPoint*> map_points) {
-    std::vector<std::pair<MapPoint*, Feature*>> out_values;
-    for (MapPoint *mp : map_points) {
-        Eigen::Vector3d point_camera_coordinates =  kf->fromWorldToImage(mp->wcoord);
-        for (int i = 0; i < 3; i++) {
-            if (point_camera_coordinates(i) < 0)  continue;
-        }
-        if (point_camera_coordinates(0) > kf->depth_matrix.cols - 1) continue;
-        if (point_camera_coordinates(1) > kf->depth_matrix.rows - 1) continue;
-        if (mp->dmax < point_camera_coordinates(2) || mp->dmin > point_camera_coordinates(2)) continue;
-        double u = point_camera_coordinates(0);
-        double v = point_camera_coordinates(1);
-        int min_hamm_dist = 10000;
-        int cur_hamm_dist;
-        int out_idx = -1;
-        std::vector<int> kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, window);
-        if (kps_idx.size() == 0) continue;
-        for (int idx : kps_idx) {
-            cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
-            if (cur_hamm_dist < min_hamm_dist) {
-                out_idx = idx;
-                min_hamm_dist = cur_hamm_dist;
-            }
-        }
-        if (min_hamm_dist > orb_descriptor_value || out_idx == -1) continue;
-        // if (kf->features[out_idx].get_map_point() != nullptr) continue;
-        if (mp->is_safe_to_use) out_values.push_back({mp, &kf->features[out_idx]});
-    }
-    sort_values(out_values);
-    std::unordered_map<MapPoint*, Feature*> result;
-    for (int i = 0; i < out_values.size(); i++) {
-        if (out_values[i].second->depth <= 0) continue;
-        result.insert(out_values[i]);
-        if (result.size() == 100) break;
-    }
-    // map point can be reprojected on image 
-    return result;
-}
-
 std::unordered_map<MapPoint*, Feature*> OrbMatcher::match_frame_map_points(KeyFrame* kf, std::unordered_set<MapPoint*> map_points) {
     std::vector<std::pair<MapPoint*, Feature*>> out_values;
+    Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
+    Eigen::Vector3d camera_to_map_view_ray; 
     for (MapPoint *mp : map_points) {
         Eigen::Vector3d point_camera_coordinates =  kf->fromWorldToImage(mp->wcoord);
         for (int i = 0; i < 3; i++) {
@@ -151,6 +114,12 @@ std::unordered_map<MapPoint*, Feature*> OrbMatcher::match_frame_map_points(KeyFr
         if (point_camera_coordinates(0) > kf->depth_matrix.cols - 1) continue;
         if (point_camera_coordinates(1) > kf->depth_matrix.rows - 1) continue;
         if (mp->dmax < point_camera_coordinates(2) || mp->dmin > point_camera_coordinates(2)) continue;
+        
+        camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
+        camera_to_map_view_ray.normalize();
+        double dot_product = camera_to_map_view_ray.dot(mp->view_direction);
+        if (dot_product < 0.5) continue;
+
         double u = point_camera_coordinates(0);
         double v = point_camera_coordinates(1);
         int min_hamm_dist = 10000;
@@ -175,6 +144,5 @@ std::unordered_map<MapPoint*, Feature*> OrbMatcher::match_frame_map_points(KeyFr
         result.insert(out_values[i]);
         if (result.size() == 100) break;
     }
-    // map point can be reprojected on image 
     return result;
 }

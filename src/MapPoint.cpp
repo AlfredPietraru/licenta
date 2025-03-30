@@ -7,8 +7,9 @@ MapPoint::MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_c
 {
     this->belongs_to_keyframes.insert({keyframe, kp_idx});
     this->wcoord = wcoord;
-    Eigen::Vector3d wcoord_local = Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(2));
-    this->view_direction = (wcoord_local - camera_center).normalized();
+    this->wcoord_3d = Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(2));
+    this->view_direction = (wcoord_3d - camera_center);
+    this->view_direction.normalize();
     this->orb_descriptor = orb_descriptor;
     this->dmax = depth * 1.2; 
     this->dmin = depth * 0.8;

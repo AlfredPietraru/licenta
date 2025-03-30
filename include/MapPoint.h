@@ -12,12 +12,14 @@ class MapPoint {
 public:
         // homogenous coordinates of world space
         Eigen::Vector4d wcoord;
+        Eigen::Vector3d wcoord_3d;
         Eigen::Vector3d view_direction;
         cv::Mat orb_descriptor;
         double dmax, dmin;
         double BASELINE = 0.08;
         std::unordered_map<KeyFrame*, int> belongs_to_keyframes;
         bool is_safe_to_use;
+
         
         MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord,
                 cv::Mat orb_descriptor, int idx, float depth);

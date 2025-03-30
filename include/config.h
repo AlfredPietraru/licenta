@@ -19,7 +19,7 @@ struct Config {
     // ORB
     int num_features;
     // dimensiunea ferestrei in care gasim keypoints
-    int feature_window;
+    int split_size;
     // marginea pe care o respecta feature-urile orb extrase, sa nu fie aproape de margine
     int edge_threshold;
     // cat de mare sa fie zona gasita de keypoint-uri
@@ -32,7 +32,6 @@ struct Config {
     int fast_lower_limit;
     int fast_higher_limit;
     int fast_threshold;
-    int interlaping;
 
     int reprojection_window;
     int ransac_iterations;

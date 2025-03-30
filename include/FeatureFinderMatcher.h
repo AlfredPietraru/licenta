@@ -26,10 +26,11 @@ public:
     int fast_lower_limit;
     int fast_higher_limit;
     int fast_threshold;
-    int interlaping;
+    int splits;
 
     std::vector<int> fast_features_cell;
     std::vector<int> nr_keypoints_found;
+    cv::Ptr<cv::FastFeatureDetector> fast; 
     cv::Ptr<cv::ORB> orb;
     cv::Ptr<cv::DescriptorMatcher> matcher;
     
@@ -38,6 +39,7 @@ public:
 
     // std::vector<cv::DMatch> match_features_last_frame(KeyFrame *current_kf, KeyFrame *past_kf);
     std::vector<cv::KeyPoint> extract_keypoints(cv::Mat& frame);
+    std::vector<cv::KeyPoint> get_keypoints_current_sub_image(cv::Mat &sub_img, int i, int j);
     cv::Mat compute_descriptors(cv::Mat frame, std::vector<cv::KeyPoint>& keypoints);
 };
 

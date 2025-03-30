@@ -44,7 +44,7 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth)
     cv::Mat descriptors = this->fmf->compute_descriptors(frame, keypoints);
     // Rect r=Rect(0,0,80,80);
     // rectangle(frame,r,Scalar(0,255,0),1,8,0);
-    // std::cout << keypoints.size() << " " << descriptors.size() << " keypoints and descriptors \n";
+    std::cout << keypoints.size() << " " << descriptors.size() << " keypoints and descriptors \n";
     // Mat img2;
     // cv::drawKeypoints(frame, keypoints, img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT); //albastru
     // cv::imshow("Display window", img2);
@@ -66,7 +66,7 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::unordered_map<MapPoint *, Feature 
 {
     vector<Point3d> points_in3d;
     vector<Point2d> points_in2d;
-    for (std::pair<MapPoint *, Feature *> pair : matches)
+    for (std::pair<MapPoint*, Feature*> pair : matches)
     {
         MapPoint *mp = pair.first;
         cv::KeyPoint kp = pair.second->get_key_point();
@@ -86,7 +86,7 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::unordered_map<MapPoint *, Feature 
     cv::solvePnPRansac(points_in3d, points_in2d, K, Mat(), r, t, true, this->ransac_iteration, this->optimizer_window,
                        this->ransac_confidence, inliers);
     // cv::solvePnP(points_in3d, points_in2d, K, Mat(), r, t, true, cv::SOLVEPNP_EPNP);
-    // std::cout << inliers.size() << " inliere intalnite\n";
+    std::cout << inliers.size() << " inliere intalnite\n";
     cv::Rodrigues(r, R);
     Eigen::Matrix3d R_eigen;
     cv::cv2eigen(R, R_eigen);
@@ -146,15 +146,15 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf->map_points);
     std::cout << matches.size() << " atatea map points calculate\n";
     
-    // vector<cv::KeyPoint> keypoints;
-    // for (auto it = matches.begin(); it != matches.end(); it++) {
-    //     keypoints.push_back(it->second->get_key_point());
-    // }
-    // cv::Mat img2, img3;
-    // cv::drawKeypoints(this->current_kf->frame, this->current_kf->get_all_keypoints(), img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT);
-    // cv::drawKeypoints(img2, keypoints, img3, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); 
-    // cv::imshow("Display window", img3);
-    // cv::waitKey(0);
+    vector<cv::KeyPoint> keypoints;
+    for (auto it = matches.begin(); it != matches.end(); it++) {
+        keypoints.push_back(it->second->get_key_point());
+    }
+    cv::Mat img2, img3;
+    cv::drawKeypoints(this->current_kf->frame, this->current_kf->get_all_keypoints(), img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT);
+    cv::drawKeypoints(img2, keypoints, img3, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); 
+    cv::imshow("Display window", img3);
+    cv::waitKey(100);
 
     if (matches.size() < 20)
     {

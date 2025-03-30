@@ -22,7 +22,6 @@ public:
     OrbMatcher(int minim_points_found, int window, int orb_descriptor_value) : minim_points_found(minim_points_found), window(window), 
         orb_descriptor_value(orb_descriptor_value) {}
     int orb_matcher_reproject_map_point(KeyFrame *kf, MapPoint *mp);
-    std::unordered_map<MapPoint*, Feature*> match_frame_map_points(KeyFrame* kf, std::vector<MapPoint*> map_points);
     std::unordered_map<MapPoint*, Feature*> match_frame_map_points(KeyFrame* kf, std::unordered_set<MapPoint*> map_points);
     void debug_reprojection(std::unordered_set<MapPoint *>& local_map, std::unordered_map<MapPoint *, Feature*>& out_map, KeyFrame *first_kf, 
         int window, int orb_descriptor_value);

@@ -8,17 +8,16 @@ Tracker:
 
 # Feature extraction parameter
 ORB:
-  num_features: 1000
-  edge_threshold: 20
-  patch_size: 10
-  fast_threshold: 20
+  num_features: 2000
+  edge_threshold: 0
+  patch_size: 25
   min_keypoints_cell: 5
-  feature_window: 80
+  split_size: 20
   orb_iterations: 10
-  fast_step: 5
+  fast_threshold: 15
   fast_lower_limit: 10
   fast_higher_limit: 60
-  interlaping: 2
+  fast_step: 5
 
 # RANSAC for PnP
 PnP:

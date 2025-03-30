@@ -103,7 +103,6 @@ std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
 void Map::track_local_map(KeyFrame *curr_kf, std::unordered_map<MapPoint *, Feature*>& matches,  int window)
 {
     curr_kf->currently_matched_points = matches.size();
-    // std::cout << curr_kf->currently_matched_points << " " << curr_kf->maximum_possible_map_points << " de testat cum evolueaza track local map\n";
     std::unordered_map<MapPoint *, Feature*> out;
     for (MapPoint *mp : local_map) {
         Eigen::Vector3d point_camera_coordinates =  curr_kf->fromWorldToImage(mp->wcoord);

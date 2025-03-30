@@ -104,7 +104,7 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
     options.gradient_check_relative_precision = 1e-8;
     options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
     options.use_inner_iterations = true;
-    // options.check_gradients = true;
+    options.check_gradients = true;
     // options.minimizer_progress_to_stdout = true;
     options.max_num_iterations = NUMBER_ITERATIONS;
     ceres::Solver::Summary summary;
