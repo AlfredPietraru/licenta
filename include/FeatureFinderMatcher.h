@@ -30,7 +30,6 @@ public:
 
     std::vector<int> fast_features_cell;
     std::vector<int> nr_keypoints_found;
-    cv::Ptr<cv::FastFeatureDetector> fast; 
     cv::Ptr<cv::ORB> orb;
     cv::Ptr<cv::DescriptorMatcher> matcher;
     

@@ -1,10 +1,5 @@
 #include "../include/OrbMatcher.h"
 
-
-
-
-
-
 int inline::OrbMatcher::ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2) {
     int distance = 0;
     for (int i = 0; i < desc1.cols; i++) {
@@ -142,7 +137,6 @@ std::unordered_map<MapPoint*, Feature*> OrbMatcher::match_frame_map_points(KeyFr
     for (int i = 0; i < out_values.size(); i++) {
         if (out_values[i].second->depth <= 0) continue;
         result.insert(out_values[i]);
-        if (result.size() == 100) break;
     }
     return result;
 }

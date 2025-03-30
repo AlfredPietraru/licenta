@@ -15,8 +15,6 @@ KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint
             this->grid.at<int>(lround(kp.pt.y), lround(kp.pt.x)) = i;
             if(depth < 0) this->maximum_possible_map_points--;
         }
-        // std::cout << this->grid << "\n";
-        // std::cout << this->grid.size << "\n";
     }
 
 Eigen::Vector3d KeyFrame::compute_camera_center() {
@@ -33,7 +31,6 @@ Eigen::Vector3d KeyFrame::fromWorldToImage(Eigen::Vector4d& wcoord) {
 
 
 float KeyFrame::compute_depth_in_keypoint(cv::KeyPoint kp) {
-    // float dd = this->prev_kf->depth_matrix.at<float>(kps[m.queryIdx].pt.y, kps[m.queryIdx].pt.x);
     int x = std::round(kp.pt.x);
     int y = std::round(kp.pt.y);
     uint16_t d = this->depth_matrix.at<uint16_t>(y, x);
@@ -83,7 +80,6 @@ std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, dou
     v_min = (v_min < 0) ? 0 : (v_min > this->frame.rows) ? this->frame.rows : v_min;
     int v_max = lround(v + window);
     v_max = (v_max < 0) ? 0 : (v_max > this->frame.rows) ? this->frame.rows : v_max;
-    // std::cout << u_min << " " << u_max << " " << v_min << " " << v_max << " " << u << " " << v << "\n";
     for (int i = v_min; i < v_max; i++) {
         for (int j = u_min; j < u_max; j++) {
             if (this->grid.at<int>(i, j) == -1) continue;
@@ -96,7 +92,7 @@ std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, dou
 
 std::vector<MapPoint *> KeyFrame::compute_map_points()
 {
-    int null_values = 0;
+    int map_points_associated = 0;
     int negative_depth = 0;
     int close_map_points = 0;
     int far_map_poins = 0;
@@ -105,29 +101,26 @@ std::vector<MapPoint *> KeyFrame::compute_map_points()
     for (int i = 0; i < this->features.size(); i++)
     {
         if (this->features[i].get_map_point() != nullptr) {
-            null_values++;
+            map_points_associated++;
             continue;
         }
-        float dd = this->compute_depth_in_keypoint(this->features[i].kp);
-        if (dd <= 0) {
+        if (this->features[i].depth <= 0) {
             negative_depth++;
             continue;  
         } 
         Eigen::Vector4d wcoord = this->fromImageToWorld(i);
         MapPoint *mp = new MapPoint(this, this->features[i].kp, camera_center, wcoord, 
-                this->orb_descriptors.row(i), i, dd);
+                this->orb_descriptors.row(i), i, this->features[i].depth);
         current_points_found.push_back(mp);
         this->features[i].set_map_point(mp);
         this->map_points.insert(mp);
         if (mp->is_safe_to_use) close_map_points++;
         if (!mp->is_safe_to_use) far_map_poins++;
     }
-    std::cout << current_points_found.size() << " " << this->features.size() << " " << null_values << " " << negative_depth << " debug compute map points\n"; 
-    std::cout << close_map_points << " " << far_map_poins << " close and far map points \n";
     if (current_points_found.size() == 0) {
         std::cout << "CEVA NU E BINE NU S-AU CREAT PUNCTELE\n";
     }
-    std::cout << current_points_found.size() << " puncte create\n";
+    std::cout << current_points_found.size() << " " << this->features.size() << " " << map_points_associated << " " << negative_depth << " debug compute map points\n"; 
     return current_points_found; 
 }
 

@@ -96,45 +96,13 @@ std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
             out.insert(*it);
         }
     }
-    std::cout << reference_kf->map_points.size() << " "  << out.size() << " dimensiune map points\n";
     return out;
 }
 
-void Map::track_local_map(KeyFrame *curr_kf, std::unordered_map<MapPoint *, Feature*>& matches,  int window)
+std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf, int window)
 {
-    curr_kf->currently_matched_points = matches.size();
-    std::unordered_map<MapPoint *, Feature*> out;
-    for (MapPoint *mp : local_map) {
-        Eigen::Vector3d point_camera_coordinates =  curr_kf->fromWorldToImage(mp->wcoord);
-        for (int i = 0; i < 3; i++) {
-            if (point_camera_coordinates(i) < 0)  continue;
-        }
-        if (point_camera_coordinates(0) > curr_kf->depth_matrix.cols - 1) continue;
-        if (point_camera_coordinates(1) > curr_kf->depth_matrix.rows - 1) continue;
-        if (mp->dmax < point_camera_coordinates(2) || mp->dmin > point_camera_coordinates(2)) continue;
-        double u = point_camera_coordinates(0);
-        double v = point_camera_coordinates(1);
-        int min_hamm_dist = 10000;
-        int cur_hamm_dist;
-        int out_idx = -1;
-        std::vector<int> kps_idx = curr_kf->get_vector_keypoints_after_reprojection(u, v, window);
-        if (kps_idx.size() == 0) continue;
-        for (int idx : kps_idx) {
-            cur_hamm_dist = this->matcher->ComputeHammingDistance(mp->orb_descriptor, curr_kf->features[idx].descriptor);
-            if (cur_hamm_dist < min_hamm_dist) {
-                out_idx = idx;
-                min_hamm_dist = cur_hamm_dist;
-            }
-        }
-        if (min_hamm_dist > orb_descriptor_value || out_idx == -1) continue;
-        if (!mp->is_safe_to_use) continue;
-        // map point is valid
-        if (matches.find(mp) == matches.end()) {
-            matches.insert({mp, &curr_kf->features[out_idx]});
-            curr_kf->currently_matched_points++;
-        } 
-        if (curr_kf->currently_matched_points == curr_kf->maximum_possible_map_points) break;
-    }
-    // std::cout << curr_kf->currently_matched_points << " " << curr_kf->maximum_possible_map_points << " rezultat dupa track local map\n";
+    std::unordered_map<MapPoint *, Feature*> out = this->matcher->match_frame_map_points(curr_kf, local_map);
+    curr_kf->currently_matched_points = out.size();
+    return out;
     // this->matcher->debug_reprojection(local_map, matches, curr_kf, window, this->orb_descriptor_value);
 }

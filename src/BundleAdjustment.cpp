@@ -113,5 +113,9 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
     Eigen::Vector3d angle_axis_eigen(angle_axis[0], angle_axis[1], angle_axis[2]);  
     Eigen::AngleAxisd aa(angle_axis_eigen.norm(), angle_axis_eigen.normalized());
     Eigen::Quaterniond quaternion(aa);
+    Eigen::Quaterniond old_quaternion = kf->Tiw.unit_quaternion();
+    if (old_quaternion.dot(quaternion) < 0) {
+        quaternion.coeffs() *= -1;
+    }
     return Sophus::SE3d(quaternion, Eigen::Vector3d(t[0], t[1], t[2]));
 }
