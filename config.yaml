@@ -26,9 +26,10 @@ PnP:
   confidence: 0.99
 
 Matcher:
-  orb_descriptor_value: 30
+  orb_descriptor_value: 50
   window: 4
   minim_points_found: 50
+  ratio_first_second_match: 0.70
 
 Camera:
   K: 

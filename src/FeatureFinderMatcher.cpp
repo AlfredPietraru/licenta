@@ -19,12 +19,14 @@ FeatureMatcherFinder::FeatureMatcherFinder(int rows, int cols, Config cfg) {
 
 
 std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat& frame) {
+    cv::Mat gray_frame;
+    cv::cvtColor(frame, gray_frame, cv::COLOR_RGB2GRAY);
     std::vector<cv::KeyPoint> keypoints;
     for (int i = 0; i < nr_cells_row - 1; i++) {
         for (int j = 0; j < nr_cells_collumn - 1; j++) {
             std::vector<cv::KeyPoint> current_keypoints;
             cv::Rect roi(j * this->window, i * this->window, this->window, this->window);
-            cv::Mat cell_img = frame(roi).clone();
+            cv::Mat cell_img = gray_frame(roi).clone();
             int threshold = this->fast_features_cell[i * nr_cells_collumn + j];
             for (int iter = 0; iter < this->orb_iterations - 1; iter++) {
                 this->orb->setFastThreshold(threshold);

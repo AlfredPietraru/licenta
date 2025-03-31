@@ -8,7 +8,8 @@ Orb_Matcher load_orb_matcher_config(const std::string &filename) {
     cfg.orb_descriptor_value = config["Matcher"]["orb_descriptor_value"].as<int>();
     cfg.window = config["Matcher"]["window"].as<int>();
     cfg.minim_points_found = config["Matcher"]["minim_points_found"].as<int>();
-    // std::cout << cfg.orb_descriptor_value << " " << cfg.window << " " << cfg.minim_points_found << "\n";
+    cfg.ratio_first_second_match = config["Matcher"]["ratio_first_second_match"].as<double>();
+    // std::cout << cfg.orb_descriptor_value << " " << cfg.window << " " << cfg.minim_points_found << " " << cfg.ratio_first_second_match << "\n";
     return cfg;
 }
 
