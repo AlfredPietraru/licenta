@@ -98,7 +98,7 @@ void OrbMatcher::debug_reprojection(std::unordered_set<MapPoint *>& local_map, s
 }
 
 std::unordered_map<MapPoint*, Feature*> OrbMatcher::match_frame_map_points(KeyFrame* kf, std::unordered_set<MapPoint*> map_points) {
-    std::vector<std::pair<MapPoint*, Feature*>> out_values;
+    std::unordered_map<MapPoint*, Feature*> out;
     Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
     Eigen::Vector3d camera_to_map_view_ray; 
     for (MapPoint *mp : map_points) {
@@ -130,13 +130,7 @@ std::unordered_map<MapPoint*, Feature*> OrbMatcher::match_frame_map_points(KeyFr
             }
         }
         if (min_hamm_dist > orb_descriptor_value || out_idx == -1) continue;
-        if (mp->is_safe_to_use) out_values.push_back({mp, &kf->features[out_idx]});
+        if (mp->is_safe_to_use) out.insert({mp, &kf->features[out_idx]});
     }
-    sort_values(out_values);
-    std::unordered_map<MapPoint*, Feature*> result;
-    for (int i = 0; i < out_values.size(); i++) {
-        if (out_values[i].second->depth <= 0) continue;
-        result.insert(out_values[i]);
-    }
-    return result;
+    return out;
 }

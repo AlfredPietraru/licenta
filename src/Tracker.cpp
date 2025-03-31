@@ -40,10 +40,10 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     std::vector<KeyPoint> keypoints = this->fmf->extract_keypoints(frame);
     cv::Mat descriptors = this->fmf->compute_descriptors(frame, keypoints);
     // cv::Mat img2;
+    // std::cout << keypoints.size() << " " << descriptors.size() << "\n";
     // cv::drawKeypoints(frame, keypoints, img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT);
     // cv::imshow("Display window", img2);
     // cv::waitKey(100);
-
 
     Sophus::SE3d pose_estimation = (this->prev_kf == nullptr) ? this->initial_pose : this->prev_kf->Tiw;
     int idx = (this->prev_kf == nullptr) ? 0 : this->reference_kf->idx + 1;
@@ -81,7 +81,6 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::unordered_map<MapPoint *, Feature 
     std::vector<int> inliers;
     cv::solvePnPRansac(points_in3d, points_in2d, K, Mat(), r, t, true, this->ransac_iteration, this->optimizer_window,
                        this->ransac_confidence, inliers);
-    std::cout << inliers.size() << " inliere intalnite\n";
     cv::Rodrigues(r, R);
     Eigen::Matrix3d R_eigen;
     cv::cv2eigen(R, R_eigen);
@@ -156,9 +155,11 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
 
     print_pose(this->current_kf->Tiw, "inainte de optimizare");
     this->current_kf->Tiw = TrackWithLastFrame(matches);
+    print_pose(this->current_kf->Tiw, "dupa initial tracking");
     matches = mapp.track_local_map(this->current_kf, this->optimizer_window);
+    std::cout << matches.size() << " atatea map dupa urmarire local map\n";
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches, 1000);
-    // std::cout << matches.size() << " atatea map reproiectate dupa \n";
+    std::cout << matches.size() << " atatea map reproiectate dupa \n";
     print_pose(this->current_kf->Tiw, "dupa optimizare");
     this->current_kf->correlate_map_points_to_features_current_frame(matches);
     compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
@@ -177,5 +178,4 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
         this->tracking_was_lost();
         return;
     }
-    // exit(1);
 }

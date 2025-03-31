@@ -11,10 +11,10 @@ ORB:
   num_features: 2000
   edge_threshold: 0
   patch_size: 25
-  min_keypoints_cell: 5
+  min_keypoints_cell: 10
   split_size: 20
   orb_iterations: 10
-  fast_threshold: 15
+  fast_threshold: 20
   fast_lower_limit: 10
   fast_higher_limit: 60
   fast_step: 5
