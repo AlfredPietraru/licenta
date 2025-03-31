@@ -13,7 +13,9 @@ using namespace std;
 int main(int argc, char **argv)
 {
     Config cfg = loadConfig("../config.yaml");
-    Tracker *tracker = new Tracker(cfg);
+    Pnp_Ransac_Config pnp_ransac_cfg = load_pnp_ransac_config("../config.yaml");
+    Orb_Matcher orb_matcher_cfg = load_orb_matcher_config("../config.yaml");
+    Tracker *tracker = new Tracker(cfg, pnp_ransac_cfg, orb_matcher_cfg);
     TumDatasetReader *reader = new TumDatasetReader(); 
     std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> data = reader->get_next_frame(cfg);    
     cv::Mat frame = data.first.first;

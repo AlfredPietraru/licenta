@@ -21,15 +21,14 @@ ORB:
 
 # RANSAC for PnP
 PnP:
-  reprojection_window: 8
-  ransac_iterations: 20
+  reprojection_window: 4
+  ransac_iterations: 50
   confidence: 0.99
 
-# Map filtering
-Map:
+Matcher:
   orb_descriptor_value: 30
-  min_observations: 3 
-  max_depth_ratio: 1.5
+  window: 4
+  minim_points_found: 50
 
 Camera:
   K: 

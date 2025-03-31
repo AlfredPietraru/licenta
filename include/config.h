@@ -32,12 +32,23 @@ struct Config {
     int fast_lower_limit;
     int fast_higher_limit;
     int fast_threshold;
+};
 
+struct Orb_Matcher {
+  int orb_descriptor_value;
+  int window;
+  int minim_points_found;
+};
+
+struct Pnp_Ransac_Config {
     int reprojection_window;
     int ransac_iterations;
     float confidence;
-    int orb_descriptor_value;
 };
+
+Orb_Matcher load_orb_matcher_config(const std::string &filename);
+
+Pnp_Ransac_Config load_pnp_ransac_config(const std::string &filename);
 
 Config loadConfig(const std::string &filename);
 

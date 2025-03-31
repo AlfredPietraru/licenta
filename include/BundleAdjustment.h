@@ -18,7 +18,6 @@ public:
     
     BundleAdjustment() {}
     Sophus::SE3d solve(KeyFrame *frame, std::unordered_map<MapPoint *, Feature*>& matches, int maximum_selected);
-    // Sophus::SE3d solve(KeyFrame *kf, std::vector<std::pair<MapPoint *, Feature*>>& matches);
 };
 
 #endif

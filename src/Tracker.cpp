@@ -1,5 +1,12 @@
 #include "../include/Tracker.h"
 
+
+void Tracker::VelocityEstimation()
+{
+    Sophus::SE3d mVelocity = this->current_kf->Tiw * this->prev_kf->Tiw.inverse();
+    this->current_kf->Tiw = mVelocity * this->prev_kf->Tiw;
+}
+
 void compute_difference_between_positions(const Sophus::SE3d &estimated, const Sophus::SE3d &ground_truth)
 {
     Sophus::SE3d relative = ground_truth.inverse() * estimated;
@@ -79,7 +86,7 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::unordered_map<MapPoint *, Feature 
     t = (cv::Mat_<double>(3, 1) << translationVector(0), translationVector(1), translationVector(2));
     // pag 160 - slambook.en
     std::vector<int> inliers;
-    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat(), r, t, true, this->ransac_iteration, this->optimizer_window,
+    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat(), r, t, true, this->ransac_iteration, this->ransac_window,
                        this->ransac_confidence, inliers);
     cv::Rodrigues(r, R);
     Eigen::Matrix3d R_eigen;
@@ -123,12 +130,6 @@ bool Tracker::Is_KeyFrame_needed(std::unordered_map<MapPoint *, Feature *> &matc
     return no_global_relocalization && no_recent_keyframe_added && still_enough_map_points_tracked && too_few_map_points_compared_to_kf;
 }
 
-void Tracker::VelocityEstimation()
-{
-    Sophus::SE3d mVelocity = this->current_kf->Tiw * this->prev_kf->Tiw.inverse();
-    this->current_kf->Tiw = mVelocity * this->prev_kf->Tiw;
-}
-
 void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_truth_pose) {
     this->prev_kf = this->current_kf;
     this->get_current_key_frame(frame, depth);
@@ -156,7 +157,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     print_pose(this->current_kf->Tiw, "inainte de optimizare");
     this->current_kf->Tiw = TrackWithLastFrame(matches);
     print_pose(this->current_kf->Tiw, "dupa initial tracking");
-    matches = mapp.track_local_map(this->current_kf, this->optimizer_window);
+    matches = mapp.track_local_map(this->current_kf, 8);
     std::cout << matches.size() << " atatea map dupa urmarire local map\n";
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches, 1000);
     std::cout << matches.size() << " atatea map reproiectate dupa \n";

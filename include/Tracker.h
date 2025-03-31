@@ -25,33 +25,32 @@ class Tracker {
 public:
     Map initialize(Mat frame, Mat depth, Config cfg);
     void tracking(Mat frame, Mat depth, Map& map_points, Sophus::SE3d ground_truth_pose);
-    Tracker(Config cfg) {
+    Tracker(Config cfg, Pnp_Ransac_Config pnp_ransac_cfg, Orb_Matcher orb_matcher_confih) {
         this->K = cfg.K;
         cv::cv2eigen(cfg.K, this->K_eigen);
         this->initial_pose = cfg.initial_pose;
+        this->ransac_window = pnp_ransac_cfg.reprojection_window;
+        this->ransac_iteration = pnp_ransac_cfg.ransac_iterations;
+        this->ransac_confidence = pnp_ransac_cfg.confidence;
+        this->minim_points_found = cfg.minim_points_found;
+        
         this->fmf = new FeatureMatcherFinder(480, 640, cfg);
         this->bundleAdjustment = new BundleAdjustment();
-        this->matcher = new OrbMatcher(cfg.orb_descriptor_value, cfg.reprojection_window, cfg.orb_descriptor_value);
-        this->optimizer_window = cfg.reprojection_window;
-        this->ransac_iteration = cfg.ransac_iterations;
-        this->ransac_confidence = cfg.confidence;
-        this->minim_points_found = cfg.minim_points_found;
-        this->orb_descriptor_value = cfg.orb_descriptor_value;
+        this->matcher = new OrbMatcher(orb_matcher_confih);
     }
 
 private:
     KeyFrame *current_kf;
     KeyFrame* prev_kf = nullptr;
     KeyFrame *reference_kf = nullptr;
+
     Mat K; 
     Eigen::Matrix3d K_eigen;
     Sophus::SE3d initial_pose;
-    int optimizer_window;
-    int orb_descriptor_value;
+    int ransac_window;
     int ransac_iteration;
     float ransac_confidence;
     int minim_points_found;
-
 
     int frames_tracked = 0;
     int last_keyframe_added = 0;

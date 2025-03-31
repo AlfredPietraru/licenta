@@ -54,7 +54,6 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
 Map::Map(OrbMatcher *matcher, KeyFrame *first_kf, Config cfg)
 {
     this->matcher = matcher;
-    this->orb_descriptor_value = cfg.orb_descriptor_value;
     this->add_new_keyframe(first_kf);
     std::cout << "SFARSIT INITIALIZARE\n";
 }
