@@ -13,7 +13,7 @@
 #include <sophus/se3.hpp>
 #include <opencv2/core/eigen.hpp>
 #include "Map.h"
-#include "BundleAdjustment.h"
+#include "MotionOnlyBA.h"
 #include "FeatureFinderMatcher.h"
 #include "OrbMatcher.h"
 #include "config.h"

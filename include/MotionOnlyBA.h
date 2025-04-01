@@ -14,10 +14,11 @@ class BundleAdjustment
 {
 public:
     int NUMBER_ITERATIONS = 30; 
-    double HUBER_LOSS_VALUE = 1; 
+    double HUBER_LOSS_VALUE = 1;
+    ceres::Problem problem; 
     
-    BundleAdjustment() {}
-    Sophus::SE3d solve(KeyFrame *frame, std::unordered_map<MapPoint *, Feature*>& matches, int maximum_selected);
+    BundleAdjustment() {};
+    Sophus::SE3d solve(KeyFrame *frame, std::unordered_map<MapPoint *, Feature*>& matches);
 };
 
 #endif

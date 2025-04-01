@@ -11,9 +11,14 @@ KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint
         for (int i = 0; i < keypoints.size(); i++) {
             cv::KeyPoint kp = keypoints[i];
             double depth = this->compute_depth_in_keypoint(kp);
-            this->features.push_back(Feature(kp, orb_descriptors.row(i), i, depth));
+            if(depth <= 1e-6) {
+                this->maximum_possible_map_points--;
+                this->features.push_back(Feature(kp, orb_descriptors.row(i), i, depth, -1)); // filler negative value for stereo depth
+            } else { 
+                double stereo_depth = kp.pt.x - (this->K(0, 0) * BASELINE / depth);
+                this->features.push_back(Feature(kp, orb_descriptors.row(i), i, depth, stereo_depth));
+            }
             this->grid.at<int>(lround(kp.pt.y), lround(kp.pt.x)) = i;
-            if(depth < 0) this->maximum_possible_map_points--;
         }
     }
 
@@ -26,7 +31,8 @@ Eigen::Vector3d KeyFrame::fromWorldToImage(Eigen::Vector4d& wcoord) {
     double d = camera_coordinates(2);
     double u = this->K(0, 0) * camera_coordinates(0) / d + this->K(0, 2);
     double v = this->K(1, 1) * camera_coordinates(1) / d + this->K(1, 2);
-    return Eigen::Vector3d(u, v, d);
+    double stereo_depth = u - (this->K(0, 0) * BASELINE / d);
+    return Eigen::Vector3d(u, v, stereo_depth);
 }
 
 

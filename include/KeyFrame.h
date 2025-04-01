@@ -24,6 +24,7 @@ public:
     cv::Mat orb_descriptors;
     cv::Mat frame;
     cv::Mat depth_matrix;
+    const double BASELINE = 0.08;
 
     KeyFrame();
     KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint>& keypoints,

@@ -40,7 +40,7 @@ include_directories(${DBoW3_LIBS})
 
 set(SOURCES
     main.cpp
-    src/BundleAdjustment.cpp
+    src/MotionOnlyBA.cpp
     src/Feature.cpp
     src/FeatureFinderMatcher.cpp
     src/Map.cpp
@@ -53,7 +53,7 @@ set(SOURCES
 )
 
 set(HEADERS
-    "include/BundleAdjustment.h"
+    "include/MotionOnlyBA.h"
     "include/Feature.h"
     "include/FeatureFinderMatcher.h"
     "include/Map.h"

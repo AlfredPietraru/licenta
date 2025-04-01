@@ -155,12 +155,10 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
         exit(1);
     }
 
-    print_pose(this->current_kf->Tiw, "inainte de optimizare");
-    this->current_kf->Tiw = TrackWithLastFrame(matches);
+    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches);
     print_pose(this->current_kf->Tiw, "dupa initial tracking");
-    matches = mapp.track_local_map(this->current_kf, 8);
+    // matches = mapp.track_local_map(this->current_kf, 8);
     std::cout << matches.size() << " atatea map dupa urmarire local map\n";
-    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches, 1000);
     std::cout << matches.size() << " atatea map reproiectate dupa \n";
     print_pose(this->current_kf->Tiw, "dupa optimizare");
     this->current_kf->correlate_map_points_to_features_current_frame(matches);

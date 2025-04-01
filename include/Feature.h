@@ -20,10 +20,11 @@ public:
     int current_hamming_distance = 1000;
     MapPoint *mp;
     double depth;
+    double stereo_depth;
 
     Feature() {}
-    Feature(cv::KeyPoint kp, cv::Mat descriptor, MapPoint *mp, int idx, double depth);
-    Feature(cv::KeyPoint kp, cv::Mat descriptor, int idx, double depth);
+    Feature(cv::KeyPoint kp, cv::Mat descriptor, MapPoint *mp, int idx, double depth, double stereo_depth);
+    Feature(cv::KeyPoint kp, cv::Mat descriptor, int idx, double depth, double stereo_depth);
     void set_map_point(MapPoint *mp);
     MapPoint* get_map_point();
     cv::KeyPoint get_key_point();

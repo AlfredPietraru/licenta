@@ -14,6 +14,8 @@ MapPoint::MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_c
     this->dmax = depth * 1.2; 
     this->dmin = depth * 0.8;
     this->is_safe_to_use = depth < BASELINE * 40 && depth > 0;
+    this->is_outlier = false;
+    this->predicted_scale = predict_image_scale(depth);
 }
 
 void MapPoint::add_reference_kf(KeyFrame *kf, int idx) {
@@ -22,4 +24,12 @@ void MapPoint::add_reference_kf(KeyFrame *kf, int idx) {
 
 Eigen::Vector3d MapPoint::get_3d_vector() {
     return Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(2));
+}
+
+int MapPoint::predict_image_scale(double distance) {
+    float ratio = this->dmax / distance;
+    int scale = ceil(log(ratio) / log(1.2));
+    scale = (scale < 0) ? 0 : scale;
+    scale = (scale >= 8) ? scale - 1 : scale;
+    return scale;
 }

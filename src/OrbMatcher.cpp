@@ -24,6 +24,7 @@ void sort_values(std::vector<std::pair<MapPoint*, Feature*>>& map_points) {
 std::unordered_map<MapPoint*, Feature*> OrbMatcher::match_frame_map_points(KeyFrame* kf, std::unordered_set<MapPoint*> map_points) {
     std::unordered_map<MapPoint*, Feature*> out;
     Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
+    double window_size = 2.5;
     Eigen::Vector3d camera_to_map_view_ray; 
     for (MapPoint *mp : map_points) {
         Eigen::Vector3d point_camera_coordinates =  kf->fromWorldToImage(mp->wcoord);
@@ -32,7 +33,6 @@ std::unordered_map<MapPoint*, Feature*> OrbMatcher::match_frame_map_points(KeyFr
         }
         if (point_camera_coordinates(0) > kf->depth_matrix.cols - 1) continue;
         if (point_camera_coordinates(1) > kf->depth_matrix.rows - 1) continue;
-        if (mp->dmax < point_camera_coordinates(2) || mp->dmin > point_camera_coordinates(2)) continue;
         
         camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
         camera_to_map_view_ray.normalize();
@@ -55,6 +55,11 @@ std::unordered_map<MapPoint*, Feature*> OrbMatcher::match_frame_map_points(KeyFr
 
         for (int idx : kps_idx) {
             int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
+            if (kf->features[idx].get_map_point() != nullptr) continue; // verifica sa fie asociat unui singur map point
+            if (kf->features[idx].stereo_depth > 0) {
+                float er = fabs(point_camera_coordinates(2) - kf->features[idx].stereo_depth);
+                if (er > window_size * mp->predicted_scale) continue;
+            }
             if (cur_hamm_dist < lowest_dist) {
                 second_lowest_dist = lowest_dist;
                 second_lowest_idx = lowest_idx;
@@ -72,6 +77,7 @@ std::unordered_map<MapPoint*, Feature*> OrbMatcher::match_frame_map_points(KeyFr
         if (lowest_dist > this->orb_descriptor_value) continue;
         if (lowest_level == second_lowest_level && lowest_dist > this->ration_first_second_match * second_lowest_dist) continue;
         if (mp->is_safe_to_use) out.insert({mp, &kf->features[lowest_idx]});
+        // also check if rotation is valid -> TO DO LATER;
     }
     return out;
 }
