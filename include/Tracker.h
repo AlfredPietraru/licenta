@@ -29,6 +29,7 @@ public:
         this->K = cfg.K;
         cv::cv2eigen(cfg.K, this->K_eigen);
         this->initial_pose = cfg.initial_pose;
+        // this->initial_pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
         this->ransac_window = pnp_ransac_cfg.reprojection_window;
         this->ransac_iteration = pnp_ransac_cfg.ransac_iterations;
         this->ransac_confidence = pnp_ransac_cfg.confidence;

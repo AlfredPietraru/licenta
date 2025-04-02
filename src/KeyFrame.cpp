@@ -2,6 +2,21 @@
 
 KeyFrame::KeyFrame(){};
 
+std::unordered_set<MapPoint*> KeyFrame::return_map_points_frame() {
+    return this->map_points;
+}
+
+std::unordered_map<MapPoint*, Feature*> KeyFrame::return_map_points_keypoint_correlation() {
+    std::unordered_map<MapPoint*, Feature*> out;
+    for (int i = 0; i < this->features.size(); i++) {
+        MapPoint *mp = this->features[i].get_map_point();
+        if (mp == nullptr) continue;
+        out.insert({mp, &this->features[i]});
+    }
+    return out;
+}
+
+
 KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint>& keypoints,
          cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx, cv::Mat& frame)
     : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), depth_matrix(depth_matrix), idx(idx), frame(frame) {
@@ -129,4 +144,6 @@ std::vector<MapPoint *> KeyFrame::compute_map_points()
     std::cout << current_points_found.size() << " " << this->features.size() << " " << map_points_associated << " " << negative_depth << " debug compute map points\n"; 
     return current_points_found; 
 }
+
+
 

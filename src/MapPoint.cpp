@@ -26,6 +26,14 @@ Eigen::Vector3d MapPoint::get_3d_vector() {
     return Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(2));
 }
 
+
+int MapPoint::check_index_in_keyframe(KeyFrame *kf) {
+    if (this->belongs_to_keyframes.find(kf) != this->belongs_to_keyframes.end()) {
+        return this->belongs_to_keyframes[kf];
+    }
+    return -1;
+}
+
 int MapPoint::predict_image_scale(double distance) {
     float ratio = this->dmax / distance;
     int scale = ceil(log(ratio) / log(1.2));

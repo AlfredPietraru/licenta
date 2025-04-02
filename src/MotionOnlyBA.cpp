@@ -51,13 +51,6 @@ private:
     double scale_sigma;
 };
 
-// ceres::Problem create_ceres_problem(double *pose_parameters, KeyFrame *kf, std::unordered_map<MapPoint *, Feature *> &matches)
-// {
-//     const double BASELINE = 0.08;
-
-//     return problem;
-// }
-
 Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *, Feature *> &matches)
 {
     if (matches.size() < 3)
@@ -137,10 +130,6 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
                 it->second->is_outlier = true;
             }
         }
-    }
-    // reset values 
-    for (auto it = matches.begin(); it != matches.end(); it++) {
-        it->first->is_outlier = false;
     }
 
     Eigen::Vector3d angle_axis_eigen(pose_parameters[0], pose_parameters[1], pose_parameters[2]);

@@ -27,6 +27,7 @@ public:
                 cv::Mat orb_descriptor, int idx, float depth);
         void add_reference_kf(KeyFrame *kf, int idx);
         Eigen::Vector3d get_3d_vector();
+        int check_index_in_keyframe(KeyFrame *kf);
 private:
         int predict_image_scale(double distance);
 };

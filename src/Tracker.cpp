@@ -137,15 +137,15 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf->map_points);
     std::cout << matches.size() << " atatea map points calculate\n";
     
-    vector<cv::KeyPoint> keypoints;
-    for (auto it = matches.begin(); it != matches.end(); it++) {
-        keypoints.push_back(it->second->get_key_point());
-    }
-    cv::Mat img2, img3;
-    cv::drawKeypoints(this->current_kf->frame, this->current_kf->get_all_keypoints(), img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT);
-    cv::drawKeypoints(img2, keypoints, img3, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); 
-    cv::imshow("Display window", img3);
-    cv::waitKey(100);
+    // vector<cv::KeyPoint> keypoints;
+    // for (auto it = matches.begin(); it != matches.end(); it++) {
+    //     keypoints.push_back(it->second->get_key_point());
+    // }
+    // cv::Mat img2, img3;
+    // cv::drawKeypoints(this->current_kf->frame, this->current_kf->get_all_keypoints(), img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT);
+    // cv::drawKeypoints(img2, keypoints, img3, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); 
+    // cv::imshow("Display window", img3);
+    // cv::waitKey(100);
 
     if (matches.size() < 20) {
         std::cout << matches.size() << " atatea map points in momentul in care a crapat\n";
@@ -156,10 +156,12 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     }
 
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches);
-    print_pose(this->current_kf->Tiw, "dupa initial tracking");
-    // matches = mapp.track_local_map(this->current_kf, 8);
-    std::cout << matches.size() << " atatea map dupa urmarire local map\n";
-    std::cout << matches.size() << " atatea map reproiectate dupa \n";
+    print_pose(this->current_kf->Tiw, "dupa optimizarea initiala");
+    std::unordered_map<MapPoint *, Feature *> new_matches = mapp.track_local_map(this->current_kf, matches);
+
+    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, new_matches);
+    std::cout << new_matches.size() << " atatea ca valoare dupa urmarire local map\n";
+    // std::cout << matches.size() << " atatea map reproiectate dupa \n";
     print_pose(this->current_kf->Tiw, "dupa optimizare");
     this->current_kf->correlate_map_points_to_features_current_frame(matches);
     compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);

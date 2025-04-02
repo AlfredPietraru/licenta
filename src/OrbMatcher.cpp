@@ -13,12 +13,16 @@ void sort_values(std::vector<std::pair<MapPoint*, Feature*>>& map_points) {
     for (int i = 0; i < map_points.size() - 1; i++) {
         for (int j = i + 1; j < map_points.size(); j++) {
             if (map_points[i].second->depth > map_points[j].second->depth) {
-                std::pair<MapPoint*, Feature*> current = map_points[i];
+            std::pair<MapPoint*, Feature*> current = map_points[i];
                 map_points[i] = map_points[j];
                 map_points[j] = current;
             } 
         }
     }
+}
+
+std::unordered_map<MapPoint*, Feature*> OrbMatcher::checkOrientation(std::unordered_map<MapPoint*, Feature*>& out) {
+
 }
 
 std::unordered_map<MapPoint*, Feature*> OrbMatcher::match_frame_map_points(KeyFrame* kf, std::unordered_set<MapPoint*> map_points) {
@@ -79,6 +83,7 @@ std::unordered_map<MapPoint*, Feature*> OrbMatcher::match_frame_map_points(KeyFr
         if (mp->is_safe_to_use) out.insert({mp, &kf->features[lowest_idx]});
         // also check if rotation is valid -> TO DO LATER;
     }
+    // this->checkOrientation(out);
     return out;
 }
 

@@ -39,6 +39,8 @@ public:
     std::vector<MapPoint *> compute_map_points();
     cv::KeyPoint get_keypoint(int idx);
     std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window); 
+    std::unordered_set<MapPoint*> return_map_points_frame();
+    std::unordered_map<MapPoint*, Feature*> return_map_points_keypoint_correlation();
 };
 
 #endif

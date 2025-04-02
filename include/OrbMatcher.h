@@ -29,7 +29,7 @@ public:
     std::unordered_map<MapPoint*, Feature*> match_frame_map_points(KeyFrame* kf, std::unordered_set<MapPoint*> map_points);
     int get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2);
     int ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2);
-    
+    std::unordered_map<MapPoint*, Feature*> checkOrientation(std::unordered_map<MapPoint*, Feature*>& out);
 };
 
 #endif
