@@ -110,14 +110,12 @@ std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, dou
     return kps_idx;
 }
 
-
-std::vector<MapPoint *> KeyFrame::compute_map_points()
+void KeyFrame::compute_map_points()
 {
     int map_points_associated = 0;
     int negative_depth = 0;
     int close_map_points = 0;
     int far_map_poins = 0;
-    std::vector<MapPoint *> current_points_found;
     Eigen::Vector3d camera_center = this->compute_camera_center();
     for (int i = 0; i < this->features.size(); i++)
     {
@@ -132,17 +130,15 @@ std::vector<MapPoint *> KeyFrame::compute_map_points()
         Eigen::Vector4d wcoord = this->fromImageToWorld(i);
         MapPoint *mp = new MapPoint(this, this->features[i].kp, camera_center, wcoord, 
                 this->orb_descriptors.row(i), i, this->features[i].depth);
-        current_points_found.push_back(mp);
         this->features[i].set_map_point(mp);
         this->map_points.insert(mp);
         if (mp->is_safe_to_use) close_map_points++;
         if (!mp->is_safe_to_use) far_map_poins++;
     }
-    if (current_points_found.size() == 0) {
+    if (this->map_points.size() == 0) {
         std::cout << "CEVA NU E BINE NU S-AU CREAT PUNCTELE\n";
     }
-    std::cout << current_points_found.size() << " " << this->features.size() << " " << map_points_associated << " " << negative_depth << " debug compute map points\n"; 
-    return current_points_found; 
+    std::cout << this->map_points.size() << " " << this->features.size() << " " << map_points_associated << " " << negative_depth << " debug compute map points\n";  
 }
 
 

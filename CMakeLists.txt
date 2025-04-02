@@ -17,8 +17,8 @@ include_directories ( ${EIGEN3_INCLUDE_DIR} )
 find_package(Ceres REQUIRED)
 include_directories(${CERES_LIBRARIES})
 
-set( DBoW3_INCLUDE_DIRS "/usr/local/include" )
-set( DBoW3_LIBS "/usr/local/lib/libDBoW3.a" )
+set( DBoW3_INCLUDE_DIRS "/usr/local/include/DBoW3" )
+set( DBoW3_LIBS "/usr/local/lib/libDBoW3.so" )
 
 # find_package(G2O REQUIRED)
 # set(G2O_LIBS
@@ -74,7 +74,7 @@ target_link_libraries(main
     ${OpenCV_LIBS}
     ${CERES_LIBRARIES}
     ${Sophus_LIBRARIES}
-    # ${DBoW3_LIBS}
+    ${DBoW3_LIBS}
 )
 
 # /usr/local/lib/libg2o_core.so
