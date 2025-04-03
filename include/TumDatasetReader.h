@@ -37,8 +37,9 @@ public:
     std::vector<Sophus::SE3d> poses;
     int idx = 0;
     int position_entry_idx = 0;
-    TumDatasetReader();
-    std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> get_next_frame(Config cfg);
+    Config cfg;
+    TumDatasetReader(Config cfg);
+    std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> get_next_frame();
 };
 
 #endif

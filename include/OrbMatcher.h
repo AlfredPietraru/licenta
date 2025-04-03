@@ -14,6 +14,7 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d.hpp>
 #include "config.h"
+#include "ORBVocabulary.h"
 
 class OrbMatcher {
 public:
@@ -30,6 +31,7 @@ public:
     int get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2);
     int ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2);
     std::unordered_map<MapPoint*, Feature*> checkOrientation(std::unordered_map<MapPoint*, Feature*>& out);
+    std::unordered_map<MapPoint*, Feature*> match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref, ORBVocabulary *voc);
 };
 
 #endif

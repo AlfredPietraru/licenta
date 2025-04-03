@@ -12,25 +12,32 @@ using namespace std;
 int main(int argc, char **argv)
 {
     ORBVocabulary *voc = new ORBVocabulary();
-    std::cout << "aici\n";
     bool bVocLoad = voc->loadFromTextFile("../ORBvoc.txt");
-    std::cout << "dupa\n";
+    if (!bVocLoad) {
+        std::cout << "Nu s-a putut incarca corespunzator fisierul ORBvoc.txt\n";
+        exit(1);
+    } else {
+        std::cout << "Fisierul a fost incarcat cu succes\n";
+    }
     Config cfg = loadConfig("../config.yaml");
     Pnp_Ransac_Config pnp_ransac_cfg = load_pnp_ransac_config("../config.yaml");
     Orb_Matcher orb_matcher_cfg = load_orb_matcher_config("../config.yaml");
-    Tracker *tracker = new Tracker(cfg, pnp_ransac_cfg, orb_matcher_cfg);
-    TumDatasetReader *reader = new TumDatasetReader(); 
-    std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> data = reader->get_next_frame(cfg);    
+
+    Map mapp = Map(orb_matcher_cfg);
+    Tracker *tracker = new Tracker(cfg, voc, pnp_ransac_cfg, orb_matcher_cfg);
+    
+    TumDatasetReader *reader = new TumDatasetReader(cfg); 
+    std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> data = reader->get_next_frame();    
     cv::Mat frame = data.first.first;
     cv::Mat depth = data.first.second;
-    Sophus::SE3d pose = data.second; 
-    Map mapp = tracker->initialize(frame, depth, cfg);
+    Sophus::SE3d pose; 
+    tracker->initialize(frame, depth, mapp);
     while(1) {
-        std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> data = reader->get_next_frame(cfg);
-        cv::Mat frame = data.first.first;
-        cv::Mat depth = data.first.second;
-        Sophus::SE3d pose = data.second; 
-        tracker->tracking(frame, depth, mapp, cfg.initial_pose);
+        std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> data = reader->get_next_frame();
+        frame = data.first.first;
+        depth = data.first.second;
+        pose = data.second; 
+        tracker->tracking(frame, depth, mapp, pose);
     }
 }
 

@@ -99,3 +99,8 @@ int OrbMatcher::get_number_common_mappoints_between_keyframes(KeyFrame *kf1, Key
     }
     return out;
 }
+
+
+std::unordered_map<MapPoint*, Feature*> match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref, ORBVocabulary *voc) {
+    return std::unordered_map<MapPoint*, Feature*>();
+}

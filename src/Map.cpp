@@ -51,6 +51,10 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
     local_map = this->compute_local_map(new_kf);
 }
 
+Map::Map(Orb_Matcher orb_matcher_cfg) {
+    this->matcher = new OrbMatcher(orb_matcher_cfg);
+}
+
 Map::Map(OrbMatcher *matcher, KeyFrame *first_kf, Config cfg)
 {
     this->matcher = matcher;

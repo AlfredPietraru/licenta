@@ -27,7 +27,7 @@ public:
 
     Map();
     Map(OrbMatcher* matcher, KeyFrame *first_kf, Config cfg);
-    
+    Map(Orb_Matcher orb_matcher_cfg);
     std::unordered_map<MapPoint *, Feature*> track_local_map(KeyFrame *curr_kf, std::unordered_map<MapPoint *, Feature*>& matches);
 
     KeyFrame *get_reference_keyframe(KeyFrame *kf);

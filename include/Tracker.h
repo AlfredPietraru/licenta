@@ -17,18 +17,20 @@
 #include "FeatureFinderMatcher.h"
 #include "OrbMatcher.h"
 #include "config.h"
+#include "ORBVocabulary.h"
 
 using namespace std;
 using namespace cv;
 
 class Tracker {
 public:
-    Map initialize(Mat frame, Mat depth, Config cfg);
+    void initialize(Mat frame, Mat depth, Map &mapp);
     void tracking(Mat frame, Mat depth, Map& map_points, Sophus::SE3d ground_truth_pose);
-    Tracker(Config cfg, Pnp_Ransac_Config pnp_ransac_cfg, Orb_Matcher orb_matcher_confih) {
+    Tracker(Config cfg, ORBVocabulary* voc, Pnp_Ransac_Config pnp_ransac_cfg, Orb_Matcher orb_matcher_confih) {
         this->K = cfg.K;
         cv::cv2eigen(cfg.K, this->K_eigen);
         this->initial_pose = cfg.initial_pose;
+        this->voc = voc;
         // this->initial_pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
         this->ransac_window = pnp_ransac_cfg.reprojection_window;
         this->ransac_iteration = pnp_ransac_cfg.ransac_iterations;
@@ -45,6 +47,7 @@ private:
     KeyFrame* prev_kf = nullptr;
     KeyFrame *reference_kf = nullptr;
 
+    ORBVocabulary* voc;
     Mat K; 
     Eigen::Matrix3d K_eigen;
     Sophus::SE3d initial_pose;

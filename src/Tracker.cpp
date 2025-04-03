@@ -58,12 +58,11 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     this->frames_tracked += 1;
 }
 
-Map Tracker::initialize(Mat frame, Mat depth, Config cfg)
+void Tracker::initialize(Mat frame, Mat depth, Map& mapp)
 {
     this->get_current_key_frame(frame, depth);
-    Map mapp = Map(this->matcher, this->current_kf, cfg);
     this->reference_kf = this->current_kf;
-    return mapp;
+    mapp.add_new_keyframe(this->reference_kf);
 }
 
 Sophus::SE3d Tracker::TrackWithLastFrame(std::unordered_map<MapPoint *, Feature *> &matches)
@@ -156,6 +155,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     }
 
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches);
+    print_pose(ground_truth_pose, "valoare initiala groundtruth");
     print_pose(this->current_kf->Tiw, "dupa optimizarea initiala");
     std::unordered_map<MapPoint *, Feature *> new_matches = mapp.track_local_map(this->current_kf, matches);
 

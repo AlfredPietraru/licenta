@@ -76,7 +76,8 @@ std::unordered_map<std::string, Position_Entry> get_mapping_between_rgb_position
     return out_map;
 }
 
-TumDatasetReader::TumDatasetReader() {
+TumDatasetReader::TumDatasetReader(Config cfg) {
+    this->cfg = cfg;
     std::string rgb_path = "../rgbd_dataset_freiburg1_xyz/rgb";
     std::string depth_path = "../rgbd_dataset_freiburg1_xyz/depth";
     std::unordered_map<std::string, std::string> map_rgb_file_name_path;
@@ -99,12 +100,12 @@ TumDatasetReader::TumDatasetReader() {
 }   
 
 
-std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> TumDatasetReader::get_next_frame(Config cfg) {
+std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> TumDatasetReader::get_next_frame() {
     std::cout << idx << " " << this->rgb_path[idx] << " " << this->depth_path[idx] << "\n";
     cv::Mat distorted_frame = cv::imread(this->rgb_path[idx], cv::IMREAD_COLOR_RGB);
     cv::Mat depth = cv::imread(this->depth_path[idx], cv::IMREAD_UNCHANGED);
     cv::Mat frame;
-    cv::undistort(distorted_frame, frame, cfg.K, cfg.distortion);
+    cv::undistort(distorted_frame, frame, this->cfg.K, this->cfg.distortion);
     Sophus::SE3d pose = this->poses[idx];
     idx++;
     return {{frame, depth}, pose};
