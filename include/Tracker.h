@@ -75,7 +75,7 @@ private:
     // auxiliary functions
     void get_current_key_frame(Mat frame, Mat depth);
     void tracking_was_lost();
-    std::unordered_map<MapPoint *, Feature*> get_outliers(std::vector<std::pair<MapPoint *, Feature*>>& matches, vector<int>& inliers);
+    void remove_outliers(std::unordered_map<MapPoint *, Feature *> &matches);
 };
 
 #endif

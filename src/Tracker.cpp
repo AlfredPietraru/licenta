@@ -54,7 +54,7 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
 
     Sophus::SE3d pose_estimation = (this->prev_kf == nullptr) ? this->initial_pose : this->prev_kf->Tiw;
     int idx = (this->prev_kf == nullptr) ? 0 : this->reference_kf->idx + 1;
-    this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, keypoints, descriptors, depth, idx, frame);
+    this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, keypoints, descriptors, depth, idx, frame, this->voc);
     this->frames_tracked += 1;
 }
 
@@ -96,20 +96,20 @@ Sophus::SE3d Tracker::TrackWithLastFrame(std::unordered_map<MapPoint *, Feature 
     return Sophus::SE3d(R_eigen, t_eigen);
 }
 
-std::unordered_map<MapPoint *, Feature *> Tracker::get_outliers(std::vector<std::pair<MapPoint *, Feature *>> &matches,
-                                                                vector<int> &inliers) {
-    std::unordered_map<MapPoint *, Feature *> res;
-    int inlier_idx = 0;
-    for (int i = 0; i < matches.size(); i++)
-    {
-        if (i == inliers[inlier_idx])
-        {
-            inlier_idx++;
+void Tracker::remove_outliers(std::unordered_map<MapPoint *, Feature *> &matches) {
+    std::vector<MapPoint*> to_remove;
+    for (auto it = matches.begin(); it != matches.end(); it++) {
+        if (it->first == nullptr) {
+            std::cout << "CEVA NU E BINE\n";
             continue;
-        }
-        res.insert(matches[i]);
+        } 
+        if (!it->first->is_outlier) continue;
+        it->first->is_outlier = false;
+        to_remove.push_back(it->first);
+    }    
+    for (int i = 0; i < to_remove.size(); i++) {
+        matches.erase(to_remove[i]); 
     }
-    return res;
 }
 
 void Tracker::tracking_was_lost()
@@ -133,9 +133,11 @@ bool Tracker::Is_KeyFrame_needed(std::unordered_map<MapPoint *, Feature *> &matc
 void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_truth_pose) {
     this->prev_kf = this->current_kf;
     this->get_current_key_frame(frame, depth);
-    std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf->map_points);
-    std::cout << matches.size() << " atatea map points calculate\n";
-    
+    std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf);
+    // std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_reference_frame(this->current_kf, this->reference_kf, this->voc);
+    std::cout << matches.size() << " atatea map points ramase\n";
+    // exit(1);
+
     // vector<cv::KeyPoint> keypoints;
     // for (auto it = matches.begin(); it != matches.end(); it++) {
     //     keypoints.push_back(it->second->get_key_point());
@@ -144,7 +146,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     // cv::drawKeypoints(this->current_kf->frame, this->current_kf->get_all_keypoints(), img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT);
     // cv::drawKeypoints(img2, keypoints, img3, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); 
     // cv::imshow("Display window", img3);
-    // cv::waitKey(100);
+    // cv::waitKey(0);
 
     if (matches.size() < 20) {
         std::cout << matches.size() << " atatea map points in momentul in care a crapat\n";
@@ -155,6 +157,9 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     }
 
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches);
+    std::cout << "optimizarea a functionat\n";
+    this->remove_outliers(matches);
+    std::cout << matches.size() << " dupa outliers eliminate\n";
     print_pose(ground_truth_pose, "valoare initiala groundtruth");
     print_pose(this->current_kf->Tiw, "dupa optimizarea initiala");
     std::unordered_map<MapPoint *, Feature *> new_matches = mapp.track_local_map(this->current_kf, matches);

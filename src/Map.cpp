@@ -55,13 +55,6 @@ Map::Map(Orb_Matcher orb_matcher_cfg) {
     this->matcher = new OrbMatcher(orb_matcher_cfg);
 }
 
-Map::Map(OrbMatcher *matcher, KeyFrame *first_kf, Config cfg)
-{
-    this->matcher = matcher;
-    this->add_new_keyframe(first_kf);
-    std::cout << "SFARSIT INITIALIZARE\n";
-}
-
 KeyFrame *Map::get_reference_keyframe(KeyFrame *kf)
 {
     int start_idx = (this->keyframes.size() > this->KEYFRAMES_WINDOW) ? this->keyframes.size() - this->KEYFRAMES_WINDOW : 0;

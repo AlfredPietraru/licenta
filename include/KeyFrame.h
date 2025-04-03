@@ -9,6 +9,7 @@
 #include <unordered_set>
 #include "Feature.h"
 #include <iostream>
+#include "ORBVocabulary.h"
 
 class KeyFrame
 {
@@ -26,9 +27,13 @@ public:
     cv::Mat depth_matrix;
     const double BASELINE = 0.08;
 
+    DBoW2::BowVector bow_vec;
+    DBoW2::FeatureVector features_vec;
+
+
     KeyFrame();
     KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint>& keypoints,
-             cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx, cv::Mat& frame);
+             cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx, cv::Mat& frame, ORBVocabulary *voc);
     Eigen::Vector3d compute_camera_center();
     Eigen::Vector3d fromWorldToImage(Eigen::Vector4d& wcoord);
     Eigen::Vector4d fromImageToWorld(int kp_idx);

@@ -18,7 +18,7 @@ std::unordered_map<MapPoint*, Feature*> KeyFrame::return_map_points_keypoint_cor
 
 
 KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint>& keypoints,
-         cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx, cv::Mat& frame)
+         cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx, cv::Mat& frame, ORBVocabulary *voc)
     : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), depth_matrix(depth_matrix), idx(idx), frame(frame) {
         this->grid = cv::Mat::zeros(frame.rows, frame.cols, CV_32S);
         this->grid += cv::Scalar(-1);
@@ -35,6 +35,12 @@ KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint
             }
             this->grid.at<int>(lround(kp.pt.y), lround(kp.pt.x)) = i;
         }
+        std::vector<cv::Mat> vector_descriptors;
+        for (int i = 0; i < this->orb_descriptors.rows; i++) {
+            vector_descriptors.push_back(this->orb_descriptors.row(i));
+        }
+        voc->transform(vector_descriptors, this->bow_vec, this->features_vec, 4);
+        // std::cout << vector_descriptors.size() << " " << this->bow_vec.size() << " " << this->features_vec.size() << "\n";
     }
 
 Eigen::Vector3d KeyFrame::compute_camera_center() {

@@ -22,6 +22,7 @@
 #ifndef ORBVOCABULARY_H
 #define ORBVOCABULARY_H
 
+#include "DBoW2/DBoW2.h"
 #include "DBoW2/FORB.h"
 #include "DBoW2/TemplatedVocabulary.h"
 

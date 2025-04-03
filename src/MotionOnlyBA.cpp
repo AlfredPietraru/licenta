@@ -81,7 +81,8 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
         options.check_gradients = true;
         options.minimizer_progress_to_stdout = false;
         options.max_num_iterations = 10;
-        ceres::LossFunction *loss_function = new ceres::HuberLoss(1.0);
+        ceres::LossFunction *loss_function_mono = new ceres::HuberLoss(sqrt(5.911));
+        ceres::LossFunction *loss_function_stereo = new ceres::HuberLoss(sqrt(7.815));
 
         std::unordered_map<ceres::ResidualBlockId, MapPoint*> residual_rgbd_points;
         std::unordered_map<ceres::ResidualBlockId, MapPoint*> residual_monocular_points;
@@ -96,14 +97,14 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
             {
                 cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kp.pt.x, kp.pt.y, 0), it->first->wcoord,
                                                               std::pow(1.2, kp.octave), kf->K);
-                ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function, pose_parameters);
+                ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function_mono, pose_parameters);
                 residual_monocular_points.insert({id, it->first});
             }
             else
             {
                 cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kp.pt.x, kp.pt.y, it->second->stereo_depth), it->first->wcoord,
                                                            std::pow(1.2, kp.octave), kf->K);    
-                ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function, pose_parameters);
+                ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function_stereo, pose_parameters);
                 residual_rgbd_points.insert({id, it->first});
             }
         }

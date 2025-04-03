@@ -27,10 +27,11 @@ public:
         this->window = orb_matcher_config.window;
         this->orb_descriptor_value = orb_matcher_config.orb_descriptor_value;
     }
-    std::unordered_map<MapPoint*, Feature*> match_frame_map_points(KeyFrame* kf, std::unordered_set<MapPoint*> map_points);
+    std::unordered_map<MapPoint*, Feature*> match_frame_map_points(KeyFrame* kf, KeyFrame *kf2);
+    std::unordered_map<MapPoint*, Feature*> match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoint*> map_points);
     int get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2);
     int ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2);
-    std::unordered_map<MapPoint*, Feature*> checkOrientation(std::unordered_map<MapPoint*, Feature*>& out);
+    std::unordered_map<MapPoint*, Feature*> checkOrientation(std::unordered_map<MapPoint*, Feature*>& out, std::unordered_map<MapPoint*, Feature*>& correlation_prev_frame);
     std::unordered_map<MapPoint*, Feature*> match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref, ORBVocabulary *voc);
 };
 
