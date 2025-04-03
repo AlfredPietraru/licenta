@@ -112,6 +112,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
     for (auto it = prev_frame_correlations.begin(); it != prev_frame_correlations.end(); it++)
     {
         MapPoint *mp = it->first;
+        if (mp == nullptr || mp->is_outlier) continue;
         Eigen::Vector3d point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
         for (int i = 0; i < 3; i++)
         {
@@ -126,8 +127,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
         camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
         camera_to_map_view_ray.normalize();
         double dot_product = camera_to_map_view_ray.dot(mp->view_direction);
-        if (dot_product < 0.5)
-            continue;
+        if (dot_product < 0.5) continue;
 
         double u = point_camera_coordinates(0);
         double v = point_camera_coordinates(1);
@@ -195,7 +195,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
         Eigen::Vector3d point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
         for (int i = 0; i < 3; i++)
         {
-            if (point_camera_coordinates(i) < 0)
+            if (point_camera_coordinates(i) <= 0)
                 continue;
         }
         if (point_camera_coordinates(0) > kf->depth_matrix.cols - 1)
@@ -257,8 +257,8 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
             continue;
         if (mp->is_safe_to_use)
             out.insert({mp, &kf->features[lowest_idx]});
-        // also check if rotation is valid -> TO DO LATER;
     }
+    // de vazut cu orientarea aici
     return out;
 }
 

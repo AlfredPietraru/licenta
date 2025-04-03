@@ -39,7 +39,7 @@ KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint
         for (int i = 0; i < this->orb_descriptors.rows; i++) {
             vector_descriptors.push_back(this->orb_descriptors.row(i));
         }
-        voc->transform(vector_descriptors, this->bow_vec, this->features_vec, 4);
+        voc->transform(vector_descriptors, this->bow_vec, this->features_vec, 3);
         // std::cout << vector_descriptors.size() << " " << this->bow_vec.size() << " " << this->features_vec.size() << "\n";
     }
 

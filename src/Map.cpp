@@ -95,6 +95,7 @@ std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
     return out;
 }
 
+// de adaugat reference keyframe
 std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf, std::unordered_map<MapPoint *, Feature*>& matches)
 {
     std::unordered_set<MapPoint *> new_local_map;

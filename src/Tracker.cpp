@@ -136,17 +136,18 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     // std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_reference_frame(this->current_kf, this->reference_kf, this->voc);
     std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf->map_points);
     std::cout << matches.size() << " atatea map points ramase\n";
+
     // exit(1);
 
-    // vector<cv::KeyPoint> keypoints;
-    // for (auto it = matches.begin(); it != matches.end(); it++) {
-    //     keypoints.push_back(it->second->get_key_point());
-    // }
-    // cv::Mat img2, img3;
-    // cv::drawKeypoints(this->current_kf->frame, this->current_kf->get_all_keypoints(), img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT);
-    // cv::drawKeypoints(img2, keypoints, img3, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); 
-    // cv::imshow("Display window", img3);
-    // cv::waitKey(0);
+    vector<cv::KeyPoint> keypoints;
+    for (auto it = matches.begin(); it != matches.end(); it++) {
+        keypoints.push_back(it->second->get_key_point());
+    }
+    cv::Mat img2, img3;
+    cv::drawKeypoints(this->current_kf->frame, this->current_kf->get_all_keypoints(), img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT);
+    cv::drawKeypoints(img2, keypoints, img3, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); 
+    cv::imshow("Display window", img3);
+    cv::waitKey(0);
 
     if (matches.size() < 20) {
         std::cout << matches.size() << " atatea map points in momentul in care a crapat\n";
