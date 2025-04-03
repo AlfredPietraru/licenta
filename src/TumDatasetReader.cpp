@@ -87,7 +87,6 @@ TumDatasetReader::TumDatasetReader() {
     for (std::filesystem::__cxx11::directory_entry entry : fs::directory_iterator(depth_path)) {
         map_depth_file_name_path.insert({extract_timestamp(entry.path()), entry.path()});
     }
-
     std::vector<std::pair<std::string, std::string>> map_rgb_depth = get_mapping_between_rgb_depth("../rgbd_dataset_freiburg1_xyz/maping_rgb_depth.txt");
     std::unordered_map<std::string, Position_Entry> map_rgb_pose = get_mapping_between_rgb_position("../rgbd_dataset_freiburg1_xyz/maping_rgb_groundtruth.txt");
     for (int i = 0; i < map_rgb_depth.size(); i++) {

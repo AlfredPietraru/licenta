@@ -63,6 +63,7 @@ set(HEADERS
     "include/OrbMatcher.h"
     "include/config.h"
     "include/TumDatasetReader.h"
+    "include/ORBVocabulary.h"
 )
 
 
