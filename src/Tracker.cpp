@@ -133,8 +133,8 @@ bool Tracker::Is_KeyFrame_needed(std::unordered_map<MapPoint *, Feature *> &matc
 void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_truth_pose) {
     this->prev_kf = this->current_kf;
     this->get_current_key_frame(frame, depth);
-    std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf);
     // std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_reference_frame(this->current_kf, this->reference_kf, this->voc);
+    std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf->map_points);
     std::cout << matches.size() << " atatea map points ramase\n";
     // exit(1);
 

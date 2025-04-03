@@ -26,6 +26,7 @@ public:
         this->minim_points_found = orb_matcher_config.minim_points_found;
         this->window = orb_matcher_config.window;
         this->orb_descriptor_value = orb_matcher_config.orb_descriptor_value;
+        this->ration_first_second_match = orb_matcher_config.ratio_first_second_match;
     }
     std::unordered_map<MapPoint*, Feature*> match_frame_map_points(KeyFrame* kf, KeyFrame *kf2);
     std::unordered_map<MapPoint*, Feature*> match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoint*> map_points);
