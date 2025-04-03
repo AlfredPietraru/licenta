@@ -97,7 +97,7 @@ void KeyFrame::correlate_map_points_to_features_current_frame(std::unordered_map
     }
 }
 
-std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, double v, int window) {
+std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave) {
     std::vector<int> kps_idx;
     int u_min = lround(u - window);
     u_min = (u_min < 0) ? 0 : (u_min > this->frame.cols) ? this->frame.cols : u_min;   
@@ -110,6 +110,8 @@ std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, dou
     for (int i = v_min; i < v_max; i++) {
         for (int j = u_min; j < u_max; j++) {
             if (this->grid.at<int>(i, j) == -1) continue;
+            int current_octave = this->features[this->grid.at<int>(i, j)].kp.octave;
+            if (current_octave < minOctave || current_octave > maxOctave) continue;
             kps_idx.push_back(this->grid.at<int>(i, j));
         }
     }

@@ -124,15 +124,9 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
         options.check_gradients = true;
         options.minimizer_progress_to_stdout = false;
         options.max_num_iterations = 10;
-        ceres::LossFunction *loss_function_mono;
-        ceres::LossFunction *loss_function_stereo;
-        if (i == 2) {
-            loss_function_mono = new ceres::HuberLoss(0);
-            loss_function_stereo = new ceres::HuberLoss(0);
-        } else {
-            loss_function_mono = new ceres::HuberLoss(sqrt(chi2Mono[i]));
-            loss_function_stereo = new ceres::HuberLoss(sqrt(chi2Stereo[i]));
-        }
+        
+        ceres::LossFunction *loss_function_mono = new ceres::HuberLoss(sqrt(chi2Mono[i]));
+        ceres::LossFunction *loss_function_stereo = new ceres::HuberLoss(sqrt(chi2Stereo[i]));
         
         std::unordered_map<MapPoint*, ceres::ResidualBlockId> residual_rgbd_points;
         std::unordered_map<MapPoint*, ceres::ResidualBlockId> residual_monocular_points;
@@ -172,7 +166,7 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
                 double residual[2];
                 problem.EvaluateResidualBlock(residual_monocular_points[mp], true, nullptr, residual, nullptr);
                 const float error = residual[0] * residual[0] + residual[1] * residual[1];                
-                mp->is_outlier = sqrt(error) > chi2Mono[i];
+                mp->is_outlier = error > chi2Mono[i];
                 if (mp->is_outlier) outlier++;
                 continue;
             }
@@ -180,17 +174,17 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
                 double residual[3];
                 problem.EvaluateResidualBlock(residual_rgbd_points[mp], true, nullptr, residual, nullptr);
                 const float error = residual[0] * residual[0] + residual[1] * residual[1] + residual[2] * residual[2];
-                mp->is_outlier = sqrt(error) > chi2Stereo[i];
+                mp->is_outlier = error > chi2Stereo[i];
                 if (mp->is_outlier) outlier++;
                 continue;
             }
             if (it->second->stereo_depth <= 0) {
                 double error = get_monocular_reprojection_error(mp, kf->K, intermediate_pose, it->second);
-                mp->is_outlier = sqrt(error) > chi2Mono[i];
+                mp->is_outlier = error > chi2Mono[i];
                 if (mp->is_outlier) outlier++;
             } else {
                 double error = get_rgbd_reprojection_error(mp, kf->K, intermediate_pose, it->second);
-                mp->is_outlier = sqrt(error) > chi2Stereo[i];
+                mp->is_outlier = error > chi2Stereo[i];
                 if (mp->is_outlier) outlier++;
             }            
         }
