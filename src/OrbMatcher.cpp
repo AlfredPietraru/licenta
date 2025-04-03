@@ -22,7 +22,7 @@ void sort_values(std::vector<std::pair<MapPoint*, Feature*>>& map_points) {
 }
 
 std::unordered_map<MapPoint*, Feature*> OrbMatcher::checkOrientation(std::unordered_map<MapPoint*, Feature*>& out) {
-
+    return std::unordered_map<MapPoint*, Feature*>();
 }
 
 std::unordered_map<MapPoint*, Feature*> OrbMatcher::match_frame_map_points(KeyFrame* kf, std::unordered_set<MapPoint*> map_points) {

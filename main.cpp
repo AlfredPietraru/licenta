@@ -1,24 +1,20 @@
-// #include "DBoW3/DBoW3.h"
+
 // de folosit sophus pentru estimarea pozitiei
 #include <cstdio> 
 #include <iostream>
 #include <filesystem>
 #include "include/Tracker.h"
 #include "include/TumDatasetReader.h"
-#include "DBow3/include/DBoW3.h"
-
+#include "include/ORBVocabulary.h"
 namespace fs = std::filesystem;
-
-using namespace DBoW3;
 using namespace std;
 
 int main(int argc, char **argv)
 {
-
-    
-    Vocabulary voc("../ORBvoc.txt");
-    Database db(voc, false, 0);
-    // bool bVocLoad = mpVocabulary->loadFromTextFile("../ORBvoc.txt");
+    ORBVocabulary *voc = new ORBVocabulary();
+    std::cout << "aici\n";
+    bool bVocLoad = voc->loadFromTextFile("../ORBvoc.txt");
+    std::cout << "dupa\n";
     Config cfg = loadConfig("../config.yaml");
     Pnp_Ransac_Config pnp_ransac_cfg = load_pnp_ransac_config("../config.yaml");
     Orb_Matcher orb_matcher_cfg = load_orb_matcher_config("../config.yaml");
