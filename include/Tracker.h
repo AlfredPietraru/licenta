@@ -26,7 +26,7 @@ class Tracker {
 public:
     void initialize(Mat frame, Mat depth, Map &mapp);
     void tracking(Mat frame, Mat depth, Map& map_points, Sophus::SE3d ground_truth_pose);
-    Tracker(Config cfg, ORBVocabulary* voc, Pnp_Ransac_Config pnp_ransac_cfg, Orb_Matcher orb_matcher_confih) {
+    Tracker(Config cfg, ORBVocabulary* voc, Pnp_Ransac_Config pnp_ransac_cfg, Orb_Matcher orb_matcher_config) {
         this->K = cfg.K;
         cv::cv2eigen(cfg.K, this->K_eigen);
         this->initial_pose = cfg.initial_pose;
@@ -39,7 +39,7 @@ public:
         
         this->fmf = new FeatureMatcherFinder(480, 640, cfg);
         this->bundleAdjustment = new BundleAdjustment();
-        this->matcher = new OrbMatcher(orb_matcher_confih);
+        this->matcher = new OrbMatcher(orb_matcher_config);
     }
 
 private:
