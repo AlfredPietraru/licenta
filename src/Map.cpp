@@ -100,12 +100,10 @@ std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf,
 {
     std::unordered_set<MapPoint *> new_local_map;
     for (auto it = local_map.begin(); it != local_map.end(); it++) {
-        if (matches.find(*it) == matches.end()) {
-            new_local_map.insert(*it);
-        }
+        if (matches.find(*it) != matches.end()) continue; // nu luam elementele deja cunoscute
+        new_local_map.insert(*it);
     }
+
     return this->matcher->match_frame_map_points(curr_kf, new_local_map);
-    // curr_kf->currently_matched_points = out.size();
     
-    // this->matcher->debug_reprojection(local_map, matches, curr_kf, window, this->orb_descriptor_value);
 }

@@ -27,7 +27,7 @@ PnP:
 
 Matcher:
   orb_descriptor_value: 50
-  window: 8
+  window: 15
   minim_points_found: 50
   ratio_first_second_match: 0.90
 

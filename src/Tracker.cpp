@@ -134,7 +134,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     this->prev_kf = this->current_kf;
     this->get_current_key_frame(frame, depth);
     // std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_reference_frame(this->current_kf, this->reference_kf, this->voc);
-    std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf->map_points);
+    std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf);
     std::cout << matches.size() << " atatea map points ramase\n";
 
     // exit(1);
@@ -164,11 +164,12 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     print_pose(ground_truth_pose, "valoare initiala groundtruth");
     print_pose(this->current_kf->Tiw, "dupa optimizarea initiala");
     std::unordered_map<MapPoint *, Feature *> new_matches = mapp.track_local_map(this->current_kf, matches);
+    if (new_matches.size() > 50) {
+        this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, new_matches);
+        std::cout << new_matches.size() << " atatea ca valoare dupa urmarire local map\n";
+        print_pose(this->current_kf->Tiw, "dupa optimizare");
+    }
 
-    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, new_matches);
-    std::cout << new_matches.size() << " atatea ca valoare dupa urmarire local map\n";
-    // std::cout << matches.size() << " atatea map reproiectate dupa \n";
-    print_pose(this->current_kf->Tiw, "dupa optimizare");
     this->current_kf->correlate_map_points_to_features_current_frame(matches);
     compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     if (this->Is_KeyFrame_needed(matches))

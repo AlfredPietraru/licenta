@@ -43,7 +43,7 @@ public:
     void correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature*>& matches);
     void compute_map_points();
     cv::KeyPoint get_keypoint(int idx);
-    std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave); 
+std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave); 
     std::unordered_set<MapPoint*> return_map_points_frame();
     std::unordered_map<MapPoint*, Feature*> return_map_points_keypoint_correlation();
 };

@@ -30,8 +30,8 @@ KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint
                 this->maximum_possible_map_points--;
                 this->features.push_back(Feature(kp, orb_descriptors.row(i), i, depth, -1)); // filler negative value for stereo depth
             } else { 
-                double stereo_depth = kp.pt.x - (this->K(0, 0) * BASELINE / depth);
-                this->features.push_back(Feature(kp, orb_descriptors.row(i), i, depth, stereo_depth));
+                double rgbd_right_coordinate = kp.pt.x - (this->K(0, 0) * BASELINE / depth);
+                this->features.push_back(Feature(kp, orb_descriptors.row(i), i, depth, rgbd_right_coordinate));
             }
             this->grid.at<int>(lround(kp.pt.y), lround(kp.pt.x)) = i;
         }

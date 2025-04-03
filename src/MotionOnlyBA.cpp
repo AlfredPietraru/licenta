@@ -25,7 +25,8 @@ public:
         if (this->is_monocular)
             return true;
 
-        T z_projected = camera_coordinates[0] - T(K(0, 0)) * BASELINE * inv_d;
+        //T z_projected = camera_coordinates[0] - T(K(0, 0)) * BASELINE * inv_d;
+        T z_projected = T(K(0, 0)) * (camera_coordinates[0] - T(BASELINE)) * inv_d + T(K(0, 2));
         residuals[2] = (z_projected - observed(2)) / scale_sigma;
         return true;
     }
@@ -130,13 +131,14 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
         
         std::unordered_map<MapPoint*, ceres::ResidualBlockId> residual_rgbd_points;
         std::unordered_map<MapPoint*, ceres::ResidualBlockId> residual_monocular_points;
-        int outlier = 0;
+        int inlier = 0;
         for (auto it = matches.begin(); it != matches.end(); it++)
         {
 
             if (it->first->is_outlier)  continue;
             ceres::CostFunction *cost_function;
             cv::KeyPoint kp = it->second->get_key_point();
+            // std::cout << it->second->stereo_depth << " ";
             if (it->second->stereo_depth <= 0)
             {
                 cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kp.pt.x, kp.pt.y, 0), it->first->wcoord,
@@ -165,30 +167,37 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
             if (residual_monocular_points.find(mp) != residual_monocular_points.end()) {
                 double residual[2];
                 problem.EvaluateResidualBlock(residual_monocular_points[mp], true, nullptr, residual, nullptr);
-                const float error = residual[0] * residual[0] + residual[1] * residual[1];                
+                const float error = residual[0] * residual[0] + residual[1] * residual[1];    
+                // std::cout << error << " ";
+                // std::cout << residual[0] << " " << residual[1] << "     ";
                 mp->is_outlier = error > chi2Mono[i];
-                if (mp->is_outlier) outlier++;
+                if (!mp->is_outlier) inlier++;
                 continue;
             }
             if (residual_rgbd_points.find(mp) != residual_rgbd_points.end()) {
                 double residual[3];
                 problem.EvaluateResidualBlock(residual_rgbd_points[mp], true, nullptr, residual, nullptr);
                 const float error = residual[0] * residual[0] + residual[1] * residual[1] + residual[2] * residual[2];
+                // std::cout << error << " ";
+                // std::cout << residual[0] << " " << residual[1] << " "  << residual[2] << "     ";
                 mp->is_outlier = error > chi2Stereo[i];
-                if (mp->is_outlier) outlier++;
+                if (!mp->is_outlier) inlier++;
                 continue;
             }
             if (it->second->stereo_depth <= 0) {
                 double error = get_monocular_reprojection_error(mp, kf->K, intermediate_pose, it->second);
+                // std::cout << error << " "; 
                 mp->is_outlier = error > chi2Mono[i];
-                if (mp->is_outlier) outlier++;
+                if (!mp->is_outlier) inlier++;
             } else {
                 double error = get_rgbd_reprojection_error(mp, kf->K, intermediate_pose, it->second);
+                // std::cout << error << " ";
                 mp->is_outlier = error > chi2Stereo[i];
-                if (mp->is_outlier) outlier++;
+                if (!mp->is_outlier) inlier++;
             }            
         }
-        std::cout << outlier << " gasit la epoca " << i << "\n";
+        std::cout << "\n";
+        std::cout << inlier << " atatea inliere gasite la epoca " << i << "\n";
     }
     return compute_pose(kf, pose_parameters);    
 }
