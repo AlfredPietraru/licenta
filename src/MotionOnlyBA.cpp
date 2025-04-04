@@ -25,7 +25,7 @@ public:
         if (this->is_monocular)
             return true;
 
-        //T z_projected = camera_coordinates[0] - T(K(0, 0)) * BASELINE * inv_d;
+        // T z_projected = camera_coordinates[0] - T(K(0, 0)) * BASELINE * inv_d;
         T z_projected = T(K(0, 0)) * (camera_coordinates[0] - T(BASELINE)) * inv_d + T(K(0, 2));
         residuals[2] = (z_projected - observed(2)) / scale_sigma;
         return true;

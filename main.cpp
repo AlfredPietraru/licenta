@@ -23,14 +23,16 @@ int main(int argc, char **argv)
     Pnp_Ransac_Config pnp_ransac_cfg = load_pnp_ransac_config("../config.yaml");
     Orb_Matcher orb_matcher_cfg = load_orb_matcher_config("../config.yaml");
 
-    Map mapp = Map(orb_matcher_cfg);
-    Tracker *tracker = new Tracker(cfg, voc, pnp_ransac_cfg, orb_matcher_cfg);
     
     TumDatasetReader *reader = new TumDatasetReader(cfg); 
     std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> data = reader->get_next_frame();    
     cv::Mat frame = data.first.first;
     cv::Mat depth = data.first.second;
-    Sophus::SE3d pose; 
+    Sophus::SE3d pose = data.second;
+    
+    Map mapp = Map(orb_matcher_cfg);
+    cfg.initial_pose = pose;
+    Tracker *tracker = new Tracker(cfg, voc, pnp_ransac_cfg, orb_matcher_cfg);
     tracker->initialize(frame, depth, mapp);
     while(1) {
         std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> data = reader->get_next_frame();
