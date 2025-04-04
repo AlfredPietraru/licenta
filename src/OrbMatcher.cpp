@@ -108,7 +108,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
             continue;
         if (point_camera_coordinates(1) < 0 || point_camera_coordinates(1) > kf->depth_matrix.rows - 1)
             continue;
-        if (point_camera_coordinates(2) < 0) continue;
+        if (point_camera_coordinates(2) < 1e-6) continue;
 
         camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
         camera_to_map_view_ray.normalize();

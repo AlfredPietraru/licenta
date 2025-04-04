@@ -164,7 +164,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     print_pose(ground_truth_pose, "valoare initiala groundtruth");
     print_pose(this->current_kf->Tiw, "dupa optimizarea initiala");
     std::unordered_map<MapPoint *, Feature *> new_matches = mapp.track_local_map(this->current_kf, matches);
-    if (new_matches.size() > 50) {
+    if (new_matches.size() > 20) {
         this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, new_matches);
         std::cout << new_matches.size() << " atatea ca valoare dupa urmarire local map\n";
         print_pose(this->current_kf->Tiw, "dupa optimizare");
