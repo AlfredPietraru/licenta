@@ -32,6 +32,7 @@ public:
     std::unordered_set<MapPoint *> compute_local_map(KeyFrame *current_frame);
     void add_new_keyframe(KeyFrame *kf); 
     void debug_map(KeyFrame *kf);
+    void clean_local_map_is_outlier_reputation();
 };
 
 #endif

@@ -133,8 +133,9 @@ bool Tracker::Is_KeyFrame_needed(std::unordered_map<MapPoint *, Feature *> &matc
 void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_truth_pose) {
     this->prev_kf = this->current_kf;
     this->get_current_key_frame(frame, depth);
-    // std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_reference_frame(this->current_kf, this->reference_kf, this->voc);
-    std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf);
+    print_pose(ground_truth_pose, "ground truth pose\n");
+    std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_reference_frame(this->current_kf, this->reference_kf, this->voc);
+    // std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf);
     std::cout << matches.size() << " atatea map points ramase\n";
 
     // exit(1);
@@ -158,19 +159,15 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     }
 
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches);
-    std::cout << "optimizarea a functionat\n";
     this->remove_outliers(matches);
-    std::cout << matches.size() << " dupa outliers eliminate\n";
-    print_pose(ground_truth_pose, "valoare initiala groundtruth");
-    print_pose(this->current_kf->Tiw, "dupa optimizarea initiala");
     std::unordered_map<MapPoint *, Feature *> new_matches = mapp.track_local_map(this->current_kf, matches);
-    if (new_matches.size() > 20) {
-        this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, new_matches);
-        std::cout << new_matches.size() << " atatea ca valoare dupa urmarire local map\n";
-        print_pose(this->current_kf->Tiw, "dupa optimizare");
+    std::cout << new_matches.size() << " new matches found\n";
+    for (auto it = new_matches.begin(); it != new_matches.end(); it++) {
+        matches.insert({it->first, it->second});
     }
-
+    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches);
     this->current_kf->correlate_map_points_to_features_current_frame(matches);
+    mapp.clean_local_map_is_outlier_reputation();
     compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     if (this->Is_KeyFrame_needed(matches))
     {

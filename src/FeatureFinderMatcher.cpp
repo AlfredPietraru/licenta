@@ -2,9 +2,9 @@
 
 
 FeatureMatcherFinder::FeatureMatcherFinder(int rows, int cols, Config cfg) {
-    this->nr_cells_row = rows / 30;
-    this->nr_cells_collumn = cols / 30;
-    this->window = 30;
+    this->nr_cells_row = rows / 40;
+    this->nr_cells_collumn = cols / 40;
+    this->window = 40;
     this->orb = cv::ORB::create(cfg.num_features, 1.2F, 8, cfg.edge_threshold, 0, 2, cv::ORB::HARRIS_SCORE, cfg.patch_size, cfg.fast_threshold);
     this->orb_edge_threshold = cfg.edge_threshold;
     this->fast_step = cfg.fast_step;

@@ -75,15 +75,15 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unor
     }
 
 
-    for (int i = 0; i < histogram.size(); i++)
-    {
-        std::cout << histogram[i].size() << " ";
-    }
-    std::cout << "\n";
-    for (int i = 0; i < keep.size(); i++) {
-        std::cout << keep[i] << " ";
-    }
-    std::cout << "\n";
+    // for (int i = 0; i < histogram.size(); i++)
+    // {
+    //     std::cout << histogram[i].size() << " ";
+    // }
+    // std::cout << "\n";
+    // for (int i = 0; i < keep.size(); i++) {
+    //     std::cout << keep[i] << " ";
+    // }
+    // std::cout << "\n";
     for (int i = 0; i < 30; i++) {
         if (keep[i]) continue;
         for (auto mp : histogram[i]) {

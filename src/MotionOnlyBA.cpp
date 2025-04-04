@@ -17,7 +17,7 @@ public:
         camera_coordinates[0] += params[3];
         camera_coordinates[1] += params[4];
         camera_coordinates[2] += params[5];
-        T inv_d = T(1) / camera_coordinates[2];
+        T inv_d = T(1) / (camera_coordinates[2] + T(1e-6));
         T x = T(K(0, 0)) * camera_coordinates[0] * inv_d + T(K(0, 2));
         T y = T(K(1, 1)) * camera_coordinates[1] * inv_d + T(K(1, 2));
         residuals[0] = (x - observed(0)) / scale_sigma;
@@ -139,7 +139,7 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
             ceres::CostFunction *cost_function;
             cv::KeyPoint kp = it->second->get_key_point();
             // std::cout << it->second->stereo_depth << " ";
-            if (it->second->stereo_depth <= 0)
+            if (it->second->stereo_depth <= 1e-6)
             {
                 cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kp.pt.x, kp.pt.y, 0), it->first->wcoord,
                                                               std::pow(1.2, kp.octave), kf->K);
@@ -196,8 +196,8 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
                 if (!mp->is_outlier) inlier++;
             }            
         }
-        std::cout << "\n";
-        std::cout << inlier << " atatea inliere gasite la epoca " << i << "\n";
+        // std::cout << inlier << " atatea inliere gasite la epoca " << i << "\n";
     }
+    // std::cout << "\n";
     return compute_pose(kf, pose_parameters);    
 }

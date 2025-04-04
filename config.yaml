@@ -11,7 +11,7 @@ ORB:
   num_features: 2000
   edge_threshold: 0
   patch_size: 25
-  min_keypoints_cell: 10
+  min_keypoints_cell: 8
   split_size: 20
   orb_iterations: 10
   fast_threshold: 25
@@ -29,7 +29,7 @@ Matcher:
   orb_descriptor_value: 50
   window: 15
   minim_points_found: 50
-  ratio_first_second_match: 0.90
+  ratio_first_second_match: 0.70
 
 Camera:
   K: 
