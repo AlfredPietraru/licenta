@@ -25,7 +25,7 @@ int main(int argc, char **argv)
         cv::Mat frame = data.first.first;
         cv::Mat depth = data.first.second;
         Sophus::SE3d pose = data.second; 
-        tracker->tracking(frame, depth, mapp, cfg.initial_pose);
+        tracker->tracking(frame, depth, mapp, pose);
     }
 }
 
