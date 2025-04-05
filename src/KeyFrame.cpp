@@ -28,19 +28,19 @@ KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint
             double depth = this->compute_depth_in_keypoint(kp);
             if(depth <= 1e-6) {
                 this->maximum_possible_map_points--;
-                this->features.push_back(Feature(kp, orb_descriptors.row(i), i, depth, -1)); // filler negative value for stereo depth
+                this->features.push_back(Feature(kp, orb_descriptors.row(i), i, -1)); // filler negative value for stereo depth
             } else { 
                 double rgbd_right_coordinate = kp.pt.x - (this->K(0, 0) * BASELINE / depth);
-                this->features.push_back(Feature(kp, orb_descriptors.row(i), i, depth, rgbd_right_coordinate));
+                this->features.push_back(Feature(kp, orb_descriptors.row(i), i, rgbd_right_coordinate));
             }
             this->grid.at<int>(lround(kp.pt.y), lround(kp.pt.x)) = i;
         }
+
         std::vector<cv::Mat> vector_descriptors;
         for (int i = 0; i < this->orb_descriptors.rows; i++) {
             vector_descriptors.push_back(this->orb_descriptors.row(i));
         }
         voc->transform(vector_descriptors, this->bow_vec, this->features_vec, 3);
-        // std::cout << vector_descriptors.size() << " " << this->bow_vec.size() << " " << this->features_vec.size() << "\n";
     }
 
 Eigen::Vector3d KeyFrame::compute_camera_center() {
@@ -110,8 +110,12 @@ std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, dou
     for (int i = v_min; i < v_max; i++) {
         for (int j = u_min; j < u_max; j++) {
             if (this->grid.at<int>(i, j) == -1) continue;
-            int current_octave = this->features[this->grid.at<int>(i, j)].kp.octave;
+            cv::KeyPoint kp = this->features[this->grid.at<int>(i, j)].kp;
+            int current_octave = kp.octave;
             if (current_octave < minOctave || current_octave > maxOctave) continue;
+            float xdist = kp.pt.x - u;
+            float ydist = kp.pt.y - v;
+            if(fabs(xdist) > window || fabs(ydist) > window) continue;
             kps_idx.push_back(this->grid.at<int>(i, j));
         }
     }
@@ -131,17 +135,17 @@ void KeyFrame::compute_map_points()
             map_points_associated++;
             continue;
         }
-        if (this->features[i].depth <= 0) {
+        double depth = this->compute_depth_in_keypoint(this->features[i].kp);
+        if (depth <= 1e-6) {
             negative_depth++;
             continue;  
         } 
         Eigen::Vector4d wcoord = this->fromImageToWorld(i);
-        MapPoint *mp = new MapPoint(this, this->features[i].kp, camera_center, wcoord, 
-                this->orb_descriptors.row(i), i, this->features[i].depth);
+        MapPoint *mp = new MapPoint(this, this->features[i].kp, camera_center, wcoord,  this->orb_descriptors.row(i), i);
         this->features[i].set_map_point(mp);
         this->map_points.insert(mp);
-        if (mp->is_safe_to_use) close_map_points++;
-        if (!mp->is_safe_to_use) far_map_poins++;
+        // if (mp->is_safe_to_use) close_map_points++;
+        // if (!mp->is_safe_to_use) far_map_poins++;
     }
     if (this->map_points.size() == 0) {
         std::cout << "CEVA NU E BINE NU S-AU CREAT PUNCTELE\n";

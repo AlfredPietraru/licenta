@@ -138,7 +138,6 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
             if (it->first->is_outlier)  continue;
             ceres::CostFunction *cost_function;
             cv::KeyPoint kp = it->second->get_key_point();
-            // std::cout << it->second->stereo_depth << " ";
             if (it->second->stereo_depth <= 1e-6)
             {
                 cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kp.pt.x, kp.pt.y, 0), it->first->wcoord,

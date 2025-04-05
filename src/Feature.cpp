@@ -9,10 +9,11 @@ int inline::Feature::ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat 
     return distance;
 }
 
-Feature::Feature(cv::KeyPoint kp, cv::Mat descriptor, MapPoint *mp, int idx, double depth, double stereo_depth) : kp(kp), 
-    mp(mp), idx(idx), descriptor(descriptor), depth(depth), stereo_depth(stereo_depth) {}
+Feature::Feature(cv::KeyPoint kp, cv::Mat descriptor, MapPoint *mp, int idx, double stereo_depth) : kp(kp), 
+    mp(mp), idx(idx), descriptor(descriptor), stereo_depth(stereo_depth) {}
 
-Feature::Feature(cv::KeyPoint kp, cv::Mat descriptor, int idx, double depth, double stereo_depth) : kp(kp), mp(nullptr), idx(idx), descriptor(descriptor), depth(depth), stereo_depth(stereo_depth) {}
+Feature::Feature(cv::KeyPoint kp, cv::Mat descriptor, int idx, double stereo_depth) : kp(kp), mp(nullptr), 
+    idx(idx), descriptor(descriptor), stereo_depth(stereo_depth) {}
 
 void Feature::set_map_point(MapPoint *mp) {
     if (mp == nullptr) {

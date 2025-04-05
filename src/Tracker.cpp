@@ -130,6 +130,7 @@ bool Tracker::Is_KeyFrame_needed(std::unordered_map<MapPoint *, Feature *> &matc
     return no_global_relocalization && no_recent_keyframe_added && still_enough_map_points_tracked && too_few_map_points_compared_to_kf;
 }
 
+
 void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_truth_pose) {
     this->prev_kf = this->current_kf;
     this->get_current_key_frame(frame, depth);
@@ -137,9 +138,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_reference_frame(this->current_kf, this->reference_kf, this->voc);
     // std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf);
     std::cout << matches.size() << " atatea map points ramase\n";
-
-    // exit(1);
-
+    
     vector<cv::KeyPoint> keypoints;
     for (auto it = matches.begin(); it != matches.end(); it++) {
         keypoints.push_back(it->second->get_key_point());
@@ -160,6 +159,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
 
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches);
     this->remove_outliers(matches);
+    std::cout << matches.size() << " dimensiunea ramasa\n";
     std::unordered_map<MapPoint *, Feature *> new_matches = mapp.track_local_map(this->current_kf, matches);
     std::cout << new_matches.size() << " new matches found\n";
     for (auto it = new_matches.begin(); it != new_matches.end(); it++) {
@@ -169,6 +169,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     this->current_kf->correlate_map_points_to_features_current_frame(matches);
     mapp.clean_local_map_is_outlier_reputation();
     compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
+    
     if (this->Is_KeyFrame_needed(matches))
     {
         std::cout << "DAAA UN KEYFRAME A FOST ADAUGAT\n\n\n";

@@ -3,19 +3,19 @@ Tracker:
   # 0.6574 0.6126 -0.2949 -0.3248
   initial_rotation: [-0.4843, 0.6818, 0.5482, -0.0115]
   initial_translation: [1.3405, 0.6266, 1.6575]
-  minim_points_found: 50
+  minim_points_found: 20
 
 
 # Feature extraction parameter
 ORB:
-  num_features: 2000
+  num_features: 1000
   edge_threshold: 0
   patch_size: 25
-  min_keypoints_cell: 8
+  min_keypoints_cell: 7
   split_size: 20
   orb_iterations: 10
-  fast_threshold: 25
-  fast_lower_limit: 15
+  fast_threshold: 20
+  fast_lower_limit: 7
   fast_higher_limit: 60
   fast_step: 5
 
@@ -26,9 +26,9 @@ PnP:
   confidence: 0.99
 
 Matcher:
-  orb_descriptor_value: 50
+  orb_descriptor_value: 100
   window: 15
-  minim_points_found: 50
+  minim_points_found: 20
   ratio_first_second_match: 0.70
 
 Camera:

@@ -20,15 +20,13 @@ public:
         std::unordered_map<KeyFrame*, int> belongs_to_keyframes;
         bool is_safe_to_use;
         bool is_outlier;
-        int predicted_scale;
 
         
         MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord,
-                cv::Mat orb_descriptor, int idx, float depth);
+                cv::Mat orb_descriptor, int idx);
         void add_reference_kf(KeyFrame *kf, int idx);
         Eigen::Vector3d get_3d_vector();
         int check_index_in_keyframe(KeyFrame *kf);
-private:
         int predict_image_scale(double distance);
 };
 
