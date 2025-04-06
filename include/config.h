@@ -33,7 +33,8 @@ struct Orb_Matcher {
   int orb_descriptor_value;
   int window;
   int minim_points_found;
-  double ratio_first_second_match;
+  double ratio_key_frame_match;
+  double ratio_track_local_map;
 };
 
 struct Pnp_Ransac_Config {

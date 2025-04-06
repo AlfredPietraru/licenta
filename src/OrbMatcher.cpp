@@ -77,7 +77,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unor
     return correlation_current_frame;
 }
 
-std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(KeyFrame *kf, KeyFrame *prev_kf)
+std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf)
 {
     std::unordered_map<MapPoint *, Feature *> out;
     Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
@@ -118,14 +118,11 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
         for (int idx : kps_idx)
         {
             int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
-            if (kf->features[idx].get_map_point() != nullptr)
-            continue; // verifica sa fie asociat unui singur map point
+            if (kf->features[idx].get_map_point() != nullptr) continue; // verifica sa fie asociat unui singur map point
             // new line changed
             if (kf->features[idx].stereo_depth > 0)
             {
-                const float rgbd_right_depth = u - kf->K(0, 0) * kf->BASELINE / point_camera_coordinates[2];
-                float er = fabs(rgbd_right_depth - kf->features[idx].stereo_depth);
-                // std::cout << er << " ";
+                float er = fabs(point_camera_coordinates[2] - kf->features[idx].stereo_depth);
                 if (er > scale_of_search) continue;
             }
             if (cur_hamm_dist < best_dist)
@@ -137,8 +134,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
         
         if (best_dist > this->orb_descriptor_value) continue;
         puncte_avute += 1;
-        // if (mp->is_safe_to_use)
-            out.insert({mp, &kf->features[best_idx]});
+        out.insert({mp, &kf->features[best_idx]});
     }
     std::cout << "\n";
     std::cout << puncte_avute << " atatea puncte avute pana la urma\n";
@@ -197,8 +193,8 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
             int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
             if (kf->features[idx].get_map_point() != nullptr) continue; 
             if (kf->features[idx].stereo_depth < 1e-6) continue;
-            float er = fabs(point_camera_coordinates(2) - kf->features[idx].stereo_depth);
-            
+
+            float er = fabs(point_camera_coordinates[2] - kf->features[idx].stereo_depth);
             if (er > scale_of_search) continue;
             
             if (cur_hamm_dist < lowest_dist)
@@ -218,8 +214,8 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
             }
         }
         
-        if (lowest_dist > this->orb_descriptor_value)  continue;
-        if(lowest_level == second_lowest_level && lowest_dist > this->ration_first_second_match * second_lowest_dist) continue;
+        if (lowest_dist > 50)  continue;
+        if(lowest_level == second_lowest_level && lowest_dist > this->ratio_track_local_map * second_lowest_dist) continue;
         out.insert({mp, &kf->features[lowest_idx]});
     }
     return out;
@@ -231,8 +227,8 @@ int OrbMatcher::get_number_common_mappoints_between_keyframes(KeyFrame *kf1, Key
     std::unordered_map<MapPoint *, Feature *> from_kf1_on_kf2;
 
     int out = 0;
-    from_kf2_on_kf1 = this->match_frame_map_points(kf1, kf2);
-    from_kf1_on_kf2 = this->match_frame_map_points(kf2, kf1);
+    from_kf2_on_kf1 = this->match_frame_map_points(kf1, kf2->map_points, 3);
+    from_kf1_on_kf2 = this->match_frame_map_points(kf2, kf1->map_points, 3);
     for (auto it = from_kf2_on_kf1.begin(); it != from_kf2_on_kf1.end(); it++)
     {
         if (from_kf1_on_kf2.find(it->first) != from_kf1_on_kf2.end())
@@ -287,8 +283,8 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
                         bestDist2 = dist;
                     }
                 }
-                if (bestDist1 > this->orb_descriptor_value) continue;
-                if (bestDist1 > this->ration_first_second_match * bestDist2) continue;
+                if (bestDist1 > 50) continue;
+                if (bestDist1 > this->ratio_key_frame_match * bestDist2) continue;
                 cate_ajung_acolo++;
                 out.insert({mp_ref, &curr->features[bestIdx2]});
             }

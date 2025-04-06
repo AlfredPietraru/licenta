@@ -11,17 +11,12 @@ ORB:
   fast_higher_limit: 60
   fast_step: 5
 
-# RANSAC for PnP
-PnP:
-  reprojection_window: 4
-  ransac_iterations: 50
-  confidence: 0.99
-
 Matcher:
   orb_descriptor_value: 100
   window: 7
   minim_points_found: 20
-  ratio_first_second_match: 0.70
+  ratio_key_frame_match: 0.70
+  ratio_track_local_map: 0.80
 
 Camera:
   K: 
@@ -29,3 +24,12 @@ Camera:
     - [0.0, 516.5, 255.3]
     - [0.0, 0.0, 1.0]
   distortion: [0.2624,	-0.9531, -0.0054, 0.0026, 1.1633]
+
+# RANSAC for PnP
+PnP:
+  reprojection_window: 4
+  ransac_iterations: 50
+  confidence: 0.99
+
+
+
