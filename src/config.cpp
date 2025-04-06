@@ -28,17 +28,6 @@ Pnp_Ransac_Config load_pnp_ransac_config(const std::string &filename) {
 Config loadConfig(const std::string &filename) {
     YAML::Node config = YAML::LoadFile(filename);
     Config cfg;
-    // Tracker
-    auto q_yaml = config["Tracker"]["initial_rotation"];
-    cfg.initial_rotation = Eigen::Quaterniond(q_yaml[0].as<double>(), q_yaml[1].as<double>(),
-             q_yaml[2].as<double>(), q_yaml[3].as<double>());
-    cfg.initial_rotation.normalize();
-    auto t_yaml = config["Tracker"]["initial_translation"];
-    cfg.initial_translation = Eigen::Vector3d(t_yaml[0].as<double>(), t_yaml[1].as<double>(), 
-        t_yaml[2].as<double>());
-    cfg.initial_pose = Sophus::SE3d(cfg.initial_rotation, cfg.initial_translation);
-    cfg.minim_points_found = config["Tracker"]["minim_points_found"].as<int>();
-    
     // ORB parameters
     cfg.num_features = config["ORB"]["num_features"].as<int>();
     cfg.split_size = config["ORB"]["split_size"].as<int>();

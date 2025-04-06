@@ -126,7 +126,7 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
         options.gradient_tolerance = 1e-7;
         options.parameter_tolerance = 1e-8;
         options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-        options.check_gradients = true;
+        options.check_gradients = false;
         options.minimizer_progress_to_stdout = false;
         options.max_num_iterations = 10;
         
@@ -211,8 +211,7 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
                 } 
             }            
         }
-        std::cout << inlier << " atatea inliere gasite la epoca " << i << "\n";
+        // std::cout << inlier << " atatea inliere gasite la epoca " << i << "\n";
     }
-    // std::cout << "\n";
     return compute_pose(kf, pose_parameters);    
 }

@@ -147,13 +147,11 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
     return out;
 }
 
-std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoint *> map_points)
+std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoint *> map_points, int window_size)
 {
     std::unordered_map<MapPoint *, Feature *> out;
     Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
-    double window_size = 5;
     int points_which_can_be_found = 0;
-    std::cout << "\n" << "in teorie se pot gasi " << map_points.size() << "\n";
     Eigen::Vector3d camera_to_map_view_ray;
     for (auto it = map_points.begin(); it != map_points.end(); it++)
     {
@@ -224,8 +222,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
         if(lowest_level == second_lowest_level && lowest_dist > this->ration_first_second_match * second_lowest_dist) continue;
         out.insert({mp, &kf->features[lowest_idx]});
     }
-    
-    std::cout << points_which_can_be_found << " pana la etapa aceea s-au gasit atatea map points\n";
     return out;
 }
 

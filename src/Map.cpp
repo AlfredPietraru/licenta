@@ -13,7 +13,7 @@ void Map::debug_map(KeyFrame *kf) {
         return;
     }
     for (auto it = edges.begin(); it != edges.end(); it++) {
-        std::cout << it->first->idx << " " << it->second << " idx keyframe si numarul de conexiuni";
+        std::cout << it->first->current_idx << " " << it->second << " idx keyframe si numarul de conexiuni";
     }
 }
 
@@ -62,7 +62,7 @@ KeyFrame *Map::get_reference_keyframe(KeyFrame *kf)
     int reference_idx = start_idx;
     for (int i = start_idx; i < this->keyframes.size(); i++)
     {
-        std::unordered_map<MapPoint*, Feature*> reprojected_map_points = this->matcher->match_frame_map_points(kf, this->keyframes[i]->map_points);
+        std::unordered_map<MapPoint*, Feature*> reprojected_map_points = this->matcher->match_frame_map_points(kf, this->keyframes[i]->map_points, 5);
         if (reprojected_map_points.size() == 0) continue;
         if (reprojected_map_points.size() > max)
         {
@@ -104,5 +104,7 @@ std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf,
         if (matches.find(*it) != matches.end()) continue; // nu luam elementele deja cunoscute
         new_local_map.insert(*it);
     }
-    return this->matcher->match_frame_map_points(curr_kf, new_local_map);
+
+    int window = curr_kf->current_idx > 2 ? 3 : 5;  
+    return this->matcher->match_frame_map_points(curr_kf, new_local_map, window);
 }

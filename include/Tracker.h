@@ -24,18 +24,17 @@ using namespace cv;
 
 class Tracker {
 public:
-    void initialize(Mat frame, Mat depth, Map &mapp);
+    void initialize(Mat frame, Mat depth, Map &mapp, Sophus::SE3d pose);
     void tracking(Mat frame, Mat depth, Map& map_points, Sophus::SE3d ground_truth_pose);
     Tracker(Config cfg, ORBVocabulary* voc, Pnp_Ransac_Config pnp_ransac_cfg, Orb_Matcher orb_matcher_config) {
         this->K = cfg.K;
         cv::cv2eigen(cfg.K, this->K_eigen);
-        this->initial_pose = cfg.initial_pose;
         this->voc = voc;
         // this->initial_pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
         this->ransac_window = pnp_ransac_cfg.reprojection_window;
         this->ransac_iteration = pnp_ransac_cfg.ransac_iterations;
         this->ransac_confidence = pnp_ransac_cfg.confidence;
-        this->minim_points_found = cfg.minim_points_found;
+        this->minim_points_found = 20;
         
         this->fmf = new FeatureMatcherFinder(480, 640, cfg);
         this->bundleAdjustment = new BundleAdjustment();
@@ -67,6 +66,8 @@ private:
     
     // important functions
     // Sophus::SE3d TrackWithLastFrame(vector<DMatch> good_matches);
+    std::unordered_map<MapPoint*, Feature*> TrackReferenceKeyFrame();
+    std::unordered_map<MapPoint*, Feature*> TrackLocalMap(Map &mapp, std::unordered_map<MapPoint *, Feature *>& matches);
     bool Is_KeyFrame_needed(std::unordered_map<MapPoint *, Feature*>& matches);
     void VelocityEstimation();
 

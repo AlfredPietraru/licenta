@@ -31,9 +31,8 @@ int main(int argc, char **argv)
     Sophus::SE3d pose = data.second;
     
     Map mapp = Map(orb_matcher_cfg);
-    cfg.initial_pose = pose;
     Tracker *tracker = new Tracker(cfg, voc, pnp_ransac_cfg, orb_matcher_cfg);
-    tracker->initialize(frame, depth, mapp);
+    tracker->initialize(frame, depth, mapp, pose);
     while(1) {
         std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> data = reader->get_next_frame();
         frame = data.first.first;

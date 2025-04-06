@@ -11,11 +11,6 @@
 struct Config {
     cv::Mat K;
     std::vector<double> distortion;
-    Eigen::Quaterniond initial_rotation;
-    Eigen::Vector3d initial_translation;
-    Sophus::SE3d initial_pose;
-    int minim_points_found;
-
     // ORB
     int num_features;
     // dimensiunea ferestrei in care gasim keypoints
