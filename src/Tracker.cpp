@@ -65,52 +65,7 @@ void Tracker::initialize(Mat frame, Mat depth, Map& mapp)
     mapp.add_new_keyframe(this->reference_kf);
 }
 
-Sophus::SE3d Tracker::TrackWithLastFrame(std::unordered_map<MapPoint *, Feature *> &matches)
-{
-    vector<Point3d> points_in3d;
-    vector<Point2d> points_in2d;
-    for (std::pair<MapPoint*, Feature*> pair : matches)
-    {
-        MapPoint *mp = pair.first;
-        cv::KeyPoint kp = pair.second->get_key_point();
-        points_in3d.push_back(Point3d(mp->wcoord(0), mp->wcoord(1), mp->wcoord(2)));
-        points_in2d.push_back(Point2d(kp.pt.x, kp.pt.y));
-    }
-    cv::Mat r, t, R;
-    Eigen::Matrix3d rotationMatrix = this->prev_kf->Tiw.rotationMatrix();
-    cv::Mat rotationMat(3, 3, CV_64F);
-    cv::eigen2cv(rotationMatrix, rotationMat);
-    cv::Rodrigues(rotationMat, r);
-    Eigen::Vector3d translationVector = this->prev_kf->Tiw.translation();
-    t = (cv::Mat_<double>(3, 1) << translationVector(0), translationVector(1), translationVector(2));
-    // pag 160 - slambook.en
-    std::vector<int> inliers;
-    cv::solvePnPRansac(points_in3d, points_in2d, K, Mat(), r, t, true, this->ransac_iteration, this->ransac_window,
-                       this->ransac_confidence, inliers);
-    std::cout << inliers.size() << " inliers gasite\n";
-    cv::Rodrigues(r, R);
-    Eigen::Matrix3d R_eigen;
-    cv::cv2eigen(R, R_eigen);
-    Eigen::Vector3d t_eigen;
-    t_eigen << t.at<double>(0), t.at<double>(1), t.at<double>(2);
-    return Sophus::SE3d(R_eigen, t_eigen);
-}
 
-void Tracker::remove_outliers(std::unordered_map<MapPoint *, Feature *> &matches) {
-    std::vector<MapPoint*> to_remove;
-    for (auto it = matches.begin(); it != matches.end(); it++) {
-        if (it->first == nullptr) {
-            std::cout << "CEVA NU E BINE\n";
-            continue;
-        } 
-        if (!it->first->is_outlier) continue;
-        it->first->is_outlier = false;
-        to_remove.push_back(it->first);
-    }    
-    for (int i = 0; i < to_remove.size(); i++) {
-        matches.erase(to_remove[i]); 
-    }
-}
 
 void Tracker::tracking_was_lost()
 {
@@ -137,7 +92,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     print_pose(ground_truth_pose, "ground truth pose\n");
     std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_reference_frame(this->current_kf, this->reference_kf, this->voc);
     // std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_map_points(this->current_kf, this->prev_kf);
-    std::cout << matches.size() << " atatea map points ramase\n";
+    std::cout << matches.size() << " atatea map points initial obtinute\n";
     
     vector<cv::KeyPoint> keypoints;
     for (auto it = matches.begin(); it != matches.end(); it++) {
@@ -158,16 +113,16 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     }
 
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches);
-    this->remove_outliers(matches);
-    std::cout << matches.size() << " dimensiunea ramasa\n";
+    
+    print_pose(this->current_kf->Tiw, " estimare pozitie dupa prima aproximare\n");
     std::unordered_map<MapPoint *, Feature *> new_matches = mapp.track_local_map(this->current_kf, matches);
-    std::cout << new_matches.size() << " new matches found\n";
-    for (auto it = new_matches.begin(); it != new_matches.end(); it++) {
-        matches.insert({it->first, it->second});
+    if (new_matches.size() < 50) {
+        std::cout << new_matches.size() << " prea putine puncte proiectate de catre local map ceva nu e bine\n";
+        exit(1);
     }
-    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches);
-    this->current_kf->correlate_map_points_to_features_current_frame(matches);
-    mapp.clean_local_map_is_outlier_reputation();
+    std::cout << new_matches.size() << " puncte reproiectate de catre local map\n";
+    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, new_matches);
+    this->current_kf->correlate_map_points_to_features_current_frame(new_matches);
     compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     
     if (this->Is_KeyFrame_needed(matches))

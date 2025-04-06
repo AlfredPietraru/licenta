@@ -104,12 +104,5 @@ std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf,
         if (matches.find(*it) != matches.end()) continue; // nu luam elementele deja cunoscute
         new_local_map.insert(*it);
     }
-    std::cout << new_local_map.size() << " elemente in local map \n";
     return this->matcher->match_frame_map_points(curr_kf, new_local_map);
-}
-
-void Map::clean_local_map_is_outlier_reputation() {
-    for (MapPoint *mp : local_map) {
-        mp->is_outlier = false;
-    }
 }

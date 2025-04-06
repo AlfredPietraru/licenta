@@ -67,7 +67,6 @@ private:
     
     // important functions
     // Sophus::SE3d TrackWithLastFrame(vector<DMatch> good_matches);
-    Sophus::SE3d TrackWithLastFrame(std::unordered_map<MapPoint *, Feature*>& matches);
     bool Is_KeyFrame_needed(std::unordered_map<MapPoint *, Feature*>& matches);
     void VelocityEstimation();
 
@@ -75,7 +74,6 @@ private:
     // auxiliary functions
     void get_current_key_frame(Mat frame, Mat depth);
     void tracking_was_lost();
-    void remove_outliers(std::unordered_map<MapPoint *, Feature *> &matches);
 };
 
 #endif

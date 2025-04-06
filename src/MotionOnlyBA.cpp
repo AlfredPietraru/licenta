@@ -52,7 +52,7 @@ private:
     double scale_sigma;
 };
 
-double get_rgbd_reprojection_error(MapPoint *mp, Eigen::Matrix3d K, Sophus::SE3d pose, Feature* feature) {
+double get_rgbd_reprojection_error(MapPoint *mp, Eigen::Matrix3d K, Sophus::SE3d pose, Feature* feature, double chi2) {
     double residuals[3];
     Eigen::Vector3d camera_coordinates = pose.matrix3x4() * mp->wcoord;
     if (camera_coordinates[2] <= 1e-6) return 100000;
@@ -62,13 +62,15 @@ double get_rgbd_reprojection_error(MapPoint *mp, Eigen::Matrix3d K, Sophus::SE3d
     cv::KeyPoint kp = feature->get_key_point();
     residuals[0] = (x - kp.pt.x) / std::pow(1.2, kp.octave);
     residuals[1] = (y - kp.pt.y) / std::pow(1.2, kp.octave);
-    double z_projected = camera_coordinates[0] - K(0, 0) * 0.08 * inv_d;
+    double z_projected = K(0, 0) * (camera_coordinates[0] - 0.08) * inv_d + K(0, 2);
     residuals[2] = (z_projected - feature->stereo_depth) / std::pow(1.2, kp.octave);
-    return residuals[0] * residuals[0] + residuals[1] * residuals[1] + residuals[2] * residuals[2];
+    double out = residuals[0] * residuals[0] + residuals[1] * residuals[1] + residuals[2] * residuals[2];
+    if (out <= chi2) return out;
+    return 2 * sqrt(chi2) * sqrt(out) - chi2;
 }
 
 
-double get_monocular_reprojection_error(MapPoint *mp, Eigen::Matrix3d K, Sophus::SE3d pose, Feature* feature) {
+double get_monocular_reprojection_error(MapPoint *mp, Eigen::Matrix3d K, Sophus::SE3d pose, Feature* feature, double chi2) {
     double residuals[2];
     Eigen::Vector3d camera_coordinates = pose.matrix3x4() * mp->wcoord;
     if (camera_coordinates[2] <= 1e-6) return 100000;
@@ -78,7 +80,9 @@ double get_monocular_reprojection_error(MapPoint *mp, Eigen::Matrix3d K, Sophus:
     cv::KeyPoint kp = feature->get_key_point();
     residuals[0] = (x - kp.pt.x) / std::pow(1.2, kp.octave);
     residuals[1] = (y - kp.pt.y) / std::pow(1.2, kp.octave);
-    return residuals[0] * residuals[0] + residuals[1] * residuals[1];
+    double out = residuals[0] * residuals[0] + residuals[1] * residuals[1];
+    if (out <= chi2) return out;
+    return 2 * sqrt(chi2) * sqrt(out) - chi2;
 }
 
 
@@ -134,8 +138,8 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
         int inlier = 0;
         for (auto it = matches.begin(); it != matches.end(); it++)
         {
-
-            if (it->first->is_outlier)  continue;
+            MapPoint *mp = it->first;
+            if (kf->check_map_point_outlier(mp))  continue;
             ceres::CostFunction *cost_function;
             cv::KeyPoint kp = it->second->get_key_point();
             if (it->second->stereo_depth <= 1e-6)
@@ -169,8 +173,11 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
                 const float error = residual[0] * residual[0] + residual[1] * residual[1];    
                 // std::cout << error << " ";
                 // std::cout << residual[0] << " " << residual[1] << "     ";
-                mp->is_outlier = error > chi2Mono[i];
-                if (!mp->is_outlier) inlier++;
+                if(error > chi2Mono[i]) {
+                    kf->add_outlier_element(mp);
+                }  else {
+                    inlier++;
+                }
                 continue;
             }
             if (residual_rgbd_points.find(mp) != residual_rgbd_points.end()) {
@@ -179,23 +186,32 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
                 const float error = residual[0] * residual[0] + residual[1] * residual[1] + residual[2] * residual[2];
                 // std::cout << error << " ";
                 // std::cout << residual[0] << " " << residual[1] << " "  << residual[2] << "     ";
-                mp->is_outlier = error > chi2Stereo[i];
-                if (!mp->is_outlier) inlier++;
+                if(error > chi2Stereo[i]) {
+                    kf->add_outlier_element(mp);
+                } else {
+                    inlier++;
+                }
                 continue;
             }
             if (it->second->stereo_depth <= 0) {
-                double error = get_monocular_reprojection_error(mp, kf->K, intermediate_pose, it->second);
-                // std::cout << error << " "; 
-                mp->is_outlier = error > chi2Mono[i];
-                if (!mp->is_outlier) inlier++;
-            } else {
-                double error = get_rgbd_reprojection_error(mp, kf->K, intermediate_pose, it->second);
+                double error = get_monocular_reprojection_error(mp, kf->K, intermediate_pose, it->second, chi2Mono[i]);
                 // std::cout << error << " ";
-                mp->is_outlier = error > chi2Stereo[i];
-                if (!mp->is_outlier) inlier++;
+                if(error > chi2Mono[i]) {
+                    kf->add_outlier_element(mp);
+                } else {
+                    inlier++;
+                } 
+            } else {
+                double error = get_rgbd_reprojection_error(mp, kf->K, intermediate_pose, it->second, chi2Stereo[i]);
+                // std::cout << error << " ";
+                if (error > chi2Stereo[i]) {
+                    kf->add_outlier_element(mp);
+                } else {
+                    inlier++;
+                } 
             }            
         }
-        // std::cout << inlier << " atatea inliere gasite la epoca " << i << "\n";
+        std::cout << inlier << " atatea inliere gasite la epoca " << i << "\n";
     }
     // std::cout << "\n";
     return compute_pose(kf, pose_parameters);    

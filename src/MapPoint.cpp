@@ -16,7 +16,6 @@ MapPoint::MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_c
     this->dmin = this->dmax / pow(1.2, 8);
     this->is_safe_to_use = true;
     // this->is_safe_to_use = depth < BASELINE * 40 && depth > 0;
-    this->is_outlier = false;
 }
 
 void MapPoint::add_reference_kf(KeyFrame *kf, int idx) {

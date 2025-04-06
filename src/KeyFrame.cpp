@@ -16,6 +16,14 @@ std::unordered_map<MapPoint*, Feature*> KeyFrame::return_map_points_keypoint_cor
     return out;
 }
 
+void KeyFrame::add_outlier_element(MapPoint *mp) {
+    this->outliers.insert(mp);
+}
+bool KeyFrame::check_map_point_outlier(MapPoint *mp) {
+    if (this->outliers.find(mp) != this->outliers.end()) return true;
+    return false;
+ }
+
 
 KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint>& keypoints,
          cv::Mat orb_descriptors, cv::Mat depth_matrix, int idx, cv::Mat& frame, ORBVocabulary *voc)
