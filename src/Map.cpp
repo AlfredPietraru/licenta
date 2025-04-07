@@ -23,7 +23,6 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
     if (this->keyframes.size() == 0) {
         this->keyframes.push_back(new_kf);
         this->graph.insert({new_kf, edges_new_keyframe});
-        local_map = this->compute_local_map(new_kf);
         return;
     }
     
@@ -48,7 +47,6 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
     }   
     this->keyframes.push_back(new_kf);
     this->graph.insert({new_kf, edges_new_keyframe});
-    local_map = this->compute_local_map(new_kf);
 }
 
 Map::Map(Orb_Matcher orb_matcher_cfg) {
@@ -60,12 +58,9 @@ KeyFrame *Map::get_reference_keyframe(KeyFrame *kf)
     int start_idx = (this->keyframes.size() > this->KEYFRAMES_WINDOW) ? this->keyframes.size() - this->KEYFRAMES_WINDOW : 0;
     int max = -1;
     int reference_idx = start_idx;
-    std::cout << "AICI INCEPE SA ALEAGA KEYFRAME-ul\n";
     for (int i = start_idx; i < this->keyframes.size(); i++)
     {
-        std::cout << this->keyframes[i]->current_idx << " index keyframe current de analizat\n";
         int out = this->matcher->reproject_map_points(kf, this->keyframes[i]->map_points, 7);
-        std::cout << out << " map point-uri asociate\n\n";
         if (out == 0) continue;
         if (out > max)
         {
@@ -73,14 +68,12 @@ KeyFrame *Map::get_reference_keyframe(KeyFrame *kf)
             max = out;
         }
     }
-    std::cout << "AICI INCETEAZA SA ALEAGA KEYFRAME-ul\n";
     return this->keyframes[reference_idx];
 }
 
 std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
 {
     KeyFrame *reference_kf = get_reference_keyframe(current_frame);
-    std::cout << reference_kf->current_idx << " index gasit pentru key frame\n";
     if (this->graph.find(reference_kf) == this->graph.end()) {
         std::cout << " CEVA NU E BINE NU GASESTE KEY FRAME IN COMPUTE LOCAL MAP\n";
     }
@@ -103,7 +96,7 @@ std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
 // de adaugat reference keyframe
 std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf, std::unordered_map<MapPoint *, Feature*>& matches)
 {
-    // de refacut track local map
+    local_map = this->compute_local_map(curr_kf);
     std::unordered_set<MapPoint *> new_local_map;
     for (auto it = local_map.begin(); it != local_map.end(); it++) {
         if (matches.find(*it) != matches.end()) continue; // nu luam elementele deja cunoscute

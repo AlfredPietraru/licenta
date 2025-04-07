@@ -37,7 +37,7 @@ public:
     int reproject_map_points(KeyFrame *kf, std::unordered_set<MapPoint *> map_points, int window_size);
     int ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2);
     std::unordered_map<MapPoint*, Feature*> checkOrientation(std::unordered_map<MapPoint*, Feature*>& out, std::unordered_map<MapPoint*, Feature*>& correlation_prev_frame);
-    std::unordered_map<MapPoint*, Feature*> match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref, ORBVocabulary *voc);
+    std::unordered_map<MapPoint*, Feature*> match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref);
 };
 
 #endif

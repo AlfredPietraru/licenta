@@ -86,9 +86,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
     // std::cout << "\n" << prev_frame_correlations.size() << " atatea potentiale puncte la inceput\n";
     int puncte_avute = 0;
 
-    
     Eigen::Vector3d kf_camer_center_prev_coordinates = kf->Tiw.rotationMatrix() * kf_camera_center + kf->Tiw.translation(); \
-
     const bool bForward  =   kf_camer_center_prev_coordinates(2)>  3.2;
     const bool bBackward = -kf_camer_center_prev_coordinates(2)> 3.2;
 
@@ -116,11 +114,15 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
         int scale_of_search = this->window * pow(1.2, current_octave);
         
         std::vector<int> kps_idx;
-        kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, current_octave - 1, current_octave + 1);
-        if (kps_idx.size() == 0)
-        kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, 2 * scale_of_search, current_octave - 1, current_octave + 1);
+        // DE FACUT VERIFICARI SUPLIMENTARE
+        if (bForward) {
+            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, current_octave - 1, 7);
+        } else if (bBackward) {
+            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, 0, current_octave);
+        } else {
+            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, current_octave - 1, current_octave + 1);
+        }
         if (kps_idx.size() == 0) continue;
-
         int best_dist = 256;
         int best_idx = -1;
         
@@ -128,7 +130,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
         {
             int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
             if (kf->features[idx].get_map_point() != nullptr) continue; // verifica sa fie asociat unui singur map point
-            // new line changed
             if (kf->features[idx].stereo_depth > 0)
             {
                 float er = fabs(point_camera_coordinates[2] - kf->features[idx].stereo_depth);
@@ -140,12 +141,12 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
                 best_idx = idx;
             }
         }
+        puncte_avute++;
         if (best_dist > this->orb_descriptor_value) continue;
         out.insert({mp, &kf->features[best_idx]});
     }
     this->checkOrientation(out, prev_frame_correlations);
-    // std::cout << puncte_avute << "puncte gasite \n\n";
-    // std::cout << out.size() << " puncte gasite pana atunci\n\n";
+    std::cout << prev_frame_correlations.size() << " "  << out.size() << " puncte initiale si puncte gasite \n\n";
     return out;
 }
 
@@ -323,7 +324,7 @@ int OrbMatcher::get_number_common_mappoints_between_keyframes(KeyFrame *kf1, Key
     return out;
 }
 
-std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref, ORBVocabulary *voc)
+std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref)
 {
     DBoW2::FeatureVector curr_features = curr->features_vec;
     DBoW2::FeatureVector ref_features = ref->features_vec;
@@ -347,7 +348,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
                 const cv::Mat &d1 = ref->orb_descriptors.row(idx1);
 
                 int bestDist1 = 256;
-                int bestIdx2 = -1;
+                int bestIdx = -1;
                 int bestDist2 = 256;
 
                 for (size_t i2 = 0, iend2 = f2it->second.size(); i2 < iend2; i2++)
@@ -362,7 +363,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
                     {
                         bestDist2 = bestDist1;
                         bestDist1 = dist;
-                        bestIdx2 = idx2;
+                        bestIdx = idx2;
                     }
                     else if (dist < bestDist2)
                     {
@@ -372,7 +373,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
                 if (bestDist1 > 50) continue;
                 if (bestDist1 > this->ratio_key_frame_match * bestDist2) continue;
                 cate_ajung_acolo++;
-                out.insert({mp_ref, &curr->features[bestIdx2]});
+                out.insert({mp_ref, &curr->features[bestIdx]});
             }
             f1it++;
             f2it++;
