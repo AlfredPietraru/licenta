@@ -75,8 +75,7 @@ Eigen::Vector3d KeyFrame::fromWorldToImage(Eigen::Vector4d& wcoord) {
     double d = camera_coordinates(2);
     double u = this->K(0, 0) * camera_coordinates(0) / d + this->K(0, 2);
     double v = this->K(1, 1) * camera_coordinates(1) / d + this->K(1, 2);
-    double stereo_depth = u - (this->K(0, 0) * BASELINE / d);
-    return Eigen::Vector3d(u, v, stereo_depth);
+    return Eigen::Vector3d(u, v, d);
 }
 
 
