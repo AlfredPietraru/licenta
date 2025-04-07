@@ -26,8 +26,8 @@ bool KeyFrame::check_map_point_outlier(MapPoint *mp) {
 
 
 KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint>& keypoints,
-         cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, int keyframe_idx, cv::Mat& frame, ORBVocabulary *voc)
-    : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), depth_matrix(depth_matrix), current_idx(current_idx), keyframe_idx(keyframe_idx), frame(frame) {
+         cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, cv::Mat& frame, ORBVocabulary *voc)
+    : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), depth_matrix(depth_matrix), current_idx(current_idx), frame(frame) {
         this->grid = cv::Mat::zeros(frame.rows, frame.cols, CV_32S);
         this->grid += cv::Scalar(-1);
         this->maximum_possible_map_points = keypoints.size();

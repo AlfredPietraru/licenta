@@ -83,8 +83,15 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
     Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
     Eigen::Vector3d camera_to_map_view_ray;
     std::unordered_map<MapPoint *, Feature *> prev_frame_correlations = prev_kf->return_map_points_keypoint_correlation();
-    std::cout << prev_frame_correlations.size() << " atatea potentiale puncte la inceput\n";
+    // std::cout << "\n" << prev_frame_correlations.size() << " atatea potentiale puncte la inceput\n";
     int puncte_avute = 0;
+
+    
+    Eigen::Vector3d kf_camer_center_prev_coordinates = kf->Tiw.rotationMatrix() * kf_camera_center + kf->Tiw.translation(); \
+
+    const bool bForward  =   kf_camer_center_prev_coordinates(2)>  3.2;
+    const bool bBackward = -kf_camer_center_prev_coordinates(2)> 3.2;
+
     for (auto it = prev_frame_correlations.begin(); it != prev_frame_correlations.end(); it++)
     {
         MapPoint *mp = it->first;
@@ -108,10 +115,12 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
         int current_octave = it->second->get_key_point().octave;
         int scale_of_search = this->window * pow(1.2, current_octave);
         
-        std::vector<int> kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, current_octave - 1, current_octave + 1);
+        std::vector<int> kps_idx;
+        kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, current_octave - 1, current_octave + 1);
         if (kps_idx.size() == 0)
-            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, 2 * scale_of_search, current_octave - 1, current_octave + 1);
+        kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, 2 * scale_of_search, current_octave - 1, current_octave + 1);
         if (kps_idx.size() == 0) continue;
+
         int best_dist = 256;
         int best_idx = -1;
         
@@ -131,15 +140,12 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
                 best_idx = idx;
             }
         }
-        
         if (best_dist > this->orb_descriptor_value) continue;
-        puncte_avute += 1;
         out.insert({mp, &kf->features[best_idx]});
     }
-    std::cout << "\n";
-    std::cout << puncte_avute << " atatea puncte avute pana la urma\n";
-    std::cout << out.size() << " atatea map points calculate initial inainte de verificare orientarii\n";
     this->checkOrientation(out, prev_frame_correlations);
+    // std::cout << puncte_avute << "puncte gasite \n\n";
+    // std::cout << out.size() << " puncte gasite pana atunci\n\n";
     return out;
 }
 
