@@ -194,7 +194,7 @@ void KeyFrame::debug_keyframe(int miliseconds, std::unordered_map<MapPoint*, Fea
     // cv::waitKey(0);
     cv::drawKeypoints(this->frame, keypoints, img3, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); 
     cv::imshow("Display window", img3);
-    cv::waitKey(0);
+    cv::waitKey(miliseconds);
 
 }
 

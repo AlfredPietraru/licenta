@@ -140,7 +140,7 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     std::unordered_map<MapPoint *, Feature *>  new_matches = this->TrackLocalMap(mapp, matches);
     compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     this->current_kf->correlate_map_points_to_features_current_frame(new_matches);
-    this->current_kf->debug_keyframe(0, matches, new_matches);
+    this->current_kf->debug_keyframe(100, matches, new_matches);
 
 
 
