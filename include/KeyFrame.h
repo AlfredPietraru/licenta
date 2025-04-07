@@ -49,6 +49,7 @@ public:
     std::unordered_map<MapPoint*, Feature*> return_map_points_keypoint_correlation();
     void add_outlier_element(MapPoint *mp);
     bool check_map_point_outlier(MapPoint *mp);
+    void debug_keyframe(int miliseconds, std::unordered_map<MapPoint*, Feature*>& matches,std::unordered_map<MapPoint*, Feature*>& new_matches);
 };
 
 #endif

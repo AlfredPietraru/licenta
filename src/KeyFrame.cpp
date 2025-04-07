@@ -41,14 +41,29 @@ KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint
                 double rgbd_right_coordinate = kp.pt.x - (this->K(0, 0) * BASELINE / depth);
                 this->features.push_back(Feature(kp, orb_descriptors.row(i), i, rgbd_right_coordinate));
             }
-            this->grid.at<int>(lround(kp.pt.y), lround(kp.pt.x)) = i;
+
+            int y_idx = (int)kp.pt.y;
+            int x_idx = (int)kp.pt.x;
+            if (this->grid.at<int>(y_idx, x_idx) == -1) {
+                this->grid.at<int>(y_idx, x_idx) = i;
+                continue;
+            } 
+            if (kp.pt.y - y_idx > 0.5 && this->grid.at<int>(y_idx + 1, x_idx) == -1) {
+                this->grid.at<int>(y_idx + 1, x_idx) == i;
+                continue;
+            }
+            if (kp.pt.x - x_idx > 0.5 && this->grid.at<int>(y_idx, x_idx + 1) == -1) {
+                this->grid.at<int>(y_idx, x_idx + 1) == i;
+                continue;
+            }
+            this->grid.at<int>(y_idx + 1, x_idx + 1) = i;
         }
 
         std::vector<cv::Mat> vector_descriptors;
         for (int i = 0; i < this->orb_descriptors.rows; i++) {
             vector_descriptors.push_back(this->orb_descriptors.row(i));
         }
-        voc->transform(vector_descriptors, this->bow_vec, this->features_vec, 3);
+        voc->transform(vector_descriptors, this->bow_vec, this->features_vec, 4);
     }
 
 Eigen::Vector3d KeyFrame::compute_camera_center() {
@@ -162,5 +177,25 @@ void KeyFrame::compute_map_points(bool first_frame)
     std::cout << this->map_points.size() << " " << this->features.size() << " " << map_points_associated << " " << negative_depth << " debug compute map points\n";  
 }
 
+
+
+void KeyFrame::debug_keyframe(int miliseconds, std::unordered_map<MapPoint*, Feature*>& matches, std::unordered_map<MapPoint*, Feature*>& new_matches) {
+    std::vector<cv::KeyPoint> keypoints;
+    for (auto  it = matches.begin(); it != matches.end(); it++) {
+        new_matches.insert({it->first, it->second});
+    }
+    for (auto it = new_matches.begin(); it != new_matches.end(); it++) {
+        keypoints.push_back(it->second->get_key_point());
+    }
+    
+    cv::Mat img2, img3;
+    cv::drawKeypoints(this->frame, this->get_all_keypoints(), img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT);
+    // cv::imshow("Display window", img2);
+    // cv::waitKey(0);
+    cv::drawKeypoints(this->frame, keypoints, img3, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); 
+    cv::imshow("Display window", img3);
+    cv::waitKey(0);
+
+}
 
 

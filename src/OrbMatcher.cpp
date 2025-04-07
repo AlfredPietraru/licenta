@@ -114,7 +114,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
         int scale_of_search = this->window * pow(1.2, current_octave);
         
         std::vector<int> kps_idx;
-        // DE FACUT VERIFICARI SUPLIMENTARE
         if (bForward) {
             kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, current_octave - 1, 7);
         } else if (bBackward) {
@@ -123,6 +122,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
             kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, current_octave - 1, current_octave + 1);
         }
         if (kps_idx.size() == 0) continue;
+        // std::cout << kps_idx.size() << " ";
         int best_dist = 256;
         int best_idx = -1;
         
@@ -141,12 +141,12 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
                 best_idx = idx;
             }
         }
-        puncte_avute++;
         if (best_dist > this->orb_descriptor_value) continue;
         out.insert({mp, &kf->features[best_idx]});
     }
     this->checkOrientation(out, prev_frame_correlations);
-    std::cout << prev_frame_correlations.size() << " "  << out.size() << " puncte initiale si puncte gasite \n\n";
+    // std::cout << puncte_avute << " puncte avute pana atunci\n";
+    // std::cout << prev_frame_correlations.size() << " "  << out.size() << " puncte initiale si puncte gasite \n\n";
     return out;
 }
 
@@ -334,7 +334,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
     DBoW2::FeatureVector::const_iterator f1end = ref_features.end();
     DBoW2::FeatureVector::const_iterator f2it = curr_features.begin();
     DBoW2::FeatureVector::const_iterator f2end = curr_features.end();
- 
+    
     int cate_ajung_acolo = 0;
     while (f1it != f1end && f2it != f2end)
     {
@@ -388,6 +388,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
         }
     }
     std::unordered_map<MapPoint*, Feature*> out_ref = ref->return_map_points_keypoint_correlation();
+    std::cout << cate_ajung_acolo << " atatea puncte voi avea pana acolo\n";
     this->checkOrientation(out, out_ref);
     return out;
 }

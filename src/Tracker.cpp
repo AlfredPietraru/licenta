@@ -61,6 +61,7 @@ void Tracker::initialize(Mat frame, Mat depth, Map& mapp, Sophus::SE3d pose)
     std::vector<KeyPoint> keypoints = this->fmf->extract_keypoints(frame);
     cv::Mat descriptors = this->fmf->compute_descriptors(frame, keypoints);
     this->current_kf = new KeyFrame(pose, this->K_eigen, keypoints, descriptors, depth, 0, frame, this->voc);
+
     this->reference_kf = this->current_kf;
     this->frames_tracked += 1;
     mapp.add_new_keyframe(this->reference_kf);
@@ -139,20 +140,8 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     std::unordered_map<MapPoint *, Feature *>  new_matches = this->TrackLocalMap(mapp, matches);
     compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     this->current_kf->correlate_map_points_to_features_current_frame(new_matches);
+    this->current_kf->debug_keyframe(0, matches, new_matches);
 
-
-    vector<cv::KeyPoint> keypoints;
-    for (auto  it = matches.begin(); it != matches.end(); it++) {
-        new_matches.insert({it->first, it->second});
-    }
-    for (auto it = new_matches.begin(); it != new_matches.end(); it++) {
-        keypoints.push_back(it->second->get_key_point());
-    }
-    cv::Mat img2, img3;
-    // cv::drawKeypoints(this->current_kf->frame, this->current_kf->get_all_keypoints(), img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT);
-    cv::drawKeypoints(this->current_kf->frame, keypoints, img3, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT); 
-    cv::imshow("Display window", img3);
-    cv::waitKey(100);
 
 
     if (this->Is_KeyFrame_needed(new_matches))
