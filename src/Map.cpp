@@ -18,7 +18,7 @@ void Map::debug_map(KeyFrame *kf) {
 }
 
 void Map::add_new_keyframe(KeyFrame *new_kf) {
-    new_kf->compute_map_points();
+    new_kf->compute_map_points(keyframes.size() == 0);
     std::unordered_map<KeyFrame*, int> edges_new_keyframe;
     if (this->keyframes.size() == 0) {
         this->keyframes.push_back(new_kf);
@@ -60,22 +60,27 @@ KeyFrame *Map::get_reference_keyframe(KeyFrame *kf)
     int start_idx = (this->keyframes.size() > this->KEYFRAMES_WINDOW) ? this->keyframes.size() - this->KEYFRAMES_WINDOW : 0;
     int max = -1;
     int reference_idx = start_idx;
+    std::cout << "AICI INCEPE SA ALEAGA KEYFRAME-ul\n";
     for (int i = start_idx; i < this->keyframes.size(); i++)
     {
-        std::unordered_map<MapPoint*, Feature*> reprojected_map_points = this->matcher->match_frame_map_points(kf, this->keyframes[i]->map_points, 5);
-        if (reprojected_map_points.size() == 0) continue;
-        if (reprojected_map_points.size() > max)
+        std::cout << this->keyframes[i]->current_idx << " index keyframe current de analizat\n";
+        int out = this->matcher->reproject_map_points(kf, this->keyframes[i]->map_points, 7);
+        std::cout << out << " map point-uri asociate\n\n";
+        if (out == 0) continue;
+        if (out > max)
         {
             reference_idx = i;
-            max = reprojected_map_points.size();
+            max = out;
         }
     }
+    std::cout << "AICI INCETEAZA SA ALEAGA KEYFRAME-ul\n";
     return this->keyframes[reference_idx];
 }
 
 std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
 {
     KeyFrame *reference_kf = get_reference_keyframe(current_frame);
+    std::cout << reference_kf->current_idx << " index gasit pentru key frame\n";
     if (this->graph.find(reference_kf) == this->graph.end()) {
         std::cout << " CEVA NU E BINE NU GASESTE KEY FRAME IN COMPUTE LOCAL MAP\n";
     }

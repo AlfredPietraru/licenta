@@ -130,7 +130,7 @@ std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, dou
     return kps_idx;
 }
 
-void KeyFrame::compute_map_points()
+void KeyFrame::compute_map_points(bool first_frame)
 {
     int map_points_associated = 0;
     int negative_depth = 0;
@@ -158,6 +158,7 @@ void KeyFrame::compute_map_points()
     if (this->map_points.size() == 0) {
         std::cout << "CEVA NU E BINE NU S-AU CREAT PUNCTELE\n";
     }
+    std::cout << "\n";
     std::cout << this->map_points.size() << " " << this->features.size() << " " << map_points_associated << " " << negative_depth << " debug compute map points\n";  
 }
 
