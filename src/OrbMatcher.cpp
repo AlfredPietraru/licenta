@@ -57,8 +57,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unor
             keep[i] = true;
         }
     }
-
-
     // for (int i = 0; i < histogram.size(); i++)
     // {
     //     std::cout << histogram[i].size() << " ";
@@ -84,7 +82,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
     Eigen::Vector3d camera_to_map_view_ray;
     std::unordered_map<MapPoint *, Feature *> prev_frame_correlations = prev_kf->return_map_points_keypoint_correlation();
     // std::cout << "\n" << prev_frame_correlations.size() << " atatea potentiale puncte la inceput\n";
-    int puncte_avute = 0;
+    // int puncte_avute = 0;
 
     Eigen::Vector3d kf_camer_center_prev_coordinates = kf->Tiw.rotationMatrix() * kf_camera_center + kf->Tiw.translation(); \
     const bool bForward  =   kf_camer_center_prev_coordinates(2)>  3.2;
@@ -122,7 +120,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
             kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, current_octave - 1, current_octave + 1);
         }
         if (kps_idx.size() == 0) continue;
-        // std::cout << kps_idx.size() << " ";
+        
         int best_dist = 256;
         int best_idx = -1;
         
@@ -353,11 +351,11 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
                 MapPoint *mp_ref = ref->features[idx1].get_map_point();
                 if (mp_ref == nullptr) continue;
                 const cv::Mat &d1 = ref->orb_descriptors.row(idx1);
-
+                
                 int bestDist1 = 256;
                 int bestIdx = -1;
                 int bestDist2 = 256;
-
+                
                 for (size_t i2 = 0, iend2 = f2it->second.size(); i2 < iend2; i2++)
                 {
                     const size_t idx2 = f2it->second[i2];
@@ -377,8 +375,9 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
                         bestDist2 = dist;
                     }
                 }
-                if (bestDist1 > 50) continue;
-                if (bestDist1 > this->ratio_key_frame_match * bestDist2) continue;
+                if (bestDist1 > 60) continue;
+                if (bestDist1 > 0.7 * bestDist2) continue;
+                cate_ajung_acolo++;
                 out.insert({mp_ref, &curr->features[bestIdx]});
             }
             f1it++;
@@ -393,6 +392,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
             f2it = curr_features.lower_bound(f1it->first);
         }
     }
+    std::cout << cate_ajung_acolo << " cate ajung oare aici\n";
     std::unordered_map<MapPoint*, Feature*> out_ref = ref->return_map_points_keypoint_correlation();
     this->checkOrientation(out, out_ref);
     return out;

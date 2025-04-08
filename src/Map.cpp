@@ -97,12 +97,8 @@ std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
 std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf)
 {
     local_map = this->compute_local_map(curr_kf);
-    std::unordered_set<MapPoint *> new_local_map;
-    for (auto it = local_map.begin(); it != local_map.end(); it++) {
-        new_local_map.insert(*it);
-    }
 
     int window = curr_kf->current_idx > 2 ? 3 : 5;  
-    return this->matcher->match_frame_map_points(curr_kf, new_local_map, window);
+    return this->matcher->match_frame_map_points(curr_kf, local_map, window);
 }
 
