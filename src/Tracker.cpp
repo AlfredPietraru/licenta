@@ -137,7 +137,7 @@ KeyFrame *Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground
         exit(1);
     }
     this->current_kf->correlate_map_points_to_features_current_frame(new_matches);
-    // compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
+    compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     this->current_kf->debug_keyframe(100, matches, new_matches);
     if (this->Is_KeyFrame_needed(new_matches))
     {

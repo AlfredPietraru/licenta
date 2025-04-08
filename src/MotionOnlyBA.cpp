@@ -61,7 +61,7 @@ double get_rgbd_reprojection_error(MapPoint *mp, Eigen::Matrix3d K, Sophus::SE3d
     cv::KeyPoint kp = feature->get_key_point();
     residuals[0] = (x - kp.pt.x) / std::pow(1.2, kp.octave);
     residuals[1] = (y - kp.pt.y) / std::pow(1.2, kp.octave);
-    double z_projected = K(0, 0) * (camera_coordinates[0] - 0.08) * inv_d + K(0, 2);
+    double z_projected = x - K(0, 0) * 0.08 * inv_d;
     residuals[2] = (z_projected - feature->stereo_depth) / std::pow(1.2, kp.octave);
     double out = residuals[0] * residuals[0] + residuals[1] * residuals[1] + residuals[2] * residuals[2];
     if (out <= chi2) return out;
