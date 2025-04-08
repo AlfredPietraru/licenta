@@ -4,6 +4,7 @@
 #include <iostream>
 #include <filesystem>
 #include "include/Tracker.h"
+#include "include/LocalMapping.h"
 #include "include/TumDatasetReader.h"
 #include "include/ORBVocabulary.h"
 namespace fs = std::filesystem;
@@ -31,6 +32,7 @@ int main(int argc, char **argv)
     Sophus::SE3d pose = data.second;
     
     Map mapp = Map(orb_matcher_cfg);
+    LocalMapping *local_mapper = new LocalMapping(mapp);
     Tracker *tracker = new Tracker(cfg, voc, pnp_ransac_cfg, orb_matcher_cfg);
     tracker->initialize(frame, depth, mapp, pose);
     while(1) {

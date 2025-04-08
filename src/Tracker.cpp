@@ -44,7 +44,6 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     if (this->prev_kf == nullptr && this->current_kf != nullptr) {
         this->prev_kf = this->current_kf;
         this->current_kf = new KeyFrame(this->prev_kf->Tiw, this->K_eigen, keypoints, descriptors, depth, 1, frame, this->voc);
-        this->frames_tracked += 1;
         return;
     }
 
@@ -52,18 +51,15 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     this->prev_kf = this->current_kf;
     this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, keypoints, descriptors, depth, 
         this->prev_kf->current_idx + 1, frame, this->voc);
-    this->frames_tracked += 1;
 }
 
 void Tracker::initialize(Mat frame, Mat depth, Map& mapp, Sophus::SE3d pose)
 {
-    this->initial_pose = pose;
     std::vector<KeyPoint> keypoints = this->fmf->extract_keypoints(frame);
     cv::Mat descriptors = this->fmf->compute_descriptors(frame, keypoints);
     this->current_kf = new KeyFrame(pose, this->K_eigen, keypoints, descriptors, depth, 0, frame, this->voc);
 
     this->reference_kf = this->current_kf;
-    this->frames_tracked += 1;
     mapp.add_new_keyframe(this->reference_kf);
     std::cout << "SFARSIT INITIALIZARE\n\n";
 }
@@ -71,18 +67,17 @@ void Tracker::initialize(Mat frame, Mat depth, Map& mapp, Sophus::SE3d pose)
 void Tracker::tracking_was_lost()
 {
     std::cout << "TRACKING WAS LOSTT<< \n\n\n";
-    std::cout << this->frames_tracked << "\n";
+    std::cout << this->current_kf->current_idx << "\n";
     exit(1);
 }
 
 bool Tracker::Is_KeyFrame_needed(std::unordered_map<MapPoint *, Feature *> &matches)
 {
-    this->last_keyframe_added += 1;
     this->keyframes_from_last_global_relocalization += 1;
     bool still_enough_map_points_tracked = matches.size() > 20;
     bool too_few_map_points_compared_to_kf = reference_kf->map_points.size() / 10 > matches.size();
     bool no_global_relocalization = this->keyframes_from_last_global_relocalization > 20;
-    bool no_recent_keyframe_added = this->last_keyframe_added > 20;
+    bool no_recent_keyframe_added = this->current_kf->current_idx - this->reference_kf->current_idx > 20;
     return no_global_relocalization && no_recent_keyframe_added && still_enough_map_points_tracked && too_few_map_points_compared_to_kf;
 }
 
@@ -93,7 +88,7 @@ std::unordered_map<MapPoint *, Feature *> Tracker::TrackReferenceKeyFrame() {
         std::cout << matches.size() << " atatea map points in momentul in care a crapat\n";
         this->tracking_was_lost();
         std::cout << "NOT ENOUGH MAP_POINTS FOUND\n\n";
-        std::cout << this->frames_tracked << "\n";
+        std::cout << this->current_kf->current_idx << "\n";
         exit(1);
     }
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches);
@@ -114,7 +109,7 @@ std::unordered_map<MapPoint*, Feature*> Tracker::TrackLocalMap(Map &mapp, std::u
     std::unordered_map<MapPoint *, Feature *> new_matches = mapp.track_local_map(this->current_kf, matches);
     if (new_matches.size() < 50) {
         std::cout << new_matches.size() << " PREA PUTINE PUNCTE PROIECTATE DE CATRE LOCAL MAP\n";
-        std::cout << this->frames_tracked << " ATATEA FRAME-URI URMARITE\n";
+        std::cout << this->current_kf->current_idx << " ATATEA FRAME-URI URMARITE\n";
         exit(1);
     }
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, new_matches);
@@ -123,7 +118,7 @@ std::unordered_map<MapPoint*, Feature*> Tracker::TrackLocalMap(Map &mapp, std::u
     return new_matches;
 }
 
-void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_truth_pose) {
+KeyFrame *Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_truth_pose) {
     this->get_current_key_frame(frame, depth);
     std::unordered_map<MapPoint *, Feature *> matches;
     if (this->current_kf->current_idx - this->reference_kf->current_idx <= 2) {
@@ -138,8 +133,8 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
     }
 
     std::unordered_map<MapPoint *, Feature *>  new_matches = this->TrackLocalMap(mapp, matches);
-    compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     this->current_kf->correlate_map_points_to_features_current_frame(new_matches);
+    compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     this->current_kf->debug_keyframe(100, matches, new_matches);
 
 
@@ -150,14 +145,14 @@ void Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground_trut
         mapp.add_new_keyframe(this->current_kf);
         this->reference_kf = this->current_kf;
         this->prev_kf = this->current_kf;
-        this->last_keyframe_added = 0;
         this->keyframes_from_last_global_relocalization = 0;
-        return;
+        return this->current_kf;
     }
-    else if (new_matches.size() < this->minim_points_found)
+    else if (new_matches.size() < 20)
     {
         std::cout << new_matches.size() << " puncte au fost matchuite\n\n";
         this->tracking_was_lost();
-        return;
+        return nullptr;
     }
+    return nullptr;
 }

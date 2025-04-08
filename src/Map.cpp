@@ -106,3 +106,4 @@ std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf,
     int window = curr_kf->current_idx > 2 ? 3 : 5;  
     return this->matcher->match_frame_map_points(curr_kf, new_local_map, window);
 }
+
