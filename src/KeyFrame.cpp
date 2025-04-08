@@ -154,38 +154,6 @@ std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, dou
     return kps_idx;
 }
 
-void KeyFrame::compute_map_points(bool first_frame)
-{
-    int map_points_associated = 0;
-    int negative_depth = 0;
-    int close_map_points = 0;
-    int far_map_poins = 0;
-    Eigen::Vector3d camera_center = this->compute_camera_center();
-    for (int i = 0; i < this->features.size(); i++)
-    {
-        if (this->features[i].get_map_point() != nullptr) {
-            map_points_associated++;
-            continue;
-        }
-        double depth = this->compute_depth_in_keypoint(this->features[i].kp);
-        if (depth <= 1e-6) {
-            negative_depth++;
-            continue;  
-        } 
-        Eigen::Vector4d wcoord = this->fromImageToWorld(i);
-        MapPoint *mp = new MapPoint(this, this->features[i].kp, camera_center, wcoord,  this->orb_descriptors.row(i), i);
-        this->features[i].set_map_point(mp);
-        this->map_points.insert(mp);
-    }
-    if (this->map_points.size() == 0) {
-        std::cout << "CEVA NU E BINE NU S-AU CREAT PUNCTELE\n";
-    }
-    std::cout << "\n";
-    std::cout << this->map_points.size() << " " << this->features.size() << " " << map_points_associated << " " << negative_depth << " debug compute map points\n";  
-}
-
-
-
 void KeyFrame::debug_keyframe(int miliseconds, std::unordered_map<MapPoint*, Feature*>& matches, std::unordered_map<MapPoint*, Feature*>& new_matches) {
     std::vector<cv::KeyPoint> keypoints;
     for (auto  it = matches.begin(); it != matches.end(); it++) {

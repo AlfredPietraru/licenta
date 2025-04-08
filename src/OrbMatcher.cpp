@@ -84,7 +84,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
         double u = point_camera_coordinates(0);
         double v = point_camera_coordinates(1);
         
-        
         int current_octave = it->second->get_key_point().octave;
         int scale_of_search = this->window * pow(1.2, current_octave);
         

@@ -43,10 +43,6 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     Mat gray;
     cv::cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
     (*this->extractor)(gray, cv::Mat(), keypoints, descriptors);
-    
-    // keypoints = this->fmf->extract_keypoints(gray);
-    // descriptors = this->fmf->compute_descriptors(gray, keypoints);
-    // std::cout << keypoints.size() << " " << descriptors.size() << "\n";
     if (this->prev_kf == nullptr && this->current_kf != nullptr) {
         this->prev_kf = this->current_kf;
         this->current_kf = new KeyFrame(this->prev_kf->Tiw, this->K_eigen, keypoints, descriptors, depth, 1, gray, this->voc);
@@ -66,13 +62,10 @@ void Tracker::initialize(Mat frame, Mat depth, Map& mapp, Sophus::SE3d pose)
     Mat gray;
     cv::cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
     (*this->extractor)(gray,cv::Mat(),keypoints, descriptors);
-    // std::cout << keypoints.size() << " "  << descriptors.size();
-    // keypoints = this->fmf->extract_keypoints(gray);
-    // descriptors = this->fmf->compute_descriptors(gray, keypoints);
     this->current_kf = new KeyFrame(pose, this->K_eigen, keypoints, descriptors, depth, 0, gray, this->voc);
 
     this->reference_kf = this->current_kf;
-    mapp.add_new_keyframe(this->reference_kf);
+    mapp.add_first_keyframe(this->reference_kf);
     std::cout << "SFARSIT INITIALIZARE\n\n";
 }
 

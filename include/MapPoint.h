@@ -19,7 +19,8 @@ public:
         double BASELINE = 0.08;
         std::unordered_map<KeyFrame*, int> belongs_to_keyframes;
         bool is_outlier = false;
-
+        int first_seen_frame_idx;
+        int how_many_times_seen;
         
         MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord,
                 cv::Mat orb_descriptor, int idx);
