@@ -18,8 +18,7 @@ public:
         double dmax, dmin;
         double BASELINE = 0.08;
         std::unordered_map<KeyFrame*, int> belongs_to_keyframes;
-        bool is_safe_to_use;
-        // bool is_outlier;
+        bool is_outlier = false;
 
         
         MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord,

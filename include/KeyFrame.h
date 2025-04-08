@@ -20,6 +20,7 @@ public:
     std::vector<Feature> features;
     std::unordered_set<MapPoint*> map_points;
     std::unordered_set<MapPoint*> outliers;
+
     int maximum_possible_map_points = 0;
     int currently_matched_points = 0;
     cv::Mat grid;
@@ -48,7 +49,9 @@ public:
     std::unordered_set<MapPoint*> return_map_points_frame();
     std::unordered_map<MapPoint*, Feature*> return_map_points_keypoint_correlation();
     void add_outlier_element(MapPoint *mp);
+    void remove_outlier_element(MapPoint *mp);
     bool check_map_point_outlier(MapPoint *mp);
+
     void debug_keyframe(int miliseconds, std::unordered_map<MapPoint*, Feature*>& matches,std::unordered_map<MapPoint*, Feature*>& new_matches);
 };
 

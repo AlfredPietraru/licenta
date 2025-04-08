@@ -19,6 +19,14 @@ std::unordered_map<MapPoint*, Feature*> KeyFrame::return_map_points_keypoint_cor
 void KeyFrame::add_outlier_element(MapPoint *mp) {
     this->outliers.insert(mp);
 }
+
+void KeyFrame::remove_outlier_element(MapPoint *mp) {
+    if (this->outliers.find(mp) != this->outliers.end()) {
+        this->outliers.erase(mp);
+    }
+}
+
+
 bool KeyFrame::check_map_point_outlier(MapPoint *mp) {
     if (this->outliers.find(mp) != this->outliers.end()) return true;
     return false;
@@ -166,8 +174,6 @@ void KeyFrame::compute_map_points(bool first_frame)
         MapPoint *mp = new MapPoint(this, this->features[i].kp, camera_center, wcoord,  this->orb_descriptors.row(i), i);
         this->features[i].set_map_point(mp);
         this->map_points.insert(mp);
-        // if (mp->is_safe_to_use) close_map_points++;
-        // if (!mp->is_safe_to_use) far_map_poins++;
     }
     if (this->map_points.size() == 0) {
         std::cout << "CEVA NU E BINE NU S-AU CREAT PUNCTELE\n";

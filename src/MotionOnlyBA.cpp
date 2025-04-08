@@ -163,52 +163,37 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
 
         // check outlier values
         Sophus::SE3d intermediate_pose = compute_pose(kf, pose_parameters);
+        float error;
+        bool outlier;
         for (auto it = matches.begin(); it != matches.end(); it++) {
             MapPoint *mp = it->first;
             if (mp == nullptr) continue;
             if (residual_monocular_points.find(mp) != residual_monocular_points.end()) {
                 double residual[2];
                 problem.EvaluateResidualBlock(residual_monocular_points[mp], true, nullptr, residual, nullptr);
-                const float error = residual[0] * residual[0] + residual[1] * residual[1];    
-                // std::cout << error << " ";
-                // std::cout << residual[0] << " " << residual[1] << "     ";
-                if(error > chi2Mono[i]) {
-                    kf->add_outlier_element(mp);
-                }  else {
-                    inlier++;
-                }
-                continue;
+                error = residual[0] * residual[0] + residual[1] * residual[1];    
+                outlier = error > chi2Mono[i]; 
             }
             if (residual_rgbd_points.find(mp) != residual_rgbd_points.end()) {
                 double residual[3];
                 problem.EvaluateResidualBlock(residual_rgbd_points[mp], true, nullptr, residual, nullptr);
-                const float error = residual[0] * residual[0] + residual[1] * residual[1] + residual[2] * residual[2];
-                // std::cout << error << " ";
-                // std::cout << residual[0] << " " << residual[1] << " "  << residual[2] << "     ";
-                if(error > chi2Stereo[i]) {
-                    kf->add_outlier_element(mp);
-                } else {
-                    inlier++;
-                }
-                continue;
+                error = residual[0] * residual[0] + residual[1] * residual[1] + residual[2] * residual[2];
+                outlier = error > chi2Stereo[i];
             }
-            if (it->second->stereo_depth <= 0) {
-                double error = get_monocular_reprojection_error(mp, kf->K, intermediate_pose, it->second, chi2Mono[i]);
-                // std::cout << error << " ";
-                if(error > chi2Mono[i]) {
-                    kf->add_outlier_element(mp);
-                } else {
-                    inlier++;
-                } 
-            } else {
+            if (it->second->stereo_depth <= 1e-6) {
+                error = get_monocular_reprojection_error(mp, kf->K, intermediate_pose, it->second, chi2Mono[i]);
+                outlier = error > chi2Mono[i]; 
+            } 
+            if (it->second->stereo_depth > 1e-6) {
                 double error = get_rgbd_reprojection_error(mp, kf->K, intermediate_pose, it->second, chi2Stereo[i]);
-                // std::cout << error << " ";
-                if (error > chi2Stereo[i]) {
-                    kf->add_outlier_element(mp);
-                } else {
-                    inlier++;
-                } 
-            }            
+                outlier = error > chi2Stereo[i]; 
+            }
+            if (outlier) {
+                kf->add_outlier_element(mp);
+            } else {
+                kf->remove_outlier_element(mp);
+                inlier++;
+            }
         }
         // std::cout << inlier << " atatea inliere gasite la epoca " << i << "\n";
     }
