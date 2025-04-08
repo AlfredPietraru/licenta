@@ -40,7 +40,8 @@ int main(int argc, char **argv)
         frame = data.first.first;
         depth = data.first.second;
         pose = data.second; 
-        tracker->tracking(frame, depth, mapp, pose);
+        KeyFrame *kf  = tracker->tracking(frame, depth, mapp, pose);
+        local_mapper->local_map(kf);
     }
 }
 

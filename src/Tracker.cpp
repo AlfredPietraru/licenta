@@ -105,16 +105,14 @@ std::unordered_map<MapPoint*, Feature*> Tracker::TrackConsecutiveFrames() {
     return matches; 
 }
 
-std::unordered_map<MapPoint*, Feature*> Tracker::TrackLocalMap(Map &mapp, std::unordered_map<MapPoint *, Feature *>& matches) {
-    std::unordered_map<MapPoint *, Feature *> new_matches = mapp.track_local_map(this->current_kf, matches);
+std::unordered_map<MapPoint*, Feature*> Tracker::TrackLocalMap(Map &mapp) {
+    std::unordered_map<MapPoint *, Feature *> new_matches = mapp.track_local_map(this->current_kf);
     if (new_matches.size() < 50) {
         std::cout << new_matches.size() << " PREA PUTINE PUNCTE PROIECTATE DE CATRE LOCAL MAP\n";
         std::cout << this->current_kf->current_idx << " ATATEA FRAME-URI URMARITE\n";
         exit(1);
     }
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, new_matches);
-    std::unordered_map<MapPoint *, Feature *> empty_matches;
-    new_matches = mapp.track_local_map(this->current_kf, empty_matches);
     return new_matches;
 }
 
@@ -131,28 +129,23 @@ KeyFrame *Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground
             matches = this->TrackReferenceKeyFrame();
         }
     }
+    this->current_kf->correlate_map_points_to_features_current_frame(matches);
 
-    std::unordered_map<MapPoint *, Feature *>  new_matches = this->TrackLocalMap(mapp, matches);
+    std::unordered_map<MapPoint *, Feature *>  new_matches = this->TrackLocalMap(mapp);
+    if (new_matches.size() < 50) {
+        this->tracking_was_lost();
+        exit(1);
+    }
     this->current_kf->correlate_map_points_to_features_current_frame(new_matches);
     compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     this->current_kf->debug_keyframe(100, matches, new_matches);
-
-
-
     if (this->Is_KeyFrame_needed(new_matches))
     {
-        std::cout << "DAAA UN KEYFRAME A FOST ADAUGAT\n\n\n";
-        mapp.add_new_keyframe(this->current_kf);
+        std::cout << "DAAA UN KEYFRAME TREBUIE ADAUGAT\n\n\n";
         this->reference_kf = this->current_kf;
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
         return this->current_kf;
-    }
-    else if (new_matches.size() < 20)
-    {
-        std::cout << new_matches.size() << " puncte au fost matchuite\n\n";
-        this->tracking_was_lost();
-        return nullptr;
     }
     return nullptr;
 }

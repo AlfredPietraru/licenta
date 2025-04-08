@@ -54,7 +54,7 @@ private:
     // important functions
     // Sophus::SE3d TrackWithLastFrame(vector<DMatch> good_matches);
     std::unordered_map<MapPoint*, Feature*> TrackReferenceKeyFrame();
-    std::unordered_map<MapPoint*, Feature*> TrackLocalMap(Map &mapp, std::unordered_map<MapPoint *, Feature *>& matches);
+    std::unordered_map<MapPoint*, Feature*> TrackLocalMap(Map &mapp);
     std::unordered_map<MapPoint*, Feature*> TrackConsecutiveFrames();
     bool Is_KeyFrame_needed(std::unordered_map<MapPoint *, Feature*>& matches);
 
