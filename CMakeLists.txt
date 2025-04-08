@@ -51,6 +51,7 @@ set(SOURCES
     src/config.cpp
     src/TumDatasetReader.cpp
     src/LocalMapping.cpp
+    src/ORBextractor.cpp
 )
 
 set(HEADERS
@@ -66,6 +67,7 @@ set(HEADERS
     "include/TumDatasetReader.h"
     "include/ORBVocabulary.h"
     "include/LocalMapping.h"
+    "include/ORBextractor.h"
 )
 
 

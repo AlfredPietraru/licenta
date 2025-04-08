@@ -19,25 +19,23 @@ FeatureMatcherFinder::FeatureMatcherFinder(int rows, int cols, Config cfg) {
 
 
 std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat& frame) {
-    cv::Mat gray_frame;
-    cv::cvtColor(frame, gray_frame, cv::COLOR_RGB2GRAY);
     std::vector<cv::KeyPoint> keypoints;
     for (int i = 0; i < nr_cells_row - 1; i++) {
         for (int j = 0; j < nr_cells_collumn - 1; j++) {
             std::vector<cv::KeyPoint> current_keypoints;
             cv::Rect roi(j * this->window, i * this->window, this->window, this->window);
-            cv::Mat cell_img = gray_frame(roi).clone();
+            cv::Mat cell_img = frame(roi).clone();
             int threshold = this->fast_features_cell[i * nr_cells_collumn + j];
             for (int iter = 0; iter < this->orb_iterations - 1; iter++) {
                 this->orb->setFastThreshold(threshold);
                 this->orb->detect(cell_img, current_keypoints);
-                if (current_keypoints.size() >= minim_keypoints && current_keypoints.size() <= minim_keypoints * 2) {
+                if (current_keypoints.size() >= minim_keypoints && current_keypoints.size() <= minim_keypoints * 3) {
                     break;
                 } else if (current_keypoints.size() < minim_keypoints) {
                     if (threshold == this->fast_lower_limit) break;
                     threshold -= this->fast_step;
                      
-                } else if (current_keypoints.size() > 2 * minim_keypoints) {
+                } else if (current_keypoints.size() > 3 * minim_keypoints) {
                     if (threshold == this->fast_higher_limit) break;
                     threshold += this->fast_step;
                 }

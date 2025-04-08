@@ -38,26 +38,38 @@ void print_pose(Sophus::SE3d pose, std::string message) {
 }
 
 void Tracker::get_current_key_frame(Mat frame, Mat depth) {
-    std::vector<KeyPoint> keypoints = this->fmf->extract_keypoints(frame);
-    cv::Mat descriptors = this->fmf->compute_descriptors(frame, keypoints);
+    std::vector<cv::KeyPoint> keypoints;
+    cv::Mat descriptors;
+    Mat gray;
+    cv::cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
+    (*this->extractor)(gray, cv::Mat(), keypoints, descriptors);
+    
+    // keypoints = this->fmf->extract_keypoints(gray);
+    // descriptors = this->fmf->compute_descriptors(gray, keypoints);
     // std::cout << keypoints.size() << " " << descriptors.size() << "\n";
     if (this->prev_kf == nullptr && this->current_kf != nullptr) {
         this->prev_kf = this->current_kf;
-        this->current_kf = new KeyFrame(this->prev_kf->Tiw, this->K_eigen, keypoints, descriptors, depth, 1, frame, this->voc);
+        this->current_kf = new KeyFrame(this->prev_kf->Tiw, this->K_eigen, keypoints, descriptors, depth, 1, gray, this->voc);
         return;
     }
 
     Sophus::SE3d pose_estimation = this->current_kf->Tiw * this->prev_kf->Tiw.inverse() * this->current_kf->Tiw;
     this->prev_kf = this->current_kf;
     this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, keypoints, descriptors, depth, 
-        this->prev_kf->current_idx + 1, frame, this->voc);
+        this->prev_kf->current_idx + 1, gray, this->voc);
 }
 
 void Tracker::initialize(Mat frame, Mat depth, Map& mapp, Sophus::SE3d pose)
 {
-    std::vector<KeyPoint> keypoints = this->fmf->extract_keypoints(frame);
-    cv::Mat descriptors = this->fmf->compute_descriptors(frame, keypoints);
-    this->current_kf = new KeyFrame(pose, this->K_eigen, keypoints, descriptors, depth, 0, frame, this->voc);
+    std::vector<cv::KeyPoint> keypoints;
+    cv::Mat descriptors;
+    Mat gray;
+    cv::cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
+    (*this->extractor)(gray,cv::Mat(),keypoints, descriptors);
+    // std::cout << keypoints.size() << " "  << descriptors.size();
+    // keypoints = this->fmf->extract_keypoints(gray);
+    // descriptors = this->fmf->compute_descriptors(gray, keypoints);
+    this->current_kf = new KeyFrame(pose, this->K_eigen, keypoints, descriptors, depth, 0, gray, this->voc);
 
     this->reference_kf = this->current_kf;
     mapp.add_new_keyframe(this->reference_kf);
@@ -122,7 +134,7 @@ std::unordered_map<MapPoint*, Feature*> Tracker::TrackLocalMap(Map &mapp) {
         if (this->current_kf->check_map_point_outlier(it->first)) continue;
         out += 1;
     }
-    if (out < 50) {
+    if (out < 30) {
         std::cout << out << " PREA PUTINE PUNCTE PROIECTATE CARE NU SUNT OUTLIERE DE CATRE LOCAL MAP\n";
         std::cout << this->current_kf->current_idx << " ATATEA FRAME-URI URMARITE\n";
         exit(1);
@@ -138,6 +150,7 @@ KeyFrame *Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground
         matches = this->TrackReferenceKeyFrame();
     } else {
         matches = this->TrackConsecutiveFrames();
+        std::cout << matches.size() << "\n";
         if (matches.size() < 20) {
             std::cout << "intre frame-uri nu s-a gasit suficient\n";
             matches = this->TrackReferenceKeyFrame();
@@ -146,7 +159,7 @@ KeyFrame *Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground
     this->current_kf->correlate_map_points_to_features_current_frame(matches);
     std::unordered_map<MapPoint *, Feature *>  new_matches = this->TrackLocalMap(mapp);
     this->current_kf->correlate_map_points_to_features_current_frame(new_matches);
-    // compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
+    compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     this->current_kf->debug_keyframe(100, matches, new_matches);
 
     if (this->Is_KeyFrame_needed(new_matches))

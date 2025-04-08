@@ -19,25 +19,13 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unor
     for (auto it = correlation_current_frame.begin(); it != correlation_current_frame.end(); it++)
     {
         MapPoint *mp = it->first;
-        if (correlation_prev_frame.find(mp) == correlation_prev_frame.end())
-        {
-            correlation_current_frame.erase(mp);
-            continue;
-        }
         cv::KeyPoint current_kp = it->second->get_key_point();
         cv::KeyPoint prev_kp = correlation_prev_frame[mp]->get_key_point();
         float rot = prev_kp.angle - current_kp.angle;
-        if (rot < 0.0)
-            rot += 360.0f;
-        int bin = round(rot * factor);
-        if (bin == 30)
-            bin = 0;
-        if (bin < 0 || bin > 30)
-        {
-            std::cout << "CEVA NU E BINE CHECK ORIENTATION\n";
-            exit(1);
-        }
-        histogram[bin].push_back(it->first);
+        if (rot < 0.0) rot += 360.0f;
+        int bin = lround(rot * factor);
+        if (bin == 30) bin = 0;
+        histogram[bin].push_back(mp);
     }
     int max = 0;
     int index = 0;
@@ -48,7 +36,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unor
         }
     }
     
-    int threshold = 0.8 * max;
+    int threshold = 0.7 * max;
     std::vector<bool> keep(30, false);
     
     for (int i = 0; i < 30; i++) {
@@ -57,15 +45,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unor
             keep[i] = true;
         }
     }
-    // for (int i = 0; i < histogram.size(); i++)
-    // {
-    //     std::cout << histogram[i].size() << " ";
-    // }
-    // std::cout << "\n";
-    // for (int i = 0; i < keep.size(); i++) {
-    //     std::cout << keep[i] << " ";
-    // }
-    // std::cout << "\n";
     for (int i = 0; i < 30; i++) {
         if (keep[i]) continue;
         for (auto mp : histogram[i]) {
@@ -81,12 +60,10 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
     Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
     Eigen::Vector3d camera_to_map_view_ray;
     std::unordered_map<MapPoint *, Feature *> prev_frame_correlations = prev_kf->return_map_points_keypoint_correlation();
-    // std::cout << "\n" << prev_frame_correlations.size() << " atatea potentiale puncte la inceput\n";
-    // int puncte_avute = 0;
 
     Eigen::Vector3d kf_camer_center_prev_coordinates = kf->Tiw.rotationMatrix() * kf_camera_center + kf->Tiw.translation(); \
-    const bool bForward  =   kf_camer_center_prev_coordinates(2)>  3.2;
-    const bool bBackward = -kf_camer_center_prev_coordinates(2)> 3.2;
+    const bool bForward  =   kf_camer_center_prev_coordinates(2) >  3.2;
+    const bool bBackward = -kf_camer_center_prev_coordinates(2) > 3.2;
 
     for (auto it = prev_frame_correlations.begin(); it != prev_frame_correlations.end(); it++)
     {
@@ -144,8 +121,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
         out.insert({mp, &kf->features[best_idx]});
     }
     this->checkOrientation(out, prev_frame_correlations);
-    // std::cout << puncte_avute << " puncte avute pana atunci\n";
-    // std::cout << prev_frame_correlations.size() << " "  << out.size() << " puncte initiale si puncte gasite \n\n";
     return out;
 }
 
@@ -227,7 +202,6 @@ int OrbMatcher::reproject_map_points(KeyFrame *kf, std::unordered_set<MapPoint *
         if(lowest_level == second_lowest_level && lowest_dist > this->ratio_track_local_map * second_lowest_dist) continue;
         out++;
     }
-    // std::cout << out_points_found << " map points gasite pana in punctul acela\n";
     return out;
     
 }
@@ -279,7 +253,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
             kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, 2 * scale_of_search, predicted_scale - 1, predicted_scale + 1);
         if (kps_idx.size() == 0) continue;
         out_points_found++;
-        // std::cout << scale_of_search << " starting scale of search \n";
         for (int idx : kps_idx)
         {
             int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
@@ -288,7 +261,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
             
             double fake_rgbd = u - kf->K(0, 0) * 0.08 / point_camera_coordinates(2);
             float er = fabs(fake_rgbd - kf->features[idx].stereo_depth);
-            // std::cout << er << " ";
             if (er > scale_of_search) continue;
 
             
@@ -308,12 +280,10 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
                 second_lowest_level = kf->features[idx].kp.octave;
             }
         }
-        // std::cout << "\n";
         if (lowest_dist > 50)  continue;
         if(lowest_level == second_lowest_level && lowest_dist > this->ratio_track_local_map * second_lowest_dist) continue;
         out.insert({mp, &kf->features[lowest_idx]});
     }
-    // std::cout << out_points_found << " puncte gasite pana atunci\n";
     return out;
 }
 
@@ -392,7 +362,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
             f2it = curr_features.lower_bound(f1it->first);
         }
     }
-    std::cout << cate_ajung_acolo << " cate ajung oare aici\n";
     std::unordered_map<MapPoint*, Feature*> out_ref = ref->return_map_points_keypoint_correlation();
     this->checkOrientation(out, out_ref);
     return out;

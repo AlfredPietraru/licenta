@@ -18,6 +18,7 @@
 #include "OrbMatcher.h"
 #include "config.h"
 #include "ORBVocabulary.h"
+#include "ORBextractor.h"
 
 using namespace std;
 using namespace cv;
@@ -42,6 +43,7 @@ private:
     KeyFrame* prev_kf = nullptr;
     KeyFrame *reference_kf = nullptr;
 
+    ORBextractor* extractor = new ORBextractor(1000, 1.2, 8, 20, 7);
     ORBVocabulary* voc;
     Mat K; 
     Eigen::Matrix3d K_eigen;
@@ -49,6 +51,7 @@ private:
     BundleAdjustment *bundleAdjustment;
     FeatureMatcherFinder *fmf;
     OrbMatcher *matcher;
+
 
     
     // important functions
