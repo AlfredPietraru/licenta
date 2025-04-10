@@ -9,6 +9,8 @@ std::vector<Position_Entry> read_groundtruth_file(const std::string &file_path) 
     }
 
     std::string line;
+
+
     while (std::getline(file, line)) {
         // Skip comment lines
         if (line.empty() || line[0] == '#') {
@@ -78,6 +80,8 @@ std::unordered_map<std::string, Position_Entry> get_mapping_between_rgb_position
 
 TumDatasetReader::TumDatasetReader(Config cfg) {
     this->cfg = cfg;
+    std::string path_to_write = "../rgbd_dataset_freiburg1_xyz/estimated.txt";
+    this->outfile = std::ofstream(path_to_write);
     std::string rgb_path = "../rgbd_dataset_freiburg1_xyz/rgb";
     std::string depth_path = "../rgbd_dataset_freiburg1_xyz/depth";
     std::unordered_map<std::string, std::string> map_rgb_file_name_path;
@@ -102,6 +106,7 @@ TumDatasetReader::TumDatasetReader(Config cfg) {
 
 std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> TumDatasetReader::get_next_frame() {
     std::cout << idx << " " << this->rgb_path[idx] << " " << this->depth_path[idx] << "\n";
+    
     cv::Mat distorted_frame = cv::imread(this->rgb_path[idx], cv::IMREAD_COLOR_RGB);
     cv::Mat depth = cv::imread(this->depth_path[idx], cv::IMREAD_UNCHANGED);
     cv::Mat frame;
@@ -109,5 +114,13 @@ std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> TumDatasetReader::get_next_
     Sophus::SE3d pose = this->poses[idx];
     idx++;
     return {{frame, depth}, pose};
+}
+
+
+void TumDatasetReader::store_entry(Sophus::SE3d pose) {
+    std::string path = this->rgb_path[idx - 1];
+    std::string file_name = extract_timestamp(path);
+    this->outfile << file_name <<  " " << pose.translation().x() << " " << pose.translation().y() << " " << pose.translation().z() << " ";
+    this->outfile << pose.unit_quaternion().x() << " " << pose.unit_quaternion().y() << " "  << pose.unit_quaternion().z() << " " << pose.unit_quaternion().w() << "\n"; 
 }
 

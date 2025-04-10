@@ -1,14 +1,21 @@
 #include "../include/OrbMatcher.h"
 
-int inline ::OrbMatcher::ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2)
+
+int OrbMatcher::ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b)
 {
-    int distance = 0;
-    for (int i = 0; i < desc1.cols; i++)
+    const int *pa = a.ptr<int32_t>();
+    const int *pb = b.ptr<int32_t>();
+
+    int dist=0;
+
+    for(int i=0; i<8; i++, pa++, pb++)
     {
-        uchar v = desc1.at<uchar>(i) ^ desc2.at<uchar>(i);
-        distance += __builtin_popcount(v);
+        unsigned  int v = *pa ^ *pb;
+        v = v - ((v >> 1) & 0x55555555);
+        v = (v & 0x33333333) + ((v >> 2) & 0x33333333);
+        dist += (((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24;
     }
-    return distance;
+    return dist;
 }
 
 std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unordered_map<MapPoint *, Feature *> &correlation_current_frame,
@@ -54,14 +61,14 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unor
     return correlation_current_frame;
 }
 
-std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf)
+// select only first 100 closest points for optimization -> create virtual points
+std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int window)
 {
     std::unordered_map<MapPoint *, Feature *> out;
     Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
     Eigen::Vector3d camera_to_map_view_ray;
     std::unordered_map<MapPoint *, Feature *> prev_frame_correlations = prev_kf->return_map_points_keypoint_correlation();
-
-    Eigen::Vector3d kf_camer_center_prev_coordinates = kf->Tiw.rotationMatrix() * kf_camera_center + kf->Tiw.translation(); \
+    Eigen::Vector3d kf_camer_center_prev_coordinates = kf->Tiw.rotationMatrix() * kf_camera_center + kf->Tiw.translation(); 
     const bool bForward  =   kf_camer_center_prev_coordinates(2) >  3.2;
     const bool bBackward = -kf_camer_center_prev_coordinates(2) > 3.2;
 
@@ -85,7 +92,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
         double v = point_camera_coordinates(1);
         
         int current_octave = it->second->get_key_point().octave;
-        int scale_of_search = this->window * pow(1.2, current_octave);
+        int scale_of_search = window * pow(1.2, current_octave);
         
         std::vector<int> kps_idx;
         if (bForward) {
@@ -248,20 +255,18 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
         
         
         std::vector<int> kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, predicted_scale - 1, predicted_scale + 1);
-        if (kps_idx.size() == 0)
-            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, 2 * scale_of_search, predicted_scale - 1, predicted_scale + 1);
         if (kps_idx.size() == 0) continue;
         out_points_found++;
         for (int idx : kps_idx)
         {
-            int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
             if (kf->features[idx].get_map_point() != nullptr) continue; 
-            if (kf->features[idx].stereo_depth < 1e-6) continue;
+            if (kf->features[idx].stereo_depth <= 1e-6) continue;
             
             double fake_rgbd = u - kf->K(0, 0) * 0.08 / point_camera_coordinates(2);
             float er = fabs(fake_rgbd - kf->features[idx].stereo_depth);
             if (er > scale_of_search) continue;
-
+            
+            int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
             
             if (cur_hamm_dist < lowest_dist)
             {
@@ -280,7 +285,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
             }
         }
         if (lowest_dist > 50)  continue;
-        if(lowest_level == second_lowest_level && lowest_dist > this->ratio_track_local_map * second_lowest_dist) continue;
+        if(lowest_level == second_lowest_level && lowest_dist > 0.8 * second_lowest_dist) continue;
         out.insert({mp, &kf->features[lowest_idx]});
     }
     return out;
@@ -314,30 +319,33 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
     {
         if (f1it->first == f2it->first)
         {
-            for (size_t i1 = 0, iend1 = f1it->second.size(); i1 < iend1; i1++)
+            std::vector<unsigned int> indices_ref = f1it->second;
+            std::vector<unsigned int> indicies_curr = f2it->second;
+
+            for (size_t iref = 0; iref < indices_ref.size();  iref++)
             {
-                const size_t idx1 = f1it->second[i1];
-                MapPoint *mp_ref = ref->features[idx1].get_map_point();
+                const size_t feature_idx = f1it->second[iref];
+                MapPoint *mp_ref = ref->features[feature_idx].get_map_point();
                 if (mp_ref == nullptr) continue;
-                const cv::Mat &d1 = ref->orb_descriptors.row(idx1);
+                const cv::Mat &d1 = ref->orb_descriptors.row(feature_idx);
                 
                 int bestDist1 = 256;
                 int bestIdx = -1;
                 int bestDist2 = 256;
                 
-                for (size_t i2 = 0, iend2 = f2it->second.size(); i2 < iend2; i2++)
+                for (size_t icurr = 0; icurr < indicies_curr.size(); icurr++)
                 {
-                    const size_t idx2 = f2it->second[i2];
-                    MapPoint *mp_curr = curr->features[idx2].get_map_point();
+                    const size_t feature_curr = f2it->second[icurr];
+                    MapPoint *mp_curr = curr->features[feature_curr].get_map_point();
                     if (mp_curr != nullptr) continue;
-                    const cv::Mat &d2 = curr->orb_descriptors.row(idx2);
+                    const cv::Mat &d2 = curr->orb_descriptors.row(feature_curr);
                     int dist = this->ComputeHammingDistance(d1, d2);
                     
                     if (dist < bestDist1)
                     {
                         bestDist2 = bestDist1;
                         bestDist1 = dist;
-                        bestIdx = idx2;
+                        bestIdx = feature_curr;
                     }
                     else if (dist < bestDist2)
                     {

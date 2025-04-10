@@ -50,6 +50,8 @@ public:
     void add_outlier_element(MapPoint *mp);
     void remove_outlier_element(MapPoint *mp);
     bool check_map_point_outlier(MapPoint *mp);
+    int check_possible_close_points_generation();
+    int check_number_close_points();
 
     void debug_keyframe(int miliseconds, std::unordered_map<MapPoint*, Feature*>& matches,std::unordered_map<MapPoint*, Feature*>& new_matches);
 };

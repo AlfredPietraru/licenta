@@ -34,11 +34,14 @@ class TumDatasetReader
 public:
     std::vector<std::string> rgb_path;
     std::vector<std::string> depth_path;
+    std::string path_to_write;
+    std::ofstream outfile;
     std::vector<Sophus::SE3d> poses;
     int idx = 0;
     Config cfg;
     TumDatasetReader(Config cfg);
     std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> get_next_frame();
+    void store_entry(Sophus::SE3d pose);
 };
 
 #endif

@@ -37,8 +37,6 @@ public:
         this->bundleAdjustment = new BundleAdjustment();
         this->matcher = new OrbMatcher(orb_matcher_config);
     }
-
-private:
     KeyFrame *current_kf;
     KeyFrame* prev_kf = nullptr;
     KeyFrame *reference_kf = nullptr;
@@ -59,7 +57,7 @@ private:
     std::unordered_map<MapPoint*, Feature*> TrackReferenceKeyFrame();
     std::unordered_map<MapPoint*, Feature*> TrackLocalMap(Map &mapp);
     std::unordered_map<MapPoint*, Feature*> TrackConsecutiveFrames();
-    bool Is_KeyFrame_needed(std::unordered_map<MapPoint *, Feature*>& matches);
+    bool Is_KeyFrame_needed();
 
 
     // auxiliary functions

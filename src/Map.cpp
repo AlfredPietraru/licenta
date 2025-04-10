@@ -26,7 +26,6 @@ void Map::add_first_keyframe(KeyFrame *new_kf) {
 }
  
 void Map::add_new_keyframe(KeyFrame *new_kf) {
-    this->compute_map_points(new_kf);
     std::unordered_map<KeyFrame*, int> edges_new_keyframe;
     
     int start_idx = (this->keyframes.size() > this->KEYFRAMES_WINDOW) ? this->keyframes.size() - this->KEYFRAMES_WINDOW : 0;
@@ -50,6 +49,7 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
     }   
     this->keyframes.push_back(new_kf);
     this->graph.insert({new_kf, edges_new_keyframe});
+    this->compute_map_points(new_kf);
 }
 
 Map::Map(Orb_Matcher orb_matcher_cfg) {
@@ -123,8 +123,6 @@ void Map::compute_map_points(KeyFrame *kf)
     if (kf->map_points.size() == 0) {
         std::cout << "CEVA NU E BINE NU S-AU CREAT PUNCTELE\n";
     }
-    std::cout << "\n";
-    std::cout << kf->map_points.size() << " " << kf->features.size() << " " << map_points_associated << " " << negative_depth << " debug compute map points\n";  
 }
 
 // de adaugat reference keyframe

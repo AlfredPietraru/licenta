@@ -32,6 +32,14 @@ bool KeyFrame::check_map_point_outlier(MapPoint *mp) {
     return false;
  }
 
+int KeyFrame::check_possible_close_points_generation() {
+    return this->outliers.size();
+}
+
+int KeyFrame::check_number_close_points() {
+    return this->map_points.size();
+}
+
 
 KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint>& keypoints,
          cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, cv::Mat& frame, ORBVocabulary *voc)

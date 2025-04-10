@@ -7,11 +7,22 @@
 #include "include/LocalMapping.h"
 #include "include/TumDatasetReader.h"
 #include "include/ORBVocabulary.h"
+#include <csignal>
+#include <cstdlib>
 namespace fs = std::filesystem;
 using namespace std;
 
+TumDatasetReader *reader;
+
+void signalHandler(int signum) {
+    std::cout << "Interrupt signal (" << signum << ") received.\n";
+    reader->outfile.close();
+    exit(signum);
+}
+
 int main(int argc, char **argv)
 {
+    std::signal(SIGINT, signalHandler);
     ORBVocabulary *voc = new ORBVocabulary();
     bool bVocLoad = voc->loadFromTextFile("../ORBvoc.txt");
     if (!bVocLoad) {
@@ -25,7 +36,7 @@ int main(int argc, char **argv)
     Orb_Matcher orb_matcher_cfg = load_orb_matcher_config("../config.yaml");
 
     
-    TumDatasetReader *reader = new TumDatasetReader(cfg); 
+    reader = new TumDatasetReader(cfg); 
     std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> data = reader->get_next_frame();    
     cv::Mat frame = data.first.first;
     cv::Mat depth = data.first.second;
@@ -35,13 +46,22 @@ int main(int argc, char **argv)
     LocalMapping *local_mapper = new LocalMapping(mapp);
     Tracker *tracker = new Tracker(cfg, voc, pnp_ransac_cfg, orb_matcher_cfg);
     tracker->initialize(frame, depth, mapp, pose);
+    reader->store_entry(pose);
     while(1) {
         std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> data = reader->get_next_frame();
         frame = data.first.first;
         depth = data.first.second;
         pose = data.second; 
         KeyFrame *kf  = tracker->tracking(frame, depth, mapp, pose);
-        local_mapper->local_map(kf);
+        reader->store_entry(kf->Tiw);
+        if (tracker->Is_KeyFrame_needed())
+        {
+            std::cout << "DAAA UN KEYFRAME TREBUIE ADAUGAT\n\n\n";
+            tracker->reference_kf = tracker->current_kf;
+            tracker->prev_kf = tracker->current_kf;
+            tracker->keyframes_from_last_global_relocalization = 0;
+            local_mapper->local_map(kf);
+        }
     }
 }
 

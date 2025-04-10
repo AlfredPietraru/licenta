@@ -1,12 +1,20 @@
 #include "../include/Feature.h"
 
-int inline::Feature::ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2) {
-    int distance = 0;
-    for (int i = 0; i < desc1.cols; i++) {
-        uchar v = desc1.at<uchar>(i) ^ desc2.at<uchar>(i); 
-        distance += __builtin_popcount(v);
+int Feature::ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b)
+{
+    const int *pa = a.ptr<int32_t>();
+    const int *pb = b.ptr<int32_t>();
+
+    int dist=0;
+
+    for(int i=0; i<8; i++, pa++, pb++)
+    {
+        unsigned  int v = *pa ^ *pb;
+        v = v - ((v >> 1) & 0x55555555);
+        v = (v & 0x33333333) + ((v >> 2) & 0x33333333);
+        dist += (((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24;
     }
-    return distance;
+    return dist;
 }
 
 Feature::Feature(cv::KeyPoint kp, cv::Mat descriptor, MapPoint *mp, int idx, double stereo_depth) : kp(kp), 

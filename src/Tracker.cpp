@@ -76,21 +76,21 @@ void Tracker::tracking_was_lost()
     exit(1);
 }
 
-bool Tracker::Is_KeyFrame_needed(std::unordered_map<MapPoint *, Feature *> &matches)
+bool Tracker::Is_KeyFrame_needed()
 {
     this->keyframes_from_last_global_relocalization += 1;
-    bool still_enough_map_points_tracked = matches.size() > 20;
-    bool too_few_map_points_compared_to_kf = reference_kf->map_points.size() / 10 > matches.size();
-    bool no_global_relocalization = this->keyframes_from_last_global_relocalization > 20;
-    bool no_recent_keyframe_added = this->current_kf->current_idx - this->reference_kf->current_idx > 20;
-    return no_global_relocalization && no_recent_keyframe_added && still_enough_map_points_tracked && too_few_map_points_compared_to_kf;
+    bool c1 = this->keyframes_from_last_global_relocalization > 20;
+    bool c2 = this->current_kf->current_idx - this->reference_kf->current_idx > 20;
+    bool c3 = this->current_kf->check_number_close_points() < 100;
+    bool c4 = reference_kf->map_points.size() / 10 > this->current_kf->check_number_close_points();
+    bool c5 = this->current_kf->check_possible_close_points_generation() > 70;
+    return c1 && c2 && c3 && c4 && true;
 }
 
 
 std::unordered_map<MapPoint *, Feature *> Tracker::TrackReferenceKeyFrame() {
     std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_reference_frame(this->current_kf, this->reference_kf);
-    std::cout << matches.size() << " atatea map points gasite initial\n";
-    if (matches.size() < 20) {
+    if (matches.size() < 15) {
         std::cout << matches.size() << "REFERENCE FRAME N A URMARIT SUFICIENTE MAP POINTS PENTRU OPTIMIZARE\n";
         std::cout << this->current_kf->current_idx << "\n";
         exit(1);
@@ -110,15 +110,31 @@ std::unordered_map<MapPoint *, Feature *> Tracker::TrackReferenceKeyFrame() {
 }
 
 std::unordered_map<MapPoint*, Feature*> Tracker::TrackConsecutiveFrames() {
-    std::unordered_map<MapPoint*, Feature*> matches = matcher->match_consecutive_frames(this->current_kf, this->prev_kf);
-    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches);
+    int window = 15;
+    std::unordered_map<MapPoint*, Feature*> matches = matcher->match_consecutive_frames(this->current_kf, this->prev_kf, window);
     if (matches.size() < 20) {
-        std::cout << "URMARIREA INTRE FRAME-URI NU A FUNCTIONAT\n";
+        matches = matcher->match_consecutive_frames(this->current_kf, this->prev_kf, 2 * window);
+        if (matches.size() < 20) {
+            std::cout << "\nURMARIREA INTRE FRAME-URI INAINTE DE OPTIMIZARE NU A FUNCTIONAT\n";
+            exit(1);
+        }
+    }
+    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches);
+    int out = 0;
+    for (auto it = matches.begin(); it != matches.end(); it++) {
+        MapPoint *mp = it->first;
+        if (this->current_kf->check_map_point_outlier(mp)) continue;
+        out++;
+    }
+
+    if (out < 10) {
+        std::cout << "\nURMARIREA INTRE FRAME-URI NU A FUNCTIONAT DUPA OPTIMIZARE\n";
         return matches;
     }
     return matches; 
 }
 
+// de verificat local map bine de tot
 std::unordered_map<MapPoint*, Feature*> Tracker::TrackLocalMap(Map &mapp) {
     std::unordered_map<MapPoint *, Feature *> new_matches = mapp.track_local_map(this->current_kf);
     this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, new_matches);
@@ -143,7 +159,7 @@ KeyFrame *Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground
         matches = this->TrackReferenceKeyFrame();
     } else {
         matches = this->TrackConsecutiveFrames();
-        std::cout << matches.size() << "\n";
+        // std::cout << matches.size() << "\n";
         if (matches.size() < 20) {
             std::cout << "intre frame-uri nu s-a gasit suficient\n";
             matches = this->TrackReferenceKeyFrame();
@@ -154,14 +170,5 @@ KeyFrame *Tracker::tracking(Mat frame, Mat depth, Map &mapp, Sophus::SE3d ground
     this->current_kf->correlate_map_points_to_features_current_frame(new_matches);
     compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     this->current_kf->debug_keyframe(100, matches, new_matches);
-
-    if (this->Is_KeyFrame_needed(new_matches))
-    {
-        std::cout << "DAAA UN KEYFRAME TREBUIE ADAUGAT\n\n\n";
-        this->reference_kf = this->current_kf;
-        this->prev_kf = this->current_kf;
-        this->keyframes_from_last_global_relocalization = 0;
-        return this->current_kf;
-    }
-    return nullptr;
+    return this->current_kf;
 }
