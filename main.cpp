@@ -34,25 +34,24 @@ int main(int argc, char **argv)
     Config cfg = loadConfig("../config.yaml");
     Pnp_Ransac_Config pnp_ransac_cfg = load_pnp_ransac_config("../config.yaml");
     Orb_Matcher orb_matcher_cfg = load_orb_matcher_config("../config.yaml");
-
     
     reader = new TumDatasetReader(cfg); 
-    std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> data = reader->get_next_frame();    
-    cv::Mat frame = data.first.first;
-    cv::Mat depth = data.first.second;
-    Sophus::SE3d pose = data.second;
+    std::pair<cv::Mat, cv::Mat> data = reader->get_next_frame();    
+    Sophus::SE3d groundtruth_pose = reader->get_next_groundtruth_pose();
+    cv::Mat frame = data.first;
+    cv::Mat depth = data.second;
     
     Map mapp = Map(orb_matcher_cfg);
     LocalMapping *local_mapper = new LocalMapping(mapp);
     Tracker *tracker = new Tracker(cfg, voc, pnp_ransac_cfg, orb_matcher_cfg);
-    tracker->initialize(frame, depth, mapp, pose);
-    reader->store_entry(pose);
+    tracker->initialize(frame, depth, mapp, groundtruth_pose);
+    reader->store_entry(groundtruth_pose);
     while(1) {
-        std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> data = reader->get_next_frame();
-        frame = data.first.first;
-        depth = data.first.second;
-        pose = data.second; 
-        KeyFrame *kf  = tracker->tracking(frame, depth, mapp, pose);
+        std::pair<cv::Mat, cv::Mat> data = reader->get_next_frame();    
+        Sophus::SE3d groundtruth_pose = reader->get_next_groundtruth_pose();
+        frame = data.first;
+        depth = data.second; 
+        KeyFrame *kf  = tracker->tracking(frame, depth, mapp, groundtruth_pose);
         reader->store_entry(kf->Tiw);
         if (tracker->Is_KeyFrame_needed())
         {

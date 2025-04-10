@@ -18,7 +18,6 @@
 #include "OrbMatcher.h"
 #include "config.h"
 #include "ORBVocabulary.h"
-#include "ORBextractor.h"
 
 using namespace std;
 using namespace cv;
@@ -31,8 +30,7 @@ public:
         this->K = cfg.K;
         cv::cv2eigen(cfg.K, this->K_eigen);
         this->voc = voc;
-        // this->initial_pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
-        
+        this->mDistCoef = cfg.distortion;
         this->fmf = new FeatureMatcherFinder(480, 640, cfg);
         this->bundleAdjustment = new BundleAdjustment();
         this->matcher = new OrbMatcher(orb_matcher_config);
@@ -41,7 +39,7 @@ public:
     KeyFrame* prev_kf = nullptr;
     KeyFrame *reference_kf = nullptr;
 
-    ORBextractor* extractor = new ORBextractor(1000, 1.2, 8, 20, 7);
+    vector<double> mDistCoef;
     ORBVocabulary* voc;
     Mat K; 
     Eigen::Matrix3d K_eigen;
@@ -58,8 +56,6 @@ public:
     std::unordered_map<MapPoint*, Feature*> TrackLocalMap(Map &mapp);
     std::unordered_map<MapPoint*, Feature*> TrackConsecutiveFrames();
     bool Is_KeyFrame_needed();
-
-
     // auxiliary functions
     void get_current_key_frame(Mat frame, Mat depth);
     void tracking_was_lost();

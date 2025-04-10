@@ -74,12 +74,8 @@ KeyFrame *Map::get_reference_keyframe(KeyFrame *kf)
     return this->keyframes[reference_idx];
 }
 
-std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
+std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame, KeyFrame *reference_kf)
 {
-    KeyFrame *reference_kf = get_reference_keyframe(current_frame);
-    if (this->graph.find(reference_kf) == this->graph.end()) {
-        std::cout << " CEVA NU E BINE NU GASESTE KEY FRAME IN COMPUTE LOCAL MAP\n";
-    }
     std::unordered_set<MapPoint *> out = reference_kf->map_points;
     for (std::pair<KeyFrame *, int> graph_edge : this->graph[reference_kf])
     {
@@ -88,10 +84,7 @@ std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
             std::cout << " nu e bine ca e null\n";
             continue;
         }
-        std::unordered_set<MapPoint *> map_points_for_keyframe = curr_kf->map_points;  
-        for (auto it = map_points_for_keyframe.begin(); it != map_points_for_keyframe.end(); it++) {
-            out.insert(*it);
-        }
+        out.insert(curr_kf->map_points.begin(), curr_kf->map_points.end());
     }
     return out;
 }
@@ -99,36 +92,27 @@ std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame)
 
 void Map::compute_map_points(KeyFrame *kf)
 {
-    int map_points_associated = 0;
-    int negative_depth = 0;
-    int close_map_points = 0;
-    int far_map_poins = 0;
     Eigen::Vector3d camera_center = kf->compute_camera_center();
     for (int i = 0; i < kf->features.size(); i++)
     {
-        if (kf->features[i].get_map_point() != nullptr) {
-            map_points_associated++;
-            continue;
-        }
-        double depth = kf->compute_depth_in_keypoint(kf->features[i].kp);
-        if (depth <= 1e-6) {
-            negative_depth++;
-            continue;  
-        } 
+        Feature f = kf->features[i];
+        if (f.get_map_point() != nullptr || kf->features[i].depth <= 1e-6) continue;
         Eigen::Vector4d wcoord = kf->fromImageToWorld(i);
-        MapPoint *mp = new MapPoint(kf, kf->features[i].kp, camera_center, wcoord,  kf->orb_descriptors.row(i), i);
+        MapPoint *mp = new MapPoint(kf, f.kpu, camera_center, wcoord, f.descriptor, i);
         kf->features[i].set_map_point(mp);
         kf->map_points.insert(mp);
-    }
-    if (kf->map_points.size() == 0) {
-        std::cout << "CEVA NU E BINE NU S-AU CREAT PUNCTELE\n";
     }
 }
 
 // de adaugat reference keyframe
-std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf)
+std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf, KeyFrame *reference_kf)
 {
-    std::unordered_set<MapPoint*> local_map = this->compute_local_map(curr_kf);
+    // reference_kf = get_reference_keyframe(curr_kf);
+    if (this->graph.find(reference_kf) == this->graph.end()) {
+        std::cout << " \nCEVA NU E BINE NU GASESTE KEY FRAME IN COMPUTE LOCAL MAP\n";
+        return {};
+    }
+    std::unordered_set<MapPoint*> local_map = this->compute_local_map(curr_kf, reference_kf);
 
     int window = curr_kf->current_idx > 2 ? 3 : 5;  
     return this->matcher->match_frame_map_points(curr_kf, local_map, window);

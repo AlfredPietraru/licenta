@@ -12,6 +12,7 @@
 #include <opencv2/calib3d.hpp>
 #include "KeyFrame.h"
 #include "config.h"
+#include "ORBextractor.h"
 
 
 class FeatureMatcherFinder {
@@ -30,15 +31,19 @@ public:
 
     std::vector<int> fast_features_cell;
     std::vector<int> nr_keypoints_found;
+    std::vector<double> mDistCoef;
+    cv::Mat K;
     cv::Ptr<cv::ORB> orb;
     cv::Ptr<cv::DescriptorMatcher> matcher;
+    ORBextractor* extractor = new ORBextractor(1000, 1.2, 8, 20, 7);
     
     FeatureMatcherFinder() {}
     FeatureMatcherFinder(int rows, int cols, Config cfg);
 
-    // std::vector<cv::DMatch> match_features_last_frame(KeyFrame *current_kf, KeyFrame *past_kf);
+    std::pair<std::pair<std::vector<cv::KeyPoint>, cv::Mat>, std::vector<cv::KeyPoint>> compute_keypoints_descriptors(cv::Mat frame);
+private:
+    std::vector<cv::KeyPoint> UndistortKeyPoints(std::vector<cv::KeyPoint> kps);
     std::vector<cv::KeyPoint> extract_keypoints(cv::Mat& frame);
-    cv::Mat compute_descriptors(cv::Mat frame, std::vector<cv::KeyPoint>& keypoints);
 };
 
 

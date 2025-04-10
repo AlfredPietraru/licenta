@@ -104,21 +104,27 @@ TumDatasetReader::TumDatasetReader(Config cfg) {
 }   
 
 
-std::pair<std::pair<cv::Mat, cv::Mat>, Sophus::SE3d> TumDatasetReader::get_next_frame() {
-    std::cout << idx << " " << this->rgb_path[idx] << " " << this->depth_path[idx] << "\n";
+
+Sophus::SE3d TumDatasetReader::get_next_groundtruth_pose() {
+    Sophus::SE3d pose = this->poses[pos_idx];
+    pos_idx++;
+    return pose;
+}
+
+std::pair<cv::Mat, cv::Mat> TumDatasetReader::get_next_frame() {
+    std::cout << frame_idx << " " << this->rgb_path[frame_idx] << " " << this->depth_path[frame_idx] << "\n";
     
-    cv::Mat distorted_frame = cv::imread(this->rgb_path[idx], cv::IMREAD_COLOR_RGB);
-    cv::Mat depth = cv::imread(this->depth_path[idx], cv::IMREAD_UNCHANGED);
-    cv::Mat frame;
-    cv::undistort(distorted_frame, frame, this->cfg.K, this->cfg.distortion);
-    Sophus::SE3d pose = this->poses[idx];
-    idx++;
-    return {{frame, depth}, pose};
+    cv::Mat frame = cv::imread(this->rgb_path[frame_idx], cv::IMREAD_COLOR_RGB);
+    cv::Mat depth = cv::imread(this->depth_path[frame_idx], cv::IMREAD_UNCHANGED);
+    cv::Mat gray;
+    cv::cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
+    frame_idx++;
+    return {gray, depth};
 }
 
 
 void TumDatasetReader::store_entry(Sophus::SE3d pose) {
-    std::string path = this->rgb_path[idx - 1];
+    std::string path = this->rgb_path[frame_idx - 1];
     std::string file_name = extract_timestamp(path);
     this->outfile << file_name <<  " " << pose.translation().x() << " " << pose.translation().y() << " " << pose.translation().z() << " ";
     this->outfile << pose.unit_quaternion().x() << " " << pose.unit_quaternion().y() << " "  << pose.unit_quaternion().z() << " " << pose.unit_quaternion().w() << "\n"; 

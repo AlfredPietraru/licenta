@@ -5,6 +5,8 @@ FeatureMatcherFinder::FeatureMatcherFinder(int rows, int cols, Config cfg) {
     this->nr_cells_row = rows / 40;
     this->nr_cells_collumn = cols / 40;
     this->window = 40;
+    this->K = cfg.K;
+    this->mDistCoef = cfg.distortion;
     this->orb = cv::ORB::create(cfg.num_features, 1.2F, 8, cfg.edge_threshold, 0, 2, cv::ORB::HARRIS_SCORE, cfg.patch_size, cfg.fast_threshold);
     this->orb_edge_threshold = cfg.edge_threshold;
     this->fast_step = cfg.fast_step;
@@ -16,6 +18,42 @@ FeatureMatcherFinder::FeatureMatcherFinder(int rows, int cols, Config cfg) {
     this->fast_features_cell = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row, this->fast_threshold);
     this->matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
 }
+
+
+std::vector<cv::KeyPoint> FeatureMatcherFinder::UndistortKeyPoints(std::vector<cv::KeyPoint> kps)
+{
+    if(mDistCoef[0]==0.0) return kps;
+    cv::Mat mat(kps.size(), 2, CV_32F);
+    for(int i=0; i<kps.size(); i++)
+    {
+        mat.at<float>(i,0)=kps[i].pt.x;
+        mat.at<float>(i,1)=kps[i].pt.y;
+    }
+
+    mat=mat.reshape(2);
+    cv::undistortPoints(mat, mat, this->K, mDistCoef,cv::Mat(),this->K);
+    mat=mat.reshape(1);
+
+    std::vector<cv::KeyPoint> out;
+    
+    for(int i=0; i<kps.size(); i++)
+    {
+        kps[i].pt.x=mat.at<float>(i,0);
+        kps[i].pt.y=mat.at<float>(i,1);
+        out.push_back(kps[i]);
+    }
+    return out;
+}
+
+std::pair<std::pair<std::vector<cv::KeyPoint>, cv::Mat>, std::vector<cv::KeyPoint>> FeatureMatcherFinder::compute_keypoints_descriptors(cv::Mat frame) {
+    std::vector<cv::KeyPoint> keypoints;
+    cv::Mat descriptors;
+    (*this->extractor)(frame, cv::Mat(), keypoints, descriptors);
+    std::vector<cv::KeyPoint> undistorted_kps = this->UndistortKeyPoints(keypoints);
+
+    return {{keypoints, descriptors}, undistorted_kps};
+}
+
 
 
 std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat& frame) {
@@ -64,8 +102,3 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat& frame
     return keypoints;
 }
 
-cv::Mat FeatureMatcherFinder::compute_descriptors(cv::Mat frame, std::vector<cv::KeyPoint> &kps) {
-    cv::Mat descriptors;
-    this->orb->compute(frame, kps, descriptors);
-    return descriptors;
-}

@@ -17,23 +17,11 @@ int Feature::ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b)
     return dist;
 }
 
-Feature::Feature(cv::KeyPoint kp, cv::Mat descriptor, MapPoint *mp, int idx, double stereo_depth) : kp(kp), 
-    mp(mp), idx(idx), descriptor(descriptor), stereo_depth(stereo_depth) {}
-
-Feature::Feature(cv::KeyPoint kp, cv::Mat descriptor, int idx, double stereo_depth) : kp(kp), mp(nullptr), 
-    idx(idx), descriptor(descriptor), stereo_depth(stereo_depth) {}
+Feature::Feature(cv::KeyPoint kp, cv::KeyPoint kpu, cv::Mat descriptor, int idx, double depth, double stereo_depth) : kp(kp), mp(nullptr), 
+    idx(idx), descriptor(descriptor), stereo_depth(stereo_depth), kpu(kpu), depth(depth) {}
 
 void Feature::set_map_point(MapPoint *mp) {
-    if (mp == nullptr) {
-        this->mp = mp;
-        this->current_hamming_distance = ComputeHammingDistance(mp->orb_descriptor, descriptor);    
-    } else {
-        int new_hamming_distance = ComputeHammingDistance(mp->orb_descriptor, descriptor);
-        if (new_hamming_distance < current_hamming_distance) {
-            this->mp = mp;
-            this->current_hamming_distance = new_hamming_distance; 
-        }
-    }
+    this->mp = mp;
 }
 
 MapPoint* Feature::get_map_point() {

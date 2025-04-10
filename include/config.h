@@ -43,6 +43,7 @@ struct Pnp_Ransac_Config {
     float confidence;
 };
 
+
 Orb_Matcher load_orb_matcher_config(const std::string &filename);
 
 Pnp_Ransac_Config load_pnp_ransac_config(const std::string &filename);

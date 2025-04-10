@@ -40,47 +40,54 @@ int KeyFrame::check_number_close_points() {
     return this->map_points.size();
 }
 
-
-KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<cv::KeyPoint>& keypoints,
+KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<double> distorsion,  std::vector<cv::KeyPoint>& keypoints, std::vector<cv::KeyPoint>& undistored_kps,
          cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, cv::Mat& frame, ORBVocabulary *voc)
     : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), depth_matrix(depth_matrix), current_idx(current_idx), frame(frame) {
-        this->grid = cv::Mat::zeros(frame.rows, frame.cols, CV_32S);
-        this->grid += cv::Scalar(-1);
-        this->maximum_possible_map_points = keypoints.size();
+
         for (int i = 0; i < keypoints.size(); i++) {
             cv::KeyPoint kp = keypoints[i];
+            cv::KeyPoint kpu = undistored_kps[i]; 
             double depth = this->compute_depth_in_keypoint(kp);
             if(depth <= 1e-6) {
-                this->maximum_possible_map_points--;
-                this->features.push_back(Feature(kp, orb_descriptors.row(i), i, -1)); // filler negative value for stereo depth
+                this->features.push_back(Feature(kp, kpu, orb_descriptors.row(i), i, -10001, -10001));
             } else { 
-                double rgbd_right_coordinate = kp.pt.x - (this->K(0, 0) * BASELINE / depth);
-                this->features.push_back(Feature(kp, orb_descriptors.row(i), i, rgbd_right_coordinate));
+                double rgbd_right_coordinate = kpu.pt.x - (this->K(0, 0) * BASELINE / depth);
+                this->features.push_back(Feature(kp, kpu, orb_descriptors.row(i), i, depth, rgbd_right_coordinate));
             }
+        }
 
-            int y_idx = (int)kp.pt.y;
-            int x_idx = (int)kp.pt.x;
+        this->grid = cv::Mat::zeros(frame.rows, frame.cols, CV_32S);
+        this->grid += cv::Scalar(-1);
+
+        for (int i = 0; i < this->features.size(); i++) {
+            Feature f = this->features[i];
+            int y_idx = (int)f.kpu.pt.y;
+            int x_idx = (int)f.kpu.pt.x;
             if (this->grid.at<int>(y_idx, x_idx) == -1) {
                 this->grid.at<int>(y_idx, x_idx) = i;
                 continue;
             } 
-            if (kp.pt.y - y_idx > 0.5 && this->grid.at<int>(y_idx + 1, x_idx) == -1) {
+            if (f.kpu.pt.y - y_idx > 0.5 && this->grid.at<int>(y_idx + 1, x_idx) == -1) {
                 this->grid.at<int>(y_idx + 1, x_idx) == i;
                 continue;
             }
-            if (kp.pt.x - x_idx > 0.5 && this->grid.at<int>(y_idx, x_idx + 1) == -1) {
+            if (f.kpu.pt.x - x_idx > 0.5 && this->grid.at<int>(y_idx, x_idx + 1) == -1) {
                 this->grid.at<int>(y_idx, x_idx + 1) == i;
                 continue;
             }
             this->grid.at<int>(y_idx + 1, x_idx + 1) = i;
         }
-
-        std::vector<cv::Mat> vector_descriptors;
-        for (int i = 0; i < this->orb_descriptors.rows; i++) {
-            vector_descriptors.push_back(this->orb_descriptors.row(i));
-        }
-        voc->transform(vector_descriptors, this->bow_vec, this->features_vec, 4);
+        
+        this->compute_bow_representation(voc);
     }
+
+void KeyFrame::compute_bow_representation(ORBVocabulary *voc) {
+    std::vector<cv::Mat> vector_descriptors;
+    for (int i = 0; i < this->orb_descriptors.rows; i++) {
+        vector_descriptors.push_back(this->orb_descriptors.row(i));
+    }
+    voc->transform(vector_descriptors, this->bow_vec, this->features_vec, 4);
+}
 
 Eigen::Vector3d KeyFrame::compute_camera_center() {
     return -this->Tiw.rotationMatrix().transpose() * this->Tiw.translation();
@@ -104,17 +111,11 @@ float KeyFrame::compute_depth_in_keypoint(cv::KeyPoint kp) {
 }
 
 Eigen::Vector4d KeyFrame::fromImageToWorld(int kp_idx) {
-    cv::KeyPoint kp = this->features[kp_idx].kp;
-    float dd = this->compute_depth_in_keypoint(kp);
-    double new_x = (kp.pt.x - this->K(0, 2)) * dd / this->K(0, 0);
-    double new_y = (kp.pt.y - this->K(1, 2)) * dd / this->K(1, 1);
-    return this->Tiw.inverse().matrix() *  Eigen::Vector4d(new_x, new_y, dd, 1);
+    Feature f = this->features[kp_idx];
+    double new_x = (f.kp.pt.x - this->K(0, 2)) * f.depth / this->K(0, 0);
+    double new_y = (f.kp.pt.y - this->K(1, 2)) * f.depth / this->K(1, 1);
+    return this->Tiw.inverse().matrix() *  Eigen::Vector4d(new_x, new_y, f.depth, 1);
 }
-
-cv::KeyPoint KeyFrame::get_keypoint(int idx) {
-    return this->features[idx].get_key_point();
-}
-
 
 std::vector<cv::KeyPoint> KeyFrame::get_all_keypoints() {
     std::vector<cv::KeyPoint> out;
