@@ -4,12 +4,19 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include <opencv2/core/core.hpp>
+#include <iostream>
 #include <sophus/se3.hpp>
 #include <unordered_set>
 #include "Feature.h"
-#include <iostream>
 #include "ORBVocabulary.h"
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/features2d/features2d.hpp>
+#include "opencv2/highgui/highgui.hpp"
+#include <opencv2/dnn/dnn.hpp>
+#include <opencv2/features2d.hpp>
+#include <opencv2/calib3d.hpp>
+#include <opencv2/core/eigen.hpp>
 
 class KeyFrame
 {
@@ -27,6 +34,7 @@ public:
     cv::Mat frame;
     cv::Mat depth_matrix;
     const double BASELINE = 0.08;
+    float minX, maxX, minY, maxY;
 
     DBoW2::BowVector bow_vec;
     DBoW2::FeatureVector features_vec;

@@ -10,7 +10,6 @@
 #include <opencv2/dnn/dnn.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d.hpp>
-#include "KeyFrame.h"
 #include "config.h"
 #include "ORBextractor.h"
 

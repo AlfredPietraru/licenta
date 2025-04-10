@@ -68,6 +68,7 @@ void Tracker::initialize(Mat frame, Mat depth, Map& mapp, Sophus::SE3d pose)
     undistorted_kps = out.second;
     // Sophus::SE3d(Eigen::Matrix4d::Identity());
     // pose -> inainte in constructor;
+    // this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
     this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
 
     this->reference_kf = this->current_kf;

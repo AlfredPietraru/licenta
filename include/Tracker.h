@@ -10,8 +10,8 @@
 #include <opencv2/dnn/dnn.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d.hpp>
-#include <sophus/se3.hpp>
 #include <opencv2/core/eigen.hpp>
+#include <sophus/se3.hpp>
 #include "Map.h"
 #include "MotionOnlyBA.h"
 #include "FeatureFinderMatcher.h"
