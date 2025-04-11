@@ -24,8 +24,9 @@ using namespace cv;
 
 class Tracker {
 public:
-    void initialize(Mat frame, Mat depth, Map &mapp, Sophus::SE3d pose);
-    KeyFrame* tracking(Mat frame, Mat depth, Map& map_points, Sophus::SE3d ground_truth_pose);
+    void initialize(Mat frame, Mat depth, Map *mapp, Sophus::SE3d pose);
+    std::pair<KeyFrame*, bool> tracking(Mat frame, Mat depth, Map *mapp, Sophus::SE3d ground_truth_pose);
+
     Tracker(Config cfg, ORBVocabulary* voc, Pnp_Ransac_Config pnp_ransac_cfg, Orb_Matcher orb_matcher_config) {
         this->K = cfg.K;
         cv::cv2eigen(cfg.K, this->K_eigen);
@@ -49,12 +50,9 @@ public:
     OrbMatcher *matcher;
 
 
-    
-    // important functions
-    // Sophus::SE3d TrackWithLastFrame(vector<DMatch> good_matches);
     std::unordered_map<MapPoint*, Feature*> TrackReferenceKeyFrame();
-    std::unordered_map<MapPoint*, Feature*> TrackLocalMap(Map &mapp);
     std::unordered_map<MapPoint*, Feature*> TrackConsecutiveFrames();
+    std::unordered_map<MapPoint*, Feature*> TrackLocalMap(Map *mapp);
     bool Is_KeyFrame_needed();
     // auxiliary functions
     void get_current_key_frame(Mat frame, Mat depth);

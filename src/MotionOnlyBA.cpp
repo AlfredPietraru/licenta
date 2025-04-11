@@ -119,6 +119,9 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
     for (int i = 0; i < 4; i++)
     {
         ceres::Problem problem;
+        // problem.SetManifold(pose_parameters,
+        // problem.SetManifold(pose_parameters, new ceres::ProductManifold());
+    
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
         options.function_tolerance = 1e-7;

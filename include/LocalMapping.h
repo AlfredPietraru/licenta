@@ -4,8 +4,8 @@
 
 class LocalMapping {
 public:
-    Map mapp;
-    LocalMapping(Map mapp) {
+    Map *mapp;
+    LocalMapping(Map *mapp) {
         this->mapp = mapp;
     }
 

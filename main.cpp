@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     cv::Mat frame = data.first;
     cv::Mat depth = data.second;
     
-    Map mapp = Map(orb_matcher_cfg);
+    Map *mapp = new Map(orb_matcher_cfg);
     LocalMapping *local_mapper = new LocalMapping(mapp);
     Tracker *tracker = new Tracker(cfg, voc, pnp_ransac_cfg, orb_matcher_cfg);
     tracker->initialize(frame, depth, mapp, groundtruth_pose);
@@ -51,14 +51,12 @@ int main(int argc, char **argv)
         Sophus::SE3d groundtruth_pose = reader->get_next_groundtruth_pose();
         frame = data.first;
         depth = data.second; 
-        KeyFrame *kf  = tracker->tracking(frame, depth, mapp, groundtruth_pose);
+        std::pair<KeyFrame *, bool> tracker_out = tracker->tracking(frame, depth, mapp, groundtruth_pose);
+        KeyFrame *kf = tracker_out.first;
+        bool needed_keyframe = tracker_out.second;
         reader->store_entry(kf->Tiw);
-        if (tracker->Is_KeyFrame_needed())
-        {
-            std::cout << "DAAA UN KEYFRAME TREBUIE ADAUGAT\n\n\n";
-            tracker->reference_kf = tracker->current_kf;
-            tracker->prev_kf = tracker->current_kf;
-            tracker->keyframes_from_last_global_relocalization = 0;
+        if (needed_keyframe) {
+            std::cout << "ADAUGA AICI UN KEYFRAME\n";
             local_mapper->local_map(kf);
         }
     }

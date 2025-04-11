@@ -49,7 +49,6 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
     }   
     this->keyframes.push_back(new_kf);
     this->graph.insert({new_kf, edges_new_keyframe});
-    this->compute_map_points(new_kf);
 }
 
 Map::Map(Orb_Matcher orb_matcher_cfg) {
