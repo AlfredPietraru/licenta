@@ -15,6 +15,10 @@ include_directories( ${OpenCV_INCLUDE_DIRS} )
 find_package(Eigen3 REQUIRED)
 include_directories ( ${EIGEN3_INCLUDE_DIR} )
 
+find_package(Pangolin REQUIRED)
+
+include_directories( ${})
+
 find_package(Ceres REQUIRED)
 include_directories(${CERES_LIBRARIES})
 
@@ -53,6 +57,7 @@ set(SOURCES
     src/TumDatasetReader.cpp
     src/LocalMapping.cpp
     src/ORBextractor.cpp
+    src/MapDrawer.cpp
 )
 
 set(HEADERS
@@ -69,6 +74,7 @@ set(HEADERS
     "include/ORBVocabulary.h"
     "include/LocalMapping.h"
     "include/ORBextractor.h"
+    "include/MapDrawer.h"
 )
 
 
@@ -81,6 +87,7 @@ target_link_libraries(main
     ${CERES_LIBRARIES}
     ${Sophus_LIBRARIES}
     ${DBoW2_LIBS}
+    ${Pangolin_LIBRARIES}
 )
 
 # /usr/local/lib/libg2o_core.so

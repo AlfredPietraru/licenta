@@ -18,6 +18,7 @@
 #include "OrbMatcher.h"
 #include "config.h"
 #include "ORBVocabulary.h"
+#include "MapDrawer.h"
 
 using namespace std;
 using namespace cv;
@@ -48,6 +49,7 @@ public:
     BundleAdjustment *bundleAdjustment;
     FeatureMatcherFinder *fmf;
     OrbMatcher *matcher;
+    MapDrawer *mapDrawer;
 
 
     std::unordered_map<MapPoint*, Feature*> TrackReferenceKeyFrame();

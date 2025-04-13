@@ -3,6 +3,7 @@
 
 void compute_difference_between_positions(const Sophus::SE3d &estimated, const Sophus::SE3d &ground_truth)
 {
+    
     Sophus::SE3d relative = ground_truth.inverse() * estimated;
     double APE = relative.log().norm();
 
@@ -50,6 +51,8 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
         return;
     }
 
+    // de incercat ultima transformare ca estimare
+    // Sophus::SE3d pose_estimation = this->current_kf->Tiw;
     Sophus::SE3d pose_estimation = this->current_kf->Tiw * this->prev_kf->Tiw.inverse() * this->current_kf->Tiw;
     this->prev_kf = this->current_kf;
     this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 
@@ -70,6 +73,7 @@ void Tracker::initialize(Mat frame, Mat depth, Map* mapp, Sophus::SE3d pose)
 
     this->reference_kf = this->current_kf;
     mapp->add_first_keyframe(this->reference_kf);
+    this->mapDrawer = new MapDrawer(mapp, pose.matrix()); 
     std::cout << "SFARSIT INITIALIZARE\n\n";
 }
 
@@ -89,6 +93,35 @@ bool Tracker::Is_KeyFrame_needed()
     bool c4 = reference_kf->map_points.size() / 10 > this->current_kf->check_number_close_points();
     bool c5 = this->current_kf->check_possible_close_points_generation() > 70;
     return c1 && c2 && c3 && c4 && true;
+}
+
+
+void check_feature_matching(KeyFrame *curr, KeyFrame *ref, std::unordered_map<MapPoint *, Feature *>& matches) {
+    std::unordered_map<MapPoint *, Feature *> ref_map_feature = ref->return_map_points_keypoint_correlation();
+    cv::Mat img_matches;
+    std::vector<cv::DMatch> dmatches;
+    for (const auto& match : matches) {
+        MapPoint* mp = match.first;
+        Feature *f = match.second;
+
+        if (ref_map_feature.find(mp) == ref_map_feature.end()) continue;
+        Feature *f_ref = ref_map_feature[mp];
+            cv::DMatch dmatch;
+            dmatch.queryIdx = f->idx; 
+            dmatch.trainIdx = f_ref->idx;  
+            dmatch.distance = f->ComputeHammingDistance(f->descriptor, f_ref->descriptor); 
+            // std::cout << dmatch.distance << " ";
+            dmatches.push_back(dmatch);
+    }
+    // std::cout << "\n";
+    std::vector<cv::DMatch> sub_dmatches;
+    int i = 0;
+    int j = 100;
+    // int j = matches.size();
+    copy(dmatches.begin() + i, dmatches.begin() + j, back_inserter(sub_dmatches));
+    cv::drawMatches(curr->frame, curr->get_all_keypoints(), ref->frame, ref->get_all_keypoints(), sub_dmatches, img_matches);
+    cv::imshow("Feature Matches", img_matches);
+    waitKey(0);
 }
 
 
@@ -116,6 +149,7 @@ std::unordered_map<MapPoint *, Feature *> Tracker::TrackReferenceKeyFrame() {
 std::unordered_map<MapPoint*, Feature*> Tracker::TrackConsecutiveFrames() {
     int window = 15;
     std::unordered_map<MapPoint*, Feature*> matches = matcher->match_consecutive_frames(this->current_kf, this->prev_kf, window);
+    // check_feature_matching(this->current_kf, this->reference_kf, matches);
     if (matches.size() < 20) {
         matches = matcher->match_consecutive_frames(this->current_kf, this->prev_kf, 2 * window);
         if (matches.size() < 20) {
@@ -162,7 +196,7 @@ std::unordered_map<MapPoint*, Feature*> Tracker::TrackLocalMap(Map *mapp) {
 std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Map *mapp, Sophus::SE3d ground_truth_pose) {
     this->get_current_key_frame(frame, depth);
     std::unordered_map<MapPoint *, Feature *> matches;
-    if (this->current_kf->current_idx - this->reference_kf->current_idx <= 2) {
+    if (this->current_kf->current_idx - this->reference_kf->current_idx <= 1) {
         std::cout << "inca urmarit cu ajutorul track reference frame\n";
         matches = this->TrackReferenceKeyFrame();
     } else {
@@ -174,10 +208,14 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Map *mapp, So
         }
     }
     this->current_kf->correlate_map_points_to_features_current_frame(matches);
+    // compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);    
     std::unordered_map<MapPoint *, Feature *>  new_matches = this->TrackLocalMap(mapp);
     this->current_kf->correlate_map_points_to_features_current_frame(new_matches);
-    compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
-    // this->current_kf->debug_keyframe(100, matches, new_matches);
+    // compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
+    this->current_kf->debug_keyframe(100, matches, new_matches);
+    // cv::Mat curr_mat;
+    // cv::eigen2cv(this->current_kf->Tiw.inverse().matrix(), curr_mat);
+    // this->mapDrawer->SetCurrentCameraPose(curr_mat);
     bool needed_keyframe = this->Is_KeyFrame_needed(); 
     if (needed_keyframe) {
         std::cout << "DAAA UN KEYFRAME TREBUIE ADAUGAT\n\n\n";

@@ -17,6 +17,13 @@ void Map::debug_map(KeyFrame *kf) {
     }
 }
 
+std::unordered_set<MapPoint*> Map::get_all_map_points() {
+    std::unordered_set<MapPoint*> out;
+    for (int i = 0; i < keyframes.size(); i++) {
+        out.insert(keyframes[i]->map_points.begin(), keyframes[i]->map_points.end());
+    }
+    return out;
+}
 
 
 void Map::add_first_keyframe(KeyFrame *new_kf) {

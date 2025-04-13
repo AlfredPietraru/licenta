@@ -9,14 +9,14 @@ public:
                                      map_coordinate(map_coordinate), scale_sigma(scale_sigma), K(K), is_monocular(is_monocular) {}
 
     template <typename T>
-    bool operator()(const T *const params, T *residuals) const
+    bool operator()(const T *const quat, const T *const translation, T *residuals) const
     {
         T map_coordinate_world[3] = {T(map_coordinate(0)), T(map_coordinate(1)), T(map_coordinate(2))};
         T camera_coordinates[3];
-        ceres::AngleAxisRotatePoint(params, map_coordinate_world, camera_coordinates);
-        camera_coordinates[0] += params[3];
-        camera_coordinates[1] += params[4];
-        camera_coordinates[2] += params[5];
+        ceres::QuaternionRotatePoint(quat, map_coordinate_world, camera_coordinates);
+        camera_coordinates[0] += translation[0];
+        camera_coordinates[1] += translation[1];
+        camera_coordinates[2] += translation[2];
         T inv_d = T(1) / (camera_coordinates[2] + T(1e-6));
         T x = T(K(0, 0)) * camera_coordinates[0] * inv_d + T(K(0, 2));
         T y = T(K(1, 1)) * camera_coordinates[1] * inv_d + T(K(1, 2));
@@ -32,13 +32,13 @@ public:
 
     static ceres::CostFunction *Create_Monocular(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
     {
-        return (new ceres::AutoDiffCostFunction<BundleError, 2, 6>(
+        return (new ceres::AutoDiffCostFunction<BundleError, 2, 4, 3>(
             new BundleError(observed, map_coordinate, scale_sigma, K, true)));
     }
 
     static ceres::CostFunction *Create_Stereo(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
     {
-        return (new ceres::AutoDiffCostFunction<BundleError, 3, 6>(
+        return (new ceres::AutoDiffCostFunction<BundleError, 3, 4, 3>(
             new BundleError(observed, map_coordinate, scale_sigma, K, false)));
     }
 
@@ -64,8 +64,8 @@ double get_rgbd_reprojection_error(MapPoint *mp, Eigen::Matrix3d K, Sophus::SE3d
     double z_projected = x - K(0, 0) * 0.08 * inv_d;
     residuals[2] = (z_projected - feature->stereo_depth) / std::pow(1.2, kp.octave);
     double out = residuals[0] * residuals[0] + residuals[1] * residuals[1] + residuals[2] * residuals[2];
-    if (out <= chi2) return out;
-    return 2 * sqrt(chi2) * sqrt(out) - chi2;
+    if (out <= sqrt(chi2)) return out / 2;
+    return sqrt(chi2) * sqrt(out) - chi2 / 2;
 }
 
 
@@ -80,56 +80,54 @@ double get_monocular_reprojection_error(MapPoint *mp, Eigen::Matrix3d K, Sophus:
     residuals[0] = (x - kp.pt.x) / std::pow(1.2, kp.octave);
     residuals[1] = (y - kp.pt.y) / std::pow(1.2, kp.octave);
     double out = residuals[0] * residuals[0] + residuals[1] * residuals[1];
-    if (out <= chi2) return out;
-    return 2 * sqrt(chi2) * sqrt(out) - chi2;
+    if (out <= sqrt(chi2)) return out / 2;
+    return sqrt(chi2) * sqrt(out) - chi2 / 2;
 }
 
-
-
-Sophus::SE3d compute_pose(KeyFrame *kf, double *pose_parameters) {
-    Eigen::Vector3d angle_axis_eigen(pose_parameters[0], pose_parameters[1], pose_parameters[2]);
-    Eigen::AngleAxisd aa(angle_axis_eigen.norm(), angle_axis_eigen.normalized());
-    Eigen::Quaterniond quaternion(aa);
+Sophus::SE3d compute_pose(KeyFrame *kf, double *q, double *translation) {
+    Eigen::Quaterniond quaternion(q[0], q[1], q[2], q[3]);
     Eigen::Quaterniond old_quaternion = kf->Tiw.unit_quaternion();
     if (old_quaternion.dot(quaternion) < 0)
     {
         quaternion.coeffs() *= -1;
     }
-    return Sophus::SE3d(quaternion, Eigen::Vector3d(pose_parameters[3], pose_parameters[4], pose_parameters[5]));
+    return Sophus::SE3d(quaternion, Eigen::Vector3d(translation[0], translation[1], translation[2]));
 }
 
 Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *, Feature *> &matches)
 {
     if (matches.size() < 3)
         return kf->Tiw;
-
+    
+    const float chi2Mono[4]={5.991, 5.991, 5.991, 5.991};
+    const float chi2Stereo[4]={7.815, 7.815, 7.815, 7.815};
+    double quat_parameters[4];
+    double translation[3];
     Sophus::SE3d pose = kf->Tiw;
     const double BASELINE = 0.08;
-    Eigen::Vector3d angle_axis_sophus = pose.so3().log();
-    double pose_parameters[6];
-    pose_parameters[0] = angle_axis_sophus[0];
-    pose_parameters[1] = angle_axis_sophus[1];
-    pose_parameters[2] = angle_axis_sophus[2];
-    pose_parameters[3] = pose.translation().x();
-    pose_parameters[4] = pose.translation().y();
-    pose_parameters[5] = pose.translation().z();
+    Eigen::Quaterniond quat = pose.unit_quaternion();
+    quat_parameters[0] = quat.w();
+    quat_parameters[1] = quat.x();
+    quat_parameters[2] = quat.y();
+    quat_parameters[3] = quat.z();
+    translation[0] = pose.translation().x();
+    translation[1] = pose.translation().y();
+    translation[2] = pose.translation().z();
+    // std::cout << quat_parameters[0] << " " << quat_parameters[1] << " " << quat_parameters[2] << " " << quat_parameters[3] << "     " << translation[0] << " " << translation[1] << " " << translation[2] << "\n"; 
 
-    const float chi2Mono[4]={5.991,5.991,5.991,5.991};
-    const float chi2Stereo[4]={7.815,7.815,7.815, 7.815};
     for (int i = 0; i < 4; i++)
     {
+
         ceres::Problem problem;
-        // problem.SetManifold(pose_parameters,
-        // problem.SetManifold(pose_parameters, new ceres::ProductManifold());
-    
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
         options.function_tolerance = 1e-7;
         options.gradient_tolerance = 1e-7;
         options.parameter_tolerance = 1e-8;
+
         options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
         options.check_gradients = false;
-        options.minimizer_progress_to_stdout = false;
+        // options.minimizer_progress_to_stdout = true;
         options.max_num_iterations = 10;
         
         ceres::LossFunction *loss_function_mono = new ceres::HuberLoss(sqrt(chi2Mono[i]));
@@ -143,29 +141,34 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
             MapPoint *mp = it->first;
             if (kf->check_map_point_outlier(mp))  continue;
             ceres::CostFunction *cost_function;
-            cv::KeyPoint kp = it->second->get_key_point();
+            cv::KeyPoint kpu = it->second->kpu;
             if (it->second->stereo_depth <= 1e-6)
             {
-                cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kp.pt.x, kp.pt.y, 0), it->first->wcoord,
-                                                              std::pow(1.2, kp.octave), kf->K);
-                ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function_mono, pose_parameters);
+                cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kpu.pt.x, kpu.pt.y, 0), it->first->wcoord,
+                                                              std::pow(1.2, kpu.octave), kf->K);
+                ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function_mono, quat_parameters, translation);
                 residual_monocular_points.insert({it->first, id});
             }
             else
             {
-                cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kp.pt.x, kp.pt.y, it->second->stereo_depth), it->first->wcoord,
-                                                           std::pow(1.2, kp.octave), kf->K);    
-                ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function_stereo, pose_parameters);
+                cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kpu.pt.x, kpu.pt.y, it->second->stereo_depth), it->first->wcoord,
+                                                           std::pow(1.2, kpu.octave), kf->K);    
+                ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function_stereo, quat_parameters, translation);
                 residual_rgbd_points.insert({it->first, id});
             }
        }
+       problem.AddParameterBlock(quat_parameters, 4);
+       problem.AddParameterBlock(translation, 3);
+       problem.SetManifold(quat_parameters, new ceres::QuaternionManifold());
+       problem.SetManifold(translation, new ceres::EuclideanManifold<3>());
 
         ceres::Solver::Summary summary;
         ceres::Solve(options, &problem, &summary);
         // std::cout << summary.FullReport() << "\n";        
 
         // check outlier values
-        Sophus::SE3d intermediate_pose = compute_pose(kf, pose_parameters);
+        // std::cout << quat_parameters[0] << " " << quat_parameters[1] << " " << quat_parameters[2] << " " << quat_parameters[3] << "     " << translation[0] << " " << translation[1] << " " << translation[2] << "\n";
+        Sophus::SE3d intermediate_pose = compute_pose(kf, quat_parameters, translation);
         float error;
         bool outlier;
         for (auto it = matches.begin(); it != matches.end(); it++) {
@@ -191,6 +194,7 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
                 double error = get_rgbd_reprojection_error(mp, kf->K, intermediate_pose, it->second, chi2Stereo[i]);
                 outlier = error > chi2Stereo[i]; 
             }
+            // std::cout << error << " ";
             if (outlier) {
                 kf->add_outlier_element(mp);
             } else {
@@ -198,7 +202,9 @@ Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *
                 inlier++;
             }
         }
+        // std::cout << "\n\n";
         // std::cout << inlier << " atatea inliere gasite la epoca " << i << "\n";
+        // exit(1);
     }
-    return compute_pose(kf, pose_parameters);    
+    return compute_pose(kf, quat_parameters, translation);    
 }
