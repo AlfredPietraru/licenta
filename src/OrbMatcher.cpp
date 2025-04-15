@@ -135,7 +135,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
                 best_idx = idx;
             }
         }
-        if (best_dist > 100) continue;
+        if (best_dist > 60) continue;
         out.insert({mp, &kf->features[best_idx]});
     }
     this->checkOrientation(out, prev_kf->mp_correlations);
@@ -195,7 +195,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
                 second_lowest_level = kf->features[idx].kpu.octave;
             }
         }
-        if (lowest_dist > 100)  continue;
+        if (lowest_dist > 60)  continue;
         if(lowest_level == second_lowest_level && lowest_dist > 0.8 * second_lowest_dist) continue;
         out.insert({mp, &kf->features[lowest_idx]});
     }

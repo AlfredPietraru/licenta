@@ -29,8 +29,11 @@ public:
     std::unordered_set<MapPoint*> map_points;
     std::unordered_set<MapPoint*> outliers;
 
+
+    int GRID_HEIGHT = 64;
+    int GRID_WIDTH = 48;
     int currently_matched_points = 0;
-    cv::Mat grid;
+    std::vector<std::vector<std::vector<int>>> grid;
     cv::Mat orb_descriptors;
     cv::Mat frame;
     cv::Mat depth_matrix;

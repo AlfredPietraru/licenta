@@ -30,7 +30,12 @@ bool KeyFrame::check_map_point_outlier(MapPoint *mp)
 
 int KeyFrame::check_number_close_points()
 {
-    return this->map_points.size();
+    int close_points = 0;
+    for (auto it = this->mp_correlations.begin(); it != this->mp_correlations.end(); it++) {
+        Feature *f = it->second;
+        if (f->depth < 3.2 && f->depth > 1e-6) close_points++;
+    }
+    return close_points;
 }
 
 KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints, std::vector<cv::KeyPoint> &undistored_kps,
@@ -54,31 +59,25 @@ KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<double> dist
         }
     }
 
-    this->grid = cv::Mat::zeros(frame.rows, frame.cols, CV_32S);
-    this->grid += cv::Scalar(-1);
-
+    this->grid = std::vector<std::vector<std::vector<int>>>(10, std::vector<std::vector<int>>(10, std::vector<int>()));
+    
     for (int i = 0; i < this->features.size(); i++)
     {
         Feature f = this->features[i];
         int y_idx = (int)f.kpu.pt.y;
         int x_idx = (int)f.kpu.pt.x;
-        if (this->grid.at<int>(y_idx, x_idx) == -1)
-        {
-            this->grid.at<int>(y_idx, x_idx) = i;
-            continue;
-        }
-        if (f.kpu.pt.y - y_idx > 0.5 && this->grid.at<int>(y_idx + 1, x_idx) == -1)
-        {
-            this->grid.at<int>(y_idx + 1, x_idx) == i;
-            continue;
-        }
-        if (f.kpu.pt.x - x_idx > 0.5 && this->grid.at<int>(y_idx, x_idx + 1) == -1)
-        {
-            this->grid.at<int>(y_idx, x_idx + 1) == i;
-            continue;
-        }
-        this->grid.at<int>(y_idx + 1, x_idx + 1) = i;
+        this->grid[y_idx / GRID_WIDTH][x_idx / GRID_HEIGHT].push_back(i);
     }
+
+    // for (int i = 0; i < 10; i++) {
+    //     for (int j = 0; j < 10; j++) {
+    //         std::cout << this->grid[i][j].size() <<  " " << i * GRID_WIDTH << " " << j * GRID_HEIGHT << " dimensiune initiala\n";
+    //         for (int k = 0; k < this->grid[i][j].size(); k++) {
+    //             std::cout << this->features[this->grid[i][j][k]].kpu.pt.y  << " " << this->features[this->grid[i][j][k]].kpu.pt.x << "     ";
+    //         }
+    //         std::cout << "\n\n";
+    //     }
+    // }
 
     if (distorsion[0] != 0.0)
     {
@@ -182,7 +181,6 @@ void KeyFrame::add_map_point(MapPoint *mp, Feature *f) {
 void KeyFrame::remove_map_point(MapPoint *mp) {
     if(this->mp_correlations.find(mp) != this->mp_correlations.end()) {
         Feature *f = this->mp_correlations[mp];
-        // f->unmatch_map_point();
         this->mp_correlations.erase(mp);
     }
     if (this->map_points.find(mp) != this->map_points.end()) {
@@ -212,34 +210,40 @@ void KeyFrame::correlate_map_points_to_features_current_frame(std::unordered_map
 
 std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave)
 {
-    std::vector<int> kps_idx;
     int u_min = lround(u - window);
-    u_min = (u_min < 0) ? 0 : (u_min > this->frame.cols) ? this->frame.cols
-                                                         : u_min;
+    u_min = (u_min < 0) ? 0 : (u_min >= this->frame.cols) ? this->frame.cols - 1
+    : u_min;
     int u_max = lround(u + window);
-    u_max = (u_max < 0) ? 0 : (u_max > this->frame.cols) ? this->frame.cols
-                                                         : u_max;
+    u_max = (u_max < 0) ? 0 : (u_max >= this->frame.cols) ? this->frame.cols - 1
+    : u_max;
     int v_min = round(v - window);
-    v_min = (v_min < 0) ? 0 : (v_min > this->frame.rows) ? this->frame.rows
-                                                         : v_min;
+    v_min = (v_min < 0) ? 0 : (v_min >= this->frame.rows) ? this->frame.rows - 1
+    : v_min;
     int v_max = lround(v + window);
-    v_max = (v_max < 0) ? 0 : (v_max > this->frame.rows) ? this->frame.rows
-                                                         : v_max;
-    for (int i = v_min; i < v_max; i++)
+    v_max = (v_max < 0) ? 0 : (v_max >= this->frame.rows) ? this->frame.rows - 1
+    : v_max;
+    
+    std::vector<int> kps_idx;
+    int min_bin_u = u_min / GRID_HEIGHT;
+    int max_bin_u = u_max / GRID_HEIGHT;
+    int min_bin_v = v_min / GRID_WIDTH;
+    int max_bin_v = v_max / GRID_WIDTH;
+    // std::cout << min_bin_u <<  " " << max_bin_u << " " << min_bin_v << " " << max_bin_v << "\n";
+    for (int i = min_bin_u; i <= max_bin_u; i++)
     {
-        for (int j = u_min; j < u_max; j++)
+        for (int j = min_bin_v; j <= max_bin_v; j++)
         {
-            if (this->grid.at<int>(i, j) == -1)
-                continue;
-            cv::KeyPoint kpu = this->features[this->grid.at<int>(i, j)].kpu;
-            int current_octave = kpu.octave;
-            if (current_octave < minOctave || current_octave > maxOctave)
-                continue;
-            float xdist = kpu.pt.x - u;
-            float ydist = kpu.pt.y - v;
-            if (fabs(xdist) > window || fabs(ydist) > window)
-                continue;
-            kps_idx.push_back(this->grid.at<int>(i, j));
+            std::vector<int> current_feature_idxs = this->grid[j][i];
+            for (int idx : current_feature_idxs) {
+                cv::KeyPoint kpu = this->features[idx].kpu;
+                if (kpu.octave < minOctave || kpu.octave > maxOctave)
+                    continue;
+                float xdist = kpu.pt.x - u;
+                float ydist = kpu.pt.y - v;
+                if (fabs(xdist) > window || fabs(ydist) > window)
+                    continue;
+                kps_idx.push_back(idx);
+            }       
         }
     }
     return kps_idx;

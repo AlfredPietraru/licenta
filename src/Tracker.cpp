@@ -1,6 +1,5 @@
 #include "../include/Tracker.h"
 
-
 void compute_difference_between_positions(const Sophus::SE3d &estimated, const Sophus::SE3d &ground_truth)
 {
     
@@ -27,7 +26,6 @@ void compute_difference_between_positions(const Sophus::SE3d &estimated, const S
     std::cout << "Rotation Difference (Z): " << angle_axis(2) << " degrees\n";
     std::cout << "Translation Difference: " << translation_diff << " meters\n\n";
 }
-
 
 void print_pose(Sophus::SE3d pose, std::string message) {
     for (int i = 0; i < 7; i++)
@@ -68,11 +66,12 @@ void Tracker::initialize(Mat frame, Mat depth, Map* mapp, Sophus::SE3d pose)
     keypoints = out.first.first;
     descriptors = out.first.second;
     undistorted_kps = out.second;
-    this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
-    // this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
-
+    // this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
+    this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
     this->reference_kf = this->current_kf;
     mapp->add_first_keyframe(this->reference_kf);
+    // std::cout << "a iesit la initializare exit1\n";
+    // exit(1);
     // this->mapDrawer = new MapDrawer(mapp, pose.matrix()); 
     std::cout << "SFARSIT INITIALIZARE\n\n";
 }
@@ -89,8 +88,10 @@ bool Tracker::Is_KeyFrame_needed()
     this->keyframes_from_last_global_relocalization += 1;
     bool c1 = this->keyframes_from_last_global_relocalization > 20;
     bool c2 = this->current_kf->current_idx - this->reference_kf->current_idx > 20;
-    bool c3 = this->current_kf->check_number_close_points() < 100;
-    bool c4 = reference_kf->map_points.size() / 10 > this->current_kf->check_number_close_points();
+    
+    int nr_close_points = this->current_kf->check_number_close_points();
+    bool c3 = nr_close_points < 100;
+    bool c4 = reference_kf->map_points.size() / 10 > nr_close_points;
     return c1 && c2 && c3 && c4 && true;
 }
 
@@ -169,6 +170,8 @@ std::unordered_map<MapPoint*, Feature*> Tracker::TrackConsecutiveFrames() {
 // de verificat local map bine de tot
 std::unordered_map<MapPoint*, Feature*> Tracker::TrackLocalMap(Map *mapp) {
     std::unordered_map<MapPoint *, Feature *> new_matches = mapp->track_local_map(this->current_kf, this->reference_kf);
+    // std::cout << "iese aici pana la urma la TrackLocalMap\n";
+    // exit(1);
     if (new_matches.size() < 30) {
         std::cout << "\nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
         exit(1);
