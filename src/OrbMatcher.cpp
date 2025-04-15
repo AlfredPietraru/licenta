@@ -110,7 +110,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
         for (int idx : kps_idx)
         {
             int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
-            if (kf->features[idx].get_map_point() != nullptr) continue; // verifica sa fie asociat unui singur map point
+            // if (kf->features[idx].get_map_point() != nullptr) continue; // verifica sa fie asociat unui singur map point
             if (kf->features[idx].stereo_depth > 0)
             {
                 double fake_rgbd = u - kf->K(0, 0) * 0.08 / point_camera_coordinates(2);
@@ -175,6 +175,7 @@ int OrbMatcher::reproject_map_points(KeyFrame *kf, std::unordered_set<MapPoint *
         std::vector<int> kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, predicted_scale - 1, predicted_scale + 1);
         if (kps_idx.size() == 0)
             kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, 2 * scale_of_search, predicted_scale - 1, predicted_scale + 1);
+        std::cout << kps_idx.size() << " ";
         if (kps_idx.size() == 0) continue;
         
         for (int idx : kps_idx)
@@ -203,7 +204,7 @@ int OrbMatcher::reproject_map_points(KeyFrame *kf, std::unordered_set<MapPoint *
                 second_lowest_level = kf->features[idx].kp.octave;
             }
         }
-        
+        std::cout << "\n";
         if (lowest_dist > 50)  continue;
         if(lowest_level == second_lowest_level && lowest_dist > this->ratio_track_local_map * second_lowest_dist) continue;
         out++;
@@ -255,11 +256,12 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
         
         
         std::vector<int> kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, predicted_scale - 1, predicted_scale + 1);
+        // std::cout << kps_idx.size() << " ";
         if (kps_idx.size() == 0) continue;
         out_points_found++;
         for (int idx : kps_idx)
         {
-            if (kf->features[idx].get_map_point() != nullptr) continue; 
+            // if (kf->features[idx].get_map_point() != nullptr) continue; 
             if (kf->features[idx].stereo_depth <= 1e-6) continue;
             
             double fake_rgbd = u - kf->K(0, 0) * 0.08 / point_camera_coordinates(2);
@@ -288,6 +290,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
         if(lowest_level == second_lowest_level && lowest_dist > 0.8 * second_lowest_dist) continue;
         out.insert({mp, &kf->features[lowest_idx]});
     }
+    // std::cout << "\n";
     return out;
 }
 

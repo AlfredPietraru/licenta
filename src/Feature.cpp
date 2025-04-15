@@ -21,7 +21,15 @@ Feature::Feature(cv::KeyPoint kp, cv::KeyPoint kpu, cv::Mat descriptor, int idx,
     idx(idx), descriptor(descriptor), stereo_depth(stereo_depth), kpu(kpu), depth(depth) {}
 
 void Feature::set_map_point(MapPoint *mp) {
+    if (this->mp == nullptr) {
+        this->mp = mp;
+        this->curr_hamming_dist = ComputeHammingDistance(mp->orb_descriptor, this->descriptor);
+        return;
+    } 
+    int new_hamming_dist = ComputeHammingDistance(mp->orb_descriptor, this->descriptor);
+    if (new_hamming_dist >= curr_hamming_dist) return;
     this->mp = mp;
+    this->curr_hamming_dist = new_hamming_dist; 
 }
 
 MapPoint* Feature::get_map_point() {

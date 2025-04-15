@@ -18,6 +18,7 @@ public:
     cv::KeyPoint kp;
     cv::KeyPoint kpu;
     cv::Mat descriptor;
+    int curr_hamming_dist;
     MapPoint *mp;
     double depth;
     double stereo_depth;

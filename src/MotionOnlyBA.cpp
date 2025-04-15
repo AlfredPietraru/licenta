@@ -94,117 +94,297 @@ Sophus::SE3d compute_pose(KeyFrame *kf, double *q, double *translation) {
     return Sophus::SE3d(quaternion, Eigen::Vector3d(translation[0], translation[1], translation[2]));
 }
 
+// Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *, Feature *> &matches)
+// {
+//     if (matches.size() < 3)
+//         return kf->Tiw;
+    
+//     const float chi2Mono[4]={5.991, 5.991, 5.991, 5.991};
+//     const float chi2Stereo[4]={7.815, 7.815, 7.815, 7.815};
+//     double quat_parameters[4];
+//     double translation[3];
+//     Sophus::SE3d pose = kf->Tiw;
+//     const double BASELINE = 0.08;
+//     Eigen::Quaterniond quat = pose.unit_quaternion();
+//     quat_parameters[0] = quat.w();
+//     quat_parameters[1] = quat.x();
+//     quat_parameters[2] = quat.y();
+//     quat_parameters[3] = quat.z();
+//     translation[0] = pose.translation().x();
+//     translation[1] = pose.translation().y();
+//     translation[2] = pose.translation().z();
+//     // std::cout << quat_parameters[0] << " " << quat_parameters[1] << " " << quat_parameters[2] << " " << quat_parameters[3] << "     " << translation[0] << " " << translation[1] << " " << translation[2] << "\n"; 
+
+//     for (int i = 0; i < 4; i++)
+//     {
+
+//         ceres::Problem problem;
+//         ceres::Solver::Options options;
+//         options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
+//         options.function_tolerance = 1e-7;
+//         options.gradient_tolerance = 1e-7;
+//         options.parameter_tolerance = 1e-8;
+
+//         options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
+//         options.check_gradients = false;
+//         // options.minimizer_progress_to_stdout = true;
+//         options.max_num_iterations = 10;
+        
+//         ceres::LossFunction *loss_function_mono = new ceres::HuberLoss(sqrt(chi2Mono[i]));
+//         ceres::LossFunction *loss_function_stereo = new ceres::HuberLoss(sqrt(chi2Stereo[i]));
+        
+//         std::unordered_map<MapPoint*, ceres::ResidualBlockId> residual_rgbd_points;
+//         std::unordered_map<MapPoint*, ceres::ResidualBlockId> residual_monocular_points;
+//         int inlier = 0;
+//         for (auto it = matches.begin(); it != matches.end(); it++)
+//         {
+//             MapPoint *mp = it->first;
+//             if (kf->check_map_point_outlier(mp))  continue;
+//             ceres::CostFunction *cost_function;
+//             cv::KeyPoint kpu = it->second->kpu;
+//             if (it->second->stereo_depth <= 1e-6)
+//             {
+//                 cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kpu.pt.x, kpu.pt.y, 0), it->first->wcoord,
+//                                                               std::pow(1.2, kpu.octave), kf->K);
+//                 ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function_mono, quat_parameters, translation);
+//                 residual_monocular_points.insert({it->first, id});
+//             }
+//             else
+//             {
+//                 cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kpu.pt.x, kpu.pt.y, it->second->stereo_depth), it->first->wcoord,
+//                                                            std::pow(1.2, kpu.octave), kf->K);    
+//                 ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function_stereo, quat_parameters, translation);
+//                 residual_rgbd_points.insert({it->first, id});
+//             }
+//        }
+//        problem.AddParameterBlock(quat_parameters, 4);
+//        problem.AddParameterBlock(translation, 3);
+//        problem.SetManifold(quat_parameters, new ceres::QuaternionManifold());
+//        problem.SetManifold(translation, new ceres::EuclideanManifold<3>());
+
+//         ceres::Solver::Summary summary;
+//         ceres::Solve(options, &problem, &summary);
+//         // std::cout << summary.FullReport() << "\n";        
+
+//         // check outlier values
+//         // std::cout << quat_parameters[0] << " " << quat_parameters[1] << " " << quat_parameters[2] << " " << quat_parameters[3] << "     " << translation[0] << " " << translation[1] << " " << translation[2] << "\n";
+//         Sophus::SE3d intermediate_pose = compute_pose(kf, quat_parameters, translation);
+//         float error;
+//         bool outlier;
+//         for (auto it = matches.begin(); it != matches.end(); it++) {
+//             MapPoint *mp = it->first;
+//             if (mp == nullptr) continue;
+//             if (residual_monocular_points.find(mp) != residual_monocular_points.end()) {
+//                 double residual[2];
+//                 problem.EvaluateResidualBlock(residual_monocular_points[mp], true, nullptr, residual, nullptr);
+//                 error = residual[0] * residual[0] + residual[1] * residual[1];    
+//                 outlier = error > chi2Mono[i]; 
+//             }
+//             if (residual_rgbd_points.find(mp) != residual_rgbd_points.end()) {
+//                 double residual[3];
+//                 problem.EvaluateResidualBlock(residual_rgbd_points[mp], true, nullptr, residual, nullptr);
+//                 error = residual[0] * residual[0] + residual[1] * residual[1] + residual[2] * residual[2];
+//                 outlier = error > chi2Stereo[i];
+//             }
+//             if (it->second->stereo_depth <= 1e-6) {
+//                 error = get_monocular_reprojection_error(mp, kf->K, intermediate_pose, it->second, chi2Mono[i]);
+//                 outlier = error > chi2Mono[i]; 
+//             } 
+//             if (it->second->stereo_depth > 1e-6) {
+//                 double error = get_rgbd_reprojection_error(mp, kf->K, intermediate_pose, it->second, chi2Stereo[i]);
+//                 outlier = error > chi2Stereo[i]; 
+//             }
+//             // std::cout << error << " ";
+//             if (outlier) {
+//                 kf->add_outlier_element(mp);
+//             } else {
+//                 kf->remove_outlier_element(mp);
+//                 inlier++;
+//             }
+//         }
+//         // std::cout << "\n\n";
+//         // std::cout << inlier << " atatea inliere gasite la epoca " << i << "\n";
+//         // exit(1);
+//     }
+//     return compute_pose(kf, quat_parameters, translation);    
+// }
+
 Sophus::SE3d BundleAdjustment::solve(KeyFrame *kf, std::unordered_map<MapPoint *, Feature *> &matches)
 {
-    if (matches.size() < 3)
-        return kf->Tiw;
-    
-    const float chi2Mono[4]={5.991, 5.991, 5.991, 5.991};
-    const float chi2Stereo[4]={7.815, 7.815, 7.815, 7.815};
-    double quat_parameters[4];
-    double translation[3];
-    Sophus::SE3d pose = kf->Tiw;
-    const double BASELINE = 0.08;
-    Eigen::Quaterniond quat = pose.unit_quaternion();
-    quat_parameters[0] = quat.w();
-    quat_parameters[1] = quat.x();
-    quat_parameters[2] = quat.y();
-    quat_parameters[3] = quat.z();
-    translation[0] = pose.translation().x();
-    translation[1] = pose.translation().y();
-    translation[2] = pose.translation().z();
-    // std::cout << quat_parameters[0] << " " << quat_parameters[1] << " " << quat_parameters[2] << " " << quat_parameters[3] << "     " << translation[0] << " " << translation[1] << " " << translation[2] << "\n"; 
 
-    for (int i = 0; i < 4; i++)
+    std::unique_ptr<LinearSolverType> linearSolver(new LinearSolverType());
+    // Create the block solver by moving the linear solver into it.
+    std::unique_ptr<BlockSolverType> blockSolver(new BlockSolverType(std::move(linearSolver)));
+    // Create the OptimizationAlgorithmLevenberg by moving the block solver into it.
+    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(std::move(blockSolver));
+    g2o::SparseOptimizer optimizer;
+    optimizer.setAlgorithm(solver);
+
+    // Set Frame vertex
+    g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
+    vSE3->setEstimate(g2o::SE3Quat(kf->Tiw.rotationMatrix(), kf->Tiw.translation()));
+    vSE3->setId(0);
+    vSE3->setFixed(false);
+    optimizer.addVertex(vSE3);
+
+    // Set MapPoint vertices
+    std::vector<std::pair<MapPoint *, Feature *>> matches_vector(matches.begin(), matches.end());
+    const int N = matches_vector.size();
+
+    std::vector<g2o::EdgeSE3ProjectXYZOnlyPose*> vpEdgesMono;
+    std::vector<size_t> vnIndexEdgeMono;
+    vpEdgesMono.reserve(N);
+    vnIndexEdgeMono.reserve(N);
+
+    std::vector<g2o::EdgeStereoSE3ProjectXYZOnlyPose*> vpEdgesStereo;
+    std::vector<size_t> vnIndexEdgeStereo;
+    vpEdgesStereo.reserve(N);
+    vnIndexEdgeStereo.reserve(N);
+
+    const float deltaMono = sqrt(5.991);
+    const float deltaStereo = sqrt(7.815);
+
+    for(int i = 0; i < matches_vector.size(); i++) 
+    {
+        MapPoint* pMP = matches_vector[i].first;
+        Feature *f = matches_vector[i].second;
+        if(pMP)
+        {
+            // Monocular observation
+            if(f->depth <= 1e-6)
+            {
+
+                Eigen::Matrix<double,2,1> obs;
+                const cv::KeyPoint &kpUn = f->kpu;
+                g2o::EdgeSE3ProjectXYZOnlyPose* e = new g2o::EdgeSE3ProjectXYZOnlyPose();
+                e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(0)));
+                e->setMeasurement(g2o::Vector2(kpUn.pt.x, kpUn.pt.y));
+                const float invSigma2 = 1 / pow(1.2, 2* kpUn.octave);
+                e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+
+                g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+                e->setRobustKernel(rk);
+                rk->setDelta(deltaMono);
+
+                e->fx = kf->K(0, 0);
+                e->fy = kf->K(1, 1);
+                e->cx = kf->K(0, 2);
+                e->cy = kf->K(1, 2);
+                e->Xw[0] = pMP->wcoord_3d(0);
+                e->Xw[1] = pMP->wcoord_3d(1);
+                e->Xw[2] = pMP->wcoord_3d(2);
+                optimizer.addEdge(e);
+
+                vpEdgesMono.push_back(e);
+                vnIndexEdgeMono.push_back(i);
+            }
+            else 
+            {
+
+                const cv::KeyPoint &kpUn = f->kpu;
+                g2o::EdgeStereoSE3ProjectXYZOnlyPose* e = new g2o::EdgeStereoSE3ProjectXYZOnlyPose();
+
+                e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(0)));
+                e->setMeasurement(g2o::Vector3(kpUn.pt.x, kpUn.pt.y, f->stereo_depth));
+                const float invSigma2 = 1 / pow(1.2, 2* kpUn.octave);
+                Eigen::Matrix3d Info = Eigen::Matrix3d::Identity()*invSigma2;
+                e->setInformation(Info);
+
+                g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+                e->setRobustKernel(rk);
+                rk->setDelta(deltaStereo);
+
+                e->fx = kf->K(0, 0);
+                e->fy = kf->K(1, 1);
+                e->cx = kf->K(0, 2);
+                e->cy = kf->K(1, 2);
+                e->bf = 41.38451264;
+                e->Xw[0] = pMP->wcoord_3d(0);
+                e->Xw[1] = pMP->wcoord_3d(1);
+                e->Xw[2] = pMP->wcoord_3d(2);
+
+                optimizer.addEdge(e);
+
+                vpEdgesStereo.push_back(e);
+                vnIndexEdgeStereo.push_back(i);
+            }
+        }
+
+    }
+
+    const float chi2Mono[4]={5.991,5.991,5.991,5.991};
+    const float chi2Stereo[4]={7.815,7.815,7.815, 7.815};
+    const int its[4]={10,10,10,10};    
+
+    for(size_t it=0; it<4; it++)
     {
 
-        ceres::Problem problem;
-        ceres::Solver::Options options;
-        options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
-        options.function_tolerance = 1e-7;
-        options.gradient_tolerance = 1e-7;
-        options.parameter_tolerance = 1e-8;
+        vSE3->setEstimate(g2o::SE3Quat(kf->Tiw.rotationMatrix(), kf->Tiw.translation()));
+        optimizer.initializeOptimization(0);
+        optimizer.optimize(its[it]);
 
-        options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-        options.check_gradients = false;
-        // options.minimizer_progress_to_stdout = true;
-        options.max_num_iterations = 10;
-        
-        ceres::LossFunction *loss_function_mono = new ceres::HuberLoss(sqrt(chi2Mono[i]));
-        ceres::LossFunction *loss_function_stereo = new ceres::HuberLoss(sqrt(chi2Stereo[i]));
-        
-        std::unordered_map<MapPoint*, ceres::ResidualBlockId> residual_rgbd_points;
-        std::unordered_map<MapPoint*, ceres::ResidualBlockId> residual_monocular_points;
-        int inlier = 0;
-        for (auto it = matches.begin(); it != matches.end(); it++)
+        for(size_t i=0, iend=vpEdgesMono.size(); i<iend; i++)
         {
-            MapPoint *mp = it->first;
-            if (kf->check_map_point_outlier(mp))  continue;
-            ceres::CostFunction *cost_function;
-            cv::KeyPoint kpu = it->second->kpu;
-            if (it->second->stereo_depth <= 1e-6)
+            g2o::EdgeSE3ProjectXYZOnlyPose* e = vpEdgesMono[i];
+
+            const size_t idx = vnIndexEdgeMono[i];
+            MapPoint *mp = matches_vector[idx].first;
+            if(kf->check_map_point_outlier(mp))
             {
-                cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kpu.pt.x, kpu.pt.y, 0), it->first->wcoord,
-                                                              std::pow(1.2, kpu.octave), kf->K);
-                ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function_mono, quat_parameters, translation);
-                residual_monocular_points.insert({it->first, id});
+                e->computeError();
+            }
+
+            const float chi2 = e->chi2();
+
+            if(chi2>chi2Mono[it])
+            {   
+                kf->add_outlier_element(mp);             
+                e->setLevel(1);
             }
             else
             {
-                cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kpu.pt.x, kpu.pt.y, it->second->stereo_depth), it->first->wcoord,
-                                                           std::pow(1.2, kpu.octave), kf->K);    
-                ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function_stereo, quat_parameters, translation);
-                residual_rgbd_points.insert({it->first, id});
-            }
-       }
-       problem.AddParameterBlock(quat_parameters, 4);
-       problem.AddParameterBlock(translation, 3);
-       problem.SetManifold(quat_parameters, new ceres::QuaternionManifold());
-       problem.SetManifold(translation, new ceres::EuclideanManifold<3>());
-
-        ceres::Solver::Summary summary;
-        ceres::Solve(options, &problem, &summary);
-        // std::cout << summary.FullReport() << "\n";        
-
-        // check outlier values
-        // std::cout << quat_parameters[0] << " " << quat_parameters[1] << " " << quat_parameters[2] << " " << quat_parameters[3] << "     " << translation[0] << " " << translation[1] << " " << translation[2] << "\n";
-        Sophus::SE3d intermediate_pose = compute_pose(kf, quat_parameters, translation);
-        float error;
-        bool outlier;
-        for (auto it = matches.begin(); it != matches.end(); it++) {
-            MapPoint *mp = it->first;
-            if (mp == nullptr) continue;
-            if (residual_monocular_points.find(mp) != residual_monocular_points.end()) {
-                double residual[2];
-                problem.EvaluateResidualBlock(residual_monocular_points[mp], true, nullptr, residual, nullptr);
-                error = residual[0] * residual[0] + residual[1] * residual[1];    
-                outlier = error > chi2Mono[i]; 
-            }
-            if (residual_rgbd_points.find(mp) != residual_rgbd_points.end()) {
-                double residual[3];
-                problem.EvaluateResidualBlock(residual_rgbd_points[mp], true, nullptr, residual, nullptr);
-                error = residual[0] * residual[0] + residual[1] * residual[1] + residual[2] * residual[2];
-                outlier = error > chi2Stereo[i];
-            }
-            if (it->second->stereo_depth <= 1e-6) {
-                error = get_monocular_reprojection_error(mp, kf->K, intermediate_pose, it->second, chi2Mono[i]);
-                outlier = error > chi2Mono[i]; 
-            } 
-            if (it->second->stereo_depth > 1e-6) {
-                double error = get_rgbd_reprojection_error(mp, kf->K, intermediate_pose, it->second, chi2Stereo[i]);
-                outlier = error > chi2Stereo[i]; 
-            }
-            // std::cout << error << " ";
-            if (outlier) {
-                kf->add_outlier_element(mp);
-            } else {
                 kf->remove_outlier_element(mp);
-                inlier++;
+                e->setLevel(0);
             }
+            if(it==2)
+                e->setRobustKernel(0);
         }
-        // std::cout << "\n\n";
-        // std::cout << inlier << " atatea inliere gasite la epoca " << i << "\n";
-        // exit(1);
-    }
-    return compute_pose(kf, quat_parameters, translation);    
+
+        for(size_t i=0, iend=vpEdgesStereo.size(); i<iend; i++)
+        {
+            g2o::EdgeStereoSE3ProjectXYZOnlyPose* e = vpEdgesStereo[i];
+
+            const size_t idx = vnIndexEdgeStereo[i];
+            MapPoint *mp = matches_vector[idx].first;
+            if(kf->check_map_point_outlier(mp))
+            {
+                e->computeError();
+            }
+
+            const float chi2 = e->chi2();
+
+            if(chi2>chi2Stereo[it])
+            {
+                kf->add_outlier_element(mp);
+                e->setLevel(1);
+            }
+            else
+            {                
+                kf->remove_outlier_element(mp);
+                e->setLevel(0);
+            }
+
+            if(it==2)
+                e->setRobustKernel(0);
+        }
+        if(optimizer.edges().size()<10)
+            break;
+        // std::cout << kf->outliers.size() << " outliere gasite la epoca " << it << "\n";
+    }    
+
+    // Recover optimized pose and return number of inliers
+    g2o::VertexSE3Expmap* vSE3_recov = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(0));
+    g2o::SE3Quat SE3quat_recov = vSE3_recov->estimate();
+    kf->Tiw = Sophus::SE3d(SE3quat_recov.to_homogeneous_matrix());
+    return kf->Tiw;
 }

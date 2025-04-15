@@ -17,23 +17,23 @@ include_directories ( ${EIGEN3_INCLUDE_DIR} )
 
 find_package(Pangolin REQUIRED)
 
-include_directories( ${})
-
-find_package(Ceres REQUIRED)
-include_directories(${CERES_LIBRARIES})
 
 set( DBoW2_INCLUDE_DIRS "/usr/local/include/DBoW2" )
 set( DBoW2_LIBS "/usr/local/lib/libDBoW2.so" )
 
-# find_package(G2O REQUIRED)
-# set(G2O_LIBS
-#     g2o_core
-#     g2o_stuff
-#     g2o_solver_csparse
-#     g2o_types_slam3d
-#     g2o_types_slam2d
-# )
-# include_directories(${G2O_INCLUDE_DIRS})
+find_package(G2O REQUIRED)
+include_directories(${G2O_INCLUDE_DIRS})
+
+set(G2O_LIBS
+    g2o_core
+    g2o_stuff
+    g2o_solver_csparse
+    g2o_solver_dense
+    g2o_types_slam3d
+    g2o_types_slam2d
+    g2o_types_sim3
+    g2o_types_sba
+)
 
 
 FIND_PACKAGE(Sophus REQUIRED)
@@ -88,6 +88,7 @@ target_link_libraries(main
     ${Sophus_LIBRARIES}
     ${DBoW2_LIBS}
     ${Pangolin_LIBRARIES}
+    ${G2O_LIBS}
 )
 
 # /usr/local/lib/libg2o_core.so
