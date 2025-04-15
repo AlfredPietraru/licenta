@@ -193,10 +193,9 @@ void KeyFrame::correlate_map_points_to_features_current_frame(std::unordered_map
     for (auto it = matches.begin(); it != matches.end(); it++)
     {
         MapPoint *mp = it->first;
-        if (this->check_map_point_outlier(mp))
-            continue;
+        if (this->check_map_point_outlier(mp)) continue;
         it->second->set_map_point(mp);
-        this->map_points.insert(it->first);
+        this->map_points.insert(mp);
     }
 }
 

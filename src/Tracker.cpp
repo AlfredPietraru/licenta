@@ -129,7 +129,7 @@ std::unordered_map<MapPoint *, Feature *> Tracker::TrackReferenceKeyFrame() {
         std::cout << this->current_kf->current_idx << "\n";
         exit(1);
     }
-    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches);
+    this->current_kf->Tiw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
     int out = 0; 
     for (auto it = matches.begin(); it != matches.end(); it++) {
         if (this->current_kf->check_map_point_outlier(it->first)) continue;
@@ -153,7 +153,7 @@ std::unordered_map<MapPoint*, Feature*> Tracker::TrackConsecutiveFrames() {
             exit(1);
         }
     }
-    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, matches);
+    this->current_kf->Tiw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
     int out = 0;
     for (auto it = matches.begin(); it != matches.end(); it++) {
         MapPoint *mp = it->first;
@@ -175,7 +175,7 @@ std::unordered_map<MapPoint*, Feature*> Tracker::TrackLocalMap(Map *mapp) {
         std::cout << "\nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
         exit(1);
     }
-    this->current_kf->Tiw = this->bundleAdjustment->solve(this->current_kf, new_matches);
+    this->current_kf->Tiw = this->bundleAdjustment->solve_ceres(this->current_kf, new_matches);
     int out = 0; 
     for (auto it = new_matches.begin(); it != new_matches.end(); it++) {
         if (this->current_kf->check_map_point_outlier(it->first)) continue;
@@ -203,9 +203,11 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Map *mapp, So
         }
     }
     this->current_kf->correlate_map_points_to_features_current_frame(matches);
+    compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     std::unordered_map<MapPoint *, Feature *>  new_matches = this->TrackLocalMap(mapp);
     this->current_kf->correlate_map_points_to_features_current_frame(new_matches);
     compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
+    // exit(1);
     // this->current_kf->debug_keyframe(100, matches, new_matches);
     bool needed_keyframe = this->Is_KeyFrame_needed(); 
     if (needed_keyframe) {

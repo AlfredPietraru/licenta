@@ -61,7 +61,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unor
     return correlation_current_frame;
 }
 
-// select only first 100 closest points for optimization -> create virtual points
 std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int window)
 {
     std::unordered_map<MapPoint *, Feature *> out;
@@ -110,7 +109,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
         for (int idx : kps_idx)
         {
             int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
-            // if (kf->features[idx].get_map_point() != nullptr) continue; // verifica sa fie asociat unui singur map point
             if (kf->features[idx].stereo_depth > 0)
             {
                 double fake_rgbd = u - kf->K(0, 0) * 0.08 / point_camera_coordinates(2);
