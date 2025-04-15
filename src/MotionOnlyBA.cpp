@@ -9,14 +9,19 @@ public:
                                      map_coordinate(map_coordinate), scale_sigma(scale_sigma), K(K), is_monocular(is_monocular) {}
 
     template <typename T>
-    bool operator()(const T *const quat, const T *const translation, T *residuals) const
+    bool operator()(const T *const pose, T *residuals) const
     {
         T map_coordinate_world[3] = {T(map_coordinate(0)), T(map_coordinate(1)), T(map_coordinate(2))};
         T camera_coordinates[3];
+        T quat[4];
+        quat[0] = pose[0];
+        quat[1] = pose[1];
+        quat[2] = pose[2];
+        quat[3] = pose[3];
         ceres::QuaternionRotatePoint(quat, map_coordinate_world, camera_coordinates);
-        camera_coordinates[0] += translation[0];
-        camera_coordinates[1] += translation[1];
-        camera_coordinates[2] += translation[2];
+        camera_coordinates[0] += pose[4];
+        camera_coordinates[1] += pose[5];
+        camera_coordinates[2] += pose[6];
         T inv_d = T(1) / (camera_coordinates[2] + T(1e-6));
         T x = T(K(0, 0)) * camera_coordinates[0] * inv_d + T(K(0, 2));
         T y = T(K(1, 1)) * camera_coordinates[1] * inv_d + T(K(1, 2));
@@ -32,13 +37,13 @@ public:
 
     static ceres::CostFunction *Create_Monocular(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
     {
-        return (new ceres::AutoDiffCostFunction<BundleError, 2, 4, 3>(
+        return (new ceres::AutoDiffCostFunction<BundleError, 2, 7>(
             new BundleError(observed, map_coordinate, scale_sigma, K, true)));
     }
 
     static ceres::CostFunction *Create_Stereo(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
     {
-        return (new ceres::AutoDiffCostFunction<BundleError, 3, 4, 3>(
+        return (new ceres::AutoDiffCostFunction<BundleError, 3, 7>(
             new BundleError(observed, map_coordinate, scale_sigma, K, false)));
     }
 
@@ -84,14 +89,14 @@ double get_monocular_reprojection_error(MapPoint *mp, Eigen::Matrix3d K, Sophus:
     return sqrt(chi2) * a - chi2 / 2;
 }
 
-Sophus::SE3d compute_pose(KeyFrame *kf, double *q, double *translation) {
-    Eigen::Quaterniond quaternion(q[0], q[1], q[2], q[3]);
+Sophus::SE3d compute_pose(KeyFrame *kf, double *pose) {
+    Eigen::Quaterniond quaternion(pose[0], pose[1], pose[2], pose[3]);
     Eigen::Quaterniond old_quaternion = kf->Tiw.unit_quaternion();
     if (old_quaternion.dot(quaternion) < 0)
     {
         quaternion.coeffs() *= -1;
     }
-    return Sophus::SE3d(quaternion, Eigen::Vector3d(translation[0], translation[1], translation[2]));
+    return Sophus::SE3d(quaternion, Eigen::Vector3d(pose[4], pose[5], pose[6]));
 }
 
 Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf, std::unordered_map<MapPoint *, Feature *> &matches)
@@ -101,18 +106,17 @@ Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf, std::unordered_map<MapP
     
     const float chi2Mono[4]={5.991, 5.991, 5.991, 5.991};
     const float chi2Stereo[4]={7.815, 7.815, 7.815, 7.815};
-    double quat_parameters[4];
-    double translation[3];
     Sophus::SE3d pose = kf->Tiw;
     const double BASELINE = 0.08;
     Eigen::Quaterniond quat = pose.unit_quaternion();
-    quat_parameters[0] = quat.w();
-    quat_parameters[1] = quat.x();
-    quat_parameters[2] = quat.y();
-    quat_parameters[3] = quat.z();
-    translation[0] = pose.translation().x();
-    translation[1] = pose.translation().y();
-    translation[2] = pose.translation().z();
+    double pose_vector[7];
+    pose_vector[0] = quat.w();
+    pose_vector[1] = quat.x();
+    pose_vector[2] = quat.y();
+    pose_vector[3] = quat.z();
+    pose_vector[4] = pose.translation().x();
+    pose_vector[5] = pose.translation().y();
+    pose_vector[6] = pose.translation().z();
     std::unordered_map<MapPoint *, Feature *> mono_matches;
     std::unordered_map<MapPoint *, Feature *> rgbd_matches;
     for (auto it = matches.begin(); it != matches.end(); it++) {
@@ -152,7 +156,7 @@ Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf, std::unordered_map<MapP
             cv::KeyPoint kpu = it->second->kpu;
             cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kpu.pt.x, kpu.pt.y, 0), mp->wcoord,
                                                               std::pow(1.2, kpu.octave), kf->K);
-            problem.AddResidualBlock(cost_function, loss_function_mono, quat_parameters, translation);
+            problem.AddResidualBlock(cost_function, loss_function_mono, pose_vector);
         }
 
         for (auto it = rgbd_matches.begin(); it != rgbd_matches.end(); it++) {
@@ -162,20 +166,19 @@ Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf, std::unordered_map<MapP
             cv::KeyPoint kpu = it->second->kpu;
             cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kpu.pt.x, kpu.pt.y, it->second->stereo_depth), mp->wcoord,
                             std::pow(1.2, kpu.octave), kf->K);    
-            ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function_stereo, quat_parameters, translation);
+            ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function_stereo, pose_vector);
             residual_rgbd_points.insert({mp, id});
         }
 
-        problem.AddParameterBlock(quat_parameters, 4);
-        problem.AddParameterBlock(translation, 3);
-        problem.SetManifold(quat_parameters, new ceres::QuaternionManifold());
-        problem.SetManifold(translation, new ceres::EuclideanManifold<3>());
+        using SE3Manifold = ceres::ProductManifold<ceres::QuaternionManifold, ceres::EuclideanManifold<3>>;
+        problem.AddParameterBlock(pose_vector, 7);
+        problem.SetManifold(pose_vector, new SE3Manifold());
 
         ceres::Solver::Summary summary;
         ceres::Solve(options, &problem, &summary);
         // std::cout << summary.FullReport() << "\n";
 
-        Sophus::SE3d intermediate_pose = compute_pose(kf, quat_parameters, translation);
+        Sophus::SE3d intermediate_pose = compute_pose(kf, pose_vector);
         double error;
         
         for (auto it = mono_matches.begin(); it != mono_matches.end(); it++) {
@@ -200,7 +203,7 @@ Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf, std::unordered_map<MapP
             }
         }
     }
-    return compute_pose(kf, quat_parameters, translation);    
+    return compute_pose(kf, pose_vector);    
 }
 
 Sophus::SE3d BundleAdjustment::solve_g2o(KeyFrame *kf, std::unordered_map<MapPoint *, Feature *> &matches)
