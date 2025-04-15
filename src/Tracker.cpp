@@ -57,8 +57,15 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
         this->prev_kf->current_idx + 1, frame, this->voc);
 }
 
-void Tracker::initialize(Mat frame, Mat depth, Map* mapp, Sophus::SE3d pose)
-{
+Tracker::Tracker(Mat frame, Mat depth, Map *mapp, Sophus::SE3d pose, Config cfg, 
+    ORBVocabulary* voc, Pnp_Ransac_Config pnp_ransac_cfg, Orb_Matcher orb_matcher_config) {
+    this->K = cfg.K;
+    cv::cv2eigen(cfg.K, this->K_eigen);
+    this->voc = voc;
+    this->mDistCoef = cfg.distortion;
+    this->fmf = new FeatureMatcherFinder(480, 640, cfg);
+    this->bundleAdjustment = new BundleAdjustment();
+    this->matcher = new OrbMatcher(orb_matcher_config);
     std::vector<cv::KeyPoint> keypoints;
     std::vector<cv::KeyPoint> undistorted_kps;
     cv::Mat descriptors;
@@ -69,12 +76,11 @@ void Tracker::initialize(Mat frame, Mat depth, Map* mapp, Sophus::SE3d pose)
     // this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
     this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
     this->reference_kf = this->current_kf;
-    mapp->add_first_keyframe(this->reference_kf);
-    // std::cout << "a iesit la initializare exit1\n";
-    // exit(1);
-    // this->mapDrawer = new MapDrawer(mapp, pose.matrix()); 
+    mapp->add_first_keyframe(this->reference_kf); 
     std::cout << "SFARSIT INITIALIZARE\n\n";
 }
+
+
 
 void Tracker::tracking_was_lost()
 {

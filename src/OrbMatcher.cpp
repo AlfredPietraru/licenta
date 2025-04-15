@@ -27,6 +27,11 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unor
     {
         MapPoint *mp = it->first;
         cv::KeyPoint current_kp = it->second->get_key_point();
+        if (correlation_prev_frame.find(mp) == nullptr) 
+        {
+            std::cout << "E CIUDAT CA E NULL IN CHECK ORIENTATION\n";
+            continue;
+        }
         cv::KeyPoint prev_kp = correlation_prev_frame[mp]->get_key_point();
         float rot = prev_kp.angle - current_kp.angle;
         if (rot < 0.0) rot += 360.0f;
@@ -62,7 +67,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unor
 }
 
 
-std::unordered_set<MapPoint*> OrbMatcher::map_points_in_frustum(KeyFrame *kf, std::unordered_set<MapPoint*> map_points) {
+std::unordered_set<MapPoint*> OrbMatcher::map_points_in_frustum(KeyFrame *kf, std::unordered_set<MapPoint*>& map_points) {
     std::unordered_set<MapPoint*> out;
     Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
     Eigen::Vector3d camera_to_map_view_ray;
@@ -142,7 +147,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
     return out;
 }
 
-std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoint *> map_points, int window_size)
+std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoint *>& map_points, int window_size)
 {
     std::unordered_map<MapPoint *, Feature *> out;
     Eigen::Vector3d kf_camera_center = kf->compute_camera_center();

@@ -58,8 +58,7 @@ int main(int argc, char **argv)
     
     Map *mapp = new Map(orb_matcher_cfg);
     LocalMapping *local_mapper = new LocalMapping(mapp);
-    Tracker *tracker = new Tracker(cfg, voc, pnp_ransac_cfg, orb_matcher_cfg);
-    tracker->initialize(frame, depth, mapp, groundtruth_pose);
+    Tracker *tracker = new Tracker(frame, depth, mapp,  groundtruth_pose, cfg, voc, pnp_ransac_cfg, orb_matcher_cfg);
     reader->store_entry(Sophus::SE3d(Eigen::Matrix4d::Identity()));
     // reader->store_entry(groundtruth_pose);
     while(!reader->should_end()) {

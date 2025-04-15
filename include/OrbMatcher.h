@@ -33,11 +33,11 @@ public:
     
     std::unordered_map<MapPoint*, Feature*> match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref);
     std::unordered_map<MapPoint*, Feature*> match_consecutive_frames(KeyFrame* kf, KeyFrame *kf2, int window);
-    std::unordered_map<MapPoint*, Feature*> match_frame_map_points(KeyFrame *curr, std::unordered_set<MapPoint*> map_points, int window_size);
+    std::unordered_map<MapPoint*, Feature*> match_frame_map_points(KeyFrame *curr, std::unordered_set<MapPoint*>& map_points, int window_size);
     int get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2);
 
 
-    std::unordered_set<MapPoint*> map_points_in_frustum(KeyFrame *kf, std::unordered_set<MapPoint*> map_points);
+    std::unordered_set<MapPoint*> map_points_in_frustum(KeyFrame *kf, std::unordered_set<MapPoint*>& map_points);
     int ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2);
     std::unordered_map<MapPoint*, Feature*> checkOrientation(std::unordered_map<MapPoint*, Feature*>& out, std::unordered_map<MapPoint*, Feature*>& correlation_prev_frame);
 };
