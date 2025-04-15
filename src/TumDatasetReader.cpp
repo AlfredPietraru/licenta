@@ -130,7 +130,7 @@ std::pair<cv::Mat, cv::Mat> TumDatasetReader::get_next_frame() {
 void TumDatasetReader::store_entry(Sophus::SE3d pose) {
     std::string path = this->rgb_path[frame_idx - 1];
     std::string file_name = extract_timestamp(path);
-    this->outfile << file_name <<  " " << pose.translation().x() << " " << pose.translation().y() << " " << pose.translation().z() << " ";
+    this->outfile << file_name <<  " " << -pose.translation().y() << " " << -pose.translation().x() << " " << pose.translation().z() << " ";
     this->outfile << pose.unit_quaternion().x() << " " << pose.unit_quaternion().y() << " "  << pose.unit_quaternion().z() << " " << pose.unit_quaternion().w() << std::endl; 
 }
 

@@ -50,8 +50,8 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     }
 
     // de incercat ultima transformare ca estimare
-    // Sophus::SE3d pose_estimation = this->current_kf->Tiw;
-    Sophus::SE3d pose_estimation = this->current_kf->Tiw * this->prev_kf->Tiw.inverse() * this->current_kf->Tiw;
+    Sophus::SE3d pose_estimation = this->current_kf->Tiw;
+    // Sophus::SE3d pose_estimation = this->current_kf->Tiw * this->prev_kf->Tiw.inverse() * this->current_kf->Tiw;
     this->prev_kf = this->current_kf;
     this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 
         this->prev_kf->current_idx + 1, frame, this->voc);
@@ -194,8 +194,9 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Map *mapp, So
     this->get_current_key_frame(frame, depth);
     std::unordered_map<MapPoint *, Feature *> matches;
     if (this->current_kf->current_idx - this->reference_kf->current_idx <= 2) {
-        std::cout << "inca urmarit cu ajutorul track reference frame\n";
+        std::cout << "inca urmarit cu ajutorul track reference frame\n" ;
         matches = this->TrackReferenceKeyFrame();
+        std::cout << "dupa track reference frame\n";
     } else {
         matches = this->TrackConsecutiveFrames();
         if (matches.size() < 20) {
