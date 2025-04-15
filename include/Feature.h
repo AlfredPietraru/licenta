@@ -25,9 +25,10 @@ public:
 
     Feature() {}
     Feature(cv::KeyPoint kp, cv::KeyPoint kpu, cv::Mat descriptor, int idx, double depth, double stereo_depth);
-    void set_map_point(MapPoint *mp);
+    bool set_map_point(MapPoint *mp);
     MapPoint* get_map_point();
     cv::KeyPoint get_key_point();
+    void unmatch_map_point();
     int ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2);
 };
 

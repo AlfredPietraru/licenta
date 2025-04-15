@@ -20,7 +20,7 @@ public:
         std::unordered_map<KeyFrame*, int> belongs_to_keyframes;
         bool is_outlier = false;
         int first_seen_frame_idx;
-        int how_many_times_seen;
+        int how_many_times_seen = 0;
         
         MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord,
                 cv::Mat orb_descriptor, int idx);
@@ -28,6 +28,7 @@ public:
         Eigen::Vector3d get_3d_vector();
         int check_index_in_keyframe(KeyFrame *kf);
         int predict_image_scale(double distance);
+        void increase_how_many_times_seen();
 };
 
 #endif

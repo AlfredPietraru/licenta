@@ -25,6 +25,7 @@ public:
     Sophus::SE3d Tiw;
     Eigen::Matrix3d K;
     std::vector<Feature> features;
+    std::unordered_map<MapPoint*, Feature*> mp_correlations; 
     std::unordered_set<MapPoint*> map_points;
     std::unordered_set<MapPoint*> outliers;
 
@@ -52,11 +53,11 @@ public:
     void correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature*>& matches);
     std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave); 
     std::unordered_set<MapPoint*> return_map_points_frame();
-    std::unordered_map<MapPoint*, Feature*> return_map_points_keypoint_correlation();
+    void add_map_point(MapPoint *mp, Feature *f);
+    void remove_map_point(MapPoint *mp);
     void add_outlier_element(MapPoint *mp);
     void remove_outlier_element(MapPoint *mp);
     bool check_map_point_outlier(MapPoint *mp);
-    int check_possible_close_points_generation();
     int check_number_close_points();
     void compute_bow_representation(ORBVocabulary *voc);
 

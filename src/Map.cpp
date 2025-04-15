@@ -69,7 +69,7 @@ KeyFrame *Map::get_reference_keyframe(KeyFrame *kf)
     int reference_idx = start_idx;
     for (int i = start_idx; i < this->keyframes.size(); i++)
     {
-        int out = this->matcher->reproject_map_points(kf, this->keyframes[i]->map_points, 7);
+        int out = this->matcher->match_frame_map_points(kf, this->keyframes[i]->map_points, 7).size();
         if (out == 0) continue;
         if (out > max)
         {
@@ -101,12 +101,12 @@ void Map::compute_map_points(KeyFrame *kf)
     Eigen::Vector3d camera_center = kf->compute_camera_center();
     for (int i = 0; i < kf->features.size(); i++)
     {
-        Feature f = kf->features[i];
-        if (f.get_map_point() != nullptr || kf->features[i].depth <= 1e-6) continue;
+        if (kf->features[i].get_map_point() != nullptr || kf->features[i].depth <= 1e-6) continue;
         Eigen::Vector4d wcoord = kf->fromImageToWorld(i);
-        MapPoint *mp = new MapPoint(kf, f.kpu, camera_center, wcoord, f.descriptor, i);
+        MapPoint *mp = new MapPoint(kf, kf->features[i].kpu, camera_center, wcoord, kf->features[i].descriptor, i);
         kf->features[i].set_map_point(mp);
         kf->map_points.insert(mp);
+        kf->mp_correlations.insert({mp, &kf->features[i]});
     }
 }
 

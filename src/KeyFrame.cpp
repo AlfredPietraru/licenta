@@ -7,19 +7,6 @@ std::unordered_set<MapPoint *> KeyFrame::return_map_points_frame()
     return this->map_points;
 }
 
-std::unordered_map<MapPoint *, Feature *> KeyFrame::return_map_points_keypoint_correlation()
-{
-    std::unordered_map<MapPoint *, Feature *> out;
-    for (int i = 0; i < this->features.size(); i++)
-    {
-        MapPoint *mp = this->features[i].get_map_point();
-        if (mp == nullptr)
-            continue;
-        out.insert({mp, &this->features[i]});
-    }
-    return out;
-}
-
 void KeyFrame::add_outlier_element(MapPoint *mp)
 {
     this->outliers.insert(mp);
@@ -40,10 +27,6 @@ bool KeyFrame::check_map_point_outlier(MapPoint *mp)
     return false;
 }
 
-int KeyFrame::check_possible_close_points_generation()
-{
-    return this->outliers.size();
-}
 
 int KeyFrame::check_number_close_points()
 {
@@ -188,14 +171,42 @@ Eigen::Vector3d KeyFrame::get_viewing_direction()
     return Tiw.rotationMatrix().col(2).normalized();
 }
 
+void KeyFrame::add_map_point(MapPoint *mp, Feature *f) {
+    if (this->outliers.find(mp) != this->outliers.end()) {
+        this->outliers.erase(mp);
+    }
+    this->map_points.insert(mp);
+    this->mp_correlations.insert({mp, f});
+}
+
+void KeyFrame::remove_map_point(MapPoint *mp) {
+    if(this->mp_correlations.find(mp) != this->mp_correlations.end()) {
+        Feature *f = this->mp_correlations[mp];
+        // f->unmatch_map_point();
+        this->mp_correlations.erase(mp);
+    }
+    if (this->map_points.find(mp) != this->map_points.end()) {
+        this->map_points.erase(mp);
+    }
+}
+
+
 void KeyFrame::correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature *> &matches)
 {
+    int e_bine = 0;
     for (auto it = matches.begin(); it != matches.end(); it++)
     {
+        Feature *f = it->second;
         MapPoint *mp = it->first;
-        if (this->check_map_point_outlier(mp)) continue;
-        it->second->set_map_point(mp);
-        this->map_points.insert(mp);
+        MapPoint *old_mp = f->get_map_point();
+        bool old_map_point_was_replaced = f->set_map_point(mp);
+        if (old_map_point_was_replaced && old_mp == nullptr) {
+            this->add_map_point(mp, f);
+        }
+        if (old_map_point_was_replaced && old_mp != nullptr) {
+            this->remove_map_point(old_mp);
+            this->add_map_point(mp, f);
+        }
     }
 }
 

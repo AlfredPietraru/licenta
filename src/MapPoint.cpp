@@ -32,6 +32,11 @@ int MapPoint::check_index_in_keyframe(KeyFrame *kf) {
     return -1;
 }
 
+
+void MapPoint::increase_how_many_times_seen() {
+    this->how_many_times_seen += 1;
+}
+
 int MapPoint::predict_image_scale(double distance) {
     float ratio = this->dmax / distance;
     int scale = ceil(log(ratio) / log(1.2));

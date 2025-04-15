@@ -61,45 +61,61 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unor
     return correlation_current_frame;
 }
 
+
+std::unordered_set<MapPoint*> OrbMatcher::map_points_in_frustum(KeyFrame *kf, std::unordered_set<MapPoint*> map_points) {
+    std::unordered_set<MapPoint*> out;
+    Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
+    Eigen::Vector3d camera_to_map_view_ray;
+    for (auto it = map_points.begin(); it != map_points.end(); it++) {
+        MapPoint *mp = *it;
+        if (mp == nullptr || kf->check_map_point_outlier(mp)) continue;
+        Eigen::Vector3d point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
+        if (point_camera_coordinates(0) < 0 || point_camera_coordinates(0) > kf->depth_matrix.cols - 1) continue;
+        if (point_camera_coordinates(1) < 0 || point_camera_coordinates(1) > kf->depth_matrix.rows - 1) continue;
+        if (point_camera_coordinates(2) < 1e-6) continue;
+
+        camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
+        double distance = camera_to_map_view_ray.norm();
+        if (distance < mp->dmin || distance > mp->dmax) continue;
+        
+        camera_to_map_view_ray.normalize();
+        double dot_product = camera_to_map_view_ray.dot(mp->view_direction);
+        if (dot_product < 0.5) continue;
+        out.insert(mp);   
+    }
+    return out;
+}
+
 std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int window)
 {
     std::unordered_map<MapPoint *, Feature *> out;
     Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
     Eigen::Vector3d camera_to_map_view_ray;
-    std::unordered_map<MapPoint *, Feature *> prev_frame_correlations = prev_kf->return_map_points_keypoint_correlation();
     Eigen::Vector3d kf_camer_center_prev_coordinates = kf->Tiw.rotationMatrix() * kf_camera_center + kf->Tiw.translation(); 
     const bool bForward  =   kf_camer_center_prev_coordinates(2) >  3.2;
     const bool bBackward = -kf_camer_center_prev_coordinates(2) > 3.2;
-
-    for (auto it = prev_frame_correlations.begin(); it != prev_frame_correlations.end(); it++)
-    {
-        MapPoint *mp = it->first;
-        if (mp == nullptr || kf->check_map_point_outlier(mp)) continue;
-        Eigen::Vector3d point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
-        if (point_camera_coordinates(0) < 0 || point_camera_coordinates(0) > kf->depth_matrix.cols - 1)
-        continue;
-        if (point_camera_coordinates(1) < 0 || point_camera_coordinates(1) > kf->depth_matrix.rows - 1)
-        continue;
-        if (point_camera_coordinates(2) < 1e-6) continue;
-        
-        camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
-        camera_to_map_view_ray.normalize();
-        double dot_product = camera_to_map_view_ray.dot(mp->view_direction);
-        if (dot_product < 0.5) continue;
-        
+    std::cout << prev_kf->map_points.size() << " atatea map points gasite\n";
+    std::cout << prev_kf->mp_correlations.size() << " asocieri gasite in total\n";
+    std::unordered_set<MapPoint*> seen_map_points = this->map_points_in_frustum(kf, prev_kf->map_points);
+    Eigen::Vector3d point_camera_coordinates;
+    for (MapPoint *mp : seen_map_points) {
+        point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
         double u = point_camera_coordinates(0);
         double v = point_camera_coordinates(1);
-        
-        int current_octave = it->second->get_key_point().octave;
-        int scale_of_search = window * pow(1.2, current_octave);
-        
+        double depth = point_camera_coordinates(2);
+        if (prev_kf->mp_correlations[mp] == nullptr) {
+            std::cout << "aici este null nu exista corespondenta in celalat\n";
+            continue;
+        }
+        Feature *f = prev_kf->mp_correlations[mp];
+        int scale_of_search = window * pow(1.2, f->kp.octave);
         std::vector<int> kps_idx;
         if (bForward) {
-            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, current_octave - 1, 7);
+            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, f->kp.octave - 1, 8);
         } else if (bBackward) {
-            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, 0, current_octave);
+            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, 0, f->kp.octave);
         } else {
-            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, current_octave - 1, current_octave + 1);
+            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, f->kp.octave - 1, f->kp.octave + 1);
         }
         if (kps_idx.size() == 0) continue;
         
@@ -109,9 +125,9 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
         for (int idx : kps_idx)
         {
             int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
-            if (kf->features[idx].stereo_depth > 0)
+            if (kf->features[idx].stereo_depth > 1e-6)
             {
-                double fake_rgbd = u - kf->K(0, 0) * 0.08 / point_camera_coordinates(2);
+                double fake_rgbd = u - kf->K(0, 0) * 0.08 / depth;
                 float er = fabs(fake_rgbd - kf->features[idx].stereo_depth);
                 if (er > scale_of_search) continue;
             }
@@ -121,151 +137,48 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
                 best_idx = idx;
             }
         }
-        if (best_dist > this->orb_descriptor_value) continue;
+        if (best_dist > 100) continue;
         out.insert({mp, &kf->features[best_idx]});
     }
-    this->checkOrientation(out, prev_frame_correlations);
+    this->checkOrientation(out, prev_kf->mp_correlations);
     return out;
 }
 
-
-int OrbMatcher::reproject_map_points(KeyFrame *kf, std::unordered_set<MapPoint *> map_points, int window_size) {
-    int out = 0;
-    Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
-    int points_which_can_be_found = 0;
-    Eigen::Vector3d camera_to_map_view_ray;
-    int out_points_found = 0;
-    for (auto it = map_points.begin(); it != map_points.end(); it++)
-    {
-        MapPoint *mp = *it;
-        if (kf->check_map_point_outlier(mp)) continue;
-        Eigen::Vector3d point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
-        if (point_camera_coordinates(0) < 0 || point_camera_coordinates(0) > kf->depth_matrix.cols - 1)
-            continue;
-        if (point_camera_coordinates(1) < 0 > kf->depth_matrix.rows - 1)
-            continue;
-        if (point_camera_coordinates(2) <= 1e-6) continue;
-        
-        double distance = (mp->wcoord_3d - kf_camera_center).norm();
-        if (distance < mp->dmin || distance > mp->dmax) continue;
-        
-        camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
-        camera_to_map_view_ray.normalize();
-        double dot_product = camera_to_map_view_ray.dot(mp->view_direction);
-        if (dot_product < 0.5) continue;
-        
-        float radius = (dot_product >= 0.98) ? 2.5 : 4;
-        radius *= window_size; 
-        int predicted_scale = mp->predict_image_scale(distance);
-        int scale_of_search = radius * pow(1.2, predicted_scale);
-        
-        double u = point_camera_coordinates(0);
-        double v = point_camera_coordinates(1);
-        
-        int lowest_dist = 256;
-        int lowest_idx = -1;
-        int lowest_level = -1;
-        int second_lowest_dist = 256;
-        int second_lowest_level = -1;
-        int second_lowest_idx = -1;
-        
-        
-        std::vector<int> kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, predicted_scale - 1, predicted_scale + 1);
-        if (kps_idx.size() == 0)
-            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, 2 * scale_of_search, predicted_scale - 1, predicted_scale + 1);
-        std::cout << kps_idx.size() << " ";
-        if (kps_idx.size() == 0) continue;
-        
-        for (int idx : kps_idx)
-        {
-            int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
-            // if (kf->features[idx].get_map_point() != nullptr) continue; 
-            if (kf->features[idx].stereo_depth < 1e-6) continue;
-            
-            double fake_rgbd = u - kf->K(0, 0) * 0.08 / point_camera_coordinates(2);
-            float er = fabs(fake_rgbd - kf->features[idx].stereo_depth);
-            if (er > scale_of_search) continue;
-            
-            if (cur_hamm_dist < lowest_dist)
-            {
-                second_lowest_dist = lowest_dist;
-                second_lowest_idx = lowest_idx;
-                second_lowest_level = lowest_level;
-                lowest_idx = idx;
-                lowest_dist = cur_hamm_dist;
-                lowest_level = kf->features[idx].kp.octave;
-            }
-            else if (cur_hamm_dist < second_lowest_dist)
-            {
-                second_lowest_dist = cur_hamm_dist;
-                second_lowest_idx = idx;
-                second_lowest_level = kf->features[idx].kp.octave;
-            }
-        }
-        std::cout << "\n";
-        if (lowest_dist > 50)  continue;
-        if(lowest_level == second_lowest_level && lowest_dist > this->ratio_track_local_map * second_lowest_dist) continue;
-        out++;
-    }
-    return out;
-    
-}
- 
 std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoint *> map_points, int window_size)
 {
     std::unordered_map<MapPoint *, Feature *> out;
     Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
-    int points_which_can_be_found = 0;
     Eigen::Vector3d camera_to_map_view_ray;
-    int out_points_found = 0;
-    for (auto it = map_points.begin(); it != map_points.end(); it++)
-    {
-        MapPoint *mp = *it;
-        if (kf->check_map_point_outlier(mp)) continue;
-        Eigen::Vector3d point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
-        if (point_camera_coordinates(0) < 0 || point_camera_coordinates(0) > kf->depth_matrix.cols - 1)
-            continue;
-        if (point_camera_coordinates(1) < 0 > kf->depth_matrix.rows - 1)
-            continue;
-        if (point_camera_coordinates(2) <= 1e-6) continue;
-        
-        double distance = (mp->wcoord_3d - kf_camera_center).norm();
-        if (distance < mp->dmin || distance > mp->dmax) continue;
-        
+    Eigen::Vector3d point_camera_coordinates;
+    std::unordered_set<MapPoint*> seen_map_points = this->map_points_in_frustum(kf, map_points);
+    for (MapPoint *mp : seen_map_points) {
+        point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
         camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
+        double distance = camera_to_map_view_ray.norm();
         camera_to_map_view_ray.normalize();
-        double dot_product = camera_to_map_view_ray.dot(mp->view_direction);
-        if (dot_product < 0.5) continue;
-        
-        float radius = (dot_product >= 0.98) ? 2.5 : 4;
-        radius *= window_size; 
+        float radius = camera_to_map_view_ray.dot(mp->view_direction) >= 0.998 ? 2.5 : 4;
+        radius *= window_size;
         int predicted_scale = mp->predict_image_scale(distance);
-        int scale_of_search = radius * pow(1.2, predicted_scale);
-        
+        int scale_of_search = radius * pow(1.2, predicted_scale);        
         double u = point_camera_coordinates(0);
         double v = point_camera_coordinates(1);
-        
+
         int lowest_dist = 256;
         int lowest_idx = -1;
         int lowest_level = -1;
         int second_lowest_dist = 256;
         int second_lowest_level = -1;
         int second_lowest_idx = -1;
-        
-        
         std::vector<int> kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, predicted_scale - 1, predicted_scale + 1);
-        // std::cout << kps_idx.size() << " ";
         if (kps_idx.size() == 0) continue;
-        out_points_found++;
         for (int idx : kps_idx)
         {
-            // if (kf->features[idx].get_map_point() != nullptr) continue; 
-            if (kf->features[idx].stereo_depth <= 1e-6) continue;
-            
-            double fake_rgbd = u - kf->K(0, 0) * 0.08 / point_camera_coordinates(2);
-            float er = fabs(fake_rgbd - kf->features[idx].stereo_depth);
-            if (er > scale_of_search) continue;
-            
+            if (kf->features[idx].stereo_depth > 1e-6) {
+                double fake_rgbd = u - kf->K(0, 0) * 0.08 / point_camera_coordinates(2);
+                float er = fabs(fake_rgbd - kf->features[idx].stereo_depth);
+                if (er > scale_of_search) continue;
+            }
+
             int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
             
             if (cur_hamm_dist < lowest_dist)
@@ -275,20 +188,19 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
                 second_lowest_level = lowest_level;
                 lowest_idx = idx;
                 lowest_dist = cur_hamm_dist;
-                lowest_level = kf->features[idx].kp.octave;
+                lowest_level = kf->features[idx].kpu.octave;
             }
             else if (cur_hamm_dist < second_lowest_dist)
             {
                 second_lowest_dist = cur_hamm_dist;
                 second_lowest_idx = idx;
-                second_lowest_level = kf->features[idx].kp.octave;
+                second_lowest_level = kf->features[idx].kpu.octave;
             }
         }
-        if (lowest_dist > 50)  continue;
+        if (lowest_dist > 100)  continue;
         if(lowest_level == second_lowest_level && lowest_dist > 0.8 * second_lowest_dist) continue;
         out.insert({mp, &kf->features[lowest_idx]});
     }
-    // std::cout << "\n";
     return out;
 }
 
@@ -337,8 +249,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
                 for (size_t icurr = 0; icurr < indicies_curr.size(); icurr++)
                 {
                     const size_t feature_curr = f2it->second[icurr];
-                    MapPoint *mp_curr = curr->features[feature_curr].get_map_point();
-                    if (mp_curr != nullptr) continue;
                     const cv::Mat &d2 = curr->orb_descriptors.row(feature_curr);
                     int dist = this->ComputeHammingDistance(d1, d2);
                     
@@ -370,7 +280,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
             f2it = curr_features.lower_bound(f1it->first);
         }
     }
-    std::unordered_map<MapPoint*, Feature*> out_ref = ref->return_map_points_keypoint_correlation();
-    this->checkOrientation(out, out_ref);
+    this->checkOrientation(out, ref->mp_correlations);
     return out;
 }
