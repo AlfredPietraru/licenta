@@ -60,8 +60,9 @@ int main(int argc, char **argv)
     LocalMapping *local_mapper = new LocalMapping(mapp);
     Tracker *tracker = new Tracker(cfg, voc, pnp_ransac_cfg, orb_matcher_cfg);
     tracker->initialize(frame, depth, mapp, groundtruth_pose);
-    reader->store_entry(groundtruth_pose);
-    while(1) {
+    reader->store_entry(Sophus::SE3d(Eigen::Matrix4d::Identity()));
+    // reader->store_entry(groundtruth_pose);
+    while(!reader->should_end()) {
         std::pair<cv::Mat, cv::Mat> data = reader->get_next_frame();    
         Sophus::SE3d groundtruth_pose = reader->get_next_groundtruth_pose();
         frame = data.first;

@@ -111,6 +111,10 @@ Sophus::SE3d TumDatasetReader::get_next_groundtruth_pose() {
     return pose;
 }
 
+bool TumDatasetReader::should_end() {
+    return this->frame_idx == 790;
+}
+
 std::pair<cv::Mat, cv::Mat> TumDatasetReader::get_next_frame() {
     std::cout << frame_idx << " " << this->rgb_path[frame_idx] << " " << this->depth_path[frame_idx] << "\n";
     
@@ -127,6 +131,6 @@ void TumDatasetReader::store_entry(Sophus::SE3d pose) {
     std::string path = this->rgb_path[frame_idx - 1];
     std::string file_name = extract_timestamp(path);
     this->outfile << file_name <<  " " << pose.translation().x() << " " << pose.translation().y() << " " << pose.translation().z() << " ";
-    this->outfile << pose.unit_quaternion().x() << " " << pose.unit_quaternion().y() << " "  << pose.unit_quaternion().z() << " " << pose.unit_quaternion().w() << "\n"; 
+    this->outfile << pose.unit_quaternion().x() << " " << pose.unit_quaternion().y() << " "  << pose.unit_quaternion().z() << " " << pose.unit_quaternion().w() << std::endl; 
 }
 

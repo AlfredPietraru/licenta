@@ -94,8 +94,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
     Eigen::Vector3d kf_camer_center_prev_coordinates = kf->Tiw.rotationMatrix() * kf_camera_center + kf->Tiw.translation(); 
     const bool bForward  =   kf_camer_center_prev_coordinates(2) >  3.2;
     const bool bBackward = -kf_camer_center_prev_coordinates(2) > 3.2;
-    std::cout << prev_kf->map_points.size() << " atatea map points gasite\n";
-    std::cout << prev_kf->mp_correlations.size() << " asocieri gasite in total\n";
     std::unordered_set<MapPoint*> seen_map_points = this->map_points_in_frustum(kf, prev_kf->map_points);
     Eigen::Vector3d point_camera_coordinates;
     for (MapPoint *mp : seen_map_points) {
@@ -227,7 +225,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
     DBoW2::FeatureVector::const_iterator f2it = curr_features.begin();
     DBoW2::FeatureVector::const_iterator f2end = curr_features.end();
     
-    int cate_ajung_acolo = 0;
     while (f1it != f1end && f2it != f2end)
     {
         if (f1it->first == f2it->first)
@@ -263,9 +260,8 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
                         bestDist2 = dist;
                     }
                 }
-                if (bestDist1 > 60) continue;
+                if (bestDist1 > 50) continue;
                 if (bestDist1 > 0.7 * bestDist2) continue;
-                cate_ajung_acolo++;
                 out.insert({mp_ref, &curr->features[bestIdx]});
             }
             f1it++;

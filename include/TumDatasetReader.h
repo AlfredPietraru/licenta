@@ -44,6 +44,10 @@ public:
     std::pair<cv::Mat, cv::Mat> get_next_frame();
     Sophus::SE3d get_next_groundtruth_pose();
     void store_entry(Sophus::SE3d pose);
+    bool should_end();
 };
+
+
+
 
 #endif

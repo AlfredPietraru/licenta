@@ -68,8 +68,8 @@ void Tracker::initialize(Mat frame, Mat depth, Map* mapp, Sophus::SE3d pose)
     keypoints = out.first.first;
     descriptors = out.first.second;
     undistorted_kps = out.second;
-    this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
-    // this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
+    // this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
+    this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
 
     this->reference_kf = this->current_kf;
     mapp->add_first_keyframe(this->reference_kf);
@@ -204,8 +204,8 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Map *mapp, So
     // compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     std::unordered_map<MapPoint *, Feature *>  new_matches = this->TrackLocalMap(mapp);
     this->current_kf->correlate_map_points_to_features_current_frame(new_matches);
-    compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
-    // this->current_kf->debug_keyframe(100, matches, new_matches);
+    // compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
+    // this->current_kf->debug_keyframe(50, matches, new_matches);
     bool needed_keyframe = this->Is_KeyFrame_needed(); 
     if (needed_keyframe) {
         std::cout << "UN KEYFRAME TREBUIE ADAUGAT\n\n\n";

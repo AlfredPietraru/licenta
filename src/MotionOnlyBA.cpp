@@ -190,7 +190,7 @@ Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf, std::unordered_map<MapP
         }
 
         for (auto it = rgbd_matches.begin(); it != rgbd_matches.end(); it++) {
-            MapPoint *mp = it->first;            
+            MapPoint *mp = it->first;
             error = get_rgbd_reprojection_error(mp, kf->K, intermediate_pose, it->second, chi2Stereo[i]);
             if (error > chi2Stereo[i]) {
                 kf->add_outlier_element(mp);
