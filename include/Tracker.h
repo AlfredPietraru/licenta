@@ -43,9 +43,9 @@ public:
     MapDrawer *mapDrawer;
 
 
-    std::unordered_map<MapPoint*, Feature*> TrackReferenceKeyFrame();
-    std::unordered_map<MapPoint*, Feature*> TrackConsecutiveFrames();
-    std::unordered_map<MapPoint*, Feature*> TrackLocalMap(Map *mapp);
+    void TrackReferenceKeyFrame(std::unordered_map<MapPoint *, Feature *>& matches);
+    void TrackConsecutiveFrames(std::unordered_map<MapPoint *, Feature *>& matches);
+    void TrackLocalMap(std::unordered_map<MapPoint *, Feature *>& matches, Map *mapp);
     bool Is_KeyFrame_needed();
     // auxiliary functions
     void get_current_key_frame(Mat frame, Mat depth);

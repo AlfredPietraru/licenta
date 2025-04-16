@@ -31,9 +31,9 @@ public:
         this->ratio_track_local_map = orb_matcher_config.ratio_track_local_map;
     }
     
-    std::unordered_map<MapPoint*, Feature*> match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref);
-    std::unordered_map<MapPoint*, Feature*> match_consecutive_frames(KeyFrame* kf, KeyFrame *kf2, int window);
-    std::unordered_map<MapPoint*, Feature*> match_frame_map_points(KeyFrame *curr, std::unordered_set<MapPoint*>& map_points, int window_size);
+    void match_frame_reference_frame(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *curr, KeyFrame *ref);
+    void match_consecutive_frames(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame* kf, KeyFrame *kf2, int window);
+    void match_frame_map_points(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *curr, std::unordered_set<MapPoint*>& map_points, int window_size);
     int get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2);
 
 

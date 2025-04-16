@@ -69,7 +69,9 @@ KeyFrame *Map::get_reference_keyframe(KeyFrame *kf)
     int reference_idx = start_idx;
     for (int i = start_idx; i < this->keyframes.size(); i++)
     {
-        int out = this->matcher->match_frame_map_points(kf, this->keyframes[i]->map_points, 7).size();
+        std::unordered_map<MapPoint *, Feature *> matches;
+        this->matcher->match_frame_map_points(matches, kf, this->keyframes[i]->map_points, 7);
+        int out = matches.size();
         if (out == 0) continue;
         if (out > max)
         {
@@ -111,16 +113,16 @@ void Map::compute_map_points(KeyFrame *kf)
 }
 
 // de adaugat reference keyframe
-std::unordered_map<MapPoint *, Feature*> Map::track_local_map(KeyFrame *curr_kf, KeyFrame *reference_kf)
+void Map::track_local_map(std::unordered_map<MapPoint *, Feature*> &matches, KeyFrame *curr_kf, KeyFrame *reference_kf)
 {
     // reference_kf = get_reference_keyframe(curr_kf);
     if (this->graph.find(reference_kf) == this->graph.end()) {
         std::cout << " \nCEVA NU E BINE NU GASESTE KEY FRAME IN COMPUTE LOCAL MAP\n";
-        return {};
+        return;
     }
     std::unordered_set<MapPoint*> local_map = this->compute_local_map(curr_kf, reference_kf);
 
     int window = curr_kf->current_idx > 2 ? 3 : 5;  
-    return this->matcher->match_frame_map_points(curr_kf, local_map, window);
+    this->matcher->match_frame_map_points(matches, curr_kf, local_map, window);
 }
 

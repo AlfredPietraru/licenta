@@ -189,7 +189,7 @@ void KeyFrame::remove_map_point(MapPoint *mp) {
 }
 
 
-void KeyFrame::correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature *> &matches)
+void KeyFrame::correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature *>& matches)
 {
     int e_bine = 0;
     for (auto it = matches.begin(); it != matches.end(); it++)

@@ -25,7 +25,7 @@ public:
 
     Map();
     Map(Orb_Matcher orb_matcher_cfg);
-    std::unordered_map<MapPoint *, Feature*> track_local_map(KeyFrame *curr_kf, KeyFrame *reference_kf);
+    void track_local_map(std::unordered_map<MapPoint *, Feature*> &matches, KeyFrame *curr_kf, KeyFrame *reference_kf);
     KeyFrame *get_reference_keyframe(KeyFrame *kf);
     std::unordered_set<MapPoint *> compute_local_map(KeyFrame *current_frame, KeyFrame *reference_frame);
     std::unordered_set<MapPoint*> get_all_map_points();

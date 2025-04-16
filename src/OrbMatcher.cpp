@@ -91,9 +91,8 @@ std::unordered_set<MapPoint*> OrbMatcher::map_points_in_frustum(KeyFrame *kf, st
     return out;
 }
 
-std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int window)
+void OrbMatcher::match_consecutive_frames(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *kf, KeyFrame *prev_kf, int window)
 {
-    std::unordered_map<MapPoint *, Feature *> out;
     Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
     Eigen::Vector3d camera_to_map_view_ray;
     Eigen::Vector3d kf_camer_center_prev_coordinates = kf->Tiw.rotationMatrix() * kf_camera_center + kf->Tiw.translation(); 
@@ -141,15 +140,13 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
             }
         }
         if (best_dist > 60) continue;
-        out.insert({mp, &kf->features[best_idx]});
+        matches.insert({mp, &kf->features[best_idx]});
     }
-    this->checkOrientation(out, prev_kf->mp_correlations);
-    return out;
+    this->checkOrientation(matches, prev_kf->mp_correlations);
 }
 
-std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoint *>& map_points, int window_size)
+void OrbMatcher::match_frame_map_points(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *kf, std::unordered_set<MapPoint *>& map_points, int window_size)
 {
-    std::unordered_map<MapPoint *, Feature *> out;
     Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
     Eigen::Vector3d camera_to_map_view_ray;
     Eigen::Vector3d point_camera_coordinates;
@@ -202,9 +199,8 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
         }
         if (lowest_dist > 60)  continue;
         if(lowest_level == second_lowest_level && lowest_dist > 0.8 * second_lowest_dist) continue;
-        out.insert({mp, &kf->features[lowest_idx]});
+        matches.insert({mp, &kf->features[lowest_idx]});
     }
-    return out;
 }
 
 int OrbMatcher::get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2)
@@ -217,10 +213,8 @@ int OrbMatcher::get_number_common_mappoints_between_keyframes(KeyFrame *kf1, Key
     return out;
 }
 
-std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref)
+void OrbMatcher::match_frame_reference_frame(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *curr, KeyFrame *ref)
 {
-    std::unordered_map<MapPoint*, Feature*> out;
-
     DBoW2::FeatureVector::const_iterator f1it = ref->features_vec.begin();
     DBoW2::FeatureVector::const_iterator f1end = ref->features_vec.end();
     DBoW2::FeatureVector::const_iterator f2it = curr->features_vec.begin();
@@ -263,7 +257,7 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
                 }
                 if (bestDist1 > 50) continue;
                 if (bestDist1 > 0.7 * bestDist2) continue;
-                out.insert({mp_ref, &curr->features[bestIdx]});
+                matches.insert({mp_ref, &curr->features[bestIdx]});
             }
             f1it++;
             f2it++;
@@ -277,6 +271,5 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
             f2it = curr->features_vec.lower_bound(f1it->first);
         }
     }
-    this->checkOrientation(out, ref->mp_correlations);
-    return out;
+    this->checkOrientation(matches, ref->mp_correlations);
 }

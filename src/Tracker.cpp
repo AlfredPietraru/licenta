@@ -128,72 +128,67 @@ void check_feature_matching(KeyFrame *curr, KeyFrame *ref, std::unordered_map<Ma
 }
 
 
-std::unordered_map<MapPoint *, Feature *> Tracker::TrackReferenceKeyFrame() {
-    std::unordered_map<MapPoint *, Feature *> matches = matcher->match_frame_reference_frame(this->current_kf, this->reference_kf);
+void Tracker::TrackReferenceKeyFrame(std::unordered_map<MapPoint *, Feature *>& matches) {
+    matcher->match_frame_reference_frame(matches, this->current_kf, this->reference_kf);
     if (matches.size() < 15) {
         std::cout << matches.size() << "REFERENCE FRAME N A URMARIT SUFICIENTE MAP POINTS PENTRU OPTIMIZARE\n";
         std::cout << this->current_kf->current_idx << "\n";
         exit(1);
     }
     this->current_kf->Tiw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
-    std::unordered_map<MapPoint *, Feature*> filtered_matches;
-    for (auto it = matches.begin(); it != matches.end(); it++) {
-        if (this->current_kf->check_map_point_outlier(it->first)) continue;
-        filtered_matches.insert({it->first, it->second});
+    for (MapPoint *mp : this->current_kf->outliers) {
+        if (matches.find(mp) != matches.end()) {
+            matches.erase(mp);
+        }
     }
-    if (filtered_matches.size() < 10) {
-        std::cout << filtered_matches.size() << "REFERENCE FRAME NU A URMARIT SUFICIENTE INLIERE MAP POINTS\n";
+    if (matches.size() < 10) {
+        std::cout << matches.size() << "REFERENCE FRAME NU A URMARIT SUFICIENTE INLIERE MAP POINTS\n";
         std::cout << this->current_kf->current_idx << "\n";
         exit(1);
-    }
-    return filtered_matches; 
+    } 
 }
 
-std::unordered_map<MapPoint*, Feature*> Tracker::TrackConsecutiveFrames() {
+void Tracker::TrackConsecutiveFrames(std::unordered_map<MapPoint *, Feature *>& matches) {
     int window = 15;
-    std::unordered_map<MapPoint*, Feature*> matches = matcher->match_consecutive_frames(this->current_kf, this->prev_kf, window);
+    matcher->match_consecutive_frames(matches, this->current_kf, this->prev_kf, window);
     if (matches.size() < 20) {
-        matches = matcher->match_consecutive_frames(this->current_kf, this->prev_kf, 2 * window);
+        matcher->match_consecutive_frames(matches, this->current_kf, this->prev_kf, 2 * window);
         if (matches.size() < 20) {
             std::cout << "\nURMARIREA INTRE FRAME-URI INAINTE DE OPTIMIZARE NU A FUNCTIONAT\n";
             exit(1);
         }
     }
     this->current_kf->Tiw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
-    std::unordered_map<MapPoint *, Feature*> filtered_matches;
-    for (auto it = matches.begin(); it != matches.end(); it++) {
-        if (this->current_kf->check_map_point_outlier(it->first)) continue;
-        filtered_matches.insert({it->first, it->second});
+    for (MapPoint *mp : this->current_kf->outliers) {
+        if (matches.find(mp) != matches.end()) {
+            matches.erase(mp);
+        }
     }
-
-    if (filtered_matches.size() < 10) {
+    if (matches.size() < 10) {
         std::cout << "\nURMARIREA INTRE FRAME-URI NU A FUNCTIONAT DUPA OPTIMIZARE\n";
-        return filtered_matches;
     }
-    return filtered_matches; 
 }
 
 // de verificat local map bine de tot
-std::unordered_map<MapPoint*, Feature*> Tracker::TrackLocalMap(Map *mapp) {
-    std::unordered_map<MapPoint *, Feature *> new_matches = mapp->track_local_map(this->current_kf, this->reference_kf);
+void Tracker::TrackLocalMap(std::unordered_map<MapPoint *, Feature *>& matches, Map *mapp) {
+    mapp->track_local_map(matches, this->current_kf, this->reference_kf);
     // std::cout << "iese aici pana la urma la TrackLocalMap\n";
     // exit(1);
-    if (new_matches.size() < 30) {
+    if (matches.size() < 30) {
         std::cout << "\nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
         exit(1);
     }
-    this->current_kf->Tiw = this->bundleAdjustment->solve_ceres(this->current_kf, new_matches);
-    int out = 0; 
-    for (auto it = new_matches.begin(); it != new_matches.end(); it++) {
-        if (this->current_kf->check_map_point_outlier(it->first)) continue;
-        out += 1;
+    this->current_kf->Tiw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
+    for (MapPoint *mp : this->current_kf->outliers) {
+        if (matches.find(mp) != matches.end()) {
+            matches.erase(mp);
+        }
     }
-    if (out < 30) {
-        std::cout << out << " PREA PUTINE PUNCTE PROIECTATE CARE NU SUNT OUTLIERE DE CATRE LOCAL MAP\n";
+    if (matches.size() < 30) {
+        std::cout << matches.size() << " PREA PUTINE PUNCTE PROIECTATE CARE NU SUNT OUTLIERE DE CATRE LOCAL MAP\n";
         std::cout << this->current_kf->current_idx << " ATATEA FRAME-URI URMARITE\n";
         exit(1);
     }
-    return new_matches;
 }
 
 std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Map *mapp, Sophus::SE3d ground_truth_pose) {
@@ -201,18 +196,19 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Map *mapp, So
     std::unordered_map<MapPoint *, Feature *> matches;
     if (this->current_kf->current_idx - this->reference_kf->current_idx <= 2) {
         std::cout << "inca urmarit cu ajutorul track reference frame\n" ;
-        matches = this->TrackReferenceKeyFrame();
+        this->TrackReferenceKeyFrame(matches);
         std::cout << "dupa track reference frame\n";
     } else {
-        matches = this->TrackConsecutiveFrames();
+        this->TrackConsecutiveFrames(matches);
         if (matches.size() < 20) {
             std::cout << "intre frame-uri nu s-a gasit suficient\n";
-            matches = this->TrackReferenceKeyFrame();
+            this->TrackReferenceKeyFrame(matches);
         }
     } 
     this->current_kf->correlate_map_points_to_features_current_frame(matches);
     // compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
-    std::unordered_map<MapPoint *, Feature *>  new_matches = this->TrackLocalMap(mapp);
+    std::unordered_map<MapPoint *, Feature *>  new_matches;
+    this->TrackLocalMap(new_matches, mapp);
     this->current_kf->correlate_map_points_to_features_current_frame(new_matches);
     compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     // this->current_kf->debug_keyframe(50, matches, new_matches);
