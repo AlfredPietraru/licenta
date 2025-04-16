@@ -28,6 +28,7 @@ public:
     bool set_map_point(MapPoint *mp);
     MapPoint* get_map_point();
     cv::KeyPoint get_key_point();
+    cv::KeyPoint get_undistorted_keypoint();
     void unmatch_map_point();
     int ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2);
 };

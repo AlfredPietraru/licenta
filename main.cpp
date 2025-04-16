@@ -9,8 +9,13 @@
 #include "include/ORBVocabulary.h"
 #include <csignal>
 #include <cstdlib>
+#include <chrono>
 namespace fs = std::filesystem;
 using namespace std;
+using std::chrono::high_resolution_clock;
+using std::chrono::duration_cast;
+using std::chrono::duration;
+using std::chrono::seconds;
 
 TumDatasetReader *reader;
 
@@ -60,6 +65,7 @@ int main(int argc, char **argv)
     LocalMapping *local_mapper = new LocalMapping(mapp);
     Tracker *tracker = new Tracker(frame, depth, mapp,  groundtruth_pose, cfg, voc, pnp_ransac_cfg, orb_matcher_cfg);
     reader->store_entry(Sophus::SE3d(Eigen::Matrix4d::Identity()));
+    auto t1 = high_resolution_clock::now();
     // reader->store_entry(groundtruth_pose);
     while(!reader->should_end()) {
         std::pair<cv::Mat, cv::Mat> data = reader->get_next_frame();    
@@ -74,7 +80,13 @@ int main(int argc, char **argv)
             std::cout << "ADAUGA AICI UN KEYFRAME\n";
             local_mapper->local_map(kf);
         }
+        if (reader->frame_idx == 60) {
+            auto t2 = high_resolution_clock::now();
+            std::cout << duration_cast<seconds>(t2 - t1).count() << " aici atata a durat" << std::endl;
+            break;
+        }
     }
+
 }
 
 

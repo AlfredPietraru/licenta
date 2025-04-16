@@ -26,14 +26,14 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unor
     for (auto it = correlation_current_frame.begin(); it != correlation_current_frame.end(); it++)
     {
         MapPoint *mp = it->first;
-        cv::KeyPoint current_kp = it->second->get_key_point();
+        cv::KeyPoint current_kpu = it->second->get_undistorted_keypoint();
         if (correlation_prev_frame.find(mp) == nullptr) 
         {
             std::cout << "E CIUDAT CA E NULL IN CHECK ORIENTATION\n";
             continue;
         }
-        cv::KeyPoint prev_kp = correlation_prev_frame[mp]->get_key_point();
-        float rot = prev_kp.angle - current_kp.angle;
+        cv::KeyPoint prev_kpu = correlation_prev_frame[mp]->get_undistorted_keypoint();
+        float rot = prev_kpu.angle - current_kpu.angle;
         if (rot < 0.0) rot += 360.0f;
         int bin = lround(rot * factor);
         if (bin == 30) bin = 0;
@@ -110,15 +110,15 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_consecutive_frames(K
             std::cout << "aici este null nu exista corespondenta in celalat\n";
             continue;
         }
-        Feature *f = prev_kf->mp_correlations[mp];
-        int scale_of_search = window * pow(1.2, f->kp.octave);
+        int octave = prev_kf->mp_correlations[mp]->get_key_point().octave;
+        int scale_of_search = window * pow(1.2, octave);
         std::vector<int> kps_idx;
         if (bForward) {
-            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, f->kp.octave - 1, 8);
+            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, octave - 1, 8);
         } else if (bBackward) {
-            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, 0, f->kp.octave);
+            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, 0, octave);
         } else {
-            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, f->kp.octave - 1, f->kp.octave + 1);
+            kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, octave - 1, octave + 1);
         }
         if (kps_idx.size() == 0) continue;
         
@@ -191,13 +191,13 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
                 second_lowest_level = lowest_level;
                 lowest_idx = idx;
                 lowest_dist = cur_hamm_dist;
-                lowest_level = kf->features[idx].kpu.octave;
+                lowest_level = kf->features[idx].get_undistorted_keypoint().octave;
             }
             else if (cur_hamm_dist < second_lowest_dist)
             {
                 second_lowest_dist = cur_hamm_dist;
                 second_lowest_idx = idx;
-                second_lowest_level = kf->features[idx].kpu.octave;
+                second_lowest_level = kf->features[idx].get_undistorted_keypoint().octave;
             }
         }
         if (lowest_dist > 60)  continue;
@@ -209,26 +209,22 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_map_points(Key
 
 int OrbMatcher::get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2)
 {
-    std::unordered_set<MapPoint *> map_points_f1 = kf1->map_points;
-    std::unordered_set<MapPoint *> map_points_f2 = kf2->map_points;
     int out = 0;
-    for (auto it = map_points_f1.begin(); it != map_points_f1.end(); it++)
+    for (auto it = kf1->map_points.begin(); it != kf1->map_points.end(); it++)
     {
-        if (map_points_f2.find(*it) != map_points_f2.end()) out++;
+        if (kf2->map_points.find(*it) != kf2->map_points.end()) out++;
     }
     return out;
 }
 
 std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref)
 {
-    DBoW2::FeatureVector curr_features = curr->features_vec;
-    DBoW2::FeatureVector ref_features = ref->features_vec;
     std::unordered_map<MapPoint*, Feature*> out;
 
-    DBoW2::FeatureVector::const_iterator f1it = ref_features.begin();
-    DBoW2::FeatureVector::const_iterator f1end = ref_features.end();
-    DBoW2::FeatureVector::const_iterator f2it = curr_features.begin();
-    DBoW2::FeatureVector::const_iterator f2end = curr_features.end();
+    DBoW2::FeatureVector::const_iterator f1it = ref->features_vec.begin();
+    DBoW2::FeatureVector::const_iterator f1end = ref->features_vec.end();
+    DBoW2::FeatureVector::const_iterator f2it = curr->features_vec.begin();
+    DBoW2::FeatureVector::const_iterator f2end = curr->features_vec.end();
     
     while (f1it != f1end && f2it != f2end)
     {
@@ -274,11 +270,11 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::match_frame_reference_fram
         }
         else if (f1it->first < f2it->first)
         {
-            f1it = ref_features.lower_bound(f2it->first);
+            f1it = ref->features_vec.lower_bound(f2it->first);
         }
         else
         {
-            f2it = curr_features.lower_bound(f1it->first);
+            f2it = curr->features_vec.lower_bound(f1it->first);
         }
     }
     this->checkOrientation(out, ref->mp_correlations);

@@ -63,9 +63,9 @@ KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<double> dist
     
     for (int i = 0; i < this->features.size(); i++)
     {
-        Feature f = this->features[i];
-        int y_idx = (int)f.kpu.pt.y;
-        int x_idx = (int)f.kpu.pt.x;
+        cv::KeyPoint kpu = this->features[i].get_undistorted_keypoint();
+        int y_idx = (int)kpu.pt.y;
+        int x_idx = (int)kpu.pt.x;
         this->grid[y_idx / GRID_WIDTH][x_idx / GRID_HEIGHT].push_back(i);
     }
 

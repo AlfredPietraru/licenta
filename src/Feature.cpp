@@ -45,3 +45,7 @@ MapPoint* Feature::get_map_point() {
 cv::KeyPoint Feature::get_key_point() {
     return this->kp;
 }
+
+cv::KeyPoint Feature::get_undistorted_keypoint() {
+    return this->kpu;
+}
