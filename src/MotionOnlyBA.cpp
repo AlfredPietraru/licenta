@@ -140,14 +140,13 @@ Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf, std::unordered_map<MapP
         options.parameter_tolerance = 1e-8;
 
         options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-        options.check_gradients = false;
+        // options.check_gradients = true;
         // options.minimizer_progress_to_stdout = true;
         options.max_num_iterations = 10;
         
         ceres::LossFunction *loss_function_mono = new ceres::HuberLoss(sqrt(chi2Mono[i]));
         ceres::LossFunction *loss_function_stereo = new ceres::HuberLoss(sqrt(chi2Stereo[i]));
         
-        std::unordered_map<MapPoint*, ceres::ResidualBlockId> residual_rgbd_points;
         int inlier = 0;
         for (auto it = mono_matches.begin(); it != mono_matches.end(); it++) {
             MapPoint *mp = it->first;
@@ -167,7 +166,6 @@ Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf, std::unordered_map<MapP
             cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kpu.pt.x, kpu.pt.y, it->second->stereo_depth), mp->wcoord,
                             std::pow(1.2, kpu.octave), kf->K);    
             ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function_stereo, pose_vector);
-            residual_rgbd_points.insert({mp, id});
         }
 
         using SE3Manifold = ceres::ProductManifold<ceres::QuaternionManifold, ceres::EuclideanManifold<3>>;

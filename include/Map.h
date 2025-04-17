@@ -22,12 +22,13 @@ public:
     OrbMatcher* matcher;
     std::vector<KeyFrame*> keyframes;
     std::unordered_map<KeyFrame*, std::unordered_map<KeyFrame*, int>> graph;
+    std::unordered_set<MapPoint*> local_map;
 
     Map();
     Map(Orb_Matcher orb_matcher_cfg);
     void track_local_map(std::unordered_map<MapPoint *, Feature*> &matches, KeyFrame *curr_kf, KeyFrame *reference_kf);
     KeyFrame *get_reference_keyframe(KeyFrame *kf);
-    std::unordered_set<MapPoint *> compute_local_map(KeyFrame *current_frame, KeyFrame *reference_frame);
+    std::unordered_set<MapPoint *> compute_local_map(KeyFrame *reference_frame);
     std::unordered_set<MapPoint*> get_all_map_points();
     void compute_map_points(KeyFrame *kf);
     void add_first_keyframe(KeyFrame *new_kf);

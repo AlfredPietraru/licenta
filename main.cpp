@@ -17,6 +17,15 @@ using std::chrono::duration_cast;
 using std::chrono::duration;
 using std::chrono::seconds;
 
+
+// optimizare map -> local map -> pentru a creste viteza de procesare 
+// reprezentare grafica in spatiu 3d -> folosind pangolin
+// separare si abstractizare pentru a putea testa mai multe implementari ale diversilor algoritmi de matching intre frame - uri
+// finalizare thread the local mapping 
+// implementare thread relocalization
+
+
+
 TumDatasetReader *reader;
 // evo_traj tum groundtruth.txt estimated.txt -p --plot_mode xyz
 void signalHandler(int signum) {
@@ -64,8 +73,8 @@ int main(int argc, char **argv)
     Map *mapp = new Map(orb_matcher_cfg);
     LocalMapping *local_mapper = new LocalMapping(mapp);
     Tracker *tracker = new Tracker(frame, depth, mapp,  groundtruth_pose, cfg, voc, pnp_ransac_cfg, orb_matcher_cfg);
-    reader->store_entry(Sophus::SE3d(Eigen::Matrix4d::Identity()));
     auto t1 = high_resolution_clock::now();
+    reader->store_entry(Sophus::SE3d(Eigen::Matrix4d::Identity()));
     // reader->store_entry(groundtruth_pose);
     while(!reader->should_end()) {
         std::pair<cv::Mat, cv::Mat> data = reader->get_next_frame();    

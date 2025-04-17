@@ -36,7 +36,6 @@ public:
     std::vector<std::vector<std::vector<int>>> grid;
     cv::Mat orb_descriptors;
     cv::Mat frame;
-    cv::Mat depth_matrix;
     const double BASELINE = 0.08;
     float minX, maxX, minY, maxY;
 
@@ -50,7 +49,6 @@ public:
     Eigen::Vector3d compute_camera_center();
     Eigen::Vector3d fromWorldToImage(Eigen::Vector4d& wcoord);
     Eigen::Vector4d fromImageToWorld(int kp_idx);
-    float compute_depth_in_keypoint(cv::KeyPoint kp);
     std::vector<cv::KeyPoint> get_all_keypoints(); 
     Eigen::Vector3d get_viewing_direction();
     void correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature*>& matches);

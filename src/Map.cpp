@@ -30,6 +30,8 @@ void Map::add_first_keyframe(KeyFrame *new_kf) {
     this->compute_map_points(new_kf);
     this->keyframes.push_back(new_kf);
     this->graph.insert({new_kf, std::unordered_map<KeyFrame*, int>()});
+    this->local_map = this->compute_local_map(new_kf);
+
 }
  
 void Map::add_new_keyframe(KeyFrame *new_kf) {
@@ -82,7 +84,7 @@ KeyFrame *Map::get_reference_keyframe(KeyFrame *kf)
     return this->keyframes[reference_idx];
 }
 
-std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *current_frame, KeyFrame *reference_kf)
+std::unordered_set<MapPoint *> Map::compute_local_map(KeyFrame *reference_kf)
 {
     std::unordered_set<MapPoint *> out = reference_kf->map_points;
     for (std::pair<KeyFrame *, int> graph_edge : this->graph[reference_kf])
@@ -120,7 +122,6 @@ void Map::track_local_map(std::unordered_map<MapPoint *, Feature*> &matches, Key
         std::cout << " \nCEVA NU E BINE NU GASESTE KEY FRAME IN COMPUTE LOCAL MAP\n";
         return;
     }
-    std::unordered_set<MapPoint*> local_map = this->compute_local_map(curr_kf, reference_kf);
 
     int window = curr_kf->current_idx > 2 ? 3 : 5;  
     this->matcher->match_frame_map_points(matches, curr_kf, local_map, window);

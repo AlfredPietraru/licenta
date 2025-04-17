@@ -169,11 +169,8 @@ void Tracker::TrackConsecutiveFrames(std::unordered_map<MapPoint *, Feature *>& 
     }
 }
 
-// de verificat local map bine de tot
 void Tracker::TrackLocalMap(std::unordered_map<MapPoint *, Feature *>& matches, Map *mapp) {
     mapp->track_local_map(matches, this->current_kf, this->reference_kf);
-    // std::cout << "iese aici pana la urma la TrackLocalMap\n";
-    // exit(1);
     if (matches.size() < 30) {
         std::cout << "\nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
         exit(1);
@@ -210,7 +207,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Map *mapp, So
     std::unordered_map<MapPoint *, Feature *>  new_matches;
     this->TrackLocalMap(new_matches, mapp);
     this->current_kf->correlate_map_points_to_features_current_frame(new_matches);
-    compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
+    // compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     // this->current_kf->debug_keyframe(50, matches, new_matches);
     bool needed_keyframe = this->Is_KeyFrame_needed(); 
     if (needed_keyframe) {
@@ -219,7 +216,6 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Map *mapp, So
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
     }
-    std::cout << this->current_kf->map_points.size() << " map point cu care ramane in final\n";
     std::cout << this->current_kf->mp_correlations.size() << " map point correlate cu un feature\n";
     return {this->current_kf, needed_keyframe};
 }

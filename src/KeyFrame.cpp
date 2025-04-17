@@ -40,14 +40,17 @@ int KeyFrame::check_number_close_points()
 
 KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints, std::vector<cv::KeyPoint> &undistored_kps,
                    cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, cv::Mat &frame, ORBVocabulary *voc)
-    : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), depth_matrix(depth_matrix), current_idx(current_idx), frame(frame)
+    : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), current_idx(current_idx), frame(frame)
 {
 
     for (int i = 0; i < keypoints.size(); i++)
     {
         cv::KeyPoint kp = keypoints[i];
+        int x = std::round(kp.pt.x);
+        int y = std::round(kp.pt.y);
+        uint16_t d = depth_matrix.at<uint16_t>(y, x);
+        float depth = d / 5000.0f;
         cv::KeyPoint kpu = undistored_kps[i];
-        double depth = this->compute_depth_in_keypoint(kp);
         if (depth <= 1e-6)
         {
             this->features.push_back(Feature(kp, kpu, orb_descriptors.row(i), i, -10001, -10001));
@@ -136,15 +139,6 @@ Eigen::Vector3d KeyFrame::fromWorldToImage(Eigen::Vector4d &wcoord)
     double u = this->K(0, 0) * camera_coordinates(0) / d + this->K(0, 2);
     double v = this->K(1, 1) * camera_coordinates(1) / d + this->K(1, 2);
     return Eigen::Vector3d(u, v, d);
-}
-
-float KeyFrame::compute_depth_in_keypoint(cv::KeyPoint kp)
-{
-    int x = std::round(kp.pt.x);
-    int y = std::round(kp.pt.y);
-    uint16_t d = this->depth_matrix.at<uint16_t>(y, x);
-    float dd = d / 5000.0f;
-    return dd;
 }
 
 Eigen::Vector4d KeyFrame::fromImageToWorld(int kp_idx)
