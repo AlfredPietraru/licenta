@@ -382,7 +382,6 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
 
     int nFused=0;
 
-    std::cout << source_kf->map_points.size() << " atatea map points se gasesc\n";
 
     std::unordered_set<MapPoint*> copy_map_points(source_kf->map_points.begin(), source_kf->map_points.end());
     for(MapPoint *mp : copy_map_points)
@@ -461,10 +460,8 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         // If there is already a MapPoint replace otherwise add new measurement
         if(bestDist<=50)
         {
-            std::cout << bestIdx << "\n";
             MapPoint* pMPinKF = pKF->features[bestIdx].get_map_point();
             if (pMPinKF == nullptr) {
-                std::cout << "este null de fapt valoarea\n";
                 mp->add_observation_map_point(pKF, pKF->features[bestIdx].descriptor, Ow);
                 pKF->add_map_point(mp, &pKF->features[bestIdx], mp->orb_descriptor);
                 nFused++;
@@ -474,7 +471,6 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
             {
                 if(pMPinKF->keyframes.size() > mp->keyframes.size()) {
                     if (source_kf->mp_correlations.find(mp) == source_kf->mp_correlations.end()) {
-                        std::cout << "NU VEDE PUNCTUL IN LOCAL MAPPING\n";
                         continue;
                     } 
                     Feature *f = source_kf->mp_correlations[mp];
@@ -484,7 +480,6 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
                 }
                 if (pMPinKF->keyframes.size() < mp->keyframes.size()) {
                     if (pKF->mp_correlations.find(mp) == pKF->mp_correlations.end()) {
-                        std::cout << "NU VEDE PUNCTUL IN LOCAL MAPPING\n";
                         continue;
                     } 
                     Feature *f = pKF->mp_correlations[pMPinKF];

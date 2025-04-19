@@ -242,14 +242,13 @@ void LocalMapping::search_in_neighbours(KeyFrame *kf) {
     {
         OrbMatcher::Fuse(neighbour_kf, kf, 3);
     }
-    std::cout << "ajunge si in partea asta sau fuse e problema\n\n\n";
     // Search matches by projection from target KFs in current KF
     std::vector<MapPoint*> vpFuseCandidates;
     for(KeyFrame *neighbour_kf : vpNeighKFs)
     {
         OrbMatcher::Fuse(kf, neighbour_kf, 3);
     }
-    std::cout << "invers la fuse functioneaza in continuare bine\n";
+    
     // Update points
     // vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
     // for(MapPoint* pMP : kf->map_points)

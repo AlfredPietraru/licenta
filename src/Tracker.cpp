@@ -211,7 +211,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
 
     this->TrackLocalMap(matches, mapp);
     // compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
-    // this->current_kf->debug_keyframe(50, matches, matches);
+    this->current_kf->debug_keyframe(50, matches, matches);
     bool needed_keyframe = this->Is_KeyFrame_needed(matches.size()); 
     if (needed_keyframe) {
         std::cout << "UN KEYFRAME TREBUIE ADAUGAT\n\n\n";
@@ -219,6 +219,6 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
     }
-    // std::cout << this->current_kf->mp_correlations.size() << " map point correlate cu un feature\n";
+    std::cout << this->current_kf->mp_correlations.size() << " map point correlate cu un feature\n";
     return {this->current_kf, needed_keyframe};
 }
