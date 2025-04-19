@@ -48,7 +48,7 @@ public:
     void TrackReferenceKeyFrame(std::unordered_map<MapPoint *, Feature *>& matches);
     void TrackConsecutiveFrames(std::unordered_map<MapPoint *, Feature *>& matches);
     void TrackLocalMap(std::unordered_map<MapPoint *, Feature *>& matches, Map *mapp);
-    bool Is_KeyFrame_needed();
+    bool Is_KeyFrame_needed(int tracked_by_local_map);
     // auxiliary functions
     void get_current_key_frame(Mat frame, Mat depth);
     void tracking_was_lost();

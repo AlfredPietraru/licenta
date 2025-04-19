@@ -70,6 +70,11 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
     this->keyframes.push_back(new_kf);
     this->graph.insert({new_kf, edges_new_keyframe});
     new_kf->compute_bow_representation();
+    for (auto it = new_kf->mp_correlations.begin(); it != new_kf->mp_correlations.end(); it++) {
+        MapPoint *mp = it->first;
+        Feature *f = it->second;
+        mp->add_observation_map_point(new_kf, f->descriptor, new_kf->compute_camera_center());
+    }
     // de facut update la map points
 }
 

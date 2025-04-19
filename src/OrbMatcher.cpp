@@ -277,15 +277,13 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
     std::vector<std::pair<int, int>> vMatchedPairs;
     std::vector<bool> vbMatched2(ref2->features.size(),false);
     std::vector<int> vMatches12(ref1->features.size(),-1);
-    std::cout << "inainte sa inceapa triangularea\n";
     int total_founds = 0;
     while(f1it!=f1end && f2it!=f2end)
     {
         if(f1it->first == f2it->first)
         {
-            for(size_t i1=0, iend1=f1it->second.size(); i1<iend1; i1++)
+            for(size_t idx1 : f1it->second)
             {
-                const size_t idx1 = f1it->second[i1];
                 MapPoint* mp = ref1->features[idx1].get_map_point();
                 if (mp != nullptr) continue;
                 cv::KeyPoint kpu1 = ref1->features[idx1].get_undistorted_keypoint();
@@ -294,9 +292,8 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
                 int bestIdx2 = -1;
                 bStereo1 = ref1->features[idx1].stereo_depth > 1e-6;
 
-                for(size_t i2=0, iend2=f2it->second.size(); i2<iend2; i2++)
+                for(size_t idx2 : f2it->second)
                 {
-                    size_t idx2 = f2it->second[i2];
                     MapPoint* kf2_mp = ref2->features[idx2].get_map_point();
                     
                     if(vbMatched2[idx2] || kf2_mp != nullptr)
@@ -313,8 +310,8 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
                     bStereo2 = ref2->features[idx2].stereo_depth > 1e-6;
                     if(!bStereo1 && !bStereo2)
                     {
-                        const float distex = ex-kpu2.pt.x;
-                        const float distey = ey-kpu2.pt.y;
+                        const float distex = ex - kpu2.pt.x;
+                        const float distey = ey - kpu2.pt.y;
                         if(distex*distex+distey*distey < 50 * pow(1.2, kpu2.octave)) continue;
                     } 
                     bestIdx2 = idx2;
@@ -385,11 +382,11 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
 
     int nFused=0;
 
-    const int nMPs = source_kf->map_points.size();
+    std::cout << source_kf->map_points.size() << " atatea map points se gasesc\n";
 
-    for(MapPoint *mp : source_kf->map_points)
+    std::unordered_set<MapPoint*> copy_map_points(source_kf->map_points.begin(), source_kf->map_points.end());
+    for(MapPoint *mp : copy_map_points)
     {
-        if(!mp) continue;
         if(mp->keyframes.find(pKF) != mp->keyframes.end()) continue;
 
         Eigen::Vector3d p3Dc = Rcw * mp->wcoord_3d + tcw;
@@ -422,7 +419,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         if(vIndices.empty()) continue;
 
         // Match to the most similar keypoint in the radius
-        int bestDist = 256;
+        int bestDist = 1000;
         int bestIdx = -1;
         for(int kp_idx : vIndices)
         {
@@ -461,12 +458,13 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
                 bestIdx = kp_idx;
             }
         }
-
         // If there is already a MapPoint replace otherwise add new measurement
         if(bestDist<=50)
         {
+            std::cout << bestIdx << "\n";
             MapPoint* pMPinKF = pKF->features[bestIdx].get_map_point();
             if (pMPinKF == nullptr) {
+                std::cout << "este null de fapt valoarea\n";
                 mp->add_observation_map_point(pKF, pKF->features[bestIdx].descriptor, Ow);
                 pKF->add_map_point(mp, &pKF->features[bestIdx], mp->orb_descriptor);
                 nFused++;
@@ -481,7 +479,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
                     } 
                     Feature *f = source_kf->mp_correlations[mp];
                     source_kf->remove_map_point(mp);
-                    source_kf->add_map_point(pMPinKF, f, mp->orb_descriptor);
+                    source_kf->add_map_point(pMPinKF, f, pMPinKF->orb_descriptor);
                     continue;
                 }
                 if (pMPinKF->keyframes.size() < mp->keyframes.size()) {
@@ -489,15 +487,14 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
                         std::cout << "NU VEDE PUNCTUL IN LOCAL MAPPING\n";
                         continue;
                     } 
-                    Feature *f = pKF->mp_correlations[mp];
-                    pKF->remove_map_point(mp);
-                    pKF->add_map_point(pMPinKF, f, mp->orb_descriptor);
+                    Feature *f = pKF->mp_correlations[pMPinKF];
+                    pKF->remove_map_point(pMPinKF);
+                    pKF->add_map_point(mp, f, mp->orb_descriptor);
                     continue;
                 }
             }
             nFused++;
         }
     }
-
     return nFused;
 }

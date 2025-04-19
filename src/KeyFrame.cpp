@@ -192,7 +192,6 @@ void KeyFrame::remove_map_point(MapPoint *mp) {
     }
 
     Feature *f = this->mp_correlations[mp];
-
     f->unmatch_map_point();
     this->mp_correlations.erase(mp);
     this->map_points.erase(mp);

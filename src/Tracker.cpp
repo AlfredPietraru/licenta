@@ -88,15 +88,14 @@ void Tracker::tracking_was_lost()
     exit(1);
 }
 
-bool Tracker::Is_KeyFrame_needed()
+bool Tracker::Is_KeyFrame_needed(int tracked_by_local_map)
 {
     this->keyframes_from_last_global_relocalization += 1;
-    bool c1 = this->keyframes_from_last_global_relocalization > 20;
-    bool c2 = this->current_kf->current_idx - this->reference_kf->current_idx > 20;
-    
+    bool c1 = this->keyframes_from_last_global_relocalization > 30;
+    bool c2 = this->current_kf->current_idx - this->reference_kf->current_idx > 30;
     bool c3 = this->current_kf->check_number_close_points();
-    bool c4 = reference_kf->map_points.size() / 10 > this->current_kf->map_points.size();
-    return c1 && c2 && c3 && c4 && true;
+    bool c4 = this->current_kf->map_points.size() < this->reference_kf->map_points.size() * 0.9;
+    return c1 && c2 && c3 && c4;
 }
 
 
@@ -213,7 +212,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
     this->TrackLocalMap(matches, mapp);
     // compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     // this->current_kf->debug_keyframe(50, matches, matches);
-    bool needed_keyframe = this->Is_KeyFrame_needed(); 
+    bool needed_keyframe = this->Is_KeyFrame_needed(matches.size()); 
     if (needed_keyframe) {
         std::cout << "UN KEYFRAME TREBUIE ADAUGAT\n\n\n";
         this->reference_kf = this->current_kf;

@@ -5,9 +5,11 @@ void LocalMapping::local_map(KeyFrame *kf) {
     mapp->add_new_keyframe(kf);
     std::cout << "inainte de culling\n";
     this->map_points_culling(kf);
-    std::cout << "dupa culling\n";
+    std::cout << "inainte de a calcula noi map points\n";
     this->compute_map_points(kf);
+    std::cout << "inainte de a cauta in vecini\n";
     this->search_in_neighbours(kf);
+    std::cout << "dupa ce a gasit in vecini\n";
     this->update_local_map(kf);
 }
 
@@ -47,8 +49,26 @@ void LocalMapping::compute_map_points(KeyFrame *kf)
         double invfy2 = 1 / neighbour_kf->K(1, 2);
         // TODO: check wheter the keyframe is far enough from the map point
 
+        
+        // std::vector<cv::DMatch> dmatches;
+        // for (std::pair<int, int> correspondence : vMatchedIndices) {
+            //     cv::DMatch dmatch;
+            //     dmatch.queryIdx = correspondence.first;
+            //     dmatch.trainIdx = correspondence.second;
+            //     dmatch.distance = OrbMatcher::ComputeHammingDistance(kf->features[dmatch.queryIdx].descriptor, neighbour_kf->features[dmatch.trainIdx].descriptor); 
+            //     dmatches.push_back(dmatch);
+            // }
+            // cv::Mat img_matches;
+            // std::cout << dmatches.size() << " atatea match-uri sunt posibile\n";
+            // std::vector<cv::DMatch> sub_matches;
+            // std::copy(dmatches.begin(), dmatches.begin() + 10, back_inserter(sub_matches));
+            // cv::drawMatches(kf->frame, kf->get_all_keypoints(), neighbour_kf->frame, neighbour_kf->get_all_keypoints(), sub_matches, img_matches);
+            // cv::imshow("Feature Matches", img_matches);
+            // cv::waitKey(0);
+            
         Eigen::Matrix3d fundamental_mat =  this->compute_fundamental_matrix(kf, neighbour_kf);
         std::vector<std::pair<int, int>> vMatchedIndices = OrbMatcher::search_for_triangulation(kf, neighbour_kf, fundamental_mat);
+        // std::cout << vMatchedIndices.size() << " DIMENSIUEN INITIALA MATCHES\n";
         for (std::pair<int, int> correspondence : vMatchedIndices) {
             const cv::KeyPoint kpu1 = kf->features[correspondence.first].get_undistorted_keypoint();
             const cv::KeyPoint kpu2 = neighbour_kf->features[correspondence.second].get_undistorted_keypoint();
@@ -203,25 +223,11 @@ void LocalMapping::compute_map_points(KeyFrame *kf)
             // TODOOOOOO
             // (1) UPDATE_DEPTH
         }
-
-        // std::vector<cv::DMatch> dmatches;
-        
-        // for (std::pair<int, int> correspondence : vMatchedIndices) {
-        //     cv::DMatch dmatch;
-        //     dmatch.queryIdx = correspondence.first;
-        //     dmatch.trainIdx = correspondence.second;
-        //     dmatch.distance = OrbMatcher::ComputeHammingDistance(kf->features[dmatch.queryIdx].descriptor, neighbour_kf->features[dmatch.trainIdx].descriptor); 
-        //     dmatches.push_back(dmatch);
-        // }
-        // cv::Mat img_matches;
-        // cv::drawMatches(kf->frame, kf->get_all_keypoints(), neighbour_kf->frame, neighbour_kf->get_all_keypoints(), dmatches, img_matches);
-        // cv::imshow("Feature Matches", img_matches);
-        // cv::waitKey(0);
-
     }
 }
 
 
+// TODO - BUG
 void LocalMapping::search_in_neighbours(KeyFrame *kf) {
     std::unordered_set<KeyFrame*> vpNeighKFs = mapp->get_local_keyframes(kf);
     for(KeyFrame* pKFi :  vpNeighKFs)
@@ -231,18 +237,19 @@ void LocalMapping::search_in_neighbours(KeyFrame *kf) {
     }
 
     // Search matches by projection from current KF in target KFs
+    vpNeighKFs.erase(kf);
     for(KeyFrame *neighbour_kf : vpNeighKFs)
     {
         OrbMatcher::Fuse(neighbour_kf, kf, 3);
     }
-
+    std::cout << "ajunge si in partea asta sau fuse e problema\n\n\n";
     // Search matches by projection from target KFs in current KF
     std::vector<MapPoint*> vpFuseCandidates;
     for(KeyFrame *neighbour_kf : vpNeighKFs)
     {
         OrbMatcher::Fuse(kf, neighbour_kf, 3);
     }
-
+    std::cout << "invers la fuse functioneaza in continuare bine\n";
     // Update points
     // vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
     // for(MapPoint* pMP : kf->map_points)
@@ -281,10 +288,13 @@ void LocalMapping::delete_map_point(MapPoint *mp) {
     // delete mp; dintr-un motiv sau altul eroare in momentul in care incerc sa sterg definitiv un map point - bug in cate map point-uri raman si cate sunt sterse garantat
 }
 
-
 void LocalMapping::update_local_map(KeyFrame *reference_kf)
 {
     std::unordered_set<MapPoint *> out = reference_kf->map_points;
+    if (this->mapp->graph.find(reference_kf) == this->mapp->graph.end()) {
+        std::cout << "REFERENCE FRAME NU A FOST ADAUGAT IN GRAPH DELOC\n";
+        return;
+    }
     for (std::pair<KeyFrame *, int> graph_edge : this->mapp->graph[reference_kf])
     {
         KeyFrame *curr_kf = graph_edge.first;
