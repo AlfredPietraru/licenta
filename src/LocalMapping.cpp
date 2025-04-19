@@ -3,7 +3,9 @@
 
 void LocalMapping::local_map(KeyFrame *kf) {
     mapp->add_new_keyframe(kf);
+    std::cout << "inainte de culling\n";
     this->map_points_culling(kf);
+    std::cout << "dupa culling\n";
     this->compute_map_points(kf);
     this->search_in_neighbours(kf);
     this->update_local_map(kf);
@@ -64,14 +66,12 @@ void LocalMapping::compute_map_points(KeyFrame *kf)
             Eigen::Vector3d ray1 = kf->Tiw.rotationMatrix() *  normalised_first_point;
             Eigen::Vector3d ray2 = neighbour_kf->Tiw.rotationMatrix() * normalised_second_point;
 
-            std::cout << ray1.norm() << " " << ray2.norm() << " sa fie norma 0 ar fi problematic\n";
             const float cosParallaxRays = ray1.dot(ray2) / (ray1.norm() * ray2.norm());
 
             float cosParallaxStereo = cosParallaxRays+1;
             float cosParallaxStereo1 = cosParallaxStereo;
             float cosParallaxStereo2 = cosParallaxStereo;
 
-            std::cout << kf->features[correspondence.first].depth << " " << neighbour_kf->features[correspondence.second].depth << " cele 2 adancimi\n";
             if(isStereo1)
                 cosParallaxStereo1 = cos(2*atan2(1.6, kf->features[correspondence.first].depth ));
             else if(isStereo1)
@@ -79,12 +79,10 @@ void LocalMapping::compute_map_points(KeyFrame *kf)
 
             cosParallaxStereo = std::min(cosParallaxStereo1,cosParallaxStereo2);
 
-            std::cout << "merge tangenta\n";
             cv::Mat x3D;
             if(cosParallaxRays<cosParallaxStereo && cosParallaxRays>0 && (isStereo1 || isStereo2 || cosParallaxRays<0.9998))
             {
                 // Linear Triangulation Method
-                std::cout << "ajunge sa faca triangularea liniara\n";
                 Eigen::Matrix4d A;
                 A.row(0) = normalised_first_point(0) *kf->Tiw.matrix3x4().row(2)-kf->Tiw.matrix3x4().row(0);
                 A.row(1) = normalised_first_point(1) *kf->Tiw.matrix3x4().row(2)-kf->Tiw.matrix3x4().row(1);

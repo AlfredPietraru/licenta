@@ -41,7 +41,6 @@ void signalHandler(int signum) {
 // de verificat printr-o scena 3d ->
 // de testat fiecare componenta cu mai multe metode -> FLANN, Brute Force,
 
-// pose estimation matrix -> SE3d
 // try to use perspective npoint for matching
 // care varianta e cea mai buna
 // RGBD -> time of flight, structured light

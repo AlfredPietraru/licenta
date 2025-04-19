@@ -129,8 +129,8 @@ void check_feature_matching(KeyFrame *curr, KeyFrame *ref, std::unordered_map<Ma
 void Tracker::TrackReferenceKeyFrame(std::unordered_map<MapPoint *, Feature *>& matches) {
     matcher->match_frame_reference_frame(matches, this->current_kf, this->reference_kf);
     if (matches.size() < 15) {
-        std::cout << matches.size() << "REFERENCE FRAME N A URMARIT SUFICIENTE MAP POINTS PENTRU OPTIMIZARE\n";
-        return;
+        std::cout << matches.size() << " REFERENCE FRAME N A URMARIT SUFICIENTE MAP POINTS PENTRU OPTIMIZARE\n";
+        exit(1);
     }
     this->current_kf->Tiw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
     for (MapPoint *mp : this->current_kf->outliers) {
@@ -140,11 +140,11 @@ void Tracker::TrackReferenceKeyFrame(std::unordered_map<MapPoint *, Feature *>& 
     }
     if (matches.size() < 10) {
         std::cout << matches.size() << "REFERENCE FRAME NU A URMARIT SUFICIENTE INLIERE MAP POINTS\n";
-        return;
-    }
+        exit(1);
+    } 
     for (auto it = matches.begin(); it != matches.end(); it++) {
         this->current_kf->add_map_point(it->first, it->second, it->first->orb_descriptor);
-    } 
+    }
 }
 
 void Tracker::TrackConsecutiveFrames(std::unordered_map<MapPoint *, Feature *>& matches) {
@@ -153,7 +153,7 @@ void Tracker::TrackConsecutiveFrames(std::unordered_map<MapPoint *, Feature *>& 
     if (matches.size() < 20) {
         matcher->match_consecutive_frames(matches, this->current_kf, this->prev_kf, 2 * window);
         if (matches.size() < 20) {
-            std::cout << "\nURMARIREA INTRE FRAME-URI INAINTE DE OPTIMIZARE NU A FUNCTIONAT\n";
+            std::cout << " \nURMARIREA INTRE FRAME-URI INAINTE DE OPTIMIZARE NU A FUNCTIONAT\n";
             return;
         }
     }
@@ -164,19 +164,19 @@ void Tracker::TrackConsecutiveFrames(std::unordered_map<MapPoint *, Feature *>& 
         }
     }
     if (matches.size() < 10) {
-        std::cout << "\nURMARIREA INTRE FRAME-URI NU A FUNCTIONAT DUPA OPTIMIZARE\n";
+        std::cout << " \nURMARIREA INTRE FRAME-URI NU A FUNCTIONAT DUPA OPTIMIZARE\n";
         return;
-    }
+    } 
     for (auto it = matches.begin(); it != matches.end(); it++) {
         this->current_kf->add_map_point(it->first, it->second, it->first->orb_descriptor);
-    } 
+    }
 }
 
 void Tracker::TrackLocalMap(std::unordered_map<MapPoint *, Feature *>& matches, Map *mapp) {
     matches.clear();
     mapp->track_local_map(matches, this->current_kf, this->reference_kf);
     if (matches.size() < 30) {
-        std::cout << "\nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
+        std::cout << " \nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
         return;
     }
     this->current_kf->Tiw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
@@ -191,7 +191,7 @@ void Tracker::TrackLocalMap(std::unordered_map<MapPoint *, Feature *>& matches, 
     }
     for (auto it = matches.begin(); it != matches.end(); it++) {
         this->current_kf->add_map_point(it->first, it->second, it->first->orb_descriptor);
-    } 
+    }
 }
 
 std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose) {
@@ -212,7 +212,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
 
     this->TrackLocalMap(matches, mapp);
     // compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
-    this->current_kf->debug_keyframe(50, matches, matches);
+    // this->current_kf->debug_keyframe(50, matches, matches);
     bool needed_keyframe = this->Is_KeyFrame_needed(); 
     if (needed_keyframe) {
         std::cout << "UN KEYFRAME TREBUIE ADAUGAT\n\n\n";
@@ -220,6 +220,6 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
     }
-    std::cout << this->current_kf->mp_correlations.size() << " map point correlate cu un feature\n";
+    // std::cout << this->current_kf->mp_correlations.size() << " map point correlate cu un feature\n";
     return {this->current_kf, needed_keyframe};
 }

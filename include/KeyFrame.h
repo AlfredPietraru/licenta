@@ -53,7 +53,6 @@ public:
     Eigen::Vector4d fromImageToWorld(int kp_idx);
     std::vector<cv::KeyPoint> get_all_keypoints(); 
     std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave); 
-    std::unordered_set<MapPoint*> return_map_points_frame();
     void add_map_point(MapPoint *mp, Feature *f, cv::Mat orb_descriptor);
     void remove_map_point(MapPoint *mp);
     void add_outlier_element(MapPoint *mp);

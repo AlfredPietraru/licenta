@@ -34,7 +34,7 @@ bool Feature::set_map_point(MapPoint *mp, cv::Mat orb_descriptor) {
 }
 
 void Feature::unmatch_map_point() {
-    this->curr_hamming_dist = 1000;
+    this->curr_hamming_dist = 10000;
     this->mp = nullptr;
 }
 

@@ -2,11 +2,6 @@
 
 KeyFrame::KeyFrame() {};
 
-std::unordered_set<MapPoint *> KeyFrame::return_map_points_frame()
-{
-    return this->map_points;
-}
-
 void KeyFrame::add_outlier_element(MapPoint *mp)
 {
     this->outliers.insert(mp);
@@ -28,11 +23,12 @@ bool KeyFrame::check_map_point_outlier(MapPoint *mp)
 
 bool KeyFrame::check_number_close_points()
 {
-    int close_points_tracked = this->mp_correlations.size();
+    int close_points_tracked = 0;
     int close_points_untracked = 0;
     for (Feature f : this->features) {
         if (f.depth < 1e-6 || f.depth > 3.2) continue;
         if (f.get_map_point() == nullptr) close_points_untracked++;
+        if (f.get_map_point() != nullptr) close_points_tracked++;
     }
     return (close_points_tracked < 100) && (close_points_untracked > 70);
 }
@@ -185,15 +181,18 @@ void KeyFrame::add_map_point(MapPoint *mp, Feature *f, cv::Mat orb_descriptor) {
 
 void KeyFrame::remove_map_point(MapPoint *mp) {
     if (this->mp_correlations.find(mp) == this->mp_correlations.end()) {
+        std::cout << this->current_idx << " " << this->mp_correlations.size() << " " << this->map_points.size() << "\n";
         std::cout << "NU A EXISTAT PUNCTUL IN CORELATII\n";
         return;
     }
-    if (this->map_points.find(mp) != this->map_points.end()) {
+    if (this->map_points.find(mp) == this->map_points.end()) {
+        std::cout << this->current_idx << " " << this->mp_correlations.size() << " " << this->map_points.size() << "\n";
         std::cout << "NU A EXISTAT PUNCTUL IN MAP POINTS, NU SUNT SINCRONIZATE\n";
         return;
     }
 
     Feature *f = this->mp_correlations[mp];
+
     f->unmatch_map_point();
     this->mp_correlations.erase(mp);
     this->map_points.erase(mp);
