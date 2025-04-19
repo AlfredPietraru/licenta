@@ -7,7 +7,6 @@
 #include <iostream>
 #include <sophus/se3.hpp>
 #include <unordered_set>
-#include "Feature.h"
 #include "ORBVocabulary.h"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -17,6 +16,8 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
+#include "Feature.h"
+#include "MapPoint.h"
 
 class KeyFrame
 {
@@ -51,15 +52,14 @@ public:
     Eigen::Vector3d fromWorldToImage(Eigen::Vector4d& wcoord);
     Eigen::Vector4d fromImageToWorld(int kp_idx);
     std::vector<cv::KeyPoint> get_all_keypoints(); 
-    void correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature*>& matches);
     std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave); 
     std::unordered_set<MapPoint*> return_map_points_frame();
-    void add_map_point(MapPoint *mp, Feature *f);
+    void add_map_point(MapPoint *mp, Feature *f, cv::Mat orb_descriptor);
     void remove_map_point(MapPoint *mp);
     void add_outlier_element(MapPoint *mp);
     void remove_outlier_element(MapPoint *mp);
     bool check_map_point_outlier(MapPoint *mp);
-    int check_number_close_points();
+    bool check_number_close_points();
     void compute_bow_representation();
     void update_map_points_info();
     void debug_keyframe(int miliseconds, std::unordered_map<MapPoint*, Feature*>& matches,std::unordered_map<MapPoint*, Feature*>& new_matches);

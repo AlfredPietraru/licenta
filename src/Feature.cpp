@@ -20,13 +20,13 @@ int Feature::ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b)
 Feature::Feature(cv::KeyPoint kp, cv::KeyPoint kpu, cv::Mat descriptor, int idx, double depth, double stereo_depth) : kp(kp), mp(nullptr), 
     idx(idx), descriptor(descriptor), stereo_depth(stereo_depth), kpu(kpu), depth(depth) {}
 
-bool Feature::set_map_point(MapPoint *mp) {
+bool Feature::set_map_point(MapPoint *mp, cv::Mat orb_descriptor) {
     if (this->mp == nullptr) {
         this->mp = mp;
-        this->curr_hamming_dist = ComputeHammingDistance(mp->orb_descriptor, this->descriptor);
+        this->curr_hamming_dist = ComputeHammingDistance(orb_descriptor, this->descriptor);
         return true;
     } 
-    int new_hamming_dist = ComputeHammingDistance(mp->orb_descriptor, this->descriptor);
+    int new_hamming_dist = ComputeHammingDistance(orb_descriptor, this->descriptor);
     if (new_hamming_dist >= curr_hamming_dist) return false;
     this->mp = mp;
     this->curr_hamming_dist = new_hamming_dist; 
@@ -34,7 +34,7 @@ bool Feature::set_map_point(MapPoint *mp) {
 }
 
 void Feature::unmatch_map_point() {
-    this->curr_hamming_dist = 0;
+    this->curr_hamming_dist = 1000;
     this->mp = nullptr;
 }
 

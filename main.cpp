@@ -16,6 +16,7 @@ using std::chrono::high_resolution_clock;
 using std::chrono::duration_cast;
 using std::chrono::duration;
 using std::chrono::seconds;
+// evo_traj tum groundtruth.txt estimated.txt -p --plot_mode xyz
 
 
 // optimizare map -> local map -> pentru a creste viteza de procesare 
@@ -27,7 +28,6 @@ using std::chrono::seconds;
 
 
 TumDatasetReader *reader;
-// evo_traj tum groundtruth.txt estimated.txt -p --plot_mode xyz
 void signalHandler(int signum) {
     std::cout << "Interrupt signal (" << signum << ") received.\n";
     reader->outfile.close();

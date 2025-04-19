@@ -199,8 +199,8 @@ void LocalMapping::compute_map_points(KeyFrame *kf)
                      kf->orb_descriptors.row(correspondence.first));
                
             // TODO, de adaugat si observatia in frame-ul al doilea 
-            kf->add_map_point(pMP, &kf->features[correspondence.first]);
-            neighbour_kf->add_map_point(pMP, &neighbour_kf->features[correspondence.second]);
+            kf->add_map_point(pMP, &kf->features[correspondence.first], pMP->orb_descriptor);
+            neighbour_kf->add_map_point(pMP, &neighbour_kf->features[correspondence.second], pMP->orb_descriptor);
             pMP->add_observation_map_point(neighbour_kf, neighbour_kf->features[correspondence.second].descriptor, kf->compute_camera_center());
             // TODOOOOOO
             // (1) UPDATE_DEPTH

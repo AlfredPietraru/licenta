@@ -468,7 +468,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
             MapPoint* pMPinKF = pKF->features[bestIdx].get_map_point();
             if (pMPinKF == nullptr) {
                 mp->add_observation_map_point(pKF, pKF->features[bestIdx].descriptor, Ow);
-                pKF->add_map_point(mp, &pKF->features[bestIdx]);
+                pKF->add_map_point(mp, &pKF->features[bestIdx], mp->orb_descriptor);
                 nFused++;
                 continue;
             }
@@ -481,7 +481,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
                     } 
                     Feature *f = source_kf->mp_correlations[mp];
                     source_kf->remove_map_point(mp);
-                    source_kf->add_map_point(pMPinKF, f);
+                    source_kf->add_map_point(pMPinKF, f, mp->orb_descriptor);
                     continue;
                 }
                 if (pMPinKF->keyframes.size() < mp->keyframes.size()) {
@@ -491,7 +491,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
                     } 
                     Feature *f = pKF->mp_correlations[mp];
                     pKF->remove_map_point(mp);
-                    pKF->add_map_point(pMPinKF, f);
+                    pKF->add_map_point(pMPinKF, f, mp->orb_descriptor);
                     continue;
                 }
             }

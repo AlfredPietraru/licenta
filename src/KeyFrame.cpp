@@ -14,10 +14,8 @@ void KeyFrame::add_outlier_element(MapPoint *mp)
 
 void KeyFrame::remove_outlier_element(MapPoint *mp)
 {
-    if (this->outliers.find(mp) != this->outliers.end())
-    {
-        this->outliers.erase(mp);
-    }
+    if (this->outliers.find(mp) == this->outliers.end()) return;
+    this->outliers.erase(mp);
 }
 
 bool KeyFrame::check_map_point_outlier(MapPoint *mp)
@@ -28,14 +26,15 @@ bool KeyFrame::check_map_point_outlier(MapPoint *mp)
 }
 
 
-int KeyFrame::check_number_close_points()
+bool KeyFrame::check_number_close_points()
 {
-    int close_points = 0;
-    for (auto it = this->mp_correlations.begin(); it != this->mp_correlations.end(); it++) {
-        Feature *f = it->second;
-        if (f->depth < 3.2 && f->depth > 1e-6) close_points++;
+    int close_points_tracked = this->mp_correlations.size();
+    int close_points_untracked = 0;
+    for (Feature f : this->features) {
+        if (f.depth < 1e-6 || f.depth > 3.2) continue;
+        if (f.get_map_point() == nullptr) close_points_untracked++;
     }
-    return close_points;
+    return (close_points_tracked < 100) && (close_points_untracked > 70);
 }
 
 KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints,
@@ -135,6 +134,9 @@ Eigen::Vector3d KeyFrame::fromWorldToImage(Eigen::Vector4d &wcoord)
 {
     Eigen::Vector4d camera_coordinates = this->Tiw.matrix() * wcoord;
     double d = camera_coordinates(2);
+    if (d < 1e-6) {
+        std::cout << "CEVA NU E BINE DEPTH E PREA MIC\n";
+    }
     double u = this->K(0, 0) * camera_coordinates(0) / d + this->K(0, 2);
     double v = this->K(1, 1) * camera_coordinates(1) / d + this->K(1, 2);
     return Eigen::Vector3d(u, v, d);
@@ -158,23 +160,43 @@ std::vector<cv::KeyPoint> KeyFrame::get_all_keypoints()
     return out;
 }
 
-void KeyFrame::add_map_point(MapPoint *mp, Feature *f) {
+void KeyFrame::add_map_point(MapPoint *mp, Feature *f, cv::Mat orb_descriptor) {
     if (this->outliers.find(mp) != this->outliers.end()) {
         this->outliers.erase(mp);
     }
-    this->map_points.insert(mp);
-    this->mp_correlations.insert({mp, f});
-    mp->increase_number_associations();
+    MapPoint* old_mp = f->get_map_point();
+    bool addition_succesfull = f->set_map_point(mp, orb_descriptor);
+    if (addition_succesfull && old_mp == nullptr) {
+        this->mp_correlations.insert({mp, f});
+        this->map_points.insert(mp);
+        mp->increase_number_associations();
+        return;
+    }
+    if (addition_succesfull && old_mp != nullptr) {
+        this->mp_correlations.erase(old_mp);
+        this->map_points.erase(old_mp);
+        old_mp->decrease_number_associations();
+        this->mp_correlations.insert({mp, f});
+        this->map_points.insert(mp);
+        mp->increase_number_associations();
+        return;
+    }
 }
 
 void KeyFrame::remove_map_point(MapPoint *mp) {
-    if(this->mp_correlations.find(mp) != this->mp_correlations.end()) {
-        Feature *f = this->mp_correlations[mp];
-        // era functia asta stearsa\n
-        // f->unmatch_map_point();
-        this->mp_correlations.erase(mp);
+    if (this->mp_correlations.find(mp) == this->mp_correlations.end()) {
+        std::cout << "NU A EXISTAT PUNCTUL IN CORELATII\n";
+        return;
     }
-    if (this->map_points.find(mp) != this->map_points.end()) this->map_points.erase(mp);
+    if (this->map_points.find(mp) != this->map_points.end()) {
+        std::cout << "NU A EXISTAT PUNCTUL IN MAP POINTS, NU SUNT SINCRONIZATE\n";
+        return;
+    }
+
+    Feature *f = this->mp_correlations[mp];
+    f->unmatch_map_point();
+    this->mp_correlations.erase(mp);
+    this->map_points.erase(mp);
     mp->decrease_number_associations();
 }
 
@@ -185,25 +207,6 @@ void KeyFrame::update_map_points_info() {
     }
 }
 
-
-void KeyFrame::correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature *>& matches)
-{
-    int e_bine = 0;
-    for (auto it = matches.begin(); it != matches.end(); it++)
-    {
-        Feature *f = it->second;
-        MapPoint *mp = it->first;
-        MapPoint *old_mp = f->get_map_point();
-        bool old_map_point_was_replaced = f->set_map_point(mp);
-        if (old_map_point_was_replaced && old_mp == nullptr) {
-            this->add_map_point(mp, f);
-        }
-        if (old_map_point_was_replaced && old_mp != nullptr) {
-            this->remove_map_point(old_mp);
-            this->add_map_point(mp, f);
-        }
-    }
-}
 
 std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave)
 {

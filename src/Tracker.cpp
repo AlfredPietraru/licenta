@@ -94,9 +94,8 @@ bool Tracker::Is_KeyFrame_needed()
     bool c1 = this->keyframes_from_last_global_relocalization > 20;
     bool c2 = this->current_kf->current_idx - this->reference_kf->current_idx > 20;
     
-    int nr_close_points = this->current_kf->check_number_close_points();
-    bool c3 = nr_close_points < 100;
-    bool c4 = reference_kf->map_points.size() / 10 > nr_close_points;
+    bool c3 = this->current_kf->check_number_close_points();
+    bool c4 = reference_kf->map_points.size() / 10 > this->current_kf->map_points.size();
     return c1 && c2 && c3 && c4 && true;
 }
 
@@ -131,8 +130,7 @@ void Tracker::TrackReferenceKeyFrame(std::unordered_map<MapPoint *, Feature *>& 
     matcher->match_frame_reference_frame(matches, this->current_kf, this->reference_kf);
     if (matches.size() < 15) {
         std::cout << matches.size() << "REFERENCE FRAME N A URMARIT SUFICIENTE MAP POINTS PENTRU OPTIMIZARE\n";
-        std::cout << this->current_kf->current_idx << "\n";
-        exit(1);
+        return;
     }
     this->current_kf->Tiw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
     for (MapPoint *mp : this->current_kf->outliers) {
@@ -142,8 +140,10 @@ void Tracker::TrackReferenceKeyFrame(std::unordered_map<MapPoint *, Feature *>& 
     }
     if (matches.size() < 10) {
         std::cout << matches.size() << "REFERENCE FRAME NU A URMARIT SUFICIENTE INLIERE MAP POINTS\n";
-        std::cout << this->current_kf->current_idx << "\n";
-        exit(1);
+        return;
+    }
+    for (auto it = matches.begin(); it != matches.end(); it++) {
+        this->current_kf->add_map_point(it->first, it->second, it->first->orb_descriptor);
     } 
 }
 
@@ -154,6 +154,7 @@ void Tracker::TrackConsecutiveFrames(std::unordered_map<MapPoint *, Feature *>& 
         matcher->match_consecutive_frames(matches, this->current_kf, this->prev_kf, 2 * window);
         if (matches.size() < 20) {
             std::cout << "\nURMARIREA INTRE FRAME-URI INAINTE DE OPTIMIZARE NU A FUNCTIONAT\n";
+            return;
         }
     }
     this->current_kf->Tiw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
@@ -164,7 +165,11 @@ void Tracker::TrackConsecutiveFrames(std::unordered_map<MapPoint *, Feature *>& 
     }
     if (matches.size() < 10) {
         std::cout << "\nURMARIREA INTRE FRAME-URI NU A FUNCTIONAT DUPA OPTIMIZARE\n";
+        return;
     }
+    for (auto it = matches.begin(); it != matches.end(); it++) {
+        this->current_kf->add_map_point(it->first, it->second, it->first->orb_descriptor);
+    } 
 }
 
 void Tracker::TrackLocalMap(std::unordered_map<MapPoint *, Feature *>& matches, Map *mapp) {
@@ -172,7 +177,7 @@ void Tracker::TrackLocalMap(std::unordered_map<MapPoint *, Feature *>& matches, 
     mapp->track_local_map(matches, this->current_kf, this->reference_kf);
     if (matches.size() < 30) {
         std::cout << "\nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
-        exit(1);
+        return;
     }
     this->current_kf->Tiw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
     for (MapPoint *mp : this->current_kf->outliers) {
@@ -182,8 +187,11 @@ void Tracker::TrackLocalMap(std::unordered_map<MapPoint *, Feature *>& matches, 
     }
     if (matches.size() < 30) {
         std::cout << matches.size() << " PREA PUTINE PUNCTE PROIECTATE CARE NU SUNT OUTLIERE DE CATRE LOCAL MAP\n";
-        exit(1);
+        return;
     }
+    for (auto it = matches.begin(); it != matches.end(); it++) {
+        this->current_kf->add_map_point(it->first, it->second, it->first->orb_descriptor);
+    } 
 }
 
 std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose) {
@@ -201,9 +209,8 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
             this->TrackReferenceKeyFrame(matches);
         }
     } 
-    this->current_kf->correlate_map_points_to_features_current_frame(matches);
+
     this->TrackLocalMap(matches, mapp);
-    this->current_kf->correlate_map_points_to_features_current_frame(matches);
     // compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
     this->current_kf->debug_keyframe(50, matches, matches);
     bool needed_keyframe = this->Is_KeyFrame_needed(); 

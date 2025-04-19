@@ -33,7 +33,7 @@ void Map::add_first_keyframe(KeyFrame *kf) {
         if (kf->features[i].get_map_point() != nullptr || kf->features[i].depth <= 1e-6) continue;
         Eigen::Vector4d wcoord = kf->fromImageToWorld(i);
         MapPoint *mp = new MapPoint(kf, kf->features[i].kpu, camera_center, wcoord, kf->features[i].descriptor);
-        kf->features[i].set_map_point(mp);
+        kf->features[i].set_map_point(mp, mp->orb_descriptor);
         kf->map_points.insert(mp);
         kf->mp_correlations.insert({mp, &kf->features[i]});
         mp->increase_how_many_times_seen();

@@ -59,6 +59,9 @@ void MapPoint::increase_number_associations() {
 }
 
 void MapPoint::decrease_number_associations() {
+    if (this->number_associations == 0) {
+        std::cout << "NU POATE FI SCAZUT MAI TARE NUMARUL DE ASOCIERI DE 0\n";
+    }
     this->number_associations -= 1;
 }
 

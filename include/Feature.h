@@ -10,7 +10,6 @@
 #include "opencv2/highgui/highgui.hpp"
 #include <opencv2/dnn/dnn.hpp>
 #include <opencv2/features2d.hpp>
-#include "MapPoint.h"
 
 class MapPoint;
 class Feature {
@@ -26,7 +25,7 @@ public:
 
     Feature() {}
     Feature(cv::KeyPoint kp, cv::KeyPoint kpu, cv::Mat descriptor, int idx, double depth, double stereo_depth);
-    bool set_map_point(MapPoint *mp);
+    bool set_map_point(MapPoint *mp, cv::Mat orb_descriptor);
     MapPoint* get_map_point();
     cv::KeyPoint get_key_point();
     cv::KeyPoint get_undistorted_keypoint();
