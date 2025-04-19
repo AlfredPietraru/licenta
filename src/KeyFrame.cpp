@@ -38,9 +38,10 @@ int KeyFrame::check_number_close_points()
     return close_points;
 }
 
-KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints, std::vector<cv::KeyPoint> &undistored_kps,
-                   cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, cv::Mat &frame, ORBVocabulary *voc)
-    : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), current_idx(current_idx), frame(frame)
+KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints,
+     std::vector<cv::KeyPoint> &undistored_kps, cv::Mat orb_descriptors, cv::Mat depth_matrix,
+      int current_idx, cv::Mat &frame, ORBVocabulary *voc, KeyFrame *reference_kf)
+    : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), current_idx(current_idx), frame(frame), voc(voc), reference_kf(reference_kf)
 {
 
     for (int i = 0; i < keypoints.size(); i++)
@@ -113,18 +114,16 @@ KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<double> dist
         this->minY = 0.0f;
         this->maxY = frame.rows;
     }
-
-    this->compute_bow_representation(voc);
 }
 
-void KeyFrame::compute_bow_representation(ORBVocabulary *voc)
+void KeyFrame::compute_bow_representation()
 {
     std::vector<cv::Mat> vector_descriptors;
     for (int i = 0; i < this->orb_descriptors.rows; i++)
     {
         vector_descriptors.push_back(this->orb_descriptors.row(i));
     }
-    voc->transform(vector_descriptors, this->bow_vec, this->features_vec, 4);
+    this->voc->transform(vector_descriptors, this->bow_vec, this->features_vec, 4);
 }
 
 Eigen::Vector3d KeyFrame::compute_camera_center()
@@ -159,26 +158,30 @@ std::vector<cv::KeyPoint> KeyFrame::get_all_keypoints()
     return out;
 }
 
-Eigen::Vector3d KeyFrame::get_viewing_direction()
-{
-    return Tiw.rotationMatrix().col(2).normalized();
-}
-
 void KeyFrame::add_map_point(MapPoint *mp, Feature *f) {
     if (this->outliers.find(mp) != this->outliers.end()) {
         this->outliers.erase(mp);
     }
     this->map_points.insert(mp);
     this->mp_correlations.insert({mp, f});
+    mp->increase_number_associations();
 }
 
 void KeyFrame::remove_map_point(MapPoint *mp) {
     if(this->mp_correlations.find(mp) != this->mp_correlations.end()) {
         Feature *f = this->mp_correlations[mp];
+        // era functia asta stearsa\n
+        // f->unmatch_map_point();
         this->mp_correlations.erase(mp);
     }
-    if (this->map_points.find(mp) != this->map_points.end()) {
-        this->map_points.erase(mp);
+    if (this->map_points.find(mp) != this->map_points.end()) this->map_points.erase(mp);
+    mp->decrease_number_associations();
+}
+
+
+void KeyFrame::update_map_points_info() {
+    for (MapPoint *mp : this->map_points) {
+        
     }
 }
 
@@ -222,7 +225,6 @@ std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, dou
     int max_bin_u = u_max / GRID_HEIGHT;
     int min_bin_v = v_min / GRID_WIDTH;
     int max_bin_v = v_max / GRID_WIDTH;
-    // std::cout << min_bin_u <<  " " << max_bin_u << " " << min_bin_v << " " << max_bin_v << "\n";
     for (int i = min_bin_u; i <= max_bin_u; i++)
     {
         for (int j = min_bin_v; j <= max_bin_v; j++)
@@ -242,6 +244,7 @@ std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, dou
     }
     return kps_idx;
 }
+
 
 void KeyFrame::debug_keyframe(int miliseconds, std::unordered_map<MapPoint *, Feature *> &matches, std::unordered_map<MapPoint *, Feature *> &new_matches)
 {

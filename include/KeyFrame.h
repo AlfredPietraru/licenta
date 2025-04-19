@@ -28,8 +28,8 @@ public:
     std::unordered_map<MapPoint*, Feature*> mp_correlations; 
     std::unordered_set<MapPoint*> map_points;
     std::unordered_set<MapPoint*> outliers;
-
-
+    KeyFrame *reference_kf;
+    
     int GRID_HEIGHT = 64;
     int GRID_WIDTH = 48;
     int currently_matched_points = 0;
@@ -38,19 +38,19 @@ public:
     cv::Mat frame;
     const double BASELINE = 0.08;
     float minX, maxX, minY, maxY;
-
+    
+    ORBVocabulary *voc;
     DBoW2::BowVector bow_vec;
     DBoW2::FeatureVector features_vec;
 
 
     KeyFrame();
     KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint>& keypoints, std::vector<cv::KeyPoint>& undistored_kps,
-             cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, cv::Mat& frame, ORBVocabulary *voc);
+             cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, cv::Mat& frame, ORBVocabulary *voc, KeyFrame *reference_kf);
     Eigen::Vector3d compute_camera_center();
     Eigen::Vector3d fromWorldToImage(Eigen::Vector4d& wcoord);
     Eigen::Vector4d fromImageToWorld(int kp_idx);
     std::vector<cv::KeyPoint> get_all_keypoints(); 
-    Eigen::Vector3d get_viewing_direction();
     void correlate_map_points_to_features_current_frame(std::unordered_map<MapPoint *, Feature*>& matches);
     std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave); 
     std::unordered_set<MapPoint*> return_map_points_frame();
@@ -60,8 +60,8 @@ public:
     void remove_outlier_element(MapPoint *mp);
     bool check_map_point_outlier(MapPoint *mp);
     int check_number_close_points();
-    void compute_bow_representation(ORBVocabulary *voc);
-
+    void compute_bow_representation();
+    void update_map_points_info();
     void debug_keyframe(int miliseconds, std::unordered_map<MapPoint*, Feature*>& matches,std::unordered_map<MapPoint*, Feature*>& new_matches);
 };
 

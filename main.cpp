@@ -38,12 +38,9 @@ void signalHandler(int signum) {
 
 
 // functionat implementarea de pe git
-// mai multe match -> ales
 // de verificat printr-o scena 3d ->
 // de testat fiecare componenta cu mai multe metode -> FLANN, Brute Force,
-// pentru estimarea adancimii -> Nyu Dataset Indoor
 
-// verificat imaginie dupa / inainte distorsiune
 // pose estimation matrix -> SE3d
 // try to use perspective npoint for matching
 // care varianta e cea mai buna
@@ -81,7 +78,7 @@ int main(int argc, char **argv)
         Sophus::SE3d groundtruth_pose = reader->get_next_groundtruth_pose();
         frame = data.first;
         depth = data.second; 
-        std::pair<KeyFrame *, bool> tracker_out = tracker->tracking(frame, depth, mapp, groundtruth_pose);
+        std::pair<KeyFrame *, bool> tracker_out = tracker->tracking(frame, depth, groundtruth_pose);
         KeyFrame *kf = tracker_out.first;
         bool needed_keyframe = tracker_out.second;
         reader->store_entry(kf->Tiw);
@@ -89,7 +86,7 @@ int main(int argc, char **argv)
             std::cout << "ADAUGA AICI UN KEYFRAME\n";
             local_mapper->local_map(kf);
         }
-        // if (reader->frame_idx == 60) {
+        // if (reader->frame_idx == 150) {
         //     auto t2 = high_resolution_clock::now();
         //     std::cout << duration_cast<seconds>(t2 - t1).count() << " aici atata a durat" << std::endl;
         //     break;

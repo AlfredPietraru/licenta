@@ -34,11 +34,10 @@ public:
     void match_frame_reference_frame(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *curr, KeyFrame *ref);
     void match_consecutive_frames(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame* kf, KeyFrame *kf2, int window);
     void match_frame_map_points(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *curr, std::unordered_set<MapPoint*>& map_points, int window_size);
-    int get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2);
-
-
-    std::unordered_set<MapPoint*> map_points_in_frustum(KeyFrame *kf, std::unordered_set<MapPoint*>& map_points);
-    int ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2);
+    static std::vector<std::pair<int, int>> search_for_triangulation(KeyFrame *ref1, KeyFrame *ref2, Eigen::Matrix3d fundamental_matrix);
+    static int ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b); 
+    static bool CheckDistEpipolarLine(const cv::KeyPoint &kp1,const cv::KeyPoint &kp2,const Eigen::Matrix3d &F12, const KeyFrame* pKF2);
+    static int Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th);
     std::unordered_map<MapPoint*, Feature*> checkOrientation(std::unordered_map<MapPoint*, Feature*>& out, std::unordered_map<MapPoint*, Feature*>& correlation_prev_frame);
 };
 

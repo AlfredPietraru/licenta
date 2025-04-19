@@ -12,6 +12,7 @@
 #include <opencv2/features2d.hpp>
 #include "MapPoint.h"
 
+class MapPoint;
 class Feature {
 public:
     int idx;

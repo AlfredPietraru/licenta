@@ -17,18 +17,23 @@ public:
         cv::Mat orb_descriptor;
         double dmax, dmin;
         double BASELINE = 0.08;
-        std::unordered_map<KeyFrame*, int> belongs_to_keyframes;
-        bool is_outlier = false;
+        std::unordered_set<KeyFrame*> keyframes;
+        std::vector<cv::Mat> descriptor_vector;
         int first_seen_frame_idx;
-        int how_many_times_seen = 0;
+        int number_times_seen = 0;
+        int number_associations = 0;
+        bool bad = false;
         
-        MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord,
-                cv::Mat orb_descriptor, int idx);
-        void add_reference_kf(KeyFrame *kf, int idx);
-        Eigen::Vector3d get_3d_vector();
-        int check_index_in_keyframe(KeyFrame *kf);
+        MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord, cv::Mat orb_descriptor);
+        cv::Mat compute_distinctive_descriptor();
         int predict_image_scale(double distance);
+        int ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2);
+        bool map_point_should_be_deleted();
         void increase_how_many_times_seen();
+        void increase_number_associations();
+        void decrease_number_associations();
+        void add_observation_map_point(KeyFrame *kf, cv::Mat descriptor, Eigen::Vector3d camera_center_kf);
+        Eigen::Vector3d compute_view_direction(Eigen::Vector3d camera_center);
 };
 
 #endif

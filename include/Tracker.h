@@ -25,7 +25,7 @@ using namespace cv;
 
 class Tracker {
 public:
-    std::pair<KeyFrame*, bool> tracking(Mat frame, Mat depth, Map *mapp, Sophus::SE3d ground_truth_pose);
+    std::pair<KeyFrame*, bool> tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose);
     Tracker(Mat frame, Mat depth, Map *mapp, Sophus::SE3d pose, Config cfg, 
         ORBVocabulary* voc, Pnp_Ransac_Config pnp_ransac_cfg, Orb_Matcher orb_matcher_config);
     KeyFrame *current_kf;
@@ -33,10 +33,12 @@ public:
     KeyFrame *reference_kf = nullptr;
 
     vector<double> mDistCoef;
-    ORBVocabulary* voc;
     Mat K; 
     Eigen::Matrix3d K_eigen;
     int keyframes_from_last_global_relocalization = 0;
+    
+    Map *mapp;
+    ORBVocabulary* voc;
     BundleAdjustment *bundleAdjustment;
     FeatureMatcherFinder *fmf;
     OrbMatcher *matcher;
