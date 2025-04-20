@@ -13,7 +13,7 @@ public:
     void update_local_map(KeyFrame *reference_kf);
     void map_points_culling(KeyFrame *kf);
     void delete_map_point(MapPoint *mp);
-    void compute_map_points(KeyFrame *kf);
+    int compute_map_points(KeyFrame *kf);
     Eigen::Matrix3d compute_fundamental_matrix(KeyFrame *curr_kf, KeyFrame *neighbour_kf);
     void search_in_neighbours(KeyFrame *kf);
 };

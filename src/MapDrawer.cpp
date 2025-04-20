@@ -84,7 +84,7 @@ void MapDrawer::DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph)
         {
             KeyFrame *kf = mapp->keyframes[i];
             cv::Mat mat;
-            cv::eigen2cv(kf->Tiw.matrix(), mat);
+            cv::eigen2cv(kf->Tcw.matrix(), mat);
 
             glPushMatrix();
 

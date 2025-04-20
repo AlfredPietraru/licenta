@@ -80,7 +80,7 @@ int main(int argc, char **argv)
         std::pair<KeyFrame *, bool> tracker_out = tracker->tracking(frame, depth, groundtruth_pose);
         KeyFrame *kf = tracker_out.first;
         bool needed_keyframe = tracker_out.second;
-        reader->store_entry(kf->Tiw);
+        reader->store_entry(kf->Tcw);
         if (needed_keyframe) {
             std::cout << "ADAUGA AICI UN KEYFRAME\n";
             local_mapper->local_map(kf);

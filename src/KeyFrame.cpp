@@ -33,10 +33,10 @@ bool KeyFrame::check_number_close_points()
     return (close_points_tracked < 100) && (close_points_untracked > 70);
 }
 
-KeyFrame::KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints,
+KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints,
      std::vector<cv::KeyPoint> &undistored_kps, cv::Mat orb_descriptors, cv::Mat depth_matrix,
       int current_idx, cv::Mat &frame, ORBVocabulary *voc, KeyFrame *reference_kf)
-    : Tiw(Tiw), K(K), orb_descriptors(orb_descriptors), current_idx(current_idx), frame(frame), voc(voc), reference_kf(reference_kf)
+    : Tcw(Tcw), K(K), orb_descriptors(orb_descriptors), current_idx(current_idx), frame(frame), voc(voc), reference_kf(reference_kf)
 {
 
     for (int i = 0; i < keypoints.size(); i++)
@@ -121,14 +121,14 @@ void KeyFrame::compute_bow_representation()
     this->voc->transform(vector_descriptors, this->bow_vec, this->features_vec, 4);
 }
 
-Eigen::Vector3d KeyFrame::compute_camera_center()
+Eigen::Vector3d KeyFrame::compute_camera_center_world()
 {
-    return -this->Tiw.rotationMatrix().transpose() * this->Tiw.translation();
+    return -this->Tcw.rotationMatrix().transpose() * this->Tcw.translation();
 }
 
 Eigen::Vector3d KeyFrame::fromWorldToImage(Eigen::Vector4d &wcoord)
 {
-    Eigen::Vector4d camera_coordinates = this->Tiw.matrix() * wcoord;
+    Eigen::Vector4d camera_coordinates = this->Tcw.matrix() * wcoord;
     double d = camera_coordinates(2);
     if (d < 1e-6) {
         std::cout << "CEVA NU E BINE DEPTH E PREA MIC\n";
@@ -141,9 +141,16 @@ Eigen::Vector3d KeyFrame::fromWorldToImage(Eigen::Vector4d &wcoord)
 Eigen::Vector4d KeyFrame::fromImageToWorld(int kp_idx)
 {
     Feature f = this->features[kp_idx];
-    double new_x = (f.kp.pt.x - this->K(0, 2)) * f.depth / this->K(0, 0);
-    double new_y = (f.kp.pt.y - this->K(1, 2)) * f.depth / this->K(1, 1);
-    return this->Tiw.inverse().matrix() * Eigen::Vector4d(new_x, new_y, f.depth, 1);
+    double new_x = (f.get_key_point().pt.x - this->K(0, 2)) * f.depth / this->K(0, 0);
+    double new_y = (f.get_key_point().pt.y - this->K(1, 2)) * f.depth / this->K(1, 1);
+    return this->Tcw.inverse().matrix() * Eigen::Vector4d(new_x, new_y, f.depth, 1);
+}
+
+Eigen::Vector3d KeyFrame::fromImageToWorld_3d(int kp_idx) {
+    Feature f = this->features[kp_idx];
+    double new_x = (f.get_key_point().pt.x - this->K(0, 2)) * f.depth / this->K(0, 0);
+    double new_y = (f.get_key_point().pt.y - this->K(1, 2)) * f.depth / this->K(1, 1);
+    return this->Tcw.inverse().matrix3x4() * Eigen::Vector4d(new_x, new_y, f.depth, 1);
 }
 
 std::vector<cv::KeyPoint> KeyFrame::get_all_keypoints()

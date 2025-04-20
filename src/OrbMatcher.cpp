@@ -69,10 +69,10 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unor
 
 void OrbMatcher::match_consecutive_frames(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *kf, KeyFrame *prev_kf, int window)
 {
-    Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
+    Eigen::Vector3d kf_camera_center = kf->compute_camera_center_world();
     Eigen::Vector3d camera_to_map_view_ray;
     Eigen::Vector3d point_camera_coordinates;
-    Eigen::Vector3d kf_camer_center_prev_coordinates = prev_kf->Tiw.rotationMatrix() * kf_camera_center + prev_kf->Tiw.translation(); 
+    Eigen::Vector3d kf_camer_center_prev_coordinates = prev_kf->Tcw.rotationMatrix() * kf_camera_center + prev_kf->Tcw.translation(); 
     const bool bForward  =   kf_camer_center_prev_coordinates(2) >  3.2;
     const bool bBackward = -kf_camer_center_prev_coordinates(2) > 3.2;
     for (auto it = prev_kf->mp_correlations.begin(); it != prev_kf->mp_correlations.end(); it++) {
@@ -131,7 +131,7 @@ void OrbMatcher::match_consecutive_frames(std::unordered_map<MapPoint*, Feature*
 
 void OrbMatcher::match_frame_map_points(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *kf, std::unordered_set<MapPoint *>& map_points, int window_size)
 {
-    Eigen::Vector3d kf_camera_center = kf->compute_camera_center();
+    Eigen::Vector3d kf_camera_center = kf->compute_camera_center_world();
     Eigen::Vector3d camera_to_map_view_ray;
     Eigen::Vector3d point_camera_coordinates;
     
@@ -266,10 +266,7 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
     DBoW2::FeatureVector::const_iterator f2it = ref2->features_vec.begin();
     DBoW2::FeatureVector::const_iterator f1end = ref1->features_vec.end();
     DBoW2::FeatureVector::const_iterator f2end = ref2->features_vec.end();
-    Eigen::Vector3d Cw = ref1->compute_camera_center();
-    Eigen::Matrix3d R2w = ref2->Tiw.rotationMatrix();
-    Eigen::Vector3d t2w = ref2->Tiw.translation();
-    Eigen::Vector3d C2 = R2w*Cw+t2w;
+    Eigen::Vector3d C2 = ref2->Tcw.rotationMatrix() * ref1->compute_camera_center_world() + ref2->Tcw.translation();
     const float invz = 1.0f/C2(2);
     const float ex = ref2->K(0, 0) * C2(0) * invz + ref2->K(0, 2);
     const float ey = ref2->K(1, 1) * C2(1) * invz + ref2->K(1, 2);
@@ -312,20 +309,21 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
                     {
                         const float distex = ex - kpu2.pt.x;
                         const float distey = ey - kpu2.pt.y;
-                        if(distex*distex+distey*distey < 50 * pow(1.2, kpu2.octave)) continue;
+                        if(distex*distex+distey*distey < 100 * pow(1.2, kpu2.octave)) continue;
                     } 
-                    bestIdx2 = idx2;
-                    bestDist = dist;
                    
-                    if(CheckDistEpipolarLine(kpu1,kpu2, fundamental_matrix, ref2))
+                    if(CheckDistEpipolarLine(kpu1, kpu2, fundamental_matrix))
                     {
                         bestIdx2 = idx2;
                         bestDist = dist;
                     }
+                    // bestIdx2 = idx2;
+                    // bestDist = dist;
                 }
                 if(bestIdx2 < 0) continue;                    
                 total_founds++;
                 vMatches12[idx1]=bestIdx2;
+                vbMatched2[bestIdx2] = true;
             }
             f1it++;
             f2it++;
@@ -338,6 +336,7 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
             f2it = ref2->features_vec.lower_bound(f1it->first);
         }
     }
+
     for(size_t i=0, iend=vMatches12.size(); i<iend; i++)
     {
         if(vMatches12[i]<0)
@@ -347,30 +346,30 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
     return vMatchedPairs;
 } 
 
-bool OrbMatcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const Eigen::Matrix3d &F12, const KeyFrame* pKF2)
+// NU ESTE CLAR EPIPOLAR CONSTRAINS PART
+bool OrbMatcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const Eigen::Matrix3d &F12)
 {
     // Epipolar line in second image l = x1'F12 = [a b c]
-    const float a = kp1.pt.x*F12(0,0)+kp1.pt.y*F12(1,0)+F12(2,0);
-    const float b = kp1.pt.x*F12(0,1)+kp1.pt.y*F12(1,1)+F12(2,1);
-    const float c = kp1.pt.x*F12(0,2)+kp1.pt.y*F12(1,2)+F12(2,2);
-
-    const float num = a*kp2.pt.x+b*kp2.pt.y+c;
+    // Eigen::Vector3d line_parameters = F12 * Eigen::Vector3d(kp1.pt.y, kp1.pt.x, 1);
+    Eigen::Vector3d line_parameters = Eigen::Vector3d(kp1.pt.x, kp1.pt.y, 1).transpose() * F12;
+    const float a = line_parameters(0);
+    const float b = line_parameters(1);
+    const float c = line_parameters(2);
 
     const float den = a*a+b*b;
+    if(den==0) return false;
 
-    if(den==0)
-        return false;
+    const float num = a*kp2.pt.x+b*kp2.pt.y+c;
+    const float dsqr = num * num / den;
 
-    const float dsqr = num*num/den;
-
-    return dsqr< 3.84* pow(1.2, kp2.octave);
+    return dsqr < 3.84* pow(1.2, 2 * kp2.octave);
 }
 
 
 int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
 {
-    Eigen::Matrix3d Rcw = pKF->Tiw.rotationMatrix();
-    Eigen::Vector3d tcw = pKF->Tiw.translation();
+    Eigen::Matrix3d Rcw = pKF->Tcw.rotationMatrix();
+    Eigen::Vector3d tcw = pKF->Tcw.translation();
 
     const float &fx = pKF->K(0, 0);
     const float &fy = pKF->K(1, 1);
@@ -378,7 +377,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
     const float &cy = pKF->K(1, 2);
     const float &bf = 3.2;
 
-    Eigen::Vector3d Ow = pKF->compute_camera_center();
+    Eigen::Vector3d Ow = pKF->compute_camera_center_world();
 
     int nFused=0;
 
@@ -458,37 +457,31 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
             }
         }
         // If there is already a MapPoint replace otherwise add new measurement
-        if(bestDist<=50)
-        {
-            MapPoint* pMPinKF = pKF->features[bestIdx].get_map_point();
-            if (pMPinKF == nullptr) {
-                mp->add_observation_map_point(pKF, pKF->features[bestIdx].descriptor, Ow);
-                pKF->add_map_point(mp, &pKF->features[bestIdx], mp->orb_descriptor);
-                nFused++;
-                continue;
-            }
-            if(pMPinKF != nullptr)
-            {
-                if(pMPinKF->keyframes.size() > mp->keyframes.size()) {
-                    if (source_kf->mp_correlations.find(mp) == source_kf->mp_correlations.end()) {
-                        continue;
-                    } 
-                    Feature *f = source_kf->mp_correlations[mp];
-                    source_kf->remove_map_point(mp);
-                    source_kf->add_map_point(pMPinKF, f, pMPinKF->orb_descriptor);
-                    continue;
-                }
-                if (pMPinKF->keyframes.size() < mp->keyframes.size()) {
-                    if (pKF->mp_correlations.find(mp) == pKF->mp_correlations.end()) {
-                        continue;
-                    } 
-                    Feature *f = pKF->mp_correlations[pMPinKF];
-                    pKF->remove_map_point(pMPinKF);
-                    pKF->add_map_point(mp, f, mp->orb_descriptor);
-                    continue;
-                }
-            }
+        if (bestDist > 50) continue;
+        MapPoint* pMPinKF = pKF->features[bestIdx].get_map_point();
+        if (pMPinKF == nullptr) {
+            mp->add_observation_map_point(pKF, pKF->features[bestIdx].descriptor, Ow);
+            pKF->add_map_point(mp, &pKF->features[bestIdx], mp->orb_descriptor);
             nFused++;
+            continue;
+        }
+        if(pMPinKF != nullptr && pMPinKF->keyframes.size() > mp->keyframes.size()) {
+            if (source_kf->mp_correlations.find(mp) == source_kf->mp_correlations.end()) continue;
+            Feature *f = source_kf->mp_correlations[mp];
+            source_kf->remove_map_point(mp);
+            source_kf->add_map_point(pMPinKF, f, pMPinKF->orb_descriptor);
+            pMPinKF->add_observation_map_point(source_kf, f->descriptor, Ow);
+            nFused++;
+            continue;
+        }
+        if (pMPinKF != nullptr && pMPinKF->keyframes.size() < mp->keyframes.size()) {
+            if (pKF->mp_correlations.find(mp) == pKF->mp_correlations.end()) continue;
+            Feature *f = pKF->mp_correlations[pMPinKF];
+            pKF->remove_map_point(pMPinKF);
+            pKF->add_map_point(mp, f, mp->orb_descriptor);
+            mp->add_observation_map_point(pKF, f->descriptor, pKF->compute_camera_center_world());
+            nFused++;
+            continue;
         }
     }
     return nFused;

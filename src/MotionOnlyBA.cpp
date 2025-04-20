@@ -91,7 +91,7 @@ double get_monocular_reprojection_error(MapPoint *mp, Eigen::Matrix3d K, Sophus:
 
 Sophus::SE3d compute_pose(KeyFrame *kf, double *pose) {
     Eigen::Quaterniond quaternion(pose[0], pose[1], pose[2], pose[3]);
-    Eigen::Quaterniond old_quaternion = kf->Tiw.unit_quaternion();
+    Eigen::Quaterniond old_quaternion = kf->Tcw.unit_quaternion();
     if (old_quaternion.dot(quaternion) < 0)
     {
         quaternion.coeffs() *= -1;
@@ -102,11 +102,11 @@ Sophus::SE3d compute_pose(KeyFrame *kf, double *pose) {
 Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf, std::unordered_map<MapPoint *, Feature *> &matches)
 {
     if (matches.size() < 3)
-        return kf->Tiw;
+        return kf->Tcw;
     
     const float chi2Mono[4]={5.991, 5.991, 5.991, 5.991};
     const float chi2Stereo[4]={7.815, 7.815, 7.815, 7.815};
-    Sophus::SE3d pose = kf->Tiw;
+    Sophus::SE3d pose = kf->Tcw;
     const double BASELINE = 0.08;
     Eigen::Quaterniond quat = pose.unit_quaternion();
     double pose_vector[7];
@@ -217,7 +217,7 @@ Sophus::SE3d BundleAdjustment::solve_g2o(KeyFrame *kf, std::unordered_map<MapPoi
 
     // Set Frame vertex
     g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
-    Sophus::SE3d pose = kf->Tiw;
+    Sophus::SE3d pose = kf->Tcw;
     vSE3->setEstimate(g2o::SE3Quat(pose.rotationMatrix(), pose.translation()));
     vSE3->setId(0);
     vSE3->setFixed(false);

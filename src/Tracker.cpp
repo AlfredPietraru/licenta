@@ -45,13 +45,13 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     undistorted_kps = out.second;
     if (this->prev_kf == nullptr && this->current_kf != nullptr) {
         this->prev_kf = this->current_kf;
-        this->current_kf = new KeyFrame(this->prev_kf->Tiw, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 1, frame, this->voc, this->reference_kf);
+        this->current_kf = new KeyFrame(this->prev_kf->Tcw, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 1, frame, this->voc, this->reference_kf);
         return;
     }
 
     // de incercat ultima transformare ca estimare
-    // Sophus::SE3d pose_estimation = this->current_kf->Tiw;
-    Sophus::SE3d pose_estimation = this->current_kf->Tiw * this->prev_kf->Tiw.inverse() * this->current_kf->Tiw;
+    // Sophus::SE3d pose_estimation = this->current_kf->Tcw;
+    Sophus::SE3d pose_estimation = this->current_kf->Tcw * this->prev_kf->Tcw.inverse() * this->current_kf->Tcw;
     this->prev_kf = this->current_kf;
     this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 
         this->prev_kf->current_idx + 1, frame, this->voc, this->reference_kf);
@@ -90,11 +90,12 @@ void Tracker::tracking_was_lost()
 
 bool Tracker::Is_KeyFrame_needed(int tracked_by_local_map)
 {
+    bool needToInsertClose = this->current_kf->check_number_close_points();
     this->keyframes_from_last_global_relocalization += 1;
     bool c1 = this->keyframes_from_last_global_relocalization > 30;
     bool c2 = this->current_kf->current_idx - this->reference_kf->current_idx > 30;
-    bool c3 = this->current_kf->check_number_close_points();
-    bool c4 = this->current_kf->map_points.size() < this->reference_kf->map_points.size() * 0.9;
+    bool c3 = tracked_by_local_map < 0.25 * this->reference_kf->map_points.size() || needToInsertClose; 
+    bool c4 = (this->current_kf->map_points.size() < this->reference_kf->map_points.size() * 0.9 || needToInsertClose) && tracked_by_local_map > 15;
     return c1 && c2 && c3 && c4;
 }
 
@@ -131,7 +132,7 @@ void Tracker::TrackReferenceKeyFrame(std::unordered_map<MapPoint *, Feature *>& 
         std::cout << matches.size() << " REFERENCE FRAME N A URMARIT SUFICIENTE MAP POINTS PENTRU OPTIMIZARE\n";
         exit(1);
     }
-    this->current_kf->Tiw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
+    this->current_kf->Tcw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
     for (MapPoint *mp : this->current_kf->outliers) {
         if (matches.find(mp) != matches.end()) {
             matches.erase(mp);
@@ -156,7 +157,7 @@ void Tracker::TrackConsecutiveFrames(std::unordered_map<MapPoint *, Feature *>& 
             return;
         }
     }
-    this->current_kf->Tiw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
+    this->current_kf->Tcw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
     for (MapPoint *mp : this->current_kf->outliers) {
         if (matches.find(mp) != matches.end()) {
             matches.erase(mp);
@@ -178,7 +179,7 @@ void Tracker::TrackLocalMap(std::unordered_map<MapPoint *, Feature *>& matches, 
         std::cout << " \nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
         return;
     }
-    this->current_kf->Tiw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
+    this->current_kf->Tcw = this->bundleAdjustment->solve_ceres(this->current_kf, matches);
     for (MapPoint *mp : this->current_kf->outliers) {
         if (matches.find(mp) != matches.end()) {
             matches.erase(mp);
@@ -210,7 +211,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
     } 
 
     this->TrackLocalMap(matches, mapp);
-    // compute_difference_between_positions(this->current_kf->Tiw, ground_truth_pose);
+    // compute_difference_between_positions(this->current_kf->Tcw, ground_truth_pose);
     this->current_kf->debug_keyframe(50, matches, matches);
     bool needed_keyframe = this->Is_KeyFrame_needed(matches.size()); 
     if (needed_keyframe) {

@@ -23,7 +23,7 @@ class KeyFrame
 {
 public:
     int current_idx;
-    Sophus::SE3d Tiw;
+    Sophus::SE3d Tcw;
     Eigen::Matrix3d K;
     std::vector<Feature> features;
     std::unordered_map<MapPoint*, Feature*> mp_correlations; 
@@ -46,11 +46,12 @@ public:
 
 
     KeyFrame();
-    KeyFrame(Sophus::SE3d Tiw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint>& keypoints, std::vector<cv::KeyPoint>& undistored_kps,
+    KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint>& keypoints, std::vector<cv::KeyPoint>& undistored_kps,
              cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, cv::Mat& frame, ORBVocabulary *voc, KeyFrame *reference_kf);
-    Eigen::Vector3d compute_camera_center();
+    Eigen::Vector3d compute_camera_center_world();
     Eigen::Vector3d fromWorldToImage(Eigen::Vector4d& wcoord);
     Eigen::Vector4d fromImageToWorld(int kp_idx);
+    Eigen::Vector3d fromImageToWorld_3d(int kp_idx);
     std::vector<cv::KeyPoint> get_all_keypoints(); 
     std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave); 
     void add_map_point(MapPoint *mp, Feature *f, cv::Mat orb_descriptor);

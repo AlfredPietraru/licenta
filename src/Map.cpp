@@ -27,7 +27,7 @@ std::unordered_set<MapPoint*> Map::get_all_map_points() {
 
 
 void Map::add_first_keyframe(KeyFrame *kf) {
-    Eigen::Vector3d camera_center = kf->compute_camera_center();
+    Eigen::Vector3d camera_center = kf->compute_camera_center_world();
     for (int i = 0; i < kf->features.size(); i++)
     {
         if (kf->features[i].get_map_point() != nullptr || kf->features[i].depth <= 1e-6) continue;
@@ -73,7 +73,7 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
     for (auto it = new_kf->mp_correlations.begin(); it != new_kf->mp_correlations.end(); it++) {
         MapPoint *mp = it->first;
         Feature *f = it->second;
-        mp->add_observation_map_point(new_kf, f->descriptor, new_kf->compute_camera_center());
+        mp->add_observation_map_point(new_kf, f->descriptor, new_kf->compute_camera_center_world());
     }
     // de facut update la map points
 }
