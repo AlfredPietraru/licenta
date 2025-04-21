@@ -94,7 +94,7 @@ TumDatasetReader::TumDatasetReader(Config cfg) {
     }
     std::vector<std::pair<std::string, std::string>> map_rgb_depth = get_mapping_between_rgb_depth("../rgbd_dataset_freiburg1_xyz/maping_rgb_depth.txt");
     std::unordered_map<std::string, Position_Entry> map_rgb_pose = get_mapping_between_rgb_position("../rgbd_dataset_freiburg1_xyz/maping_rgb_groundtruth.txt");
-    for (int i = 0; i < map_rgb_depth.size(); i++) {
+    for (int i = 0; i < (int)map_rgb_depth.size(); i++) {
         std::pair<std::string, std::string> pair_names = map_rgb_depth[i];
         if (map_rgb_pose.find(pair_names.first) == map_rgb_pose.end()) continue;
         this->rgb_path.push_back(map_rgb_file_name_path[pair_names.first]);

@@ -27,7 +27,7 @@ class Tracker {
 public:
     std::pair<KeyFrame*, bool> tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose);
     Tracker(Mat frame, Mat depth, Map *mapp, Sophus::SE3d pose, Config cfg, 
-        ORBVocabulary* voc, Pnp_Ransac_Config pnp_ransac_cfg, Orb_Matcher orb_matcher_config);
+        ORBVocabulary* voc, Orb_Matcher orb_matcher_config);
     KeyFrame *current_kf;
     KeyFrame* prev_kf = nullptr;
     KeyFrame *reference_kf = nullptr;

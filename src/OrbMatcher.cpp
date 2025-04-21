@@ -43,7 +43,7 @@ void OrbMatcher::checkOrientation(std::unordered_map<MapPoint *, Feature *> &cor
     int max = 0;
     int index = 0;
     for (int i = 0; i < 30; i++) {
-        if (histogram[i].size() > max) {
+        if ((int)histogram[i].size() > max) {
             max = histogram[i].size();
             index = i;
         }
@@ -53,7 +53,7 @@ void OrbMatcher::checkOrientation(std::unordered_map<MapPoint *, Feature *> &cor
     std::vector<bool> keep(30, false);
     
     for (int i = 0; i < 30; i++) {
-        if (histogram[i].size() > threshold || 
+        if ((int)histogram[i].size() > threshold || 
             (i == ((index+1)%30) || i == ((index+29)%30))) {
             keep[i] = true;
         }
@@ -157,12 +157,12 @@ void OrbMatcher::match_frame_map_points(std::unordered_map<MapPoint*, Feature*>&
         double u = point_camera_coordinates(0);
         double v = point_camera_coordinates(1);
 
-        int lowest_dist = 256;
         int lowest_idx = -1;
+        int lowest_dist = 256;
         int lowest_level = -1;
+
         int second_lowest_dist = 256;
         int second_lowest_level = -1;
-        int second_lowest_idx = -1;
         std::vector<int> kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, predicted_scale - 1, predicted_scale + 1);
         if (kps_idx.size() == 0) continue;
         for (int idx : kps_idx)
@@ -178,7 +178,6 @@ void OrbMatcher::match_frame_map_points(std::unordered_map<MapPoint*, Feature*>&
             if (cur_hamm_dist < lowest_dist)
             {
                 second_lowest_dist = lowest_dist;
-                second_lowest_idx = lowest_idx;
                 second_lowest_level = lowest_level;
                 lowest_idx = idx;
                 lowest_dist = cur_hamm_dist;
@@ -187,7 +186,6 @@ void OrbMatcher::match_frame_map_points(std::unordered_map<MapPoint*, Feature*>&
             else if (cur_hamm_dist < second_lowest_dist)
             {
                 second_lowest_dist = cur_hamm_dist;
-                second_lowest_idx = idx;
                 second_lowest_level = kf->features[idx].get_undistorted_keypoint().octave;
             }
         }
@@ -453,15 +451,15 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         MapPoint* pMPinKF = pKF->features[bestIdx].get_map_point();
         if (pMPinKF == nullptr) {
             mp->add_observation_map_point(pKF, pKF->features[bestIdx].descriptor, Ow);
-            pKF->add_map_point(mp, &pKF->features[bestIdx], mp->orb_descriptor);
+            Map::add_map_point_to_keyframe(pKF, &pKF->features[bestIdx], mp);
             nFused++;
             continue;
         }
         if(pMPinKF != nullptr && pMPinKF->keyframes.size() > mp->keyframes.size()) {
             if (source_kf->mp_correlations.find(mp) == source_kf->mp_correlations.end()) continue;
             Feature *f = source_kf->mp_correlations[mp];
-            source_kf->remove_map_point(mp);
-            source_kf->add_map_point(pMPinKF, f, pMPinKF->orb_descriptor);
+            Map::remove_map_point_from_keyframe(source_kf, mp);
+            Map::add_map_point_to_keyframe(source_kf, f, pMPinKF);
             pMPinKF->add_observation_map_point(source_kf, f->descriptor, Ow);
             nFused++;
             continue;
@@ -469,8 +467,8 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         if (pMPinKF != nullptr && pMPinKF->keyframes.size() < mp->keyframes.size()) {
             if (pKF->mp_correlations.find(mp) == pKF->mp_correlations.end()) continue;
             Feature *f = pKF->mp_correlations[pMPinKF];
-            pKF->remove_map_point(pMPinKF);
-            pKF->add_map_point(mp, f, mp->orb_descriptor);
+            Map::remove_map_point_from_keyframe(pKF, pMPinKF);
+            Map::add_map_point_to_keyframe(pKF, f, mp);
             mp->add_observation_map_point(pKF, f->descriptor, pKF->compute_camera_center_world());
             nFused++;
             continue;

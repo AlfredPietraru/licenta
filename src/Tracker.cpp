@@ -1,6 +1,6 @@
 #include "../include/Tracker.h"
 
-void compute_difference_between_positions(const Sophus::SE3d &estimated, const Sophus::SE3d &ground_truth)
+void compute_difference_between_positions(const Sophus::SE3d &estimated, const Sophus::SE3d &ground_truth, bool print_now)
 {
     
     Sophus::SE3d relative = ground_truth.inverse() * estimated;
@@ -19,6 +19,7 @@ void compute_difference_between_positions(const Sophus::SE3d &estimated, const S
     Eigen::Vector3d t_rel = relative.translation();
     double translation_diff = t_rel.norm();
 
+    if (!print_now) return;
     std::cout << "APE score: " << APE << "\n";
     std::cout << "Rotation Difference (Total): " << total_angle_diff << " degrees\n";
     std::cout << "Rotation Difference (X): " << angle_axis(0) << " degrees\n";
@@ -55,7 +56,7 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
 }
 
 Tracker::Tracker(Mat frame, Mat depth, Map *mapp, Sophus::SE3d pose, Config cfg, 
-    ORBVocabulary* voc, Pnp_Ransac_Config pnp_ransac_cfg, Orb_Matcher orb_matcher_config) : voc(voc),  mapp(mapp) {
+    ORBVocabulary* voc, Orb_Matcher orb_matcher_config) : mapp(mapp), voc(voc) {
     this->K = cfg.K;
     cv::cv2eigen(cfg.K, this->K_eigen);
     this->mDistCoef = cfg.distortion;
@@ -67,7 +68,8 @@ Tracker::Tracker(Mat frame, Mat depth, Map *mapp, Sophus::SE3d pose, Config cfg,
     cv::Mat descriptors;
     this->fmf->compute_keypoints_descriptors(frame, keypoints, undistorted_kps, descriptors);
     // this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
-    this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc, nullptr);
+    pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
+    this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc, nullptr);
     this->reference_kf = this->current_kf;
     mapp->add_first_keyframe(this->reference_kf); 
     std::cout << "SFARSIT INITIALIZARE\n\n";
@@ -92,32 +94,6 @@ bool Tracker::Is_KeyFrame_needed(int tracked_by_local_map)
 }
 
 
-void check_feature_matching(KeyFrame *curr, KeyFrame *ref, std::unordered_map<MapPoint *, Feature *>& matches) {
-    std::unordered_map<MapPoint *, Feature *> ref_map_feature = ref->mp_correlations;
-    cv::Mat img_matches;
-    std::vector<cv::DMatch> dmatches;
-    for (const auto& match : matches) {
-        MapPoint* mp = match.first;
-        Feature *f = match.second;
-
-        if (ref_map_feature.find(mp) == ref_map_feature.end()) continue;
-        Feature *f_ref = ref_map_feature[mp];
-            cv::DMatch dmatch;
-            dmatch.queryIdx = f->idx; 
-            dmatch.trainIdx = f_ref->idx;  
-            dmatch.distance = OrbMatcher::ComputeHammingDistance(f->descriptor, f_ref->descriptor); 
-            dmatches.push_back(dmatch);
-    }
-    std::vector<cv::DMatch> sub_dmatches;
-    int i = 0;
-    int j = 100;
-    // copy(dmatches.begin() + i, dmatches.begin() + j, back_inserter(sub_dmatches));
-    // cv::drawMatches(curr->frame, curr->get_all_keypoints(), ref->frame, ref->get_all_keypoints(), sub_dmatches, img_matches);
-    // cv::imshow("Feature Matches", img_matches);
-    // waitKey(0);
-}
-
-
 void Tracker::TrackReferenceKeyFrame(std::unordered_map<MapPoint *, Feature *>& matches) {
     matcher->match_frame_reference_frame(matches, this->current_kf, this->reference_kf);
     if (matches.size() < 15) {
@@ -135,7 +111,7 @@ void Tracker::TrackReferenceKeyFrame(std::unordered_map<MapPoint *, Feature *>& 
         exit(1);
     } 
     for (auto it = matches.begin(); it != matches.end(); it++) {
-        this->current_kf->add_map_point(it->first, it->second, it->first->orb_descriptor);
+        Map::add_map_point_to_keyframe(this->current_kf, it->second, it->first);
     }
 }
 
@@ -160,7 +136,7 @@ void Tracker::TrackConsecutiveFrames(std::unordered_map<MapPoint *, Feature *>& 
         return;
     } 
     for (auto it = matches.begin(); it != matches.end(); it++) {
-        this->current_kf->add_map_point(it->first, it->second, it->first->orb_descriptor);
+        Map::add_map_point_to_keyframe(this->current_kf, it->second, it->first);
     }
 }
 
@@ -182,7 +158,7 @@ void Tracker::TrackLocalMap(std::unordered_map<MapPoint *, Feature *>& matches, 
         return;
     }
     for (auto it = matches.begin(); it != matches.end(); it++) {
-        this->current_kf->add_map_point(it->first, it->second, it->first->orb_descriptor);
+        Map::add_map_point_to_keyframe(this->current_kf, it->second, it->first);
     }
 }
 
@@ -206,7 +182,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
     // std::cout << this->current_kf->Tcw.matrix() << "\n\n";
     this->TrackLocalMap(matches, mapp);
     // std::cout << this->current_kf->Tcw.matrix() << "\n\n";
-    // compute_difference_between_positions(this->current_kf->Tcw, ground_truth_pose);
+    compute_difference_between_positions(this->current_kf->Tcw, ground_truth_pose, false);
     // int wait_time = 30 ? this->current_kf->current_idx < 173 : 0;
     int wait_time = 20;
     this->current_kf->debug_keyframe(frame, wait_time, matches, matches);

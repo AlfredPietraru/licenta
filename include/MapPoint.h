@@ -33,6 +33,7 @@ public:
         void decrease_number_associations();
         void add_observation_map_point(KeyFrame *kf, cv::Mat descriptor, Eigen::Vector3d camera_center_kf);
         Eigen::Vector3d compute_view_direction(Eigen::Vector3d camera_center);
+        int ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b);
 };
 
 #endif

@@ -45,7 +45,7 @@ void signalHandler(int signum) {
 // care varianta e cea mai buna
 // RGBD -> time of flight, structured light
 
-int main(int argc, char **argv)
+int main(void)
 {
     std::signal(SIGINT, signalHandler);
     ORBVocabulary *voc = new ORBVocabulary();
@@ -57,7 +57,6 @@ int main(int argc, char **argv)
         std::cout << "Fisierul a fost incarcat cu succes\n";
     }
     Config cfg = loadConfig("../config.yaml");
-    Pnp_Ransac_Config pnp_ransac_cfg = load_pnp_ransac_config("../config.yaml");
     Orb_Matcher orb_matcher_cfg = load_orb_matcher_config("../config.yaml");
     
     reader = new TumDatasetReader(cfg); 
@@ -66,9 +65,9 @@ int main(int argc, char **argv)
     cv::Mat frame = data.first;
     cv::Mat depth = data.second;
     
-    Map *mapp = new Map(orb_matcher_cfg);
+    Map *mapp = new Map();
     LocalMapping *local_mapper = new LocalMapping(mapp);
-    Tracker *tracker = new Tracker(frame, depth, mapp,  groundtruth_pose, cfg, voc, pnp_ransac_cfg, orb_matcher_cfg);
+    Tracker *tracker = new Tracker(frame, depth, mapp,  groundtruth_pose, cfg, voc, orb_matcher_cfg);
     auto t1 = high_resolution_clock::now();
     reader->store_entry(Sophus::SE3d(Eigen::Matrix4d::Identity()));
     // reader->store_entry(groundtruth_pose);

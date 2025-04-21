@@ -62,6 +62,7 @@ MapDrawer::MapDrawer(Map *pMap, Eigen::Matrix4d T) : mapp(pMap)
 void MapDrawer::run(cv::Mat T, std::unordered_set<MapPoint *> &local_map)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    T.at<float>(0, 0) += 1; // DE STERS
     this->GetCurrentOpenGLCameraMatrix(Twc);
     s_cam.Follow(Twc);
     d_cam.Activate(s_cam);
@@ -118,6 +119,9 @@ void MapDrawer::DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph)
             glPopMatrix();
         }
     }
+    if (bDrawGraph) {
+        std::cout << "O SA DESENEZE SI GRAPHUL LA UN MOMENT DAT\n";
+    }
 }
 
 
@@ -126,7 +130,7 @@ void MapDrawer::DrawConsecutiveFrames() {
     const float h = w * 0.75;
     const float z = w * 0.6;
     if (matrix_poses.size() == 0) return;
-    for (int i = 0; i < matrix_poses.size(); i++) {
+    for (int i = 0; i < (int)matrix_poses.size(); i++) {
         cv::Mat mat = matrix_poses[i];
         glPushMatrix();
         glMultMatrixf(mat.ptr<GLfloat>(0));

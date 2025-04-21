@@ -14,18 +14,18 @@
 class MapPoint;
 class Feature {
 public:
-    int idx;
     cv::KeyPoint kp;
     cv::KeyPoint kpu;
     cv::Mat descriptor;
-    int curr_hamming_dist;
-    MapPoint *mp;
+    int idx;
     double depth;
     double stereo_depth;
+    int curr_hamming_dist = 10000;
+    MapPoint *mp = nullptr;
 
     Feature() {}
     Feature(cv::KeyPoint kp, cv::KeyPoint kpu, cv::Mat descriptor, int idx, double depth, double stereo_depth);
-    bool set_map_point(MapPoint *mp, cv::Mat orb_descriptor);
+    void set_map_point(MapPoint *mp, int hamming_distance);
     MapPoint* get_map_point();
     cv::KeyPoint get_key_point();
     cv::KeyPoint get_undistorted_keypoint();

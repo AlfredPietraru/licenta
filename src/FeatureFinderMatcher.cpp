@@ -27,7 +27,7 @@ void FeatureMatcherFinder::UndistortKeyPoints(std::vector<cv::KeyPoint>& kps, st
         return;
     }
     cv::Mat mat(kps.size(), 2, CV_32F);
-    for(int i=0; i<kps.size(); i++)
+    for(long unsigned int i = 0; i < kps.size(); i++)
     {
         mat.at<float>(i,0)=kps[i].pt.x;
         mat.at<float>(i,1)=kps[i].pt.y;
@@ -37,7 +37,7 @@ void FeatureMatcherFinder::UndistortKeyPoints(std::vector<cv::KeyPoint>& kps, st
     cv::undistortPoints(mat, mat, this->K, mDistCoef,cv::Mat(),this->K);
     mat=mat.reshape(1);
     
-    for(int i=0; i<kps.size(); i++)
+    for(long unsigned int i = 0; i < kps.size(); i++)
     {
         cv::KeyPoint kp = kps[i];
         kp.pt.x=mat.at<float>(i,0);
@@ -48,7 +48,7 @@ void FeatureMatcherFinder::UndistortKeyPoints(std::vector<cv::KeyPoint>& kps, st
 
 void FeatureMatcherFinder::compute_keypoints_descriptors(cv::Mat& frame, std::vector<cv::KeyPoint> &kps,
     std::vector<cv::KeyPoint> &undistorted_kps,  cv::Mat &descriptors) {
-    (*this->extractor)(frame, cv::Mat(), kps, descriptors);
+    (*this->extractor)(frame, kps, descriptors);
     this->UndistortKeyPoints(kps, undistorted_kps);
 }
 
@@ -64,13 +64,13 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat& frame
             for (int iter = 0; iter < this->orb_iterations - 1; iter++) {
                 this->orb->setFastThreshold(threshold);
                 this->orb->detect(cell_img, current_keypoints);
-                if (current_keypoints.size() >= minim_keypoints && current_keypoints.size() <= minim_keypoints * 3) {
+                if ((int)current_keypoints.size() >= minim_keypoints && (int)current_keypoints.size() <= minim_keypoints * 3) {
                     break;
-                } else if (current_keypoints.size() < minim_keypoints) {
+                } else if ((int)current_keypoints.size() < minim_keypoints) {
                     if (threshold == this->fast_lower_limit) break;
                     threshold -= this->fast_step;
                      
-                } else if (current_keypoints.size() > 3 * minim_keypoints) {
+                } else if ((int)current_keypoints.size() > 3 * minim_keypoints) {
                     if (threshold == this->fast_higher_limit) break;
                     threshold += this->fast_step;
                 }
@@ -84,7 +84,7 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat& frame
                 kp.pt.y += i * window;
             }
             this->fast_features_cell[i * nr_cells_collumn + j] = threshold;
-            if (current_keypoints.size() > minim_keypoints * 2) {
+            if ((int)current_keypoints.size() > minim_keypoints * 2) {
                 std::sort(current_keypoints.begin(), current_keypoints.end(), 
                     [](const cv::KeyPoint& a, const cv::KeyPoint& b) {
                         return a.response > b.response;

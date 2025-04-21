@@ -1,7 +1,7 @@
 #include "../include/MapPoint.h"
 
 
-int ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b) {
+int MapPoint::ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b) {
     const int *pa = a.ptr<int32_t>();
     const int *pb = b.ptr<int32_t>();
 
@@ -98,7 +98,7 @@ cv::Mat MapPoint::compute_distinctive_descriptor() {
     }
     int BestMedian = 10000;
     int BestIdx = 0;
-    for(size_t i=0;i<N;i++)
+    for(int i = 0; i < N; i++)
     {
         sort(dist_mat[i].begin(), dist_mat[i].end());
         int median = dist_mat[i][0.5*(N-1)];

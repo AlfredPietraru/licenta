@@ -13,24 +13,25 @@
 #include "MapPoint.h"
 #include "KeyFrame.h"
 #include "config.h"
-#include "OrbMatcher.h"
 
 
 class Map {
 public:
     int KEYFRAMES_WINDOW = 5;
-    OrbMatcher* matcher;
     std::vector<KeyFrame*> keyframes;
     std::unordered_map<KeyFrame*, std::unordered_map<KeyFrame*, int>> graph;
     std::unordered_set<MapPoint*> local_map;
 
-    Map();
-    Map(Orb_Matcher orb_matcher_cfg);
+    Map() {}
     std::unordered_set<KeyFrame*> get_local_keyframes(KeyFrame *kf);
     void track_local_map(std::unordered_map<MapPoint *, Feature*> &matches, KeyFrame *curr_kf, KeyFrame *reference_kf);
     std::unordered_set<MapPoint*> get_all_map_points();
     void add_first_keyframe(KeyFrame *new_kf);
     void add_new_keyframe(KeyFrame *kf);
+
+    static void add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp); 
+    static void remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp);
+    
     int get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2);
     void debug_map(KeyFrame *kf);
 };

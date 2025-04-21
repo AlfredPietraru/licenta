@@ -1,6 +1,7 @@
 #ifndef LOCAL_MAPPING_H
 #define LOCAL_MAPPING_H
 #include "Map.h"
+#include "OrbMatcher.h"
 
 class LocalMapping {
 public:

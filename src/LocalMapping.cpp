@@ -14,6 +14,7 @@ void LocalMapping::local_map(KeyFrame *kf) {
 }
 
 
+// DE ADAUGAT LOGICA PENTRU STERGERE O DATA LA 3 KF-uri;
 void LocalMapping::map_points_culling(KeyFrame *kf) {
     std::vector<MapPoint*> to_del;
     // se strica ordinea din unordered set si se pierd elemente daca fac stergerea direct
@@ -47,25 +48,11 @@ bool is_coordinate_valid_for_keyframe(KeyFrame *kf, Feature *f, Eigen::Vector4d 
 
 int LocalMapping::compute_map_points(KeyFrame *kf)
 { 
-    double fx1 = kf->K(0, 0);
-    double fy1 = kf->K(1, 1);
-    double cx1 = kf->K(0, 2);
-    double cy1 = kf->K(1, 2);
-    double invfy1 = 1 / kf->K(1, 2);
-    double invfx1 = 1 / kf->K(0, 2);
     std::unordered_set<KeyFrame*> keyframes = mapp->get_local_keyframes(kf);
-
     bool isStereo1 = false;
     bool isStereo2 = false;
     int nr_points_added = 0;
     for (KeyFrame* neighbour_kf : keyframes) {
-        double fx2 = neighbour_kf->K(0, 0);
-        double fy2 = neighbour_kf->K(1, 1);
-        double cx2 = neighbour_kf->K(0, 2);
-        double cy2 = neighbour_kf->K(1, 2);
-        double invfx2 = 1 / neighbour_kf->K(0, 2);
-        double invfy2 = 1 / neighbour_kf->K(1, 2);
-        // TODO: check wheter the keyframe is far enough from the map point
         Eigen::Matrix3d fundamental_mat =  this->compute_fundamental_matrix(kf, neighbour_kf);
         std::vector<std::pair<int, int>> vMatchedIndices = OrbMatcher::search_for_triangulation(kf, neighbour_kf, fundamental_mat);
         //         std::vector<cv::DMatch> dmatches;
@@ -168,8 +155,8 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
                      kf->orb_descriptors.row(correspondence.first));
                
             // TODO, de adaugat si observatia in frame-ul al doilea 
-            kf->add_map_point(pMP, &kf->features[correspondence.first], pMP->orb_descriptor);
-            neighbour_kf->add_map_point(pMP, &neighbour_kf->features[correspondence.second], pMP->orb_descriptor);
+            Map::add_map_point_to_keyframe(kf, &kf->features[correspondence.first], pMP);
+            Map::add_map_point_to_keyframe(neighbour_kf, &neighbour_kf->features[correspondence.second], pMP);
             pMP->add_observation_map_point(neighbour_kf, neighbour_kf->features[correspondence.second].descriptor, kf->compute_camera_center_world());
             nr_points_added++;
             // TODOOOOOO
@@ -223,9 +210,7 @@ Eigen::Matrix3d LocalMapping::compute_fundamental_matrix(KeyFrame *curr_kf, KeyF
 
 
 void LocalMapping::delete_map_point(MapPoint *mp) {
-    for (KeyFrame *kf : mp->keyframes) { 
-        kf->remove_map_point(mp);
-    }
+    for (KeyFrame *kf : mp->keyframes) Map::remove_map_point_from_keyframe(kf, mp);
     if (mapp->local_map.find(mp) != mapp->local_map.end()) mapp->local_map.erase(mp);
     // delete mp; dintr-un motiv sau altul eroare in momentul in care incerc sa sterg definitiv un map point - bug in cate map point-uri raman si cate sunt sterse garantat
 }

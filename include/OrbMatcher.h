@@ -5,6 +5,7 @@
 #include "./MapPoint.h"
 #include "./KeyFrame.h"
 #include "./Feature.h"
+#include "Map.h"
 
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>

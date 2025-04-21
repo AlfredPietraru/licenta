@@ -40,7 +40,7 @@ KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> dist
 {
     this->set_keyframe_position(Tcw);
 
-    for (int i = 0; i < keypoints.size(); i++)
+    for (int i = 0; i < (int)keypoints.size(); i++)
     {
         cv::KeyPoint kp = keypoints[i];
         int x = std::round(kp.pt.x);
@@ -61,7 +61,7 @@ KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> dist
 
     this->grid = std::vector<std::vector<std::vector<int>>>(10, std::vector<std::vector<int>>(10, std::vector<int>()));
     
-    for (int i = 0; i < this->features.size(); i++)
+    for (int i = 0; i < (int)this->features.size(); i++)
     {
         cv::KeyPoint kpu = this->features[i].get_undistorted_keypoint();
         int y_idx = (int)kpu.pt.y;
@@ -169,56 +169,6 @@ std::vector<cv::KeyPoint> KeyFrame::get_all_keypoints()
     }
     return out;
 }
-
-void KeyFrame::add_map_point(MapPoint *mp, Feature *f, cv::Mat orb_descriptor) {
-    if (this->outliers.find(mp) != this->outliers.end()) {
-        this->outliers.erase(mp);
-    }
-    MapPoint* old_mp = f->get_map_point();
-    bool addition_succesfull = f->set_map_point(mp, orb_descriptor);
-    if (addition_succesfull && old_mp == nullptr) {
-        this->mp_correlations.insert({mp, f});
-        this->map_points.insert(mp);
-        mp->increase_number_associations();
-        return;
-    }
-    if (addition_succesfull && old_mp != nullptr) {
-        this->mp_correlations.erase(old_mp);
-        this->map_points.erase(old_mp);
-        old_mp->decrease_number_associations();
-        this->mp_correlations.insert({mp, f});
-        this->map_points.insert(mp);
-        mp->increase_number_associations();
-        return;
-    }
-}
-
-void KeyFrame::remove_map_point(MapPoint *mp) {
-    if (this->mp_correlations.find(mp) == this->mp_correlations.end()) {
-        std::cout << this->current_idx << " " << this->mp_correlations.size() << " " << this->map_points.size() << "\n";
-        std::cout << "NU A EXISTAT PUNCTUL IN CORELATII\n";
-        return;
-    }
-    if (this->map_points.find(mp) == this->map_points.end()) {
-        std::cout << this->current_idx << " " << this->mp_correlations.size() << " " << this->map_points.size() << "\n";
-        std::cout << "NU A EXISTAT PUNCTUL IN MAP POINTS, NU SUNT SINCRONIZATE\n";
-        return;
-    }
-
-    Feature *f = this->mp_correlations[mp];
-    f->unmatch_map_point();
-    this->mp_correlations.erase(mp);
-    this->map_points.erase(mp);
-    mp->decrease_number_associations();
-}
-
-
-void KeyFrame::update_map_points_info() {
-    for (MapPoint *mp : this->map_points) {
-        
-    }
-}
-
 
 std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave)
 {

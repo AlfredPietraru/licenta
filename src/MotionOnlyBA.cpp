@@ -5,8 +5,8 @@ class BundleError
 {
 public:
     BundleError(Eigen::Vector3d observed, Eigen::Vector4<double> map_coordinate, double scale_sigma, Eigen::Matrix3d K,
-                bool is_monocular) : observed(observed),
-                                     map_coordinate(map_coordinate), scale_sigma(scale_sigma), K(K), is_monocular(is_monocular) {}
+                bool is_monocular) : observed(observed), map_coordinate(map_coordinate), scale_sigma(scale_sigma),
+                 K(K), is_monocular(is_monocular) {}
 
     template <typename T>
     bool operator()(const T *const pose, T *residuals) const
@@ -30,7 +30,7 @@ public:
         if (this->is_monocular)
             return true;
 
-        T z_projected = x - T(K(0, 0)) * BASELINE * inv_d;
+        T z_projected = x - T(K(0, 0)) * 0.08 * inv_d;
         residuals[2] = (z_projected - observed(2)) / scale_sigma;
         return true;
     }
@@ -48,12 +48,11 @@ public:
     }
 
 private:
-    const double BASELINE = 0.08;
-    bool is_monocular;
-    Eigen::Matrix3d K;
     Eigen::Vector3d observed;
     Eigen::Vector4d map_coordinate;
     double scale_sigma;
+    Eigen::Matrix3d K;
+    bool is_monocular;
 };
 
 double get_rgbd_reprojection_error(MapPoint *mp, Eigen::Matrix3d K, Sophus::SE3d pose, Feature* feature, double chi2) {
@@ -107,7 +106,6 @@ Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf, std::unordered_map<MapP
     const float chi2Mono[4]={5.991, 5.991, 5.991, 5.991};
     const float chi2Stereo[4]={7.815, 7.815, 7.815, 7.815};
     Sophus::SE3d pose = kf->Tcw;
-    const double BASELINE = 0.08;
     Eigen::Quaterniond quat = pose.unit_quaternion();
     double pose_vector[7];
     pose_vector[0] = quat.w();
@@ -165,7 +163,7 @@ Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf, std::unordered_map<MapP
             cv::KeyPoint kpu = it->second->kpu;
             cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kpu.pt.x, kpu.pt.y, it->second->stereo_depth), mp->wcoord,
                             std::pow(1.2, kpu.octave), kf->K);    
-            ceres::ResidualBlockId id = problem.AddResidualBlock(cost_function, loss_function_stereo, pose_vector);
+            problem.AddResidualBlock(cost_function, loss_function_stereo, pose_vector);
         }
 
         using SE3Manifold = ceres::ProductManifold<ceres::QuaternionManifold, ceres::EuclideanManifold<3>>;
@@ -240,7 +238,7 @@ Sophus::SE3d BundleAdjustment::solve_g2o(KeyFrame *kf, std::unordered_map<MapPoi
     const float deltaMono = sqrt(5.991);
     const float deltaStereo = sqrt(7.815);
 
-    for(int i = 0; i < matches_vector.size(); i++) 
+    for(long unsigned int i = 0; i < matches_vector.size(); i++) 
     {
         MapPoint* pMP = matches_vector[i].first;
         Feature *f = matches_vector[i].second;
