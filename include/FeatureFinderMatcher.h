@@ -39,9 +39,10 @@ public:
     FeatureMatcherFinder() {}
     FeatureMatcherFinder(int rows, int cols, Config cfg);
 
-    std::pair<std::pair<std::vector<cv::KeyPoint>, cv::Mat>, std::vector<cv::KeyPoint>> compute_keypoints_descriptors(cv::Mat frame);
+    void compute_keypoints_descriptors(cv::Mat& frame, std::vector<cv::KeyPoint>& kps,
+             std::vector<cv::KeyPoint>& undistorted_kps,  cv::Mat& descriptors);
 private:
-    std::vector<cv::KeyPoint> UndistortKeyPoints(std::vector<cv::KeyPoint> kps);
+    void UndistortKeyPoints(std::vector<cv::KeyPoint>& kps, std::vector<cv::KeyPoint>& u_kps);
     std::vector<cv::KeyPoint> extract_keypoints(cv::Mat& frame);
 };
 

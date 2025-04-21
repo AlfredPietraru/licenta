@@ -1,7 +1,7 @@
 #include "../include/MapPoint.h"
 
 
-int MapPoint::ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b) {
+int ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b) {
     const int *pa = a.ptr<int32_t>();
     const int *pb = b.ptr<int32_t>();
 
@@ -91,7 +91,7 @@ cv::Mat MapPoint::compute_distinctive_descriptor() {
     for (int i = 0; i < N - 1; i++) {
         dist_mat[i][i] = 0;
         for (int j = i + 1; j < N; j++) {
-            float dist = this->ComputeHammingDistance(descriptor_vector[i], descriptor_vector[j]);
+            float dist = ComputeHammingDistance(descriptor_vector[i], descriptor_vector[j]);
             dist_mat[i][j] = dist;
             dist_mat[j][i] = dist; 
         }

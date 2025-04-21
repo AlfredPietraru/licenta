@@ -36,8 +36,9 @@ bool KeyFrame::check_number_close_points()
 KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints,
      std::vector<cv::KeyPoint> &undistored_kps, cv::Mat orb_descriptors, cv::Mat depth_matrix,
       int current_idx, cv::Mat &frame, ORBVocabulary *voc, KeyFrame *reference_kf)
-    : Tcw(Tcw), K(K), orb_descriptors(orb_descriptors), current_idx(current_idx), frame(frame), voc(voc), reference_kf(reference_kf)
+    : K(K), orb_descriptors(orb_descriptors), current_idx(current_idx), voc(voc), reference_kf(reference_kf)
 {
+    this->set_keyframe_position(Tcw);
 
     for (int i = 0; i < keypoints.size(); i++)
     {
@@ -128,7 +129,7 @@ Eigen::Vector3d KeyFrame::compute_camera_center_world()
 
 Eigen::Vector3d KeyFrame::fromWorldToImage(Eigen::Vector4d &wcoord)
 {
-    Eigen::Vector4d camera_coordinates = this->Tcw.matrix() * wcoord;
+    Eigen::Vector4d camera_coordinates = this->mat_camera_world * wcoord;
     double d = camera_coordinates(2);
     if (d < 1e-6) {
         std::cout << "CEVA NU E BINE DEPTH E PREA MIC\n";
@@ -138,18 +139,24 @@ Eigen::Vector3d KeyFrame::fromWorldToImage(Eigen::Vector4d &wcoord)
     return Eigen::Vector3d(u, v, d);
 }
 
+void KeyFrame::set_keyframe_position(Sophus::SE3d Tcw_new) {
+    this->Tcw = Tcw_new;
+    this->mat_camera_world = Tcw_new.matrix(); 
+    this->mat_world_camera = Tcw_new.inverse().matrix();
+}
+
 Eigen::Vector4d KeyFrame::fromImageToWorld(int kp_idx)
 {
     Feature f = this->features[kp_idx];
-    double new_x = (f.get_key_point().pt.x - this->K(0, 2)) * f.depth / this->K(0, 0);
-    double new_y = (f.get_key_point().pt.y - this->K(1, 2)) * f.depth / this->K(1, 1);
-    return this->Tcw.inverse().matrix() * Eigen::Vector4d(new_x, new_y, f.depth, 1);
+    double new_x = (f.kp.pt.x - this->K(0, 2)) * f.depth / this->K(0, 0);
+    double new_y = (f.kp.pt.y - this->K(1, 2)) * f.depth / this->K(1, 1);
+    return this->mat_world_camera * Eigen::Vector4d(new_x, new_y, f.depth, 1);
 }
 
 Eigen::Vector3d KeyFrame::fromImageToWorld_3d(int kp_idx) {
     Feature f = this->features[kp_idx];
-    double new_x = (f.get_key_point().pt.x - this->K(0, 2)) * f.depth / this->K(0, 0);
-    double new_y = (f.get_key_point().pt.y - this->K(1, 2)) * f.depth / this->K(1, 1);
+    double new_x = (f.kp.pt.x - this->K(0, 2)) * f.depth / this->K(0, 0);
+    double new_y = (f.kp.pt.y - this->K(1, 2)) * f.depth / this->K(1, 1);
     return this->Tcw.inverse().matrix3x4() * Eigen::Vector4d(new_x, new_y, f.depth, 1);
 }
 
@@ -216,16 +223,16 @@ void KeyFrame::update_map_points_info() {
 std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave)
 {
     int u_min = lround(u - window);
-    u_min = (u_min < 0) ? 0 : (u_min >= this->frame.cols) ? this->frame.cols - 1
+    u_min = (u_min < this->minX) ? this->minX : (u_min >= this->maxX) ? this->maxX - 1
     : u_min;
     int u_max = lround(u + window);
-    u_max = (u_max < 0) ? 0 : (u_max >= this->frame.cols) ? this->frame.cols - 1
+    u_max = (u_max < this->minX) ? this->minX : (u_max >= this->maxX) ? this->maxX - 1
     : u_max;
     int v_min = round(v - window);
-    v_min = (v_min < 0) ? 0 : (v_min >= this->frame.rows) ? this->frame.rows - 1
+    v_min = (v_min < this->minY) ? this->minY : (v_min >= this->maxY) ? this->maxY - 1
     : v_min;
     int v_max = lround(v + window);
-    v_max = (v_max < 0) ? 0 : (v_max >= this->frame.rows) ? this->frame.rows - 1
+    v_max = (v_max < this->minY) ? this->minY : (v_max >= this->maxY) ? this->maxY - 1
     : v_max;
     
     std::vector<int> kps_idx;
@@ -254,7 +261,7 @@ std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, dou
 }
 
 
-void KeyFrame::debug_keyframe(int miliseconds, std::unordered_map<MapPoint *, Feature *> &matches, std::unordered_map<MapPoint *, Feature *> &new_matches)
+void KeyFrame::debug_keyframe(cv::Mat frame, int miliseconds, std::unordered_map<MapPoint *, Feature *> &matches, std::unordered_map<MapPoint *, Feature *> &new_matches)
 {
     std::vector<cv::KeyPoint> keypoints;
     for (auto it = matches.begin(); it != matches.end(); it++)
@@ -267,10 +274,10 @@ void KeyFrame::debug_keyframe(int miliseconds, std::unordered_map<MapPoint *, Fe
     }
 
     cv::Mat img2, img3;
-    cv::drawKeypoints(this->frame, this->get_all_keypoints(), img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT);
+    cv::drawKeypoints(frame, this->get_all_keypoints(), img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT);
     // cv::imshow("Display window", img2);
     // cv::waitKey(0);
-    cv::drawKeypoints(this->frame, keypoints, img3, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT);
+    cv::drawKeypoints(frame, keypoints, img3, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT);
     cv::imshow("Display window", img3);
     cv::waitKey(miliseconds);
 }

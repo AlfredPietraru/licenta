@@ -1,7 +1,7 @@
 #include "../include/OrbMatcher.h"
 
 
-const int DES_DIST = 60;
+const int DES_DIST = 50;
 int inline::OrbMatcher::ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b)
 {
     const int *pa = a.ptr<int32_t>();
@@ -19,7 +19,7 @@ int inline::OrbMatcher::ComputeHammingDistance(const cv::Mat &a, const cv::Mat &
     return dist;
 }
 
-std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unordered_map<MapPoint *, Feature *> &correlation_current_frame,
+void OrbMatcher::checkOrientation(std::unordered_map<MapPoint *, Feature *> &correlation_current_frame,
                 std::unordered_map<MapPoint *, Feature *> &correlation_prev_frame)
 {
     std::vector<std::vector<MapPoint *>> histogram(30, std::vector<MapPoint *>());
@@ -64,7 +64,6 @@ std::unordered_map<MapPoint *, Feature *> OrbMatcher::checkOrientation(std::unor
             correlation_current_frame.erase(mp);
         }
     }
-    return correlation_current_frame;
 }
 
 void OrbMatcher::match_consecutive_frames(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *kf, KeyFrame *prev_kf, int window)
@@ -79,8 +78,8 @@ void OrbMatcher::match_consecutive_frames(std::unordered_map<MapPoint*, Feature*
         MapPoint *mp = it->first;
         if (kf->check_map_point_outlier(mp)) continue;
         point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
-        if (point_camera_coordinates(0) < 0 || point_camera_coordinates(0) > kf->frame.cols - 1) continue;
-        if (point_camera_coordinates(1) < 0 || point_camera_coordinates(1) > kf->frame.rows - 1) continue;
+        if (point_camera_coordinates(0) < kf->minX || point_camera_coordinates(0) > kf->maxX - 1) continue;
+        if (point_camera_coordinates(1) < kf->minY || point_camera_coordinates(1) > kf->maxY - 1) continue;
         if (point_camera_coordinates(2) < 1e-6) continue;
 
         camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
@@ -138,8 +137,8 @@ void OrbMatcher::match_frame_map_points(std::unordered_map<MapPoint*, Feature*>&
     for (MapPoint *mp : map_points) {
         if (kf->check_map_point_outlier(mp)) continue;
         point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
-        if (point_camera_coordinates(0) < 0 || point_camera_coordinates(0) > kf->frame.cols - 1) continue;
-        if (point_camera_coordinates(1) < 0 || point_camera_coordinates(1) > kf->frame.rows - 1) continue;
+        if (point_camera_coordinates(0) < kf->minX || point_camera_coordinates(0) > kf->maxX - 1) continue;
+        if (point_camera_coordinates(1) < kf->minY || point_camera_coordinates(1) > kf->maxY - 1) continue;
         if (point_camera_coordinates(2) < 1e-6) continue;
         
         camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
@@ -211,12 +210,8 @@ void OrbMatcher::match_frame_reference_frame(std::unordered_map<MapPoint*, Featu
     {
         if (f1it->first == f2it->first)
         {
-            std::vector<unsigned int> indices_ref = f1it->second;
-            std::vector<unsigned int> indicies_curr = f2it->second;
-
-            for (size_t iref = 0; iref < indices_ref.size();  iref++)
+            for (int feature_idx : f1it->second)
             {
-                const size_t feature_idx = f1it->second[iref];
                 MapPoint *mp_ref = ref->features[feature_idx].get_map_point();
                 if (mp_ref == nullptr) continue;
                 const cv::Mat &d1 = ref->orb_descriptors.row(feature_idx);
@@ -225,9 +220,8 @@ void OrbMatcher::match_frame_reference_frame(std::unordered_map<MapPoint*, Featu
                 int bestIdx = -1;
                 int bestDist2 = 256;
                 
-                for (size_t icurr = 0; icurr < indicies_curr.size(); icurr++)
+                for (int feature_curr : f2it->second)
                 {
-                    const size_t feature_curr = f2it->second[icurr];
                     const cv::Mat &d2 = curr->orb_descriptors.row(feature_curr);
                     int dist = this->ComputeHammingDistance(d1, d2);
                     
@@ -317,8 +311,6 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
                         bestIdx2 = idx2;
                         bestDist = dist;
                     }
-                    // bestIdx2 = idx2;
-                    // bestDist = dist;
                 }
                 if(bestIdx2 < 0) continue;                    
                 total_founds++;
@@ -397,8 +389,8 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         const float u = fx*x+cx;
         const float v = fy*y+cy;
 
-        if (u < 0 || u > pKF->frame.cols - 1) continue;
-        if (v < 0 || v > pKF->frame.rows - 1) continue;
+        if (u < pKF->minX || u > pKF->maxX - 1) continue;
+        if (v < pKF->minY || v > pKF->maxY - 1) continue;
         const float ur = u-bf*invz;
 
         Eigen::Vector3d camera_to_map_view_ray = (mp->wcoord_3d - Ow);

@@ -27,7 +27,6 @@ public:
         MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord, cv::Mat orb_descriptor);
         cv::Mat compute_distinctive_descriptor();
         int predict_image_scale(double distance);
-        int ComputeHammingDistance(const cv::Mat &desc1, const cv::Mat &desc2);
         bool map_point_should_be_deleted();
         void increase_how_many_times_seen();
         void increase_number_associations();

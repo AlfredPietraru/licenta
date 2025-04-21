@@ -38,7 +38,7 @@ public:
     static int ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b); 
     static bool CheckDistEpipolarLine(const cv::KeyPoint &kp1,const cv::KeyPoint &kp2,const Eigen::Matrix3d &F12);
     static int Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th);
-    std::unordered_map<MapPoint*, Feature*> checkOrientation(std::unordered_map<MapPoint*, Feature*>& out, std::unordered_map<MapPoint*, Feature*>& correlation_prev_frame);
+    void checkOrientation(std::unordered_map<MapPoint*, Feature*>& out, std::unordered_map<MapPoint*, Feature*>& correlation_prev_frame);
 };
 
 #endif

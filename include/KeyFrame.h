@@ -36,7 +36,6 @@ public:
     int currently_matched_points = 0;
     std::vector<std::vector<std::vector<int>>> grid;
     cv::Mat orb_descriptors;
-    cv::Mat frame;
     const double BASELINE = 0.08;
     float minX, maxX, minY, maxY;
     
@@ -62,7 +61,12 @@ public:
     bool check_number_close_points();
     void compute_bow_representation();
     void update_map_points_info();
-    void debug_keyframe(int miliseconds, std::unordered_map<MapPoint*, Feature*>& matches,std::unordered_map<MapPoint*, Feature*>& new_matches);
+    void set_keyframe_position(Sophus::SE3d Tcw_new);
+    void debug_keyframe(cv::Mat frame, int miliseconds, std::unordered_map<MapPoint*, Feature*>& matches,std::unordered_map<MapPoint*, Feature*>& new_matches);
+
+private:
+    Eigen::Matrix4d mat_camera_world;
+    Eigen::Matrix4d mat_world_camera;
 };
 
 #endif

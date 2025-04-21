@@ -85,7 +85,7 @@ int main(int argc, char **argv)
             std::cout << "ADAUGA AICI UN KEYFRAME\n";
             local_mapper->local_map(kf);
         }
-        // if (reader->frame_idx == 150) {
+        // if (reader->frame_idx == 60) {
         //     auto t2 = high_resolution_clock::now();
         //     std::cout << duration_cast<seconds>(t2 - t1).count() << " aici atata a durat" << std::endl;
         //     break;

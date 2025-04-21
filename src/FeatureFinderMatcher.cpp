@@ -20,9 +20,12 @@ FeatureMatcherFinder::FeatureMatcherFinder(int rows, int cols, Config cfg) {
 }
 
 
-std::vector<cv::KeyPoint> FeatureMatcherFinder::UndistortKeyPoints(std::vector<cv::KeyPoint> kps)
+void FeatureMatcherFinder::UndistortKeyPoints(std::vector<cv::KeyPoint>& kps, std::vector<cv::KeyPoint>& u_kps)
 {
-    if(mDistCoef[0]==0.0) return kps;
+    if(mDistCoef[0]==0.0) {
+        std::copy(kps.begin(), kps.end(), std::back_inserter(u_kps));
+        return;
+    }
     cv::Mat mat(kps.size(), 2, CV_32F);
     for(int i=0; i<kps.size(); i++)
     {
@@ -33,27 +36,21 @@ std::vector<cv::KeyPoint> FeatureMatcherFinder::UndistortKeyPoints(std::vector<c
     mat=mat.reshape(2);
     cv::undistortPoints(mat, mat, this->K, mDistCoef,cv::Mat(),this->K);
     mat=mat.reshape(1);
-
-    std::vector<cv::KeyPoint> out;
     
     for(int i=0; i<kps.size(); i++)
     {
-        kps[i].pt.x=mat.at<float>(i,0);
-        kps[i].pt.y=mat.at<float>(i,1);
-        out.push_back(kps[i]);
+        cv::KeyPoint kp = kps[i];
+        kp.pt.x=mat.at<float>(i,0);
+        kp.pt.y=mat.at<float>(i,1);
+        u_kps.push_back(kp);
     }
-    return out;
 }
 
-std::pair<std::pair<std::vector<cv::KeyPoint>, cv::Mat>, std::vector<cv::KeyPoint>> FeatureMatcherFinder::compute_keypoints_descriptors(cv::Mat frame) {
-    std::vector<cv::KeyPoint> keypoints;
-    cv::Mat descriptors;
-    (*this->extractor)(frame, cv::Mat(), keypoints, descriptors);
-    std::vector<cv::KeyPoint> undistorted_kps = this->UndistortKeyPoints(keypoints);
-
-    return {{keypoints, descriptors}, undistorted_kps};
+void FeatureMatcherFinder::compute_keypoints_descriptors(cv::Mat& frame, std::vector<cv::KeyPoint> &kps,
+    std::vector<cv::KeyPoint> &undistorted_kps,  cv::Mat &descriptors) {
+    (*this->extractor)(frame, cv::Mat(), kps, descriptors);
+    this->UndistortKeyPoints(kps, undistorted_kps);
 }
-
 
 
 std::vector<cv::KeyPoint> FeatureMatcherFinder::extract_keypoints(cv::Mat& frame) {
