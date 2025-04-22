@@ -30,6 +30,13 @@ void OrbMatcher::checkOrientation(std::unordered_map<MapPoint *, Feature *> &cor
         cv::KeyPoint current_kpu = it->second->get_undistorted_keypoint();
         if (correlation_prev_frame.find(mp) == nullptr) 
         {
+            if (mp->keyframes.size() == 0) {
+                std::cout << "NU ARE NICIUN KEYFRAME ASOCIAT\n";
+            }
+            std::cout << "printam keyframe-uri punct gresit\n";
+            for (KeyFrame *kf : mp->keyframes) {
+                std::cout << kf->current_idx << " acesta este un index al unui frame gasit\n";
+            }
             std::cout << "E CIUDAT CA E NULL IN CHECK ORIENTATION\n";
             continue;
         }
@@ -250,6 +257,7 @@ void OrbMatcher::match_frame_reference_frame(std::unordered_map<MapPoint*, Featu
             f2it = curr->features_vec.lower_bound(f1it->first);
         }
     }
+    std::cout << curr->current_idx << " " << ref->current_idx << " indicii in track local frame\n";
     this->checkOrientation(matches, ref->mp_correlations);
 }
 
@@ -450,8 +458,8 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         if (bestDist > 50) continue;
         MapPoint* pMPinKF = pKF->features[bestIdx].get_map_point();
         if (pMPinKF == nullptr) {
-            mp->add_observation_map_point(pKF, pKF->features[bestIdx].descriptor, Ow);
             Map::add_map_point_to_keyframe(pKF, &pKF->features[bestIdx], mp);
+            Map::add_keyframe_reference_to_map_point(mp, pKF);
             nFused++;
             continue;
         }
@@ -460,7 +468,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
             Feature *f = source_kf->mp_correlations[mp];
             Map::remove_map_point_from_keyframe(source_kf, mp);
             Map::add_map_point_to_keyframe(source_kf, f, pMPinKF);
-            pMPinKF->add_observation_map_point(source_kf, f->descriptor, Ow);
+            Map::add_keyframe_reference_to_map_point(pMPinKF, source_kf);
             nFused++;
             continue;
         }
@@ -469,7 +477,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
             Feature *f = pKF->mp_correlations[pMPinKF];
             Map::remove_map_point_from_keyframe(pKF, pMPinKF);
             Map::add_map_point_to_keyframe(pKF, f, mp);
-            mp->add_observation_map_point(pKF, f->descriptor, pKF->compute_camera_center_world());
+            Map::add_keyframe_reference_to_map_point(mp, pKF);
             nFused++;
             continue;
         }

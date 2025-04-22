@@ -1,6 +1,7 @@
 #ifndef MAP_STRUCTURE_H
 #define MAP_STRUCTURE_H
 #include <unordered_set>
+#include <set>
 #include <unordered_map>
 #include <iostream>
 #include <opencv2/imgproc.hpp>
@@ -29,6 +30,7 @@ public:
     void add_first_keyframe(KeyFrame *new_kf);
     void add_new_keyframe(KeyFrame *kf);
 
+    static void add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf);
     static void add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp); 
     static void remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp);
     

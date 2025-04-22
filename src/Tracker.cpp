@@ -86,10 +86,12 @@ void Tracker::tracking_was_lost()
 
 bool Tracker::Is_KeyFrame_needed(int tracked_by_local_map)
 {
+    // functia este clar incorecta -> this->reference_kf->map_points.size() trebuie sa ia in considerare doar punctele care au vazute din
+    // 3 frame-uri diferite  
     bool needToInsertClose = this->current_kf->check_number_close_points();
     bool c1 = this->current_kf->current_idx - this->reference_kf->current_idx > 30;
     bool c2 = tracked_by_local_map < 0.25 * this->reference_kf->map_points.size() || needToInsertClose; 
-    bool c3 = (this->current_kf->map_points.size() < this->reference_kf->map_points.size() * 0.9 || needToInsertClose) && tracked_by_local_map > 15;
+    bool c3 = (this->current_kf->map_points.size() < this->reference_kf->map_points.size() * 0.6 || needToInsertClose) && tracked_by_local_map > 30;
     return (c1 || c2) && c3;
 }
 
@@ -119,6 +121,7 @@ void Tracker::TrackConsecutiveFrames(std::unordered_map<MapPoint *, Feature *>& 
     int window = 15;
     matcher->match_consecutive_frames(matches, this->current_kf, this->prev_kf, window);
     if (matches.size() < 20) {
+        matches.clear();
         matcher->match_consecutive_frames(matches, this->current_kf, this->prev_kf, 2 * window);
         if (matches.size() < 20) {
             std::cout << " \nURMARIREA INTRE FRAME-URI INAINTE DE OPTIMIZARE NU A FUNCTIONAT\n";
@@ -193,6 +196,6 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
     }
-    std::cout << this->current_kf->mp_correlations.size() << " map point correlate cu un feature\n";
+    // std::cout << this->current_kf->mp_correlations.size() << " map point correlate cu un feature\n";
     return {this->current_kf, needed_keyframe};
 }

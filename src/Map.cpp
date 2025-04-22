@@ -80,6 +80,25 @@ void Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp) {
     mp->increase_number_associations();
 }
 
+void Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
+    if (kf->map_points.find(mp) ==  kf->map_points.end()) {
+        std::cout << "PUNCTUL NICI MACAR NU SE REGASESTE IN KEYFRAME NU E BINE\n";
+        return;
+    }
+    if (kf->mp_correlations.find(mp) == kf->mp_correlations.end()) {
+        std::cout << "NU EXISTA PUNCTUL IN ASOCIERI\n";
+    }
+    mp->keyframes.insert(kf);
+    mp->increase_number_associations();
+    mp->compute_distinctive_descriptor(kf->mp_correlations[mp]->descriptor);
+    mp->compute_view_direction(kf->compute_camera_center_world());
+    std::vector<Eigen::Vector3d> centers;
+    for (KeyFrame *kf : mp->keyframes) {
+        centers.push_back(kf->compute_camera_center_world());
+    }
+    mp->compute_distance(centers);
+}
+
 void Map::remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp) {
     if (kf->mp_correlations.find(mp) == kf->mp_correlations.end()) {
         std::cout << kf->current_idx << " " << kf->mp_correlations.size() << " " << kf->map_points.size() << "\n";
@@ -126,11 +145,8 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
     this->graph.insert({new_kf, edges_new_keyframe});
     new_kf->compute_bow_representation();
     for (auto it = new_kf->mp_correlations.begin(); it != new_kf->mp_correlations.end(); it++) {
-        MapPoint *mp = it->first;
-        Feature *f = it->second;
-        mp->add_observation_map_point(new_kf, f->descriptor, new_kf->compute_camera_center_world());
+        Map::add_keyframe_reference_to_map_point(it->first, new_kf);
     }
-    // de facut update la map points
 }
 
 

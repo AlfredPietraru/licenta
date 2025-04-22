@@ -19,7 +19,11 @@ void LocalMapping::map_points_culling(KeyFrame *kf) {
     std::vector<MapPoint*> to_del;
     // se strica ordinea din unordered set si se pierd elemente daca fac stergerea direct
     for (MapPoint *mp : kf->reference_kf->map_points) {
-        if (mp->map_point_should_be_deleted()) to_del.push_back(mp);
+        double ratio = (double)mp->number_associations / mp->number_times_seen;
+        if (ratio < 0.25f) {
+            to_del.push_back(mp);
+            continue;
+        }
     }
     for (MapPoint *mp : to_del) this->delete_map_point(mp);
 }
@@ -157,7 +161,7 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
             // TODO, de adaugat si observatia in frame-ul al doilea 
             Map::add_map_point_to_keyframe(kf, &kf->features[correspondence.first], pMP);
             Map::add_map_point_to_keyframe(neighbour_kf, &neighbour_kf->features[correspondence.second], pMP);
-            pMP->add_observation_map_point(neighbour_kf, neighbour_kf->features[correspondence.second].descriptor, kf->compute_camera_center_world());
+            Map::add_keyframe_reference_to_map_point(pMP, neighbour_kf);
             nr_points_added++;
             // TODOOOOOO
             // (1) UPDATE_DEPTH
@@ -217,18 +221,21 @@ void LocalMapping::delete_map_point(MapPoint *mp) {
 
 void LocalMapping::update_local_map(KeyFrame *reference_kf)
 {
-    std::unordered_set<MapPoint *> out = reference_kf->map_points;
+    mapp->local_map.clear();
     if (this->mapp->graph.find(reference_kf) == this->mapp->graph.end()) {
         std::cout << "REFERENCE FRAME NU A FOST ADAUGAT IN GRAPH DELOC\n";
         return;
     }
-    for (std::pair<KeyFrame *, int> graph_edge : this->mapp->graph[reference_kf])
-    {
-        KeyFrame *curr_kf = graph_edge.first;
-        if (curr_kf == nullptr)  {
-            std::cout << " nu e bine ca e null\n";
-            continue;
-        }
-        out.insert(curr_kf->map_points.begin(), curr_kf->map_points.end());
+    std::unordered_set<KeyFrame*> first_degree_key_frames =  mapp->get_local_keyframes(reference_kf);
+    std::unordered_set<KeyFrame*> second_degree_key_frames;
+
+    second_degree_key_frames.insert(first_degree_key_frames.begin(), first_degree_key_frames.end());
+    for (KeyFrame *kf : first_degree_key_frames) {
+        std::unordered_set<KeyFrame*> current_kf_neighbours = mapp->get_local_keyframes(kf);
+        second_degree_key_frames.insert(current_kf_neighbours.begin(), current_kf_neighbours.end());
+    }
+
+    for (KeyFrame* kf : second_degree_key_frames) {
+        mapp->local_map.insert(kf->map_points.begin(), kf->map_points.end());     
     }
 }
