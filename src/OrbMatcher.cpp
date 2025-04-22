@@ -28,7 +28,7 @@ void OrbMatcher::checkOrientation(std::unordered_map<MapPoint *, Feature *> &cor
     {
         MapPoint *mp = it->first;
         cv::KeyPoint current_kpu = it->second->get_undistorted_keypoint();
-        if (correlation_prev_frame.find(mp) == nullptr) 
+        if (correlation_prev_frame.find(mp) == correlation_prev_frame.end()) 
         {
             if (mp->keyframes.size() == 0) {
                 std::cout << "NU ARE NICIUN KEYFRAME ASOCIAT\n";
@@ -38,6 +38,7 @@ void OrbMatcher::checkOrientation(std::unordered_map<MapPoint *, Feature *> &cor
                 std::cout << kf->current_idx << " acesta este un index al unui frame gasit\n";
             }
             std::cout << "E CIUDAT CA E NULL IN CHECK ORIENTATION\n";
+            exit(1);
             continue;
         }
         cv::KeyPoint prev_kpu = correlation_prev_frame[mp]->get_undistorted_keypoint();
@@ -210,7 +211,10 @@ void OrbMatcher::match_frame_reference_frame(std::unordered_map<MapPoint*, Featu
     DBoW2::FeatureVector::const_iterator f1end = ref->features_vec.end();
     DBoW2::FeatureVector::const_iterator f2it = curr->features_vec.begin();
     DBoW2::FeatureVector::const_iterator f2end = curr->features_vec.end();
-    
+    // std::cout << curr->map_points.size() << " atatea map points asociate la inceput cu curr\n";
+    // std::cout << ref->map_points.size() << " atatea map points asociate la inceput cu ref\n";
+    std::cout << ref->current_idx << "index reference frame current\n"; 
+    std::cout << ref->map_points.size() << " " << ref->mp_correlations.size() << " " << " info about reference frame\n";
     while (f1it != f1end && f2it != f2end)
     {
         if (f1it->first == f2it->first)
@@ -257,7 +261,7 @@ void OrbMatcher::match_frame_reference_frame(std::unordered_map<MapPoint*, Featu
             f2it = curr->features_vec.lower_bound(f1it->first);
         }
     }
-    std::cout << curr->current_idx << " " << ref->current_idx << " indicii in track local frame\n";
+    // std::cout << curr->current_idx << " " << ref->current_idx << " indicii in track local frame\n";
     this->checkOrientation(matches, ref->mp_correlations);
 }
 
@@ -292,9 +296,8 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
                 for(size_t idx2 : f2it->second)
                 {
                     MapPoint* kf2_mp = ref2->features[idx2].get_map_point();
-                    
-                    if(vbMatched2[idx2] || kf2_mp != nullptr)
-                        continue;
+                    if (kf2_mp != nullptr) continue;
+                    if(vbMatched2[idx2]) continue;
                     
                     const cv::Mat &d2 = ref2->orb_descriptors.row(idx2);
                     
@@ -378,8 +381,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
     Eigen::Vector3d Ow = pKF->compute_camera_center_world();
 
     int nFused=0;
-
-
+    bool was_deletion_sucessfull, was_addition_succesful; 
     std::unordered_set<MapPoint*> copy_map_points(source_kf->map_points.begin(), source_kf->map_points.end());
     for(MapPoint *source_mp : copy_map_points)
     {
@@ -458,31 +460,63 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         if (bestDist > 50) continue;
         MapPoint* pkf_mp = pKF->features[bestIdx].get_map_point();
         if (pkf_mp == nullptr) {
-            Map::add_map_point_to_keyframe(pKF, &pKF->features[bestIdx], source_mp);
-            Map::add_keyframe_reference_to_map_point(source_mp, pKF);
+            was_addition_succesful = Map::add_map_point_to_keyframe(pKF, &pKF->features[bestIdx], source_mp);
+            if (!was_addition_succesful) {
+                std::cout << "NU S-A PUTUT ADAUGA MAP POINT DESI ERA NULL MAP POINT LA FEATURE\n";
+                continue;
+            } 
+            was_addition_succesful = Map::add_keyframe_reference_to_map_point(source_mp, pKF);
+            if (!was_addition_succesful) {
+                std::cout << "NU S-A PUTUT ADAUGA MAP POINT TO KEYFRAME IN ORB MATCHER\n";
+                continue;
+            }
             nFused++;
             continue;
         }
         if(pkf_mp != nullptr && pkf_mp->keyframes.size() > source_mp->keyframes.size()) {
             // retire source_mp,
             // replace it pkf_mp; 
-            // nu are sens linia asta   
-            if (source_kf->mp_correlations.find(pkf_mp) != source_kf->mp_correlations.end()) continue;
+            // nu are sens linia asta
+            if (source_kf->check_map_point_in_keyframe(pkf_mp)) continue; 
             Feature *f = source_kf->mp_correlations[source_mp];
-            Map::remove_map_point_from_keyframe(source_kf, source_mp);
-            Map::add_map_point_to_keyframe(source_kf, f, pkf_mp);
-            Map::add_keyframe_reference_to_map_point(pkf_mp, source_kf);
+            was_deletion_sucessfull = Map::remove_map_point_from_keyframe(source_kf, source_mp);
+            if (!was_deletion_sucessfull) {
+                std::cout << "NU S-A PUTUT STERGEREA NU A FUNCTION IN FUSE\n";
+                continue;
+            }
+            was_addition_succesful = Map::add_map_point_to_keyframe(source_kf, f, pkf_mp);
+            if (!was_addition_succesful) {
+                std::cout << "NU S-A PUTUT SA ADAUGE PUNCTUL IN FUSE\n";
+                continue;
+            }
+            was_addition_succesful = Map::add_keyframe_reference_to_map_point(pkf_mp, source_kf);
+            if (!was_addition_succesful) {
+                std::cout << "NU S-A PUTUT SA ADAUGE PUNCTUL IN FUSE\n";
+                continue;
+            }
             nFused++;
             continue;
         }
         if (pkf_mp != nullptr && pkf_mp->keyframes.size() < source_mp->keyframes.size()) {
             // retire pkf_mp;
             // replace it with source_mp;
-            if (pKF->mp_correlations.find(pkf_mp) == pKF->mp_correlations.end()) continue;
+            if (pKF->check_map_point_in_keyframe(source_mp)) continue;
             Feature *f = pKF->mp_correlations[pkf_mp];
-            Map::remove_map_point_from_keyframe(pKF, pkf_mp);
-            Map::add_map_point_to_keyframe(pKF, f, source_mp);
-            Map::add_keyframe_reference_to_map_point(source_mp, pKF);
+            was_deletion_sucessfull = Map::remove_map_point_from_keyframe(pKF, pkf_mp);
+            if (!was_deletion_sucessfull) {
+                std::cout << "NU S-A PUTUT REALIZA STERGEREA\n";
+                continue;
+            }
+            was_addition_succesful = Map::add_map_point_to_keyframe(pKF, f, source_mp);
+            if (!was_addition_succesful) {
+                std::cout << "NU S-A PUTUT SA ADAUGE PUNCTUL IN FUSE SECOND\n";
+                continue;
+            }
+            was_addition_succesful = Map::add_keyframe_reference_to_map_point(source_mp, pKF);
+            if (!was_addition_succesful) {
+                std::cout << "NU S-A PUTUT SA ADAUGE PUNCTUL IN FUSE SECOND\n";
+                continue;
+            }
             nFused++;
             continue;
         }

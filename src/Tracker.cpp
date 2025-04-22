@@ -115,8 +115,13 @@ void Tracker::TrackReferenceKeyFrame(std::unordered_map<MapPoint *, Feature *>& 
         std::cout << matches.size() << "REFERENCE FRAME NU A URMARIT SUFICIENTE INLIERE MAP POINTS\n";
         exit(1);
     } 
+    bool was_addition_succesfull;
     for (auto it = matches.begin(); it != matches.end(); it++) {
-        Map::add_map_point_to_keyframe(this->current_kf, it->second, it->first);
+        // unde este asocierea inversa ????????
+        was_addition_succesfull = Map::add_map_point_to_keyframe(this->current_kf, it->second, it->first);
+        if (!was_addition_succesfull) {
+            std::cout << "NU S-A PUTUT ADAUGA PUNCTUL PE CARE VOIA IN TRACKING\n";
+        }
     }
 }
 
@@ -141,8 +146,12 @@ void Tracker::TrackConsecutiveFrames(std::unordered_map<MapPoint *, Feature *>& 
         std::cout << " \nURMARIREA INTRE FRAME-URI NU A FUNCTIONAT DUPA OPTIMIZARE\n";
         return;
     } 
+    bool was_addition_succesfull;
     for (auto it = matches.begin(); it != matches.end(); it++) {
-        Map::add_map_point_to_keyframe(this->current_kf, it->second, it->first);
+        was_addition_succesfull = Map::add_map_point_to_keyframe(this->current_kf, it->second, it->first);
+        if (!was_addition_succesfull) {
+            std::cout << "NU S-A PUTUT ADAUGA PUNCTUL CU SUCCESS IN TRACKING\n";
+        }
     }
 }
 
@@ -163,8 +172,12 @@ void Tracker::TrackLocalMap(std::unordered_map<MapPoint *, Feature *>& matches, 
         std::cout << matches.size() << " PREA PUTINE PUNCTE PROIECTATE CARE NU SUNT OUTLIERE DE CATRE LOCAL MAP\n";
         return;
     }
+    bool was_addition_succesfull;
     for (auto it = matches.begin(); it != matches.end(); it++) {
-        Map::add_map_point_to_keyframe(this->current_kf, it->second, it->first);
+        was_addition_succesfull = Map::add_map_point_to_keyframe(this->current_kf, it->second, it->first);
+        if (!was_addition_succesfull) {
+            std::cout << "NU S-A PUTUT ADAUGA PUNCTUL CU SUCCES MAP POINT IN KEYFRAME IN TRACK LOCAL MAP\n";
+        }
     }
 }
 
@@ -189,15 +202,14 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
     this->TrackLocalMap(matches, mapp);
     // std::cout << this->current_kf->Tcw.matrix() << "\n\n";
     compute_difference_between_positions(this->current_kf->Tcw, ground_truth_pose, false);
-    int wait_time = this->current_kf->current_idx < 31 ? 20 : 20;
+    int wait_time = this->current_kf->current_idx < 219 ? 20 : 0;
     this->current_kf->debug_keyframe(frame, wait_time, matches, matches);
     bool needed_keyframe = this->Is_KeyFrame_needed(mapp, matches.size()); 
     if (needed_keyframe) {
-        std::cout << "UN KEYFRAME TREBUIE ADAUGAT\n\n\n";
         this->reference_kf = this->current_kf;
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
     }
-    std::cout << this->current_kf->mp_correlations.size() << " map point correlate cu un feature\n";
+    // std::cout << this->current_kf->mp_correlations.size() << " map point correlate cu un feature\n";
     return {this->current_kf, needed_keyframe};
 }

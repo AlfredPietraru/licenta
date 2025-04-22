@@ -2,22 +2,18 @@
 
 
 void LocalMapping::local_map(KeyFrame *kf) {
-    std::cout << "start local map\n";
     mapp->add_new_keyframe(kf);
     this->recently_added.insert(kf->map_points.begin(), kf->map_points.end());
-    this->map_points_culling(kf);
+    this->map_points_culling();
     int map_points_computed = this->compute_map_points(kf);
-    std::cout << map_points_computed << " MAP POINT-uri noi create in acest frame\n";
     if (map_points_computed == 0) std::cout << "NICIUN MAP POINT NU A FOST CALCULAT\n";
     this->search_in_neighbours(kf);
     this->update_local_map(kf);
-    std::cout << "end local map\n";
 }
 
 
 // DE ADAUGAT LOGICA PENTRU STERGERE O DATA LA 3 KF-uri;
-void LocalMapping::map_points_culling(KeyFrame *kf) {
-    std::cout << kf->current_idx << "\n";
+void LocalMapping::map_points_culling() {
     std::vector<MapPoint*> to_del;
     std::vector<MapPoint*> too_old_to_keep_checking;
     // se strica ordinea din unordered set si se pierd elemente daca fac stergerea direct
@@ -73,6 +69,7 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
     bool isStereo2 = false;
     int nr_points_added = 0;
     // std::cout << keyframes.size() << "atatea keyframe-uri vecine cu kf\n";
+    bool was_addition_succesfull;
     for (KeyFrame* neighbour_kf : keyframes) {
         Eigen::Matrix3d fundamental_mat =  this->compute_fundamental_matrix(kf, neighbour_kf);
         std::vector<std::pair<int, int>> vMatchedIndices = OrbMatcher::search_for_triangulation(kf, neighbour_kf, fundamental_mat);
@@ -178,9 +175,21 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
                      kf->orb_descriptors.row(correspondence.first));
                
             // TODO, de adaugat si observatia in frame-ul al doilea 
-            Map::add_map_point_to_keyframe(kf, &kf->features[correspondence.first], pMP);
-            Map::add_map_point_to_keyframe(neighbour_kf, &neighbour_kf->features[correspondence.second], pMP);
-            Map::add_keyframe_reference_to_map_point(pMP, neighbour_kf);
+            was_addition_succesfull = Map::add_map_point_to_keyframe(kf, &kf->features[correspondence.first], pMP);
+            if (!was_addition_succesfull) {
+                std::cout << "NU S-A PUTUT REALIZA ADAUGAREA UNUI NOU MAP POINT IN LOCAL MAPPING\n";
+                exit(1);
+            }
+            was_addition_succesfull = Map::add_map_point_to_keyframe(neighbour_kf, &neighbour_kf->features[correspondence.second], pMP);
+            if (!was_addition_succesfull) {
+                std::cout << "NU S-A PUTUT REALIZA ADAUGAREA UNUI NOU MAP POINT IN LOCAL MAPPING IN CELALALT FRAME\n";
+                exit(1);
+            }
+            was_addition_succesfull = Map::add_keyframe_reference_to_map_point(pMP, neighbour_kf);
+            if (!was_addition_succesfull) {
+                std::cout << "NU S-A PUTUT ADAUGA REFERINTA PUNCTULUI IN KEYFRAME LOCAL MAPPING\n";
+                continue;
+            }
             nr_points_added++;
             // TODOOOOOO
             // (1) UPDATE_DEPTH
@@ -193,7 +202,7 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
 }
 
 void LocalMapping::search_in_neighbours(KeyFrame *kf) {
-    std::cout << "\nSTART SEARCH IN NEIGHBOURS\n";
+    // std::cout << "\nSTART SEARCH IN NEIGHBOURS\n";
     std::unordered_set<KeyFrame*> first_degree_neighbours = mapp->get_local_keyframes(kf);
     std::unordered_set<KeyFrame*> second_degree_neighbours;
     second_degree_neighbours.insert(first_degree_neighbours.begin(), first_degree_neighbours.end());
@@ -205,23 +214,15 @@ void LocalMapping::search_in_neighbours(KeyFrame *kf) {
 
     // Search matches by projection from current KF in target KFs
     second_degree_neighbours.erase(kf);
-    std::cout << second_degree_neighbours.size() << " atatia vecini de second rang avem\n";
-    int points_fused;
+    // std::cout << second_degree_neighbours.size() << " atatia vecini de second rang avem\n";
     for(KeyFrame *neighbour_kf : second_degree_neighbours)
     {
-        points_fused = OrbMatcher::Fuse(neighbour_kf, kf, 3);
-        if (points_fused == 0) {
-            std::cout << "NO POINT WAS FUSED\n";
-        }
-        points_fused = OrbMatcher::Fuse(kf, neighbour_kf, 3);
-        if (points_fused == 0) {
-            std::cout << "NO POINT WAS FUSED\n";
-        }
+        OrbMatcher::Fuse(neighbour_kf, kf, 3);
+        OrbMatcher::Fuse(kf, neighbour_kf, 3);
     }
-    std::cout << "\nEND SEARCH IN NEIGHBOURS\n";
+    // std::cout << "\nEND SEARCH IN NEIGHBOURS\n";
     
     // Update connections in covisibility graph
-    // mpCurrentKeyFrame->UpdateConnections();
 }
 
 
@@ -243,17 +244,23 @@ Eigen::Matrix3d LocalMapping::compute_fundamental_matrix(KeyFrame *curr_kf, KeyF
 
 
 void LocalMapping::delete_map_point(MapPoint *mp) {
-    for (KeyFrame *kf : mp->keyframes) Map::remove_map_point_from_keyframe(kf, mp);
+    bool was_deletion_succesfull;
+    for (KeyFrame *kf : mp->keyframes) { 
+        was_deletion_succesfull = Map::remove_map_point_from_keyframe(kf, mp);
+        if (!was_deletion_succesfull) {
+            std::cout << "NU S-A PUTUT SA STEARGA MAP POINT DIN FRAME-URI\n";
+            continue;
+        }
+    }
     if (this->recently_added.find(mp) != this->recently_added.end()) this->recently_added.erase(mp);
     delete mp;
-    // delete mp; dintr-un motiv sau altul eroare in momentul in care incerc sa sterg definitiv un map point - bug in cate map point-uri raman si cate sunt sterse garantat
 }
 
 void LocalMapping::update_local_map(KeyFrame *reference_kf)
 {
     mapp->local_map.clear();
     if (this->mapp->graph.find(reference_kf) == this->mapp->graph.end()) {
-        std::cout << "REFERENCE FRAME NU A FOST ADAUGAT IN GRAPH DELOC\n";
+        std::cout << "NU S-A PUTUT REFERENCE FRAME NU A FOST ADAUGAT IN GRAPH DELOC\n";
         return;
     }
     std::unordered_set<KeyFrame*> first_degree_key_frames =  mapp->get_local_keyframes(reference_kf);

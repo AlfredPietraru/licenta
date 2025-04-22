@@ -40,13 +40,17 @@ std::unordered_set<MapPoint*> Map::get_all_map_points() {
 
 
 void Map::add_first_keyframe(KeyFrame *kf) {
+    bool was_addition_succesfull;
     Eigen::Vector3d camera_center = kf->compute_camera_center_world();
     for (long unsigned int i = 0; i < kf->features.size(); i++)
     {
         if (kf->features[i].get_map_point() != nullptr || kf->features[i].depth <= 1e-6) continue;
         Eigen::Vector4d wcoord = kf->fromImageToWorld(i);
         MapPoint *mp = new MapPoint(kf, kf->features[i].kpu, camera_center, wcoord, kf->features[i].descriptor);
-        add_map_point_to_keyframe(kf, &kf->features[i], mp);
+        was_addition_succesfull = add_map_point_to_keyframe(kf, &kf->features[i], mp);
+        if (!was_addition_succesfull) {
+            std::cout << "NU S-A PUTUT SA ADAUGE MAP POINT-ul\n";
+        }
     }
 
     this->keyframes.push_back(kf);
@@ -55,10 +59,14 @@ void Map::add_first_keyframe(KeyFrame *kf) {
     kf->compute_bow_representation();
 }
 
-void Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp) {
-    if (f != &kf->features[f->idx]) {
-        std::cout << "NU AM SETAT FEATURE-ul CORECT PENTRU ADAUGARE\n";
-        return;
+bool Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp) {
+    if (kf == nullptr || mp == nullptr) {
+        std::cout << "NU S-A PUTUT REALIZA OPERATIA CEVA ERA NULL\n";
+        return false;
+    }
+    if (f == nullptr ||  f != &kf->features[f->idx]) {
+        std::cout << "NU S-A PUTUT GASI FEATURE-ul CORECT PENTRU ADAUGARE\n";
+        return false;
     }
     kf->remove_outlier_element(mp);
     MapPoint* old_mp = f->get_map_point();
@@ -68,30 +76,39 @@ void Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp) {
         kf->mp_correlations.insert({mp, f});
         kf->map_points.insert(mp);
         mp->increase_number_associations();
-        return;
+        return true;
     }
-    if (current_hamming_distance >= f->curr_hamming_dist) return;
+    if (current_hamming_distance >= f->curr_hamming_dist) return false;
+
+    bool deletion_result = remove_map_point_from_keyframe(kf, old_mp);
+    if (!deletion_result) {
+        std::cout << "NU S-A PUTUT CAND FACEA ADAUGAREA ALTUI ELEMENT NU L-A PUTUT STERGE PE CEL VECHI\n";
+        return false;
+    }
+
     f->set_map_point(mp, current_hamming_distance);
-    kf->mp_correlations.erase(old_mp);
-    kf->map_points.erase(old_mp);
-    old_mp->decrease_number_associations();
     kf->mp_correlations.insert({mp, f});
     kf->map_points.insert(mp);
     mp->increase_number_associations();
+    return true;
 }
 
-void Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
+bool Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
+    if (mp == nullptr || kf == nullptr) {
+        std::cout << "NU S-A PUTUT REALIZA OPERATIA IN ADD KEYFRAMAE REFERENCE UNUL DINTRE ELEMENTE E NULL\n";
+        return false;
+    }
     if (kf->map_points.find(mp) ==  kf->map_points.end()) {
         std::cout << "PUNCTUL NICI MACAR NU SE REGASESTE IN KEYFRAME NU E BINE\n";
-        return;
+        return false;
     }
     if (kf->mp_correlations.find(mp) == kf->mp_correlations.end()) {
         std::cout << "NU EXISTA PUNCTUL IN ASOCIERI\n";
-        return;
+        return false;
     }
     if (mp->keyframes.find(kf) != mp->keyframes.end()) {
         std::cout << "ACEST MAP POINT A MAI FOST ADAUGAT NU ARE SENS\n";
-        return;
+        return false;
     }
     mp->keyframes.insert(kf);
     mp->increase_number_associations();
@@ -102,33 +119,46 @@ void Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
         centers.push_back(kf->compute_camera_center_world());
     }
     mp->compute_distance(centers);
+    return true;
 }
 
-void Map::remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp) {
+bool Map::remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp) {
+    if (mp == nullptr || kf == nullptr) {
+        std::cout << "NU S-A PUTUT REALIZA STERGEREA IN REMOVE MAP FROM KEYFRAME UNUL DINTRE ELEMENTE E NULL\n";
+        return false;
+    }
     if (kf->mp_correlations.find(mp) == kf->mp_correlations.end()) {
         std::cout << kf->current_idx << " " << kf->mp_correlations.size() << " " << kf->map_points.size() << "\n";
-        std::cout << "NU A EXISTAT PUNCTUL IN CORELATII\n";
-            return;
-        }
-        if (kf->map_points.find(mp) == kf->map_points.end()) {
-            std::cout << kf->current_idx << " " << kf->mp_correlations.size() << " " << kf->map_points.size() << "\n";
-            std::cout << "NU A EXISTAT PUNCTUL IN MAP POINTS, NU SUNT SINCRONIZATE\n";
-            return;
-        }
-    
-        Feature *f = kf->mp_correlations[mp];
-        // mai trebuie de lucrat aici
-        f->unmatch_map_point();
-        kf->mp_correlations.erase(mp);
-        kf->map_points.erase(mp);
-        mp->decrease_number_associations();    
+        std::cout << "NU S-A PUTUT REALIZA OPERATIA NU A  EXISTAT PUNCTUL IN CORELATII\n";
+        return false;
+    }
+    if (kf->map_points.find(mp) == kf->map_points.end()) {
+        std::cout << kf->current_idx << " " << kf->mp_correlations.size() << " " << kf->map_points.size() << "\n";
+        std::cout << "NU S-A PUTUT REALIZA OPERATIA NU A  PUNCTUL IN MAP POINTS, NU SUNT SINCRONIZATE\n";
+        return false;
+    }
+    Feature *f = kf->mp_correlations[mp];
+    if (f->get_map_point() != mp) {
+        std::cout << "NU S-A PUTUT REALIZA OPERATIA NU A  REFERINTA IN FEATURE MAP POINT\n";
+        return false;
+    }
+    // mai trebuie de lucrat aici
+    f->unmatch_map_point();
+    kf->mp_correlations.erase(mp);
+    kf->map_points.erase(mp);
+    mp->decrease_number_associations();
+    return true;    
 }
  
 void Map::add_new_keyframe(KeyFrame *new_kf) {
     new_kf->compute_bow_representation();
     std::unordered_map<KeyFrame*, int> edges_new_keyframe;
+    bool was_addition_succesfull;
     for (auto it = new_kf->mp_correlations.begin(); it != new_kf->mp_correlations.end(); it++) {
-        Map::add_keyframe_reference_to_map_point(it->first, new_kf);
+        was_addition_succesfull = Map::add_keyframe_reference_to_map_point(it->first, new_kf);
+        if (!was_addition_succesfull) {
+            std::cout << "NU S-A PUTUT ADAUGA NOUL MAP POINT IN KEYFRAME IN MAP\n";
+        }
     }
 
     int start_idx = ((int)this->keyframes.size() > this->KEYFRAMES_WINDOW) ? this->keyframes.size() - this->KEYFRAMES_WINDOW : 0;
