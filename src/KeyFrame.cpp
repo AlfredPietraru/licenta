@@ -160,6 +160,14 @@ Eigen::Vector3d KeyFrame::fromImageToWorld_3d(int kp_idx) {
     return this->Tcw.inverse().matrix3x4() * Eigen::Vector4d(new_x, new_y, f.depth, 1);
 }
 
+int KeyFrame::get_map_points_seen_from_multiple_frames(int nr_frames) {
+    int out = 0;
+    for (MapPoint *mp : this->map_points) {
+        if ((int)mp->descriptor_vector.size() >= nr_frames) out++;
+    }
+    return out;
+}
+
 std::vector<cv::KeyPoint> KeyFrame::get_all_keypoints()
 {
     std::vector<cv::KeyPoint> out;

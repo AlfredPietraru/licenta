@@ -59,7 +59,7 @@ public:
     void compute_bow_representation();
     void set_keyframe_position(Sophus::SE3d Tcw_new);
     void debug_keyframe(cv::Mat frame, int miliseconds, std::unordered_map<MapPoint*, Feature*>& matches,std::unordered_map<MapPoint*, Feature*>& new_matches);
-
+    int get_map_points_seen_from_multiple_frames(int nr_frames);
 private:
     Eigen::Matrix4d mat_camera_world;
     Eigen::Matrix4d mat_world_camera;

@@ -84,14 +84,17 @@ void Tracker::tracking_was_lost()
     exit(1);
 }
 
-bool Tracker::Is_KeyFrame_needed(int tracked_by_local_map)
+bool Tracker::Is_KeyFrame_needed(Map *mapp, int tracked_by_local_map)
 {
     // functia este clar incorecta -> this->reference_kf->map_points.size() trebuie sa ia in considerare doar punctele care au vazute din
     // 3 frame-uri diferite  
+    int nr_references = (int)mapp->keyframes.size() <= 2 ? 2 : 3;
+    int points_seen_from_multiple_frames_reference = this->reference_kf->get_map_points_seen_from_multiple_frames(nr_references);
+    // std::cout << points_seen_from_multiple_frames_reference << " atatea puncte care au atatea referinte\n";
     bool needToInsertClose = this->current_kf->check_number_close_points();
-    bool c1 = this->current_kf->current_idx - this->reference_kf->current_idx > 30;
-    bool c2 = tracked_by_local_map < 0.25 * this->reference_kf->map_points.size() || needToInsertClose; 
-    bool c3 = (this->current_kf->map_points.size() < this->reference_kf->map_points.size() * 0.6 || needToInsertClose) && tracked_by_local_map > 30;
+    bool c1 = (this->current_kf->current_idx - this->reference_kf->current_idx) > 30;
+    bool c2 = (tracked_by_local_map < 0.25 * points_seen_from_multiple_frames_reference) || needToInsertClose; 
+    bool c3 = ((this->current_kf->map_points.size() < this->reference_kf->map_points.size() * 0.6) || needToInsertClose) && (tracked_by_local_map > 30);
     return (c1 || c2) && c3;
 }
 
@@ -186,16 +189,15 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
     this->TrackLocalMap(matches, mapp);
     // std::cout << this->current_kf->Tcw.matrix() << "\n\n";
     compute_difference_between_positions(this->current_kf->Tcw, ground_truth_pose, false);
-    // int wait_time = 30 ? this->current_kf->current_idx < 173 : 0;
-    int wait_time = 20;
-    this->current_kf->debug_keyframe(frame, wait_time, matches, matches);
-    bool needed_keyframe = this->Is_KeyFrame_needed(matches.size()); 
+    // int wait_time = 20 ? this->current_kf->current_idx < 27 : 0;
+    // this->current_kf->debug_keyframe(frame, wait_time, matches, matches);
+    bool needed_keyframe = this->Is_KeyFrame_needed(mapp, matches.size()); 
     if (needed_keyframe) {
         std::cout << "UN KEYFRAME TREBUIE ADAUGAT\n\n\n";
         this->reference_kf = this->current_kf;
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
     }
-    // std::cout << this->current_kf->mp_correlations.size() << " map point correlate cu un feature\n";
+    std::cout << this->current_kf->mp_correlations.size() << " map point correlate cu un feature\n";
     return {this->current_kf, needed_keyframe};
 }
