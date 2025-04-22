@@ -6,6 +6,7 @@
 class LocalMapping {
 public:
     Map *mapp;
+    std::unordered_set<MapPoint*> recently_added;
     LocalMapping(Map *mapp) {
         this->mapp = mapp;
     }

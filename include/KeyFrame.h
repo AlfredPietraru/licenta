@@ -54,6 +54,7 @@ public:
     std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave); 
     void add_outlier_element(MapPoint *mp);
     void remove_outlier_element(MapPoint *mp);
+    bool is_map_point_in_keyframe(MapPoint *mp);
     bool check_map_point_outlier(MapPoint *mp);
     bool check_number_close_points();
     void compute_bow_representation();

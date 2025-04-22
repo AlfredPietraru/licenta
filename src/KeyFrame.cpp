@@ -20,6 +20,14 @@ bool KeyFrame::check_map_point_outlier(MapPoint *mp)
     return false;
 }
 
+bool KeyFrame::is_map_point_in_keyframe(MapPoint *mp) {
+    if (this->mp_correlations.find(mp) == this->mp_correlations.end()) return false;
+    if (this->map_points.find(mp) == this->map_points.end()) return false;
+    Feature *f = this->mp_correlations[mp];
+    MapPoint *copy_mp = f->get_map_point();
+    return copy_mp == mp;
+}
+
 
 bool KeyFrame::check_number_close_points()
 {

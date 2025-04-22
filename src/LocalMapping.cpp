@@ -4,6 +4,7 @@
 void LocalMapping::local_map(KeyFrame *kf) {
     std::cout << "start local map\n";
     mapp->add_new_keyframe(kf);
+    this->recently_added.insert(kf->map_points.begin(), kf->map_points.end());
     this->map_points_culling(kf);
     int map_points_computed = this->compute_map_points(kf);
     std::cout << map_points_computed << " MAP POINT-uri noi create in acest frame\n";
@@ -16,9 +17,20 @@ void LocalMapping::local_map(KeyFrame *kf) {
 
 // DE ADAUGAT LOGICA PENTRU STERGERE O DATA LA 3 KF-uri;
 void LocalMapping::map_points_culling(KeyFrame *kf) {
+    std::cout << kf->current_idx << "\n";
     std::vector<MapPoint*> to_del;
+    std::vector<MapPoint*> too_old_to_keep_checking;
     // se strica ordinea din unordered set si se pierd elemente daca fac stergerea direct
-    for (MapPoint *mp : kf->reference_kf->map_points) {
+    for (MapPoint *mp : this->recently_added) {
+        if (mp->keyframes.size() == 0) {
+            std::cout << "NU AR TREBUI CA IN MAP POINT CULLING SA NU EXISTE NICIUN ELEMENT\n";
+            continue;
+        }
+        // trebuie sa fie vazut in 3 keyframes consecutive NU ESTE CORECT
+        if (mp->keyframes.size() >= 3) {
+            too_old_to_keep_checking.push_back(mp);
+            continue;
+        } 
         double ratio = (double)mp->number_associations / mp->number_times_seen;
         if (ratio < 0.25f) {
             to_del.push_back(mp);
@@ -26,6 +38,9 @@ void LocalMapping::map_points_culling(KeyFrame *kf) {
         }
     }
     for (MapPoint *mp : to_del) this->delete_map_point(mp);
+    for (MapPoint *mp : too_old_to_keep_checking) {
+        this->recently_added.erase(mp);
+    }
 }
 
 
@@ -52,10 +67,12 @@ bool is_coordinate_valid_for_keyframe(KeyFrame *kf, Feature *f, Eigen::Vector4d 
 
 int LocalMapping::compute_map_points(KeyFrame *kf)
 { 
+    // std::cout << "\n START COMPUTE MAP POINTS\n";
     std::unordered_set<KeyFrame*> keyframes = mapp->get_local_keyframes(kf);
     bool isStereo1 = false;
     bool isStereo2 = false;
     int nr_points_added = 0;
+    // std::cout << keyframes.size() << "atatea keyframe-uri vecine cu kf\n";
     for (KeyFrame* neighbour_kf : keyframes) {
         Eigen::Matrix3d fundamental_mat =  this->compute_fundamental_matrix(kf, neighbour_kf);
         std::vector<std::pair<int, int>> vMatchedIndices = OrbMatcher::search_for_triangulation(kf, neighbour_kf, fundamental_mat);
@@ -72,6 +89,8 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
         //     cv::drawMatches(kf->frame, kf->get_all_keypoints(), neighbour_kf->frame, neighbour_kf->get_all_keypoints(), dmatches, img_matches);
         //     cv::imshow("Feature Matches", img_matches);
         //     cv::waitKey(0);
+        // std::cout << kf->map_points.size() << "original kf map points gasite initial\n";
+        // std::cout << neighbour_kf->map_points.size() << "neighbvour kf map points gasite initial\n";
         for (std::pair<int, int> correspondence : vMatchedIndices) {
             Feature *f1 = &kf->features[correspondence.first];
             Feature *f2 = &neighbour_kf->features[correspondence.second];
@@ -166,30 +185,40 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
             // TODOOOOOO
             // (1) UPDATE_DEPTH
         }
+        // std::cout << kf->map_points.size() << "original kf map points dupa initial\n";
+        // std::cout << neighbour_kf->map_points.size() << "neighbvour kf map points dupa initial\n\n";
     }
+    // std::cout << "\n END COMPUTE MAP POINTS\n";
     return nr_points_added;
 }
 
 void LocalMapping::search_in_neighbours(KeyFrame *kf) {
-    std::unordered_set<KeyFrame*> vpNeighKFs = mapp->get_local_keyframes(kf);
-    for(KeyFrame* pKFi :  vpNeighKFs)
+    std::cout << "\nSTART SEARCH IN NEIGHBOURS\n";
+    std::unordered_set<KeyFrame*> first_degree_neighbours = mapp->get_local_keyframes(kf);
+    std::unordered_set<KeyFrame*> second_degree_neighbours;
+    second_degree_neighbours.insert(first_degree_neighbours.begin(), first_degree_neighbours.end());
+    for(KeyFrame* pKFi :  first_degree_neighbours)
     {
         std::unordered_set<KeyFrame*> vpSecondNeighKFs = mapp->get_local_keyframes(pKFi);
-        vpNeighKFs.insert(vpSecondNeighKFs.begin(), vpSecondNeighKFs.end());
+        second_degree_neighbours.insert(vpSecondNeighKFs.begin(), vpSecondNeighKFs.end());
     }
 
     // Search matches by projection from current KF in target KFs
-    vpNeighKFs.erase(kf);
-    for(KeyFrame *neighbour_kf : vpNeighKFs)
+    second_degree_neighbours.erase(kf);
+    std::cout << second_degree_neighbours.size() << " atatia vecini de second rang avem\n";
+    int points_fused;
+    for(KeyFrame *neighbour_kf : second_degree_neighbours)
     {
-        OrbMatcher::Fuse(neighbour_kf, kf, 3);
+        points_fused = OrbMatcher::Fuse(neighbour_kf, kf, 3);
+        if (points_fused == 0) {
+            std::cout << "NO POINT WAS FUSED\n";
+        }
+        points_fused = OrbMatcher::Fuse(kf, neighbour_kf, 3);
+        if (points_fused == 0) {
+            std::cout << "NO POINT WAS FUSED\n";
+        }
     }
-    // Search matches by projection from target KFs in current KF
-    std::vector<MapPoint*> vpFuseCandidates;
-    for(KeyFrame *neighbour_kf : vpNeighKFs)
-    {
-        OrbMatcher::Fuse(kf, neighbour_kf, 3);
-    }
+    std::cout << "\nEND SEARCH IN NEIGHBOURS\n";
     
     // Update connections in covisibility graph
     // mpCurrentKeyFrame->UpdateConnections();
@@ -215,7 +244,8 @@ Eigen::Matrix3d LocalMapping::compute_fundamental_matrix(KeyFrame *curr_kf, KeyF
 
 void LocalMapping::delete_map_point(MapPoint *mp) {
     for (KeyFrame *kf : mp->keyframes) Map::remove_map_point_from_keyframe(kf, mp);
-    if (mapp->local_map.find(mp) != mapp->local_map.end()) mapp->local_map.erase(mp);
+    if (this->recently_added.find(mp) != this->recently_added.end()) this->recently_added.erase(mp);
+    delete mp;
     // delete mp; dintr-un motiv sau altul eroare in momentul in care incerc sa sterg definitiv un map point - bug in cate map point-uri raman si cate sunt sterse garantat
 }
 

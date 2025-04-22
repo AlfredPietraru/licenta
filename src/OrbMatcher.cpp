@@ -381,11 +381,11 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
 
 
     std::unordered_set<MapPoint*> copy_map_points(source_kf->map_points.begin(), source_kf->map_points.end());
-    for(MapPoint *mp : copy_map_points)
+    for(MapPoint *source_mp : copy_map_points)
     {
-        if(mp->keyframes.find(pKF) != mp->keyframes.end()) continue;
+        if(source_mp->keyframes.find(pKF) != source_mp->keyframes.end()) continue;
 
-        Eigen::Vector3d p3Dc = Rcw * mp->wcoord_3d + tcw;
+        Eigen::Vector3d p3Dc = Rcw * source_mp->wcoord_3d + tcw;
         if(p3Dc(2)<0.0f) continue;
 
         const float invz = 1/p3Dc(2);
@@ -399,15 +399,15 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         if (v < pKF->minY || v > pKF->maxY - 1) continue;
         const float ur = u-bf*invz;
 
-        Eigen::Vector3d camera_to_map_view_ray = (mp->wcoord_3d - Ow);
+        Eigen::Vector3d camera_to_map_view_ray = (source_mp->wcoord_3d - Ow);
         double distance = camera_to_map_view_ray.norm();
-        if (distance < mp->dmin || distance > mp->dmax) continue;
+        if (distance < source_mp->dmin || distance > source_mp->dmax) continue;
         
         
-        if(mp->view_direction.dot(camera_to_map_view_ray) < 0.5 * distance)
+        if(source_mp->view_direction.dot(camera_to_map_view_ray) < 0.5 * distance)
             continue;
 
-        int nPredictedLevel = mp->predict_image_scale(distance);
+        int nPredictedLevel = source_mp->predict_image_scale(distance);
         const float radius = th * pow(1.2, nPredictedLevel);
 
         const std::vector<int>  vIndices = pKF->get_vector_keypoints_after_reprojection(u, v, radius, -1, 9); 
@@ -446,7 +446,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
                 const float e2 = ex*ex+ey*ey;
                 if(e2 * pow(1.2, 2 * kpLevel) > 5.99) continue;
             }
-            const int dist = ComputeHammingDistance(mp->orb_descriptor, pKF->features[kp_idx].descriptor);
+            const int dist = ComputeHammingDistance(source_mp->orb_descriptor, pKF->features[kp_idx].descriptor);
 
             if(dist<bestDist)
             {
@@ -456,28 +456,33 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         }
         // If there is already a MapPoint replace otherwise add new measurement
         if (bestDist > 50) continue;
-        MapPoint* pMPinKF = pKF->features[bestIdx].get_map_point();
-        if (pMPinKF == nullptr) {
-            Map::add_map_point_to_keyframe(pKF, &pKF->features[bestIdx], mp);
-            Map::add_keyframe_reference_to_map_point(mp, pKF);
+        MapPoint* pkf_mp = pKF->features[bestIdx].get_map_point();
+        if (pkf_mp == nullptr) {
+            Map::add_map_point_to_keyframe(pKF, &pKF->features[bestIdx], source_mp);
+            Map::add_keyframe_reference_to_map_point(source_mp, pKF);
             nFused++;
             continue;
         }
-        if(pMPinKF != nullptr && pMPinKF->keyframes.size() > mp->keyframes.size()) {
-            if (source_kf->mp_correlations.find(mp) == source_kf->mp_correlations.end()) continue;
-            Feature *f = source_kf->mp_correlations[mp];
-            Map::remove_map_point_from_keyframe(source_kf, mp);
-            Map::add_map_point_to_keyframe(source_kf, f, pMPinKF);
-            Map::add_keyframe_reference_to_map_point(pMPinKF, source_kf);
+        if(pkf_mp != nullptr && pkf_mp->keyframes.size() > source_mp->keyframes.size()) {
+            // retire source_mp,
+            // replace it pkf_mp; 
+            // nu are sens linia asta   
+            if (source_kf->mp_correlations.find(pkf_mp) != source_kf->mp_correlations.end()) continue;
+            Feature *f = source_kf->mp_correlations[source_mp];
+            Map::remove_map_point_from_keyframe(source_kf, source_mp);
+            Map::add_map_point_to_keyframe(source_kf, f, pkf_mp);
+            Map::add_keyframe_reference_to_map_point(pkf_mp, source_kf);
             nFused++;
             continue;
         }
-        if (pMPinKF != nullptr && pMPinKF->keyframes.size() < mp->keyframes.size()) {
-            if (pKF->mp_correlations.find(mp) == pKF->mp_correlations.end()) continue;
-            Feature *f = pKF->mp_correlations[pMPinKF];
-            Map::remove_map_point_from_keyframe(pKF, pMPinKF);
-            Map::add_map_point_to_keyframe(pKF, f, mp);
-            Map::add_keyframe_reference_to_map_point(mp, pKF);
+        if (pkf_mp != nullptr && pkf_mp->keyframes.size() < source_mp->keyframes.size()) {
+            // retire pkf_mp;
+            // replace it with source_mp;
+            if (pKF->mp_correlations.find(pkf_mp) == pKF->mp_correlations.end()) continue;
+            Feature *f = pKF->mp_correlations[pkf_mp];
+            Map::remove_map_point_from_keyframe(pKF, pkf_mp);
+            Map::add_map_point_to_keyframe(pKF, f, source_mp);
+            Map::add_keyframe_reference_to_map_point(source_mp, pKF);
             nFused++;
             continue;
         }

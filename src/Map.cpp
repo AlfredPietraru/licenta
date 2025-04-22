@@ -87,6 +87,11 @@ void Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
     }
     if (kf->mp_correlations.find(mp) == kf->mp_correlations.end()) {
         std::cout << "NU EXISTA PUNCTUL IN ASOCIERI\n";
+        return;
+    }
+    if (mp->keyframes.find(kf) != mp->keyframes.end()) {
+        std::cout << "ACEST MAP POINT A MAI FOST ADAUGAT NU ARE SENS\n";
+        return;
     }
     mp->keyframes.insert(kf);
     mp->increase_number_associations();
@@ -120,13 +125,21 @@ void Map::remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp) {
 }
  
 void Map::add_new_keyframe(KeyFrame *new_kf) {
+    new_kf->compute_bow_representation();
     std::unordered_map<KeyFrame*, int> edges_new_keyframe;
-    
+    for (auto it = new_kf->mp_correlations.begin(); it != new_kf->mp_correlations.end(); it++) {
+        Map::add_keyframe_reference_to_map_point(it->first, new_kf);
+    }
+
     int start_idx = ((int)this->keyframes.size() > this->KEYFRAMES_WINDOW) ? this->keyframes.size() - this->KEYFRAMES_WINDOW : 0;
-    for (long unsigned int i = start_idx; i < this->keyframes.size(); i++) {
+    for (int i = start_idx; i < (int)this->keyframes.size(); i++) {
         KeyFrame *current_kf = this->keyframes[i];
         if (current_kf == nullptr) {
             std::cout << "A FOST NULL current_kf cand adaugam keyframe\n";
+            continue;
+        }
+        if (graph.find(current_kf) == graph.end()) {
+            std::cout << " NU A FOST GASIT KEYFRAME-ul in graph\n";
             continue;
         } 
         int common_values = get_number_common_mappoints_between_keyframes(new_kf, current_kf); 
@@ -134,19 +147,11 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
             std::cout << "AU FOST GASITE MAI PUTIN DE 15 PUNCTE COMUNE INTRE FRAME-uri\n";
             continue;
         }
-        if (graph.find(current_kf) == graph.end()) {
-            std::cout << " NU A FOST GASIT KEYFRAME-ul in graph\n";
-            continue;
-        }
         graph[current_kf].insert({new_kf, common_values});
         edges_new_keyframe.insert({current_kf, common_values});
     }   
     this->keyframes.push_back(new_kf);
     this->graph.insert({new_kf, edges_new_keyframe});
-    new_kf->compute_bow_representation();
-    for (auto it = new_kf->mp_correlations.begin(); it != new_kf->mp_correlations.end(); it++) {
-        Map::add_keyframe_reference_to_map_point(it->first, new_kf);
-    }
 }
 
 
