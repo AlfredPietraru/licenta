@@ -108,6 +108,7 @@ bool Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
         std::cout << "NU S-A PUTUT REALIZA OPERATIA IN ADD KEYFRAMAE REFERENCE UNUL DINTRE ELEMENTE E NULL\n";
         return false;
     }
+    
     bool not_in_map_points = kf->map_points.find(mp) ==  kf->map_points.end();
     bool not_in_correlations = kf->mp_correlations.find(mp) == kf->mp_correlations.end();
     bool not_in_features =  not_in_correlations ? not_in_correlations : kf->mp_correlations[mp]->get_map_point() != mp; 
@@ -121,11 +122,11 @@ bool Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
         std::cout << "NU S-A PUTUT REALIZA ADAUGAREA KEYFRAME LA REFERINTA MISMATCH IN KEYFRAME\n";
         return false;
     }
-    
     if (already_found_in_keyframe) {
-        std::cout << "PUNCTUL ACESTA A FOST DEJA ADAUGAT IN KEYFRAME\n";
+        std::cout << "ESTE DEJA ADAUGAT CA REFERINTA\n";
         return false;
     }
+    
     mp->keyframes.insert(kf);
     mp->increase_number_associations();
     mp->compute_distinctive_descriptor(kf->mp_correlations[mp]->descriptor);
@@ -136,6 +137,10 @@ bool Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
     }
     mp->compute_distance(centers);
     return true;
+}
+
+bool Map::remove_keyframe_reference_from_map_point(MapPoint *mp, KeyFrame *kf) {
+    return mp->keyframes.find(kf) != mp->keyframes.end();
 }
 
 bool Map::remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp) {
@@ -295,5 +300,39 @@ void Map::track_local_map(std::unordered_map<MapPoint *, Feature*> &matches, Key
         if(lowest_level == second_lowest_level && lowest_dist > 0.8 * second_lowest_dist) continue;
         matches.insert({mp, &kf->features[lowest_idx]});
     }
+}
+
+
+bool Map::replace_map_points_in_keyframe(KeyFrame *kf, MapPoint *old_mp, MapPoint *new_mp) {
+    bool old_map_point_found = kf->check_map_point_in_keyframe(old_mp);
+    bool new_map_point_found = kf->check_map_point_in_keyframe(new_mp);
+    if (!old_map_point_found) {
+        std::cout << "NU S-A PUTUT EXECUTA OPERATIA PUNCTUL VECHI NU EXISTA IN KEYFRAME\n";
+        return false;
+    }
+    Feature *previous_feature_associated = kf->mp_correlations[old_mp];
+    bool deletion_old_point_succesfull = Map::remove_map_point_from_keyframe(kf, old_mp);
+    if (!deletion_old_point_succesfull) {
+        std::cout << "NU A MERS DE STERS ELEMENTUL DESI EXISTA\n";
+        return false;
+    }
+    if (!new_map_point_found) {
+        bool adding_new_map_point_succesfull = Map::add_map_point_to_keyframe(kf, previous_feature_associated, new_mp);
+        if(!adding_new_map_point_succesfull) {
+            std::cout << "NU A MERS SA ADAUGE NOUL ELEMENT LA REPLACE\n";
+            return false;
+        }
+        return true;
+    }
+    bool deletion_new_point_succesfull = Map::remove_map_point_from_keyframe(kf, new_mp);
+    if (!deletion_new_point_succesfull) {
+        std::cout << "NU A MERS SA STEARGA UN PUNCT CARE ERA VALID\n";
+        return false;
+    }
+    bool adding_new_map_point_succesfull = Map::add_map_point_to_keyframe(kf, previous_feature_associated, new_mp);
+    if (!adding_new_map_point_succesfull) {
+        std::cout << "NU A MERS SA ADAUGE NOUL ELEMENT LA REPLACE IN CONDITIA 2\n";
+    }
+    return true;
 }
 

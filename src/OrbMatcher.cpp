@@ -381,11 +381,11 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
     Eigen::Vector3d Ow = pKF->compute_camera_center_world();
 
     int nFused=0;
-    bool was_deletion_sucessfull, was_addition_succesful; 
+    bool was_addition_succesful; 
     std::unordered_set<MapPoint*> copy_map_points(source_kf->map_points.begin(), source_kf->map_points.end());
     for(MapPoint *source_mp : copy_map_points)
     {
-        if(source_mp->keyframes.find(pKF) != source_mp->keyframes.end()) continue;
+        // if(source_mp->keyframes.find(pKF) != source_mp->keyframes.end()) continue;
 
         Eigen::Vector3d p3Dc = Rcw * source_mp->wcoord_3d + tcw;
         if(p3Dc(2)<0.0f) continue;
@@ -460,6 +460,14 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         if (bestDist > 50) continue;
         MapPoint* pkf_mp = pKF->features[bestIdx].get_map_point();
         if (pkf_mp == nullptr) {
+            // punctul exista deja iar feature-ul pe care il are e cel mai bun // nu fac nimic
+            if (pKF->check_map_point_in_keyframe(source_mp)) {
+                if (pKF->mp_correlations[source_mp] == &pKF->features[bestIdx]) continue;
+                Map::remove_map_point_from_keyframe(pKF, source_mp);
+                Map::add_map_point_to_keyframe(pKF, &pKF->features[bestIdx], source_mp);
+                nFused++;
+                continue;
+            }
             was_addition_succesful = Map::add_map_point_to_keyframe(pKF, &pKF->features[bestIdx], source_mp);
             if (!was_addition_succesful) {
                 std::cout << "NU S-A PUTUT ADAUGA MAP POINT DESI ERA NULL MAP POINT LA FEATURE\n";
@@ -476,48 +484,17 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         if(pkf_mp != nullptr && pkf_mp->keyframes.size() > source_mp->keyframes.size()) {
             // retire source_mp,
             // replace it pkf_mp; 
+            // trebuie ceva pentru sters referinta KEYFRAME-ului din map point;
             // nu are sens linia asta
-            if (source_kf->check_map_point_in_keyframe(pkf_mp)) continue; 
-            Feature *f = source_kf->mp_correlations[source_mp];
-            was_deletion_sucessfull = Map::remove_map_point_from_keyframe(source_kf, source_mp);
-            if (!was_deletion_sucessfull) {
-                std::cout << "NU S-A PUTUT STERGEREA NU A FUNCTION IN FUSE\n";
-                continue;
-            }
-            was_addition_succesful = Map::add_map_point_to_keyframe(source_kf, f, pkf_mp);
-            if (!was_addition_succesful) {
-                std::cout << "NU S-A PUTUT SA ADAUGE PUNCTUL IN FUSE\n";
-                continue;
-            }
-            was_addition_succesful = Map::add_keyframe_reference_to_map_point(pkf_mp, source_kf);
-            if (!was_addition_succesful) {
-                std::cout << "NU S-A PUTUT SA ADAUGE PUNCTUL IN FUSE\n";
-                continue;
-            }
-            nFused++;
+            bool replacement_result = Map::replace_map_points_in_keyframe(source_kf, source_mp, pkf_mp);
+            nFused = replacement_result ? nFused + 1 : nFused;
             continue;
         }
         if (pkf_mp != nullptr && pkf_mp->keyframes.size() < source_mp->keyframes.size()) {
             // retire pkf_mp;
             // replace it with source_mp;
-            if (pKF->check_map_point_in_keyframe(source_mp)) continue;
-            Feature *f = pKF->mp_correlations[pkf_mp];
-            was_deletion_sucessfull = Map::remove_map_point_from_keyframe(pKF, pkf_mp);
-            if (!was_deletion_sucessfull) {
-                std::cout << "NU S-A PUTUT REALIZA STERGEREA\n";
-                continue;
-            }
-            was_addition_succesful = Map::add_map_point_to_keyframe(pKF, f, source_mp);
-            if (!was_addition_succesful) {
-                std::cout << "NU S-A PUTUT SA ADAUGE PUNCTUL IN FUSE SECOND\n";
-                continue;
-            }
-            was_addition_succesful = Map::add_keyframe_reference_to_map_point(source_mp, pKF);
-            if (!was_addition_succesful) {
-                std::cout << "NU S-A PUTUT SA ADAUGE PUNCTUL IN FUSE SECOND\n";
-                continue;
-            }
-            nFused++;
+            bool replacement_result = Map::replace_map_points_in_keyframe(pKF, pkf_mp, source_mp);
+            nFused = replacement_result ? nFused + 1 : nFused;
             continue;
         }
     }

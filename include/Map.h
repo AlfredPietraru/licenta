@@ -31,9 +31,11 @@ public:
     void add_new_keyframe(KeyFrame *kf);
 
     
+    static bool remove_keyframe_reference_from_map_point(MapPoint *mp, KeyFrame *kf);  
     static bool add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf);
     static bool add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp); 
     static bool remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp);
+    static bool replace_map_points_in_keyframe(KeyFrame *kf, MapPoint *old_mp, MapPoint *new_mp);
     
     int get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2);
     void debug_map(KeyFrame *kf);
