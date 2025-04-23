@@ -156,10 +156,10 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
                 
             //Check scale consistency
             Eigen::Vector3d coordinates_3d(coordinates(0), coordinates(1), coordinates(2)); 
-            Eigen::Vector3d normal1 = coordinates_3d - kf->compute_camera_center_world();
+            Eigen::Vector3d normal1 = coordinates_3d - kf->camera_center_world;
             float dist1 = normal1.norm();
 
-            Eigen::Vector3d normal2 = coordinates_3d - neighbour_kf->compute_camera_center_world();
+            Eigen::Vector3d normal2 = coordinates_3d - neighbour_kf->camera_center_world;
             float dist2 = normal2.norm();
 
             if(dist1==0 || dist2==0)
@@ -171,7 +171,7 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
             if(ratioDist* 1.8 < ratioOctave || ratioDist>ratioOctave * 1.8)
                 continue;
 
-            MapPoint* pMP = new MapPoint(kf, f1->get_undistorted_keypoint(), kf->compute_camera_center_world(), coordinates,
+            MapPoint* pMP = new MapPoint(kf, f1->get_undistorted_keypoint(), kf->camera_center_world, coordinates,
                      kf->orb_descriptors.row(correspondence.first));
                
             // TODO, de adaugat si observatia in frame-ul al doilea 

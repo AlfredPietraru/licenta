@@ -69,6 +69,7 @@ Tracker::Tracker(Mat frame, Mat depth, Map *mapp, Sophus::SE3d pose, Config cfg,
     this->fmf->compute_keypoints_descriptors(frame, keypoints, undistorted_kps, descriptors);
     // this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
     pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
+    // pose = Sophus::SE3d(Eigen::Quaterniond(-0.3986, 0.6132, 0.5962, -0.3311), Eigen::Vector3d(-0.6305, -1.3563, 1.6380));
     this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc, nullptr);
     this->reference_kf = this->current_kf;
     mapp->add_first_keyframe(this->reference_kf); 
@@ -95,7 +96,7 @@ bool Tracker::Is_KeyFrame_needed(Map *mapp, int tracked_by_local_map)
     bool c1 = (this->current_kf->current_idx - this->reference_kf->current_idx) >= 30;
     bool c2 = weak_good_map_points_tracking || needToInsertClose; 
     bool c3 = ((this->current_kf->map_points.size() < points_seen_from_multiple_frames_reference * 0.6) || needToInsertClose) && (tracked_by_local_map > 15);
-    std::cout << weak_good_map_points_tracking << " " << needToInsertClose << "\n"; 
+    // std::cout << weak_good_map_points_tracking << " " << needToInsertClose << "\n"; 
     return (c1 || c2) && c3;
 }
 

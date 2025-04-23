@@ -134,11 +134,6 @@ void KeyFrame::compute_bow_representation()
     this->voc->transform(vector_descriptors, this->bow_vec, this->features_vec, 4);
 }
 
-Eigen::Vector3d KeyFrame::compute_camera_center_world()
-{
-    return -this->Tcw.rotationMatrix().transpose() * this->Tcw.translation();
-}
-
 Eigen::Vector3d KeyFrame::fromWorldToImage(Eigen::Vector4d &wcoord)
 {
     Eigen::Vector4d camera_coordinates = this->mat_camera_world * wcoord;
@@ -155,6 +150,7 @@ void KeyFrame::set_keyframe_position(Sophus::SE3d Tcw_new) {
     this->Tcw = Tcw_new;
     this->mat_camera_world = Tcw_new.matrix(); 
     this->mat_world_camera = Tcw_new.inverse().matrix();
+    this->camera_center_world = -this->Tcw.rotationMatrix().transpose() * this->Tcw.translation();
 }
 
 Eigen::Vector4d KeyFrame::fromImageToWorld(int kp_idx)

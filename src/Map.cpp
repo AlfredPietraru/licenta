@@ -41,7 +41,7 @@ std::unordered_set<MapPoint*> Map::get_all_map_points() {
 
 void Map::add_first_keyframe(KeyFrame *kf) {
     bool was_addition_succesfull;
-    Eigen::Vector3d camera_center = kf->compute_camera_center_world();
+    Eigen::Vector3d camera_center = kf->camera_center_world;
     for (long unsigned int i = 0; i < kf->features.size(); i++)
     {
         if (kf->features[i].get_map_point() != nullptr || kf->features[i].depth <= 1e-6) continue;
@@ -127,7 +127,7 @@ bool Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
         return false;
     }
     
-    mp->add_observation(kf, kf->compute_camera_center_world(), kf->mp_correlations[mp]->descriptor);
+    mp->add_observation(kf, kf->camera_center_world, kf->mp_correlations[mp]->descriptor);
     return true;
 }
 
@@ -238,7 +238,7 @@ void Map::track_local_map(std::unordered_map<MapPoint *, Feature*> &matches, Key
     }
 
     int window = kf->current_idx > 2 ? 3 : 5;  
-    Eigen::Vector3d kf_camera_center = kf->compute_camera_center_world();
+    Eigen::Vector3d kf_camera_center = kf->camera_center_world;
     Eigen::Vector3d camera_to_map_view_ray;
     Eigen::Vector3d point_camera_coordinates;
     

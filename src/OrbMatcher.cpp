@@ -76,7 +76,7 @@ void OrbMatcher::checkOrientation(std::unordered_map<MapPoint *, Feature *> &cor
 
 void OrbMatcher::match_consecutive_frames(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *kf, KeyFrame *prev_kf, int window)
 {
-    Eigen::Vector3d kf_camera_center = kf->compute_camera_center_world();
+    Eigen::Vector3d kf_camera_center = kf->camera_center_world;
     Eigen::Vector3d camera_to_map_view_ray;
     Eigen::Vector3d point_camera_coordinates;
     Eigen::Vector3d kf_camer_center_prev_coordinates = prev_kf->Tcw.rotationMatrix() * kf_camera_center + prev_kf->Tcw.translation(); 
@@ -138,7 +138,7 @@ void OrbMatcher::match_consecutive_frames(std::unordered_map<MapPoint*, Feature*
 
 void OrbMatcher::match_frame_map_points(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *kf, std::unordered_set<MapPoint *>& map_points, int window_size)
 {
-    Eigen::Vector3d kf_camera_center = kf->compute_camera_center_world();
+    Eigen::Vector3d kf_camera_center = kf->camera_center_world;
     Eigen::Vector3d camera_to_map_view_ray;
     Eigen::Vector3d point_camera_coordinates;
     
@@ -270,7 +270,7 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
     DBoW2::FeatureVector::const_iterator f2it = ref2->features_vec.begin();
     DBoW2::FeatureVector::const_iterator f1end = ref1->features_vec.end();
     DBoW2::FeatureVector::const_iterator f2end = ref2->features_vec.end();
-    Eigen::Vector3d C2 = ref2->Tcw.rotationMatrix() * ref1->compute_camera_center_world() + ref2->Tcw.translation();
+    Eigen::Vector3d C2 = ref2->Tcw.rotationMatrix() * ref1->camera_center_world  + ref2->Tcw.translation();
     const float invz = 1.0f/C2(2);
     const float ex = ref2->K(0, 0) * C2(0) * invz + ref2->K(0, 2);
     const float ey = ref2->K(1, 1) * C2(1) * invz + ref2->K(1, 2);
@@ -378,7 +378,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
     const float &cy = pKF->K(1, 2);
     const float &bf = 3.2;
 
-    Eigen::Vector3d Ow = pKF->compute_camera_center_world();
+    Eigen::Vector3d Ow = pKF->camera_center_world;
 
     int nFused=0;
     bool was_addition_succesful; 

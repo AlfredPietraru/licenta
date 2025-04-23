@@ -46,7 +46,6 @@ public:
     KeyFrame();
     KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint>& keypoints, std::vector<cv::KeyPoint>& undistored_kps,
              cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, cv::Mat& frame, ORBVocabulary *voc, KeyFrame *reference_kf);
-    Eigen::Vector3d compute_camera_center_world();
     Eigen::Vector3d fromWorldToImage(Eigen::Vector4d& wcoord);
     Eigen::Vector4d fromImageToWorld(int kp_idx);
     Eigen::Vector3d fromImageToWorld_3d(int kp_idx);
@@ -61,9 +60,10 @@ public:
     void set_keyframe_position(Sophus::SE3d Tcw_new);
     void debug_keyframe(cv::Mat frame, int miliseconds, std::unordered_map<MapPoint*, Feature*>& matches,std::unordered_map<MapPoint*, Feature*>& new_matches);
     int get_map_points_seen_from_multiple_frames(int nr_frames);
-private:
+    
     Eigen::Matrix4d mat_camera_world;
     Eigen::Matrix4d mat_world_camera;
+    Eigen::Vector3d camera_center_world;
 };
 
 #endif

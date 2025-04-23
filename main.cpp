@@ -69,6 +69,9 @@ int main(void)
     LocalMapping *local_mapper = new LocalMapping(mapp);
     Tracker *tracker = new Tracker(frame, depth, mapp,  groundtruth_pose, cfg, voc, orb_matcher_cfg);
     auto t1 = high_resolution_clock::now();
+    // qx qy qz qw
+    // 0.6132 0.5962 -0.3311 -0.3986
+    // reader->store_entry(Sophus::SE3d(Eigen::Quaterniond(-0.3986, 0.6132, 0.5962, -0.3311), Eigen::Vector3d(-0.6305, -1.3563, 1.6380)));
     reader->store_entry(Sophus::SE3d(Eigen::Matrix4d::Identity()));
     // reader->store_entry(groundtruth_pose);
     while(!reader->should_end()) {
