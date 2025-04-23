@@ -12,11 +12,10 @@ class KeyFrame;
 
 class MapPointEntry {
 public:
-        int idx;
         int feature_idx;
         Eigen::Vector3d camera_center;
         cv::Mat descriptor;
-        MapPointEntry(int idx, int feature_idx, Eigen::Vector3d camera_center, cv::Mat descriptor) : idx(idx),
+        MapPointEntry(int feature_idx, Eigen::Vector3d camera_center, cv::Mat descriptor) :
         feature_idx(feature_idx), camera_center(camera_center), descriptor(descriptor) {}
 };
 

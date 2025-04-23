@@ -199,8 +199,8 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
     this->TrackLocalMap(matches, mapp);
     // std::cout << this->current_kf->Tcw.matrix() << "\n\n";
     compute_difference_between_positions(this->current_kf->Tcw, ground_truth_pose, false);
-    int wait_time = this->current_kf->current_idx < 30 ? 30 : 30;
-    this->current_kf->debug_keyframe(frame, wait_time, matches, matches);
+    // int wait_time = this->current_kf->current_idx < 30 ? 30 : 30;
+    // this->current_kf->debug_keyframe(frame, wait_time, matches, matches);
     bool needed_keyframe = this->Is_KeyFrame_needed(mapp, matches.size()); 
     if (needed_keyframe) {
         this->reference_kf = this->current_kf;

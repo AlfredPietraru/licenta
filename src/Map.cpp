@@ -317,27 +317,28 @@ bool Map::replace_map_points_in_keyframe(KeyFrame *kf, MapPoint *old_mp, MapPoin
         std::cout << "NU A MERS DE STERS ELEMENTUL DESI EXISTA\n";
         return false;
     }
-    // remove_keyframe_reference_from_map_point(old_mp, kf);
+    remove_keyframe_reference_from_map_point(old_mp, kf);
     if (!new_map_point_found) {
         bool adding_new_map_point_succesfull = Map::add_map_point_to_keyframe(kf, previous_feature_associated, new_mp);
         if(!adding_new_map_point_succesfull) {
             std::cout << "NU A MERS SA ADAUGE NOUL ELEMENT LA REPLACE\n";
             return false;
         }
-        // add_keyframe_reference_to_map_point(new_mp, kf);
+        add_keyframe_reference_to_map_point(new_mp, kf);
         return true;
     }
+    
     bool deletion_new_point_succesfull = Map::remove_map_point_from_keyframe(kf, new_mp);
     if (!deletion_new_point_succesfull) {
         std::cout << "NU A MERS SA STEARGA UN PUNCT CARE ERA VALID\n";
         return false;
     }
-    // remove_keyframe_reference_from_map_point(new_mp, kf);
+    remove_keyframe_reference_from_map_point(new_mp, kf);
     bool adding_new_map_point_succesfull = Map::add_map_point_to_keyframe(kf, previous_feature_associated, new_mp);
     if (!adding_new_map_point_succesfull) {
         std::cout << "NU A MERS SA ADAUGE NOUL ELEMENT LA REPLACE IN CONDITIA 2\n";
     }
-    // add_keyframe_reference_to_map_point(new_mp, kf);
+    add_keyframe_reference_to_map_point(new_mp, kf);
     return true;
 }
 

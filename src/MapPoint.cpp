@@ -36,8 +36,8 @@ bool MapPoint::find_keyframe(KeyFrame *kf) {
 }
 
 void MapPoint::add_observation(KeyFrame *kf, Eigen::Vector3d camera_center, cv::Mat orb_descriptor) {
+    this->data.insert({kf, new MapPointEntry(-1, camera_center, orb_descriptor)});
     this->keyframes.push_back(kf);
-    this->data.insert({kf, new MapPointEntry((int)this->keyframes.size(), -1, camera_center, orb_descriptor)});
     this->increase_number_associations();
     this->compute_distinctive_descriptor();
     this->compute_view_direction();
@@ -46,9 +46,12 @@ void MapPoint::add_observation(KeyFrame *kf, Eigen::Vector3d camera_center, cv::
 
 void MapPoint::remove_observation(KeyFrame *kf) {
     if (this->data.find(kf) == this->data.end()) return;
-    MapPointEntry *mp_entry = this->data[kf];
     this->data.erase(kf);
-    this->keyframes.erase(this->keyframes.begin() + mp_entry->idx);
+    for (int i = 0; i < (int)this->keyframes.size(); i++) {
+        if (this->keyframes[i] == kf) {
+            this->keyframes.erase(this->keyframes.begin() + i);
+        }
+    }
     this->decrease_number_associations();
     this->compute_distinctive_descriptor();
     this->compute_view_direction();

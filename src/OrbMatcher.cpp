@@ -385,7 +385,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
     std::unordered_set<MapPoint*> copy_map_points(source_kf->map_points.begin(), source_kf->map_points.end());
     for(MapPoint *source_mp : copy_map_points)
     {
-        // if(source_mp->keyframes.find(pKF) != source_mp->keyframes.end()) continue;
+        if(source_mp->find_keyframe(pKF)) continue;
 
         Eigen::Vector3d p3Dc = Rcw * source_mp->wcoord_3d + tcw;
         if(p3Dc(2)<0.0f) continue;
@@ -468,7 +468,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
                     std::cout << "NU A MERS SA STEARGA IN PRIMA CONDITIE DIN MATCHER\n";
                     continue;
                 }
-                // Map::remove_keyframe_reference_from_map_point(source_mp, pKF);
+                Map::remove_keyframe_reference_from_map_point(source_mp, pKF);
                 Map::add_map_point_to_keyframe(pKF, &pKF->features[bestIdx], source_mp);
                 Map::add_keyframe_reference_to_map_point(source_mp, pKF);
                 nFused++;
