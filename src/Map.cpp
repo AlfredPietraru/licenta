@@ -132,7 +132,16 @@ bool Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
 }
 
 bool Map::remove_keyframe_reference_from_map_point(MapPoint *mp, KeyFrame *kf) {
-    return mp->find_keyframe(kf);
+    if (mp == nullptr || kf == nullptr) {
+        std::cout << "NU S-A PUTUT REALIZA OPERATIA DE REMOVE KEYFRAME REFERENCE UNUL DINTRE ELEMENTE E NULL\n";
+        return false;
+    }
+    if (!mp->find_keyframe(kf)) {
+        std::cout << "NU S-A PUTUT REALIZA OPERATIA DE REMOVE MAP POINT-ul NU EXISTA CA REFERINTA IN KEYFRAME\n";
+        return false;
+    }
+    mp->remove_observation(kf);
+    return true;
 }
 
 bool Map::remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp) {
@@ -308,12 +317,14 @@ bool Map::replace_map_points_in_keyframe(KeyFrame *kf, MapPoint *old_mp, MapPoin
         std::cout << "NU A MERS DE STERS ELEMENTUL DESI EXISTA\n";
         return false;
     }
+    // remove_keyframe_reference_from_map_point(old_mp, kf);
     if (!new_map_point_found) {
         bool adding_new_map_point_succesfull = Map::add_map_point_to_keyframe(kf, previous_feature_associated, new_mp);
         if(!adding_new_map_point_succesfull) {
             std::cout << "NU A MERS SA ADAUGE NOUL ELEMENT LA REPLACE\n";
             return false;
         }
+        // add_keyframe_reference_to_map_point(new_mp, kf);
         return true;
     }
     bool deletion_new_point_succesfull = Map::remove_map_point_from_keyframe(kf, new_mp);
@@ -321,10 +332,12 @@ bool Map::replace_map_points_in_keyframe(KeyFrame *kf, MapPoint *old_mp, MapPoin
         std::cout << "NU A MERS SA STEARGA UN PUNCT CARE ERA VALID\n";
         return false;
     }
+    // remove_keyframe_reference_from_map_point(new_mp, kf);
     bool adding_new_map_point_succesfull = Map::add_map_point_to_keyframe(kf, previous_feature_associated, new_mp);
     if (!adding_new_map_point_succesfull) {
         std::cout << "NU A MERS SA ADAUGE NOUL ELEMENT LA REPLACE IN CONDITIA 2\n";
     }
+    // add_keyframe_reference_to_map_point(new_mp, kf);
     return true;
 }
 

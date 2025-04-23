@@ -51,7 +51,6 @@ void MapPoint::remove_observation(KeyFrame *kf) {
     this->keyframes.erase(this->keyframes.begin() + mp_entry->idx);
     this->decrease_number_associations();
     this->compute_distinctive_descriptor();
-    // AICI E GRESEALA\n
     this->compute_view_direction();
     this->compute_distance();
 }
@@ -94,6 +93,7 @@ void MapPoint::compute_view_direction() {
 }
 
 void MapPoint::compute_distance() {
+    if (this->data.size() == 0) return;
     MapPointEntry *mp_entry = this->data[this->keyframes.front()];
     double distance = (this->wcoord_3d - mp_entry->camera_center).norm();
     this->dmax = distance * pow(1.2, octave);
@@ -102,6 +102,7 @@ void MapPoint::compute_distance() {
 }
 
 void MapPoint::compute_distinctive_descriptor() {
+    if (this->data.size() == 0) return;
     if (this->data.size() == 1) {
         this->orb_descriptor = this->data[this->keyframes.back()]->descriptor;
         return;

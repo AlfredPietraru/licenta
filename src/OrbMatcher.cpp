@@ -463,8 +463,14 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
             // punctul exista deja iar feature-ul pe care il are e cel mai bun // nu fac nimic
             if (pKF->check_map_point_in_keyframe(source_mp)) {
                 if (pKF->mp_correlations[source_mp] == &pKF->features[bestIdx]) continue;
-                Map::remove_map_point_from_keyframe(pKF, source_mp);
+                bool result =  Map::remove_map_point_from_keyframe(pKF, source_mp);
+                if (!result) {
+                    std::cout << "NU A MERS SA STEARGA IN PRIMA CONDITIE DIN MATCHER\n";
+                    continue;
+                }
+                // Map::remove_keyframe_reference_from_map_point(source_mp, pKF);
                 Map::add_map_point_to_keyframe(pKF, &pKF->features[bestIdx], source_mp);
+                Map::add_keyframe_reference_to_map_point(source_mp, pKF);
                 nFused++;
                 continue;
             }
