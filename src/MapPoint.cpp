@@ -26,14 +26,34 @@ bool MapPoint::map_point_should_be_deleted() {
 MapPoint::MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord, 
         cv::Mat orb_descriptor) : wcoord(wcoord)
 {
-    this->keyframes.insert(keyframe);
-    this->octave = kp.octave;
-    this->compute_distinctive_descriptor(orb_descriptor);
     this->wcoord_3d = Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(2));
-    this->compute_view_direction(camera_center);
-    std::vector<Eigen::Vector3d> values;
-    values.push_back(camera_center);
-    this->compute_distance(values);
+    this->octave = kp.octave;
+    this->add_observation(keyframe, camera_center, orb_descriptor);   
+}
+
+bool MapPoint::find_keyframe(KeyFrame *kf) {
+    return this->data.find(kf) != this->data.end();
+}
+
+void MapPoint::add_observation(KeyFrame *kf, Eigen::Vector3d camera_center, cv::Mat orb_descriptor) {
+    this->keyframes.push_back(kf);
+    this->data.insert({kf, new MapPointEntry((int)this->keyframes.size(), -1, camera_center, orb_descriptor)});
+    this->increase_number_associations();
+    this->compute_distinctive_descriptor();
+    this->compute_view_direction();
+    this->compute_distance();
+};
+
+void MapPoint::remove_observation(KeyFrame *kf) {
+    if (this->data.find(kf) == this->data.end()) return;
+    MapPointEntry *mp_entry = this->data[kf];
+    this->data.erase(kf);
+    this->keyframes.erase(this->keyframes.begin() + mp_entry->idx);
+    this->decrease_number_associations();
+    this->compute_distinctive_descriptor();
+    // AICI E GRESEALA\n
+    this->compute_view_direction();
+    this->compute_distance();
 }
 
 void MapPoint::increase_how_many_times_seen() {
@@ -59,38 +79,39 @@ int MapPoint::predict_image_scale(double distance) {
     return scale;
 }
 
-void MapPoint::compute_view_direction(Eigen::Vector3d camera_center) {
-    if (this->keyframes.size() == 0 || this->keyframes.size() == 1) {
-        this->view_direction = (wcoord_3d - camera_center);
-        this->view_direction.normalize();
+void MapPoint::compute_view_direction() {
+    if (this->data.size() == 0) return;
+    Eigen::Vector3d normal = Eigen::Vector3d(0, 0, 0);
+    Eigen::Vector3d current_normal;
+    MapPointEntry *mp_entry;
+    for (KeyFrame *kf : this->keyframes) {
+        mp_entry = this->data[kf];
+        current_normal = this->wcoord_3d - mp_entry->camera_center;
+        current_normal.normalize();
+        normal += current_normal;
     }
-    Eigen::Vector3d normal = this->wcoord_3d - camera_center;
-    int N = this->keyframes.size();
-    this->view_direction = this->view_direction * N / (N + 1)  + normal / (N + 1); 
+    this->view_direction = normal / (int)this->keyframes.size(); 
 }
 
-void MapPoint::compute_distance(std::vector<Eigen::Vector3d> camera_centers) {
-    if (camera_centers.size() == 1) {
-        Eigen::Vector3d camera_center = camera_centers[0];
-        double distance = (this->wcoord_3d - camera_center).norm();
-        this->dmax = distance * pow(1.2, octave);
-        this->dmin = this->dmax / pow(1.2, 7);
-        return;
-    }
+void MapPoint::compute_distance() {
+    MapPointEntry *mp_entry = this->data[this->keyframes.front()];
+    double distance = (this->wcoord_3d - mp_entry->camera_center).norm();
+    this->dmax = distance * pow(1.2, octave);
+    this->dmin = this->dmax / pow(1.2, 7);
+    return;
 }
 
-void MapPoint::compute_distinctive_descriptor(cv::Mat descriptor) {
-    this->descriptor_vector.push_back(descriptor);
-    int N = this->descriptor_vector.size();
-    if (N == 1) {
-        this->orb_descriptor = this->descriptor_vector[0];
+void MapPoint::compute_distinctive_descriptor() {
+    if (this->data.size() == 1) {
+        this->orb_descriptor = this->data[this->keyframes.back()]->descriptor;
         return;
     }
+    int N = this->data.size();
     std::vector<std::vector<int>> dist_mat(N, std::vector<int>(N));
     for (int i = 0; i < N - 1; i++) {
         dist_mat[i][i] = 0;
         for (int j = i + 1; j < N; j++) {
-            float dist = ComputeHammingDistance(descriptor_vector[i], descriptor_vector[j]);
+            float dist = ComputeHammingDistance(this->data[this->keyframes[i]]->descriptor, this->data[this->keyframes[j]]->descriptor);
             dist_mat[i][j] = dist;
             dist_mat[j][i] = dist; 
         }
@@ -108,5 +129,5 @@ void MapPoint::compute_distinctive_descriptor(cv::Mat descriptor) {
             BestIdx = i;
         }
     }
-    this->orb_descriptor = this->descriptor_vector[BestIdx].clone();
+    this->orb_descriptor =  this->data[this->keyframes[BestIdx]]->descriptor;
 }

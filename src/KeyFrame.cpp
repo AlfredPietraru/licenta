@@ -175,7 +175,7 @@ Eigen::Vector3d KeyFrame::fromImageToWorld_3d(int kp_idx) {
 int KeyFrame::get_map_points_seen_from_multiple_frames(int nr_frames) {
     int out = 0;
     for (MapPoint *mp : this->map_points) {
-        if ((int)mp->descriptor_vector.size() >= nr_frames) out++;
+        if ((int)mp->data.size() >= nr_frames) out++;
     }
     return out;
 }

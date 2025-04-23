@@ -10,6 +10,16 @@
 
 class KeyFrame;
 
+class MapPointEntry {
+public:
+        int idx;
+        int feature_idx;
+        Eigen::Vector3d camera_center;
+        cv::Mat descriptor;
+        MapPointEntry(int idx, int feature_idx, Eigen::Vector3d camera_center, cv::Mat descriptor) : idx(idx),
+        feature_idx(feature_idx), camera_center(camera_center), descriptor(descriptor) {}
+};
+
 class MapPoint {
 public:
         // homogenous coordinates of world space
@@ -19,8 +29,9 @@ public:
         cv::Mat orb_descriptor;
         double dmax, dmin;
         double BASELINE = 0.08;
-        std::set<KeyFrame*> keyframes;
-        std::vector<cv::Mat> descriptor_vector;
+
+        std::vector<KeyFrame*> keyframes;
+        std::unordered_map<KeyFrame*, MapPointEntry*> data;
         int first_seen_frame_idx;
         int number_times_seen = 0;
         int number_associations = 0;
@@ -28,15 +39,18 @@ public:
         int octave = 0;
         
         MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord, cv::Mat orb_descriptor);
-        void compute_distinctive_descriptor(cv::Mat descriptor);
-        void compute_distance(std::vector<Eigen::Vector3d> camera_centers);
+        void compute_distinctive_descriptor();
+        void compute_distance();
         int predict_image_scale(double distance);
         bool map_point_should_be_deleted();
         void increase_how_many_times_seen();
         void increase_number_associations();
         void decrease_number_associations();
-        void compute_view_direction(Eigen::Vector3d camera_center);
+        void add_observation(KeyFrame *kf, Eigen::Vector3d camera_center, cv::Mat orb_descriptor);
+        void remove_observation(KeyFrame *kf);
+        void compute_view_direction();
         int ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b);
+        bool find_keyframe(KeyFrame *kf);
 };
 
 #endif

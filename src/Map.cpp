@@ -112,7 +112,7 @@ bool Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
     bool not_in_map_points = kf->map_points.find(mp) ==  kf->map_points.end();
     bool not_in_correlations = kf->mp_correlations.find(mp) == kf->mp_correlations.end();
     bool not_in_features =  not_in_correlations ? not_in_correlations : kf->mp_correlations[mp]->get_map_point() != mp; 
-    bool already_found_in_keyframe = mp->keyframes.find(kf) != mp->keyframes.end();
+    bool already_found_in_keyframe = mp->find_keyframe(kf);
 
     if (not_in_map_points && not_in_correlations && not_in_features) {
         std::cout << "NU S-A PUTUT REALIZA ADAUGAREA KEYFRAME LA REFERINTA MAP POINT NU EXISTA PUNCTUL IN KEYFRAME\n";
@@ -127,20 +127,12 @@ bool Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
         return false;
     }
     
-    mp->keyframes.insert(kf);
-    mp->increase_number_associations();
-    mp->compute_distinctive_descriptor(kf->mp_correlations[mp]->descriptor);
-    mp->compute_view_direction(kf->compute_camera_center_world());
-    std::vector<Eigen::Vector3d> centers;
-    for (KeyFrame *kf : mp->keyframes) {
-        centers.push_back(kf->compute_camera_center_world());
-    }
-    mp->compute_distance(centers);
+    mp->add_observation(kf, kf->compute_camera_center_world(), kf->mp_correlations[mp]->descriptor);
     return true;
 }
 
 bool Map::remove_keyframe_reference_from_map_point(MapPoint *mp, KeyFrame *kf) {
-    return mp->keyframes.find(kf) != mp->keyframes.end();
+    return mp->find_keyframe(kf);
 }
 
 bool Map::remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp) {
