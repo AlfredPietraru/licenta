@@ -213,8 +213,8 @@ void OrbMatcher::match_frame_reference_frame(std::unordered_map<MapPoint*, Featu
     DBoW2::FeatureVector::const_iterator f2end = curr->features_vec.end();
     // std::cout << curr->map_points.size() << " atatea map points asociate la inceput cu curr\n";
     // std::cout << ref->map_points.size() << " atatea map points asociate la inceput cu ref\n";
-    std::cout << ref->current_idx << "index reference frame current\n"; 
-    std::cout << ref->map_points.size() << " " << ref->mp_correlations.size() << " " << " info about reference frame\n";
+    // std::cout << ref->current_idx << "index reference frame current\n"; 
+    // std::cout << ref->map_points.size() << " " << ref->mp_correlations.size() << " " << " info about reference frame\n";
     while (f1it != f1end && f2it != f2end)
     {
         if (f1it->first == f2it->first)

@@ -21,11 +21,15 @@ bool KeyFrame::check_map_point_outlier(MapPoint *mp)
 }
 
 bool KeyFrame::check_map_point_in_keyframe(MapPoint *mp) {
-    if (this->mp_correlations.find(mp) == this->mp_correlations.end()) return false;
-    if (this->map_points.find(mp) == this->map_points.end()) return false;
-    Feature *f = this->mp_correlations[mp];
-    MapPoint *copy_mp = f->get_map_point();
-    return copy_mp == mp;
+    bool in_mp_correlations = this->mp_correlations.find(mp) != this->mp_correlations.end();
+    bool in_map_points = this->map_points.find(mp) != this->map_points.end();
+    bool in_features = in_mp_correlations ? this->mp_correlations[mp]->get_map_point() == mp : in_mp_correlations;
+    if (in_mp_correlations && in_map_points && in_features) return true;
+    if (!in_mp_correlations && !in_map_points && !in_features) return false;
+    if (in_mp_correlations != in_map_points || in_map_points != in_features) {
+        std::cout << "NU S-A PUTUT NU ESTE SINCRONIZAT KEYFRAME-ul\n";
+    }
+    return false;
 }
 
 

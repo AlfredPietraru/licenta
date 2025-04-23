@@ -60,14 +60,24 @@ void Map::add_first_keyframe(KeyFrame *kf) {
 }
 
 bool Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp) {
-    if (kf == nullptr || mp == nullptr) {
+    if (kf == nullptr || mp == nullptr || f == nullptr) {
         std::cout << "NU S-A PUTUT REALIZA OPERATIA CEVA ERA NULL\n";
         return false;
     }
-    if (f == nullptr ||  f != &kf->features[f->idx]) {
-        std::cout << "NU S-A PUTUT GASI FEATURE-ul CORECT PENTRU ADAUGARE\n";
+
+    bool in_map_points = kf->map_points.find(mp) !=  kf->map_points.end();
+    bool in_correlations = kf->mp_correlations.find(mp) != kf->mp_correlations.end();
+    bool in_features =  in_correlations ? (kf->mp_correlations[mp]->get_map_point() == mp) : in_correlations; 
+    if (in_map_points && in_correlations && in_features) {
+        std::cout << in_map_points << " " << in_correlations << " " << in_features << " " << "\n";    
+        std::cout << "NU S-A PUTUT REALIZA ADAUGAREA PUNCTULUI ACESTA APARTINE DEJA\n";
         return false;
     }
+    if (in_map_points != in_correlations || in_correlations != in_features) {
+        std::cout << "NU S-A PUTUT ADAUGA MAP POINT IN KEYFRAME, KEYFRAME NESINCRONIZAT\n";
+        return false;
+    }
+
     kf->remove_outlier_element(mp);
     MapPoint* old_mp = f->get_map_point();
     int current_hamming_distance = ComputeHammingDistance(mp->orb_descriptor, f->descriptor);
@@ -98,16 +108,22 @@ bool Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
         std::cout << "NU S-A PUTUT REALIZA OPERATIA IN ADD KEYFRAMAE REFERENCE UNUL DINTRE ELEMENTE E NULL\n";
         return false;
     }
-    if (kf->map_points.find(mp) ==  kf->map_points.end()) {
-        std::cout << "PUNCTUL NICI MACAR NU SE REGASESTE IN KEYFRAME NU E BINE\n";
+    bool not_in_map_points = kf->map_points.find(mp) ==  kf->map_points.end();
+    bool not_in_correlations = kf->mp_correlations.find(mp) == kf->mp_correlations.end();
+    bool not_in_features =  not_in_correlations ? not_in_correlations : kf->mp_correlations[mp]->get_map_point() != mp; 
+    bool already_found_in_keyframe = mp->keyframes.find(kf) != mp->keyframes.end();
+
+    if (not_in_map_points && not_in_correlations && not_in_features) {
+        std::cout << "NU S-A PUTUT REALIZA ADAUGAREA KEYFRAME LA REFERINTA MAP POINT NU EXISTA PUNCTUL IN KEYFRAME\n";
         return false;
     }
-    if (kf->mp_correlations.find(mp) == kf->mp_correlations.end()) {
-        std::cout << "NU EXISTA PUNCTUL IN ASOCIERI\n";
+    if (not_in_map_points != not_in_correlations || not_in_features != not_in_correlations) {
+        std::cout << "NU S-A PUTUT REALIZA ADAUGAREA KEYFRAME LA REFERINTA MISMATCH IN KEYFRAME\n";
         return false;
     }
-    if (mp->keyframes.find(kf) != mp->keyframes.end()) {
-        std::cout << "ACEST MAP POINT A MAI FOST ADAUGAT NU ARE SENS\n";
+    
+    if (already_found_in_keyframe) {
+        std::cout << "PUNCTUL ACESTA A FOST DEJA ADAUGAT IN KEYFRAME\n";
         return false;
     }
     mp->keyframes.insert(kf);
