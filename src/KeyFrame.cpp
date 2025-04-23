@@ -47,8 +47,8 @@ bool KeyFrame::check_number_close_points()
 
 KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints,
      std::vector<cv::KeyPoint> &undistored_kps, cv::Mat orb_descriptors, cv::Mat depth_matrix,
-      int current_idx, cv::Mat &frame, ORBVocabulary *voc, KeyFrame *reference_kf)
-    : K(K), orb_descriptors(orb_descriptors), current_idx(current_idx), voc(voc), reference_kf(reference_kf)
+      int current_idx, cv::Mat &frame, ORBVocabulary *voc, KeyFrame *reference_kf, int reference_idx)
+    : K(K), orb_descriptors(orb_descriptors), current_idx(current_idx), voc(voc), reference_kf(reference_kf), reference_idx(reference_idx)
 {
     this->set_keyframe_position(Tcw);
 
@@ -159,13 +159,6 @@ Eigen::Vector4d KeyFrame::fromImageToWorld(int kp_idx)
     double new_x = (f.kp.pt.x - this->K(0, 2)) * f.depth / this->K(0, 0);
     double new_y = (f.kp.pt.y - this->K(1, 2)) * f.depth / this->K(1, 1);
     return this->mat_world_camera * Eigen::Vector4d(new_x, new_y, f.depth, 1);
-}
-
-Eigen::Vector3d KeyFrame::fromImageToWorld_3d(int kp_idx) {
-    Feature f = this->features[kp_idx];
-    double new_x = (f.kp.pt.x - this->K(0, 2)) * f.depth / this->K(0, 0);
-    double new_y = (f.kp.pt.y - this->K(1, 2)) * f.depth / this->K(1, 1);
-    return this->Tcw.inverse().matrix3x4() * Eigen::Vector4d(new_x, new_y, f.depth, 1);
 }
 
 int KeyFrame::get_map_points_seen_from_multiple_frames(int nr_frames) {

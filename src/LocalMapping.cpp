@@ -3,40 +3,47 @@
 
 void LocalMapping::local_map(KeyFrame *kf) {
     mapp->add_new_keyframe(kf);
-    this->recently_added.insert(kf->map_points.begin(), kf->map_points.end());
-    this->map_points_culling();
+    this->map_points_culling(kf);
     int map_points_computed = this->compute_map_points(kf);
     if (map_points_computed == 0) std::cout << "NICIUN MAP POINT NU A FOST CALCULAT\n";
+    std::cout << map_points_computed << " atatea map points noi adaugate\n";
     this->search_in_neighbours(kf);
     this->update_local_map(kf);
 }
 
 
+bool customComparison(KeyFrame *a, KeyFrame *b)
+{
+    return a->reference_idx < b->reference_idx; 
+}
 // DE ADAUGAT LOGICA PENTRU STERGERE O DATA LA 3 KF-uri;
-void LocalMapping::map_points_culling() {
+void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
     std::vector<MapPoint*> to_del;
-    std::vector<MapPoint*> too_old_to_keep_checking;
     // se strica ordinea din unordered set si se pierd elemente daca fac stergerea direct
+    // std::cout << curr_kf->reference_idx << " reference index for keyframes\n";
+    std::cout <<  this->recently_added.size() << " atatea map point-uri initiale care trebuie studiate\n";
+    std::cout << curr_kf << "\n";
     for (MapPoint *mp : this->recently_added) {
         if (mp->keyframes.size() == 0) {
             std::cout << "NU AR TREBUI CA IN MAP POINT CULLING SA NU EXISTE NICIUN ELEMENT\n";
             continue;
         }
-        // trebuie sa fie vazut in 3 keyframes consecutive NU ESTE CORECT
-        if (mp->keyframes.size() >= 3) {
-            too_old_to_keep_checking.push_back(mp);
-            continue;
-        } 
         double ratio = (double)mp->number_associations / mp->number_times_seen;
         if (ratio < 0.25f) {
             to_del.push_back(mp);
             continue;
         }
+
+        // if (mp->keyframes.size() <= 3) {
+        //     sort(mp->keyframes.begin(), mp->keyframes.end(), customComparison);
+        //     if (curr_kf->reference_idx - mp->keyframes[0]->reference_idx >= 2) {
+        //         to_del.push_back(mp);
+        //         continue;
+        //     }
+        // }
     }
     for (MapPoint *mp : to_del) this->delete_map_point(mp);
-    for (MapPoint *mp : too_old_to_keep_checking) {
-        this->recently_added.erase(mp);
-    }
+    std::cout <<  this->recently_added.size() << " atatea map point-uri ramase care vor mai trebui studiate in viitor\n";
 }
 
 
@@ -69,25 +76,11 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
     bool isStereo2 = false;
     int nr_points_added = 0;
     // std::cout << keyframes.size() << "atatea keyframe-uri vecine cu kf\n";
+    std::cout << kf->map_points.size() << " original kf map points inainte de adaugare\n";
     bool was_addition_succesfull;
     for (KeyFrame* neighbour_kf : keyframes) {
         Eigen::Matrix3d fundamental_mat =  this->compute_fundamental_matrix(kf, neighbour_kf);
         std::vector<std::pair<int, int>> vMatchedIndices = OrbMatcher::search_for_triangulation(kf, neighbour_kf, fundamental_mat);
-        //         std::vector<cv::DMatch> dmatches;
-        // for (std::pair<int, int> correspondence : vMatchedIndices) {
-        //         cv::DMatch dmatch;
-        //         dmatch.queryIdx = correspondence.first;
-        //         dmatch.trainIdx = correspondence.second;
-        //         dmatch.distance = OrbMatcher::ComputeHammingDistance(kf->features[dmatch.queryIdx].descriptor, neighbour_kf->features[dmatch.trainIdx].descriptor); 
-        //         dmatches.push_back(dmatch);
-        //     }
-        //     cv::Mat img_matches;
-        //     std::cout << dmatches.size() << " atatea match-uri sunt posibile\n";
-        //     cv::drawMatches(kf->frame, kf->get_all_keypoints(), neighbour_kf->frame, neighbour_kf->get_all_keypoints(), dmatches, img_matches);
-        //     cv::imshow("Feature Matches", img_matches);
-        //     cv::waitKey(0);
-        // std::cout << kf->map_points.size() << "original kf map points gasite initial\n";
-        // std::cout << neighbour_kf->map_points.size() << "neighbvour kf map points gasite initial\n";
         for (std::pair<int, int> correspondence : vMatchedIndices) {
             Feature *f1 = &kf->features[correspondence.first];
             Feature *f2 = &neighbour_kf->features[correspondence.second];
@@ -173,6 +166,9 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
 
             MapPoint* pMP = new MapPoint(kf, f1->get_undistorted_keypoint(), kf->camera_center_world, coordinates,
                      kf->orb_descriptors.row(correspondence.first));
+            pMP->increase_number_associations();
+            pMP->increase_number_associations();
+            this->recently_added.insert(pMP);
                
             // TODO, de adaugat si observatia in frame-ul al doilea 
             was_addition_succesfull = Map::add_map_point_to_keyframe(kf, &kf->features[correspondence.first], pMP);
@@ -194,10 +190,11 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
             // TODOOOOOO
             // (1) UPDATE_DEPTH
         }
-        // std::cout << kf->map_points.size() << "original kf map points dupa initial\n";
+        //std::cout << kf->map_points.size() << "original kf map points dupa initial\n";
         // std::cout << neighbour_kf->map_points.size() << "neighbvour kf map points dupa initial\n\n";
     }
     // std::cout << "\n END COMPUTE MAP POINTS\n";
+    std::cout << kf->map_points.size() << " original kf map points dupa adaugare\n";
     return nr_points_added;
 }
 

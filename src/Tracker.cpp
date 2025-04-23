@@ -43,16 +43,17 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     this->fmf->compute_keypoints_descriptors(frame, keypoints, undistorted_kps, descriptors);
     if (this->prev_kf == nullptr && this->current_kf != nullptr) {
         this->prev_kf = this->current_kf;
-        this->current_kf = new KeyFrame(this->prev_kf->Tcw, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 1, frame, this->voc, this->reference_kf);
+        this->current_kf = new KeyFrame(this->prev_kf->Tcw, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 1, 
+            frame, this->voc, this->reference_kf, this->prev_kf->reference_idx);
         return;
     }
 
     // de incercat ultima transformare ca estimare
-    // Sophus::SE3d pose_estimation = this->current_kf->Tcw;
-    Sophus::SE3d pose_estimation = this->current_kf->Tcw * this->prev_kf->Tcw.inverse() * this->current_kf->Tcw;
+    Sophus::SE3d pose_estimation = this->current_kf->Tcw;
+    // Sophus::SE3d pose_estimation = this->current_kf->Tcw * this->prev_kf->Tcw.inverse() * this->current_kf->Tcw;
     this->prev_kf = this->current_kf;
     this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 
-        this->prev_kf->current_idx + 1, frame, this->voc, this->reference_kf);
+        this->prev_kf->current_idx + 1, frame, this->voc, this->reference_kf, this->prev_kf->reference_idx);
 }
 
 Tracker::Tracker(Mat frame, Mat depth, Map *mapp, Sophus::SE3d pose, Config cfg, 
@@ -70,7 +71,7 @@ Tracker::Tracker(Mat frame, Mat depth, Map *mapp, Sophus::SE3d pose, Config cfg,
     // this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
     pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
     // pose = Sophus::SE3d(Eigen::Quaterniond(-0.3986, 0.6132, 0.5962, -0.3311), Eigen::Vector3d(-0.6305, -1.3563, 1.6380));
-    this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc, nullptr);
+    this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc, nullptr, 0);
     this->reference_kf = this->current_kf;
     mapp->add_first_keyframe(this->reference_kf); 
     std::cout << "SFARSIT INITIALIZARE\n\n";
@@ -86,17 +87,15 @@ void Tracker::tracking_was_lost()
 }
 
 bool Tracker::Is_KeyFrame_needed(Map *mapp, int tracked_by_local_map)
-{
-    // functia este clar incorecta -> this->reference_kf->map_points.size() trebuie sa ia in considerare doar punctele care au vazute din
-    // 3 frame-uri diferite  
+{  
+    float fraction = mapp->keyframes.size() <= 2 ? 0.75f : 0.4f;
     int nr_references = (int)mapp->keyframes.size() <= 2 ? 2 : 3;
     int points_seen_from_multiple_frames_reference = this->reference_kf->get_map_points_seen_from_multiple_frames(nr_references);
     bool weak_good_map_points_tracking = tracked_by_local_map <= 0.25 * points_seen_from_multiple_frames_reference;  
     bool needToInsertClose = this->current_kf->check_number_close_points();
     bool c1 = (this->current_kf->current_idx - this->reference_kf->current_idx) >= 30;
     bool c2 = weak_good_map_points_tracking || needToInsertClose; 
-    bool c3 = ((this->current_kf->map_points.size() < points_seen_from_multiple_frames_reference * 0.6) || needToInsertClose) && (tracked_by_local_map > 15);
-    // std::cout << weak_good_map_points_tracking << " " << needToInsertClose << "\n"; 
+    bool c3 = ((tracked_by_local_map < points_seen_from_multiple_frames_reference * fraction) || needToInsertClose) && (tracked_by_local_map > 15);
     return (c1 || c2) && c3;
 }
 
@@ -119,11 +118,13 @@ void Tracker::TrackReferenceKeyFrame(std::unordered_map<MapPoint *, Feature *>& 
         exit(1);
     } 
     // bool was_addition_succesfull;
+    int out = 0;
     for (auto it = matches.begin(); it != matches.end(); it++) {
         if (!this->current_kf->check_map_point_in_keyframe(it->first)) {
-            Map::add_map_point_to_keyframe(this->current_kf, it->second, it->first);
+            out += Map::add_map_point_to_keyframe(this->current_kf, it->second, it->first);
         }
     }
+    // std::cout << out << " atatea puncte adaugate la track reference frame\n";
 }
 
 void Tracker::TrackConsecutiveFrames(std::unordered_map<MapPoint *, Feature *>& matches) {
@@ -147,11 +148,13 @@ void Tracker::TrackConsecutiveFrames(std::unordered_map<MapPoint *, Feature *>& 
         std::cout << " \nURMARIREA INTRE FRAME-URI NU A FUNCTIONAT DUPA OPTIMIZARE\n";
         return;
     } 
+    int out = 0;
     for (auto it = matches.begin(); it != matches.end(); it++) {
         if (!this->current_kf->check_map_point_in_keyframe(it->first)) {
-            Map::add_map_point_to_keyframe(this->current_kf, it->second, it->first);
+            out += Map::add_map_point_to_keyframe(this->current_kf, it->second, it->first);
         }
     }
+    // std::cout << out << " atatea puncte adaugate la track consecutive frames\n";
 }
 
 void Tracker::TrackLocalMap(std::unordered_map<MapPoint *, Feature *>& matches, Map *mapp) {
@@ -167,16 +170,19 @@ void Tracker::TrackLocalMap(std::unordered_map<MapPoint *, Feature *>& matches, 
             matches.erase(mp);
         }
     }
-    if (matches.size() < 30) {
+    int out = 0;
+    for (auto it = matches.begin(); it != matches.end(); it++) {
+        if (!this->current_kf->check_map_point_in_keyframe(it->first)) {
+            out += Map::add_map_point_to_keyframe(this->current_kf, it->second, it->first);
+        }
+    }
+
+    int minim_number_points_necessary =  mapp->keyframes.size() <= 2 ? 30 : 50;
+    if ((int)this->current_kf->map_points.size() < minim_number_points_necessary) {
         std::cout << matches.size() << " PREA PUTINE PUNCTE PROIECTATE CARE NU SUNT OUTLIERE DE CATRE LOCAL MAP\n";
         return;
     }
     // bool was_addition_succesfull;
-    for (auto it = matches.begin(); it != matches.end(); it++) {
-        if (!this->current_kf->check_map_point_in_keyframe(it->first)) {
-            Map::add_map_point_to_keyframe(this->current_kf, it->second, it->first);
-        }
-    }
 }
 
 std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose) {
@@ -190,24 +196,22 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
     if (this->current_kf->current_idx - this->reference_kf->current_idx > 2) {
         this->TrackConsecutiveFrames(matches);
         if (matches.size() < 20) {
-            matches.clear();
             std::cout << "INTRE FRAME-URI NU A FUNCTIONAT TRACKING-ul\n";
             this->TrackReferenceKeyFrame(matches);
         }
     } 
 
-    // std::cout << this->current_kf->Tcw.matrix() << "\n\n";
     this->TrackLocalMap(matches, mapp);
-    // std::cout << this->current_kf->Tcw.matrix() << "\n\n";
     compute_difference_between_positions(this->current_kf->Tcw, ground_truth_pose, false);
-    // int wait_time = this->current_kf->current_idx < 30 ? 30 : 30;
-    // this->current_kf->debug_keyframe(frame, wait_time, matches, matches);
-    bool needed_keyframe = this->Is_KeyFrame_needed(mapp, matches.size()); 
+    std::cout << this->current_kf->map_points.size() << " map point correlate cu un feature\n";
+    bool needed_keyframe = this->Is_KeyFrame_needed(mapp, this->current_kf->map_points.size()); 
     if (needed_keyframe) {
         this->reference_kf = this->current_kf;
+        this->reference_kf->reference_idx += 1;
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
     }
-    // std::cout << this->current_kf->mp_correlations.size() << " map point correlate cu un feature\n";
+    int wait_time = this->current_kf->current_idx < 50 ? 20 : 20;
+    this->current_kf->debug_keyframe(frame, wait_time, matches, matches);
     return {this->current_kf, needed_keyframe};
 }

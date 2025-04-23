@@ -30,6 +30,7 @@ public:
     DBoW2::BowVector bow_vec;
     DBoW2::FeatureVector features_vec;
     KeyFrame *reference_kf;
+    int reference_idx;
 
     std::vector<Feature> features;
     std::unordered_map<MapPoint*, Feature*> mp_correlations; 
@@ -45,10 +46,9 @@ public:
     
     KeyFrame();
     KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint>& keypoints, std::vector<cv::KeyPoint>& undistored_kps,
-             cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, cv::Mat& frame, ORBVocabulary *voc, KeyFrame *reference_kf);
+             cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, cv::Mat& frame, ORBVocabulary *voc, KeyFrame *reference_kf, int reference_idx);
     Eigen::Vector3d fromWorldToImage(Eigen::Vector4d& wcoord);
     Eigen::Vector4d fromImageToWorld(int kp_idx);
-    Eigen::Vector3d fromImageToWorld_3d(int kp_idx);
     std::vector<cv::KeyPoint> get_all_keypoints(); 
     std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave); 
     void add_outlier_element(MapPoint *mp);

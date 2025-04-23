@@ -93,6 +93,7 @@ int main(void)
         //     break;
         // }
     }
+    std::cout << tracker->reference_kf->reference_idx << " nr keyframe-uri create\n";
     auto t2 = high_resolution_clock::now();
     std::cout << duration_cast<seconds>(t2 - t1).count() << "s aici atata a durat" << std::endl;   
 }

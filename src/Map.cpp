@@ -149,21 +149,19 @@ bool Map::remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp) {
         std::cout << "NU S-A PUTUT REALIZA STERGEREA IN REMOVE MAP FROM KEYFRAME UNUL DINTRE ELEMENTE E NULL\n";
         return false;
     }
-    if (kf->mp_correlations.find(mp) == kf->mp_correlations.end()) {
-        std::cout << kf->current_idx << " " << kf->mp_correlations.size() << " " << kf->map_points.size() << "\n";
-        std::cout << "NU S-A PUTUT REALIZA OPERATIA NU A  EXISTAT PUNCTUL IN CORELATII\n";
+
+    bool not_in_map_points = kf->map_points.find(mp) ==  kf->map_points.end();
+    bool not_in_correlations = kf->mp_correlations.find(mp) == kf->mp_correlations.end();
+    bool not_in_features =  not_in_correlations ? not_in_correlations : kf->mp_correlations[mp]->get_map_point() != mp; 
+    // bool already_found_in_keyframe = mp->find_keyframe(kf);
+
+    if (not_in_map_points && not_in_correlations && not_in_features) return true;
+    if (not_in_correlations != not_in_features || not_in_features != not_in_map_points) {
+        std::cout << "KEYFRAME UL NU ESTE SINCRONIZAT LA STERGERE\n";
         return false;
     }
-    if (kf->map_points.find(mp) == kf->map_points.end()) {
-        std::cout << kf->current_idx << " " << kf->mp_correlations.size() << " " << kf->map_points.size() << "\n";
-        std::cout << "NU S-A PUTUT REALIZA OPERATIA NU A  PUNCTUL IN MAP POINTS, NU SUNT SINCRONIZATE\n";
-        return false;
-    }
+
     Feature *f = kf->mp_correlations[mp];
-    if (f->get_map_point() != mp) {
-        std::cout << "NU S-A PUTUT REALIZA OPERATIA NU A  REFERINTA IN FEATURE MAP POINT\n";
-        return false;
-    }
     // mai trebuie de lucrat aici
     f->unmatch_map_point();
     kf->mp_correlations.erase(mp);
@@ -242,7 +240,7 @@ void Map::track_local_map(std::unordered_map<MapPoint *, Feature*> &matches, Key
     Eigen::Vector3d camera_to_map_view_ray;
     Eigen::Vector3d point_camera_coordinates;
     
-    for (MapPoint *mp : reference_kf->map_points) {
+    for (MapPoint *mp : local_map){
         if (kf->check_map_point_outlier(mp)) continue;
         point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
         if (point_camera_coordinates(0) < kf->minX || point_camera_coordinates(0) > kf->maxX - 1) continue;
@@ -317,7 +315,6 @@ bool Map::replace_map_points_in_keyframe(KeyFrame *kf, MapPoint *old_mp, MapPoin
         std::cout << "NU A MERS DE STERS ELEMENTUL DESI EXISTA\n";
         return false;
     }
-    remove_keyframe_reference_from_map_point(old_mp, kf);
     if (!new_map_point_found) {
         bool adding_new_map_point_succesfull = Map::add_map_point_to_keyframe(kf, previous_feature_associated, new_mp);
         if(!adding_new_map_point_succesfull) {
