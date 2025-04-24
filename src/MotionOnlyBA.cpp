@@ -98,7 +98,7 @@ Sophus::SE3d compute_pose(KeyFrame *kf, double *pose) {
     return Sophus::SE3d(quaternion, Eigen::Vector3d(pose[4], pose[5], pose[6]));
 }
 
-Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf)
+Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
 {
     if (kf->mp_correlations.size() < 3)
         return kf->Tcw;
@@ -202,7 +202,7 @@ Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf)
     return compute_pose(kf, pose_vector);    
 }
 
-Sophus::SE3d BundleAdjustment::solve_g2o(KeyFrame *kf)
+Sophus::SE3d MotionOnlyBA::solve_g2o(KeyFrame *kf)
 {
 
     std::unique_ptr<LinearSolverType> linearSolver(new LinearSolverType());

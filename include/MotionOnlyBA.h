@@ -20,10 +20,10 @@
 typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>> BlockSolverType;
 typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType;
 
-class BundleAdjustment
+class MotionOnlyBA
 {
 public:     
-    BundleAdjustment() {};
+    MotionOnlyBA() {};
     Sophus::SE3d solve_ceres(KeyFrame *frame);
     Sophus::SE3d solve_g2o(KeyFrame *frame);
 };

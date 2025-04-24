@@ -39,7 +39,7 @@ public:
     
     Map *mapp;
     ORBVocabulary* voc;
-    BundleAdjustment *bundleAdjustment;
+    MotionOnlyBA *motionOnlyBA;
     FeatureMatcherFinder *fmf;
     OrbMatcher *matcher;
     MapDrawer *mapDrawer;

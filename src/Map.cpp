@@ -38,6 +38,14 @@ std::unordered_set<MapPoint*> Map::get_all_map_points() {
     return out;
 }
 
+int Map::check_valid_features_number(KeyFrame *kf) {
+    int out = 0;
+    for (Feature f : kf->features) {
+        out += (int)(f.get_map_point() != nullptr);
+    }
+    return out;
+}
+
 
 void Map::add_first_keyframe(KeyFrame *kf) {
     bool was_addition_succesfull;

@@ -13,6 +13,9 @@ void LocalMapping::local_map(KeyFrame *kf) {
     std::cout << map_points_computed << " atatea map points noi adaugate\n";
     this->search_in_neighbours(kf);
     this->update_local_map(kf);
+    // LOCAL BUNDLE ADJUSTMENT AICI 
+    bundleAdjustment->solve_ceres(this->mapp, kf);
+
 }
 
 

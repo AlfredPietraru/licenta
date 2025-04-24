@@ -39,6 +39,7 @@ public:
     bool update_graph_connections(KeyFrame *kf1, KeyFrame *kf2);
     int get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2);
     void debug_map(KeyFrame *kf);
+    static int check_valid_features_number(KeyFrame *kf);
 };
 
 #endif

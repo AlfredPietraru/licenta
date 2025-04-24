@@ -89,9 +89,8 @@ int main(void)
         total_tracking_duration += duration_cast<milliseconds>(end - start).count();
         KeyFrame *kf = tracker_out.first;
         bool needed_keyframe = tracker_out.second;
-        reader->store_entry(kf->Tcw);
-
         if (needed_keyframe) {
+            reader->store_entry(kf->Tcw);
             std::cout << "ADAUGA AICI UN KEYFRAME\n";
             auto start = high_resolution_clock::now();
             local_mapper->local_map(kf);

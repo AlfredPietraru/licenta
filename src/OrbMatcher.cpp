@@ -81,9 +81,11 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
     Eigen::Vector3d kf_camer_center_prev_coordinates = prev_kf->Tcw.rotationMatrix() * kf_camera_center + prev_kf->Tcw.translation(); 
     const bool bForward  =   kf_camer_center_prev_coordinates(2) >  3.2;
     const bool bBackward = -kf_camer_center_prev_coordinates(2) > 3.2;
-    for (auto it = prev_kf->mp_correlations.begin(); it != prev_kf->mp_correlations.end(); it++) {
-        MapPoint *mp = it->first;
-        if (kf->check_map_point_outlier(mp)) continue;
+    for (Feature f : prev_kf->features) {
+    // for (auto it = prev_kf->mp_correlations.begin(); it != prev_kf->mp_correlations.end(); it++) {
+    //     MapPoint *mp = it->first;
+        MapPoint *mp = f.get_map_point();
+        if (mp == nullptr || kf->check_map_point_outlier(mp)) continue;
         point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
         if (point_camera_coordinates(0) < kf->minX || point_camera_coordinates(0) > kf->maxX - 1) continue;
         if (point_camera_coordinates(1) < kf->minY || point_camera_coordinates(1) > kf->maxY - 1) continue;
@@ -242,6 +244,7 @@ void OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref)
                 if (bestDist1 > DES_DIST) continue;
                 if (bestDist1 > 0.7 * bestDist2) continue;
                 Map::add_map_point_to_keyframe(curr, &curr->features[bestIdx], mp_ref);
+                // std::cout << curr->map_points.size() << " " << curr->mp_correlations.size() << " " << Map::check_valid_features_number(curr) << "\n"; 
             }
             f1it++;
             f2it++;

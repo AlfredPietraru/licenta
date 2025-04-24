@@ -62,7 +62,7 @@ Tracker::Tracker(Mat frame, Mat depth, Map *mapp, Sophus::SE3d pose, Config cfg,
     cv::cv2eigen(cfg.K, this->K_eigen);
     this->mDistCoef = cfg.distortion;
     this->fmf = new FeatureMatcherFinder(480, 640, cfg);
-    this->bundleAdjustment = new BundleAdjustment();
+    this->motionOnlyBA = new MotionOnlyBA();
     this->matcher = new OrbMatcher(orb_matcher_config);
     std::vector<cv::KeyPoint> keypoints;
     std::vector<cv::KeyPoint> undistorted_kps;
@@ -109,7 +109,7 @@ void Tracker::TrackReferenceKeyFrame() {
         std::cout << this->current_kf->mp_correlations.size() << " REFERENCE FRAME N A URMARIT SUFICIENTE MAP POINTS PENTRU OPTIMIZARE\n";
         exit(1);
     }
-    this->current_kf->set_keyframe_position(this->bundleAdjustment->solve_ceres(this->current_kf));
+    this->current_kf->set_keyframe_position(this->motionOnlyBA->solve_ceres(this->current_kf));
     for (MapPoint *mp : this->current_kf->outliers) {
         bool removal_succesfull = Map::remove_map_point_from_keyframe(this->current_kf, mp);
         if (!removal_succesfull) {
@@ -132,7 +132,7 @@ void Tracker::TrackConsecutiveFrames() {
             return;
         }
     }
-    this->current_kf->set_keyframe_position(this->bundleAdjustment->solve_ceres(this->current_kf));
+    this->current_kf->set_keyframe_position(this->motionOnlyBA->solve_ceres(this->current_kf));
     for (MapPoint *mp : this->current_kf->outliers) {
         Map::remove_map_point_from_keyframe(this->current_kf, mp);
     }
@@ -148,7 +148,7 @@ void Tracker::TrackLocalMap(Map *mapp) {
         std::cout << " \nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
         return;
     }
-    this->current_kf->set_keyframe_position(this->bundleAdjustment->solve_ceres(this->current_kf));
+    this->current_kf->set_keyframe_position(this->motionOnlyBA->solve_ceres(this->current_kf));
     for (MapPoint *mp : this->current_kf->outliers) {
         bool removal_succesfull = Map::remove_map_point_from_keyframe(this->current_kf, mp);
         if (!removal_succesfull) {
@@ -192,7 +192,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
     }
-    int wait_time = this->current_kf->current_idx < 35 ? 20 : 20;
-    this->current_kf->debug_keyframe(frame, wait_time);
+    // int wait_time = this->current_kf->current_idx < 35 ? 20 : 20;
+    // this->current_kf->debug_keyframe(frame, wait_time);
     return {this->current_kf, needed_keyframe};
 }
