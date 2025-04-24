@@ -3,6 +3,10 @@
 
 void LocalMapping::local_map(KeyFrame *kf) {
     mapp->add_new_keyframe(kf);
+    if (this->first_kf) {
+        this->recently_added = kf->map_points;
+        this->first_kf = false;
+    }
     this->map_points_culling(kf);
     int map_points_computed = this->compute_map_points(kf);
     if (map_points_computed == 0) std::cout << "NICIUN MAP POINT NU A FOST CALCULAT\n";
@@ -19,10 +23,13 @@ bool customComparison(KeyFrame *a, KeyFrame *b)
 // DE ADAUGAT LOGICA PENTRU STERGERE O DATA LA 3 KF-uri;
 void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
     std::vector<MapPoint*> to_del;
+    std::vector<MapPoint*> too_old_to_keep_looking;
     // se strica ordinea din unordered set si se pierd elemente daca fac stergerea direct
     // std::cout << curr_kf->reference_idx << " reference index for keyframes\n";
     std::cout <<  this->recently_added.size() << " atatea map point-uri initiale care trebuie studiate\n";
-    std::cout << curr_kf << "\n";
+    if (false) {
+        std::cout << curr_kf << "\n";
+    }
     for (MapPoint *mp : this->recently_added) {
         if (mp->keyframes.size() == 0) {
             std::cout << "NU AR TREBUI CA IN MAP POINT CULLING SA NU EXISTE NICIUN ELEMENT\n";
@@ -41,8 +48,14 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
         //         continue;
         //     }
         // }
+
+        if (mp->keyframes.size() > 3) {
+            too_old_to_keep_looking.push_back(mp);
+            continue;
+        }
     }
     for (MapPoint *mp : to_del) this->delete_map_point(mp);
+    for (MapPoint *mp : too_old_to_keep_looking) this->recently_added.erase(mp);
     std::cout <<  this->recently_added.size() << " atatea map point-uri ramase care vor mai trebui studiate in viitor\n";
 }
 
@@ -75,8 +88,6 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
     bool isStereo1 = false;
     bool isStereo2 = false;
     int nr_points_added = 0;
-    // std::cout << keyframes.size() << "atatea keyframe-uri vecine cu kf\n";
-    std::cout << kf->map_points.size() << " original kf map points inainte de adaugare\n";
     bool was_addition_succesfull;
     for (KeyFrame* neighbour_kf : keyframes) {
         Eigen::Matrix3d fundamental_mat =  this->compute_fundamental_matrix(kf, neighbour_kf);
@@ -166,11 +177,9 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
 
             MapPoint* pMP = new MapPoint(kf, f1->get_undistorted_keypoint(), kf->camera_center_world, coordinates,
                      kf->orb_descriptors.row(correspondence.first));
-            pMP->increase_number_associations();
-            pMP->increase_number_associations();
             this->recently_added.insert(pMP);
-               
-            // TODO, de adaugat si observatia in frame-ul al doilea 
+            pMP->increase_how_many_times_seen();
+            pMP->increase_how_many_times_seen(); 
             was_addition_succesfull = Map::add_map_point_to_keyframe(kf, &kf->features[correspondence.first], pMP);
             if (!was_addition_succesfull) {
                 std::cout << "NU S-A PUTUT REALIZA ADAUGAREA UNUI NOU MAP POINT IN LOCAL MAPPING\n";
@@ -187,14 +196,11 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
                 continue;
             }
             nr_points_added++;
-            // TODOOOOOO
-            // (1) UPDATE_DEPTH
         }
         //std::cout << kf->map_points.size() << "original kf map points dupa initial\n";
         // std::cout << neighbour_kf->map_points.size() << "neighbvour kf map points dupa initial\n\n";
     }
     // std::cout << "\n END COMPUTE MAP POINTS\n";
-    std::cout << kf->map_points.size() << " original kf map points dupa adaugare\n";
     return nr_points_added;
 }
 
@@ -216,10 +222,13 @@ void LocalMapping::search_in_neighbours(KeyFrame *kf) {
     {
         OrbMatcher::Fuse(neighbour_kf, kf, 3);
         OrbMatcher::Fuse(kf, neighbour_kf, 3);
+        bool result = mapp->update_graph_connections(kf, neighbour_kf);
+        if (!result) {
+            std::cout << "NU A REUSIT SA FACA UPDATE LA GRAPH\n";
+            continue;
+        }
     }
     // std::cout << "\nEND SEARCH IN NEIGHBOURS\n";
-    
-    // Update connections in covisibility graph
 }
 
 

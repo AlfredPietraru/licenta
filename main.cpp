@@ -16,6 +16,7 @@ using std::chrono::high_resolution_clock;
 using std::chrono::duration_cast;
 using std::chrono::duration;
 using std::chrono::seconds;
+using std::chrono::milliseconds;
 // evo_traj tum groundtruth.txt estimated.txt -p --plot_mode xyz
 
 
@@ -74,18 +75,29 @@ int main(void)
     // reader->store_entry(Sophus::SE3d(Eigen::Quaterniond(-0.3986, 0.6132, 0.5962, -0.3311), Eigen::Vector3d(-0.6305, -1.3563, 1.6380)));
     reader->store_entry(Sophus::SE3d(Eigen::Matrix4d::Identity()));
     // reader->store_entry(groundtruth_pose);
+
+    int total_tracking_duration = 0;
+    int total_local_mapping_duration = 0;
     while(!reader->should_end()) {
         std::pair<cv::Mat, cv::Mat> data = reader->get_next_frame();    
         Sophus::SE3d groundtruth_pose = reader->get_next_groundtruth_pose();
         frame = data.first;
         depth = data.second; 
+        auto start = high_resolution_clock::now();
         std::pair<KeyFrame *, bool> tracker_out = tracker->tracking(frame, depth, groundtruth_pose);
+        auto end = high_resolution_clock::now();
+        total_tracking_duration += duration_cast<milliseconds>(end - start).count();
         KeyFrame *kf = tracker_out.first;
         bool needed_keyframe = tracker_out.second;
         reader->store_entry(kf->Tcw);
+
         if (needed_keyframe) {
             std::cout << "ADAUGA AICI UN KEYFRAME\n";
+            auto start = high_resolution_clock::now();
             local_mapper->local_map(kf);
+            auto end = high_resolution_clock::now();
+            total_local_mapping_duration += duration_cast<milliseconds>(end - start).count();
+
         }
         // if (reader->frame_idx == 60) {
         //     auto t2 = high_resolution_clock::now();
@@ -95,7 +107,9 @@ int main(void)
     }
     std::cout << tracker->reference_kf->reference_idx << " nr keyframe-uri create\n";
     auto t2 = high_resolution_clock::now();
-    std::cout << duration_cast<seconds>(t2 - t1).count() << "s aici atata a durat" << std::endl;   
+    std::cout << duration_cast<seconds>(t2 - t1).count() << "s aici atata a durat" << std::endl;  
+    std::cout << total_tracking_duration / 1000 << " atat a durat tracking sa faaca\n";
+    std::cout << total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n"; 
 }
 
 

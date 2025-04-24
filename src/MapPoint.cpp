@@ -38,7 +38,6 @@ bool MapPoint::find_keyframe(KeyFrame *kf) {
 void MapPoint::add_observation(KeyFrame *kf, Eigen::Vector3d camera_center, cv::Mat orb_descriptor) {
     this->data.insert({kf, new MapPointEntry(-1, camera_center, orb_descriptor)});
     this->keyframes.push_back(kf);
-    this->increase_number_associations();
     this->compute_distinctive_descriptor();
     this->compute_view_direction();
     this->compute_distance();
@@ -52,7 +51,6 @@ void MapPoint::remove_observation(KeyFrame *kf) {
             this->keyframes.erase(this->keyframes.begin() + i);
         }
     }
-    this->decrease_number_associations();
     this->compute_distinctive_descriptor();
     this->compute_view_direction();
     this->compute_distance();
@@ -62,15 +60,15 @@ void MapPoint::increase_how_many_times_seen() {
     this->number_times_seen += 1;
 }
 
-void MapPoint::increase_number_associations() {
-    this->number_associations += 1;
+void MapPoint::increase_number_associations(int val) {
+    this->number_associations += val;
 }
 
-void MapPoint::decrease_number_associations() {
+void MapPoint::decrease_number_associations(int val) {
     if (this->number_associations == 0) {
         std::cout << "NU POATE FI SCAZUT MAI TARE NUMARUL DE ASOCIERI DE 0\n";
     }
-    this->number_associations -= 1;
+    this->number_associations -= val;
 }
 
 int MapPoint::predict_image_scale(double distance) {

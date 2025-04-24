@@ -43,8 +43,8 @@ public:
         int predict_image_scale(double distance);
         bool map_point_should_be_deleted();
         void increase_how_many_times_seen();
-        void increase_number_associations();
-        void decrease_number_associations();
+        void increase_number_associations(int val);
+        void decrease_number_associations(int val);
         void add_observation(KeyFrame *kf, Eigen::Vector3d camera_center, cv::Mat orb_descriptor);
         void remove_observation(KeyFrame *kf);
         void compute_view_direction();

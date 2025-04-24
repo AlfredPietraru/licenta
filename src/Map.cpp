@@ -47,6 +47,7 @@ void Map::add_first_keyframe(KeyFrame *kf) {
         if (kf->features[i].get_map_point() != nullptr || kf->features[i].depth <= 1e-6) continue;
         Eigen::Vector4d wcoord = kf->fromImageToWorld(i);
         MapPoint *mp = new MapPoint(kf, kf->features[i].kpu, camera_center, wcoord, kf->features[i].descriptor);
+        mp->increase_how_many_times_seen();
         was_addition_succesfull = add_map_point_to_keyframe(kf, &kf->features[i], mp);
         if (!was_addition_succesfull) {
             std::cout << "NU S-A PUTUT SA ADAUGE MAP POINT-ul\n";
@@ -82,10 +83,10 @@ bool Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp) {
     MapPoint* old_mp = f->get_map_point();
     int current_hamming_distance = ComputeHammingDistance(mp->orb_descriptor, f->descriptor);
     if (old_mp == nullptr) {
+        mp->increase_number_associations(1);
         f->set_map_point(mp, current_hamming_distance);
         kf->mp_correlations.insert({mp, f});
         kf->map_points.insert(mp);
-        mp->increase_number_associations();
         return true;
     }
     if (current_hamming_distance >= f->curr_hamming_dist) return false;
@@ -96,11 +97,36 @@ bool Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp) {
         return false;
     }
 
+    mp->increase_number_associations(1);
     f->set_map_point(mp, current_hamming_distance);
     kf->mp_correlations.insert({mp, f});
     kf->map_points.insert(mp);
-    mp->increase_number_associations();
     return true;
+}
+
+bool Map::remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp) {
+    if (mp == nullptr || kf == nullptr) {
+        std::cout << "NU S-A PUTUT REALIZA STERGEREA IN REMOVE MAP FROM KEYFRAME UNUL DINTRE ELEMENTE E NULL\n";
+        return false;
+    }
+
+    bool not_in_map_points = kf->map_points.find(mp) ==  kf->map_points.end();
+    bool not_in_correlations = kf->mp_correlations.find(mp) == kf->mp_correlations.end();
+    bool not_in_features =  not_in_correlations ? not_in_correlations : kf->mp_correlations[mp]->get_map_point() != mp; 
+    // bool already_found_in_keyframe = mp->find_keyframe(kf);
+
+    if (not_in_map_points && not_in_correlations && not_in_features) return true;
+    if (not_in_correlations != not_in_features || not_in_features != not_in_map_points) {
+        std::cout << "KEYFRAME UL NU ESTE SINCRONIZAT LA STERGERE\n";
+        return false;
+    }
+
+    mp->decrease_number_associations(1); 
+    Feature *f = kf->mp_correlations[mp];
+    f->unmatch_map_point();
+    kf->mp_correlations.erase(mp);
+    kf->map_points.erase(mp);
+    return true;    
 }
 
 bool Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
@@ -142,32 +168,6 @@ bool Map::remove_keyframe_reference_from_map_point(MapPoint *mp, KeyFrame *kf) {
     }
     mp->remove_observation(kf);
     return true;
-}
-
-bool Map::remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp) {
-    if (mp == nullptr || kf == nullptr) {
-        std::cout << "NU S-A PUTUT REALIZA STERGEREA IN REMOVE MAP FROM KEYFRAME UNUL DINTRE ELEMENTE E NULL\n";
-        return false;
-    }
-
-    bool not_in_map_points = kf->map_points.find(mp) ==  kf->map_points.end();
-    bool not_in_correlations = kf->mp_correlations.find(mp) == kf->mp_correlations.end();
-    bool not_in_features =  not_in_correlations ? not_in_correlations : kf->mp_correlations[mp]->get_map_point() != mp; 
-    // bool already_found_in_keyframe = mp->find_keyframe(kf);
-
-    if (not_in_map_points && not_in_correlations && not_in_features) return true;
-    if (not_in_correlations != not_in_features || not_in_features != not_in_map_points) {
-        std::cout << "KEYFRAME UL NU ESTE SINCRONIZAT LA STERGERE\n";
-        return false;
-    }
-
-    Feature *f = kf->mp_correlations[mp];
-    // mai trebuie de lucrat aici
-    f->unmatch_map_point();
-    kf->mp_correlations.erase(mp);
-    kf->map_points.erase(mp);
-    mp->decrease_number_associations();
-    return true;    
 }
  
 void Map::add_new_keyframe(KeyFrame *new_kf) {
@@ -228,6 +228,21 @@ std::unordered_set<KeyFrame*> Map::get_local_keyframes(KeyFrame *kf) {
     return out;
 }
 
+bool Map::update_graph_connections(KeyFrame *kf1, KeyFrame *kf2) {
+    if (this->graph.find(kf1) == this->graph.end() || this->graph.find(kf2) == this->graph.end()) {
+        std::cout << "NU S-AU GASIT NODURILE IN GRAPH\n";
+        return false;
+    }
+    int common_values = this->get_number_common_mappoints_between_keyframes(kf1, kf2);
+    if (common_values < 15) {
+        std::cout << "NU EXISTA SUFICIENTE PUNCTE COMUNE INTRE KEYFRAME\n";
+        return false;
+    }
+    this->graph[kf1][kf2] = common_values;
+    this->graph[kf2][kf1] = common_values;
+    return true;
+}
+
 void Map::track_local_map(std::unordered_map<MapPoint *, Feature*> &matches, KeyFrame *kf, KeyFrame *reference_kf)
 {
     if (this->graph.find(reference_kf) == this->graph.end()) {
@@ -254,7 +269,7 @@ void Map::track_local_map(std::unordered_map<MapPoint *, Feature*> &matches, Key
         camera_to_map_view_ray.normalize();
         double dot_product = camera_to_map_view_ray.dot(mp->view_direction);
         if (dot_product < 0.5) continue;
-        mp->increase_how_many_times_seen(); 
+        mp->increase_how_many_times_seen();
 
         float radius = dot_product >= 0.998 ? 2.5 : 4;
         radius *= window;

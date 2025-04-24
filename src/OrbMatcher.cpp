@@ -100,7 +100,6 @@ void OrbMatcher::match_consecutive_frames(std::unordered_map<MapPoint*, Feature*
         double u = point_camera_coordinates(0);
         double v = point_camera_coordinates(1);
 
-        mp->increase_how_many_times_seen();
         int octave = prev_kf->mp_correlations[mp]->get_key_point().octave;
         int scale_of_search = window * pow(1.2, octave);
         std::vector<int> kps_idx;
@@ -157,7 +156,6 @@ void OrbMatcher::match_frame_map_points(std::unordered_map<MapPoint*, Feature*>&
         camera_to_map_view_ray.normalize();
         double dot_product = camera_to_map_view_ray.dot(mp->view_direction);
         if (dot_product < 0.5) continue;
-        mp->increase_how_many_times_seen(); 
 
         float radius = dot_product >= 0.998 ? 2.5 : 4;
         radius *= window_size;
@@ -248,7 +246,6 @@ void OrbMatcher::match_frame_reference_frame(std::unordered_map<MapPoint*, Featu
                 }
                 if (bestDist1 > DES_DIST) continue;
                 if (bestDist1 > 0.7 * bestDist2) continue;
-                mp_ref->increase_how_many_times_seen();
                 matches.insert({mp_ref, &curr->features[bestIdx]});
             }
             f1it++;
@@ -410,7 +407,6 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         
         if(source_mp->view_direction.dot(camera_to_map_view_ray) < 0.5 * distance)
             continue;
-        source_mp->increase_how_many_times_seen();
 
         int nPredictedLevel = source_mp->predict_image_scale(distance);
         const float radius = th * pow(1.2, nPredictedLevel);
