@@ -19,16 +19,15 @@ int inline::OrbMatcher::ComputeHammingDistance(const cv::Mat &a, const cv::Mat &
     return dist;
 }
 
-void OrbMatcher::checkOrientation(std::unordered_map<MapPoint *, Feature *> &correlation_current_frame,
-                std::unordered_map<MapPoint *, Feature *> &correlation_prev_frame)
+void OrbMatcher::checkOrientation(KeyFrame *curr_kf, KeyFrame *prev_kf)
 {
     std::vector<std::vector<MapPoint *>> histogram(30, std::vector<MapPoint *>());
     const float factor = 1.0f / 30;
-    for (auto it = correlation_current_frame.begin(); it != correlation_current_frame.end(); it++)
+    for (auto it = curr_kf->mp_correlations.begin(); it != curr_kf->mp_correlations.end(); it++)
     {
         MapPoint *mp = it->first;
         cv::KeyPoint current_kpu = it->second->get_undistorted_keypoint();
-        if (correlation_prev_frame.find(mp) == correlation_prev_frame.end()) 
+        if (prev_kf->mp_correlations.find(mp) == prev_kf->mp_correlations.end()) 
         {
             if (mp->keyframes.size() == 0) {
                 std::cout << "NU ARE NICIUN KEYFRAME ASOCIAT\n";
@@ -41,7 +40,7 @@ void OrbMatcher::checkOrientation(std::unordered_map<MapPoint *, Feature *> &cor
             exit(1);
             continue;
         }
-        cv::KeyPoint prev_kpu = correlation_prev_frame[mp]->get_undistorted_keypoint();
+        cv::KeyPoint prev_kpu = prev_kf->mp_correlations[mp]->get_undistorted_keypoint();
         float rot = prev_kpu.angle - current_kpu.angle;
         if (rot < 0.0) rot += 360.0f;
         int bin = lround(rot * factor);
@@ -69,12 +68,12 @@ void OrbMatcher::checkOrientation(std::unordered_map<MapPoint *, Feature *> &cor
     for (int i = 0; i < 30; i++) {
         if (keep[i]) continue;
         for (auto mp : histogram[i]) {
-            correlation_current_frame.erase(mp);
+            Map::remove_map_point_from_keyframe(curr_kf, mp);
         }
     }
 }
 
-void OrbMatcher::match_consecutive_frames(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *kf, KeyFrame *prev_kf, int window)
+void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int window)
 {
     Eigen::Vector3d kf_camera_center = kf->camera_center_world;
     Eigen::Vector3d camera_to_map_view_ray;
@@ -131,12 +130,12 @@ void OrbMatcher::match_consecutive_frames(std::unordered_map<MapPoint*, Feature*
             }
         }
         if (best_dist > DES_DIST) continue;
-        matches.insert({mp, &kf->features[best_idx]});
+        Map::add_map_point_to_keyframe(kf, &kf->features[best_idx], mp);
     }
-    this->checkOrientation(matches, prev_kf->mp_correlations);
+    this->checkOrientation(kf, prev_kf);
 }
 
-void OrbMatcher::match_frame_map_points(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *kf, std::unordered_set<MapPoint *>& map_points, int window_size)
+void OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoint *>& map_points, int window_size)
 {
     Eigen::Vector3d kf_camera_center = kf->camera_center_world;
     Eigen::Vector3d camera_to_map_view_ray;
@@ -198,22 +197,18 @@ void OrbMatcher::match_frame_map_points(std::unordered_map<MapPoint*, Feature*>&
         }
         if (lowest_dist > DES_DIST)  continue;
         if(lowest_level == second_lowest_level && lowest_dist > 0.8 * second_lowest_dist) continue;
-        matches.insert({mp, &kf->features[lowest_idx]});
+        Map::add_map_point_to_keyframe(kf, &kf->features[lowest_idx], mp);
     }
 }
 
 
-void OrbMatcher::match_frame_reference_frame(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *curr, KeyFrame *ref)
+void OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref)
 {
     curr->compute_bow_representation();
     DBoW2::FeatureVector::const_iterator f1it = ref->features_vec.begin();
     DBoW2::FeatureVector::const_iterator f1end = ref->features_vec.end();
     DBoW2::FeatureVector::const_iterator f2it = curr->features_vec.begin();
     DBoW2::FeatureVector::const_iterator f2end = curr->features_vec.end();
-    // std::cout << curr->map_points.size() << " atatea map points asociate la inceput cu curr\n";
-    // std::cout << ref->map_points.size() << " atatea map points asociate la inceput cu ref\n";
-    // std::cout << ref->current_idx << "index reference frame current\n"; 
-    // std::cout << ref->map_points.size() << " " << ref->mp_correlations.size() << " " << " info about reference frame\n";
     while (f1it != f1end && f2it != f2end)
     {
         if (f1it->first == f2it->first)
@@ -246,7 +241,7 @@ void OrbMatcher::match_frame_reference_frame(std::unordered_map<MapPoint*, Featu
                 }
                 if (bestDist1 > DES_DIST) continue;
                 if (bestDist1 > 0.7 * bestDist2) continue;
-                matches.insert({mp_ref, &curr->features[bestIdx]});
+                Map::add_map_point_to_keyframe(curr, &curr->features[bestIdx], mp_ref);
             }
             f1it++;
             f2it++;
@@ -260,8 +255,7 @@ void OrbMatcher::match_frame_reference_frame(std::unordered_map<MapPoint*, Featu
             f2it = curr->features_vec.lower_bound(f1it->first);
         }
     }
-    // std::cout << curr->current_idx << " " << ref->current_idx << " indicii in track local frame\n";
-    this->checkOrientation(matches, ref->mp_correlations);
+    this->checkOrientation(curr, ref);
 }
 
 std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *ref1, KeyFrame *ref2, Eigen::Matrix3d fundamental_matrix) {

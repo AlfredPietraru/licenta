@@ -98,9 +98,9 @@ Sophus::SE3d compute_pose(KeyFrame *kf, double *pose) {
     return Sophus::SE3d(quaternion, Eigen::Vector3d(pose[4], pose[5], pose[6]));
 }
 
-Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf, std::unordered_map<MapPoint *, Feature *> &matches)
+Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf)
 {
-    if (matches.size() < 3)
+    if (kf->mp_correlations.size() < 3)
         return kf->Tcw;
     
     const float chi2Mono[4]={5.991, 5.991, 5.991, 5.991};
@@ -117,7 +117,7 @@ Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf, std::unordered_map<MapP
     pose_vector[6] = pose.translation().z();
     std::unordered_map<MapPoint *, Feature *> mono_matches;
     std::unordered_map<MapPoint *, Feature *> rgbd_matches;
-    for (auto it = matches.begin(); it != matches.end(); it++) {
+    for (auto it = kf->mp_correlations.begin(); it != kf->mp_correlations.end(); it++) {
         if (it->second->stereo_depth <= 1e-6)
         {
             mono_matches.insert({it->first, it->second});
@@ -202,7 +202,7 @@ Sophus::SE3d BundleAdjustment::solve_ceres(KeyFrame *kf, std::unordered_map<MapP
     return compute_pose(kf, pose_vector);    
 }
 
-Sophus::SE3d BundleAdjustment::solve_g2o(KeyFrame *kf, std::unordered_map<MapPoint *, Feature *> &matches)
+Sophus::SE3d BundleAdjustment::solve_g2o(KeyFrame *kf)
 {
 
     std::unique_ptr<LinearSolverType> linearSolver(new LinearSolverType());
@@ -222,7 +222,7 @@ Sophus::SE3d BundleAdjustment::solve_g2o(KeyFrame *kf, std::unordered_map<MapPoi
     optimizer.addVertex(vSE3);
 
     // Set MapPoint vertices
-    std::vector<std::pair<MapPoint *, Feature *>> matches_vector(matches.begin(), matches.end());
+    std::vector<std::pair<MapPoint *, Feature *>> matches_vector(kf->mp_correlations.begin(), kf->mp_correlations.end());
     const int N = matches_vector.size();
 
     std::vector<g2o::EdgeSE3ProjectXYZOnlyPose*> vpEdgesMono;

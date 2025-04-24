@@ -24,8 +24,8 @@ class BundleAdjustment
 {
 public:     
     BundleAdjustment() {};
-    Sophus::SE3d solve_ceres(KeyFrame *frame, std::unordered_map<MapPoint *, Feature*>& matches);
-    Sophus::SE3d solve_g2o(KeyFrame *frame, std::unordered_map<MapPoint *, Feature*>& matches);
+    Sophus::SE3d solve_ceres(KeyFrame *frame);
+    Sophus::SE3d solve_g2o(KeyFrame *frame);
 };
 
 #endif

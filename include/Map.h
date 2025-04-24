@@ -25,7 +25,7 @@ public:
 
     Map() {}
     std::unordered_set<KeyFrame*> get_local_keyframes(KeyFrame *kf);
-    void track_local_map(std::unordered_map<MapPoint *, Feature*> &matches, KeyFrame *curr_kf, KeyFrame *reference_kf);
+    void track_local_map(KeyFrame *curr_kf, KeyFrame *reference_kf);
     std::unordered_set<MapPoint*> get_all_map_points();
     void add_first_keyframe(KeyFrame *new_kf);
     void add_new_keyframe(KeyFrame *kf);

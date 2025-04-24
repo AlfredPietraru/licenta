@@ -220,14 +220,10 @@ std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, dou
 }
 
 
-void KeyFrame::debug_keyframe(cv::Mat frame, int miliseconds, std::unordered_map<MapPoint *, Feature *> &matches, std::unordered_map<MapPoint *, Feature *> &new_matches)
+void KeyFrame::debug_keyframe(cv::Mat frame, int miliseconds)
 {
     std::vector<cv::KeyPoint> keypoints;
-    for (auto it = matches.begin(); it != matches.end(); it++)
-    {
-        new_matches.insert({it->first, it->second});
-    }
-    for (auto it = new_matches.begin(); it != new_matches.end(); it++)
+    for (auto it =this->mp_correlations.begin(); it != this->mp_correlations.end(); it++)
     {
         keypoints.push_back(it->second->get_key_point());
     }

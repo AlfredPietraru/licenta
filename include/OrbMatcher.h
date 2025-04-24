@@ -32,14 +32,14 @@ public:
         this->ratio_track_local_map = orb_matcher_config.ratio_track_local_map;
     }
     
-    void match_frame_reference_frame(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *curr, KeyFrame *ref);
-    void match_consecutive_frames(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame* kf, KeyFrame *kf2, int window);
-    void match_frame_map_points(std::unordered_map<MapPoint*, Feature*>& matches, KeyFrame *curr, std::unordered_set<MapPoint*>& map_points, int window_size);
+    void match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref);
+    void match_consecutive_frames(KeyFrame* kf, KeyFrame *kf2, int window);
+    void match_frame_map_points(KeyFrame *curr, std::unordered_set<MapPoint*>& map_points, int window_size);
     static std::vector<std::pair<int, int>> search_for_triangulation(KeyFrame *ref1, KeyFrame *ref2, Eigen::Matrix3d fundamental_matrix);
     static int ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b); 
     static bool CheckDistEpipolarLine(const cv::KeyPoint &kp1,const cv::KeyPoint &kp2,const Eigen::Matrix3d &F12);
     static int Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th);
-    void checkOrientation(std::unordered_map<MapPoint*, Feature*>& out, std::unordered_map<MapPoint*, Feature*>& correlation_prev_frame);
+    void checkOrientation(KeyFrame *curr_kf, KeyFrame *pref_kf);
 };
 
 #endif

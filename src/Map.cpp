@@ -69,12 +69,10 @@ bool Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp) {
     bool in_map_points = kf->map_points.find(mp) !=  kf->map_points.end();
     bool in_correlations = kf->mp_correlations.find(mp) != kf->mp_correlations.end();
     bool in_features =  in_correlations ? (kf->mp_correlations[mp]->get_map_point() == mp) : in_correlations; 
-    if (in_map_points && in_correlations && in_features) {
-        std::cout << in_map_points << " " << in_correlations << " " << in_features << " " << "\n";    
-        std::cout << "NU S-A PUTUT REALIZA ADAUGAREA PUNCTULUI ACESTA APARTINE DEJA\n";
-        return false;
-    }
+    if (in_map_points && in_correlations && in_features) return false;
     if (in_map_points != in_correlations || in_correlations != in_features) {
+        std::cout << kf->map_points.size() << " " << kf->mp_correlations.size() << "\n";
+        std::cout << in_map_points << " " << in_correlations <<  " " << in_features << "\n";
         std::cout << "NU S-A PUTUT ADAUGA MAP POINT IN KEYFRAME, KEYFRAME NESINCRONIZAT\n";
         return false;
     }
@@ -243,7 +241,7 @@ bool Map::update_graph_connections(KeyFrame *kf1, KeyFrame *kf2) {
     return true;
 }
 
-void Map::track_local_map(std::unordered_map<MapPoint *, Feature*> &matches, KeyFrame *kf, KeyFrame *reference_kf)
+void Map::track_local_map(KeyFrame *kf, KeyFrame *reference_kf)
 {
     if (this->graph.find(reference_kf) == this->graph.end()) {
         std::cout << " \nCEVA NU E BINE NU GASESTE KEY FRAME IN COMPUTE LOCAL MAP\n";
@@ -312,7 +310,7 @@ void Map::track_local_map(std::unordered_map<MapPoint *, Feature*> &matches, Key
         }
         if (lowest_dist > 50)  continue;
         if(lowest_level == second_lowest_level && lowest_dist > 0.8 * second_lowest_dist) continue;
-        matches.insert({mp, &kf->features[lowest_idx]});
+        Map::add_map_point_to_keyframe(kf, &kf->features[lowest_idx], mp);
     }
 }
 
