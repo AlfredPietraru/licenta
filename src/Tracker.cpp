@@ -164,6 +164,7 @@ void Tracker::TrackLocalMap(Map *mapp) {
 
 std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose) {
     this->get_current_key_frame(frame, depth);
+    auto start = high_resolution_clock::now();
     if (this->current_kf->current_idx - this->reference_kf->current_idx <= 2) {
         std::cout << "URMARIT CU AJUTORUL TRACK REFERENCE KEY FRAME\n" ;
         this->TrackReferenceKeyFrame();
@@ -175,15 +176,15 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
             this->TrackReferenceKeyFrame();
         }
     } 
+    auto end = high_resolution_clock::now();
+    total_tracking_during_matching += duration_cast<milliseconds>(end - start).count();
 
+    start = high_resolution_clock::now();
     this->TrackLocalMap(mapp);
+    end = high_resolution_clock::now();
+    total_tracking_during_local_map += duration_cast<milliseconds>(end - start).count();
     compute_difference_between_positions(this->current_kf->Tcw, ground_truth_pose, false);
     std::cout << this->current_kf->map_points.size() << " map point correlate cu un feature\n";
-    // if (this->current_kf->current_idx > 35) {
-    //     for (MapPoint *mp : mapp->local_map) {
-    //         std::cout << mp->number_times_seen << " " << mp->number_associations << "\n";
-    //     }
-    // }    
 
     bool needed_keyframe = this->Is_KeyFrame_needed(mapp, this->current_kf->map_points.size()); 
     if (needed_keyframe) {
@@ -192,7 +193,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
     }
-    // int wait_time = this->current_kf->current_idx < 35 ? 20 : 20;
+    // int wait_time = this->current_kf->current_idx < 297 ? 20 : 20;
     // this->current_kf->debug_keyframe(frame, wait_time);
     return {this->current_kf, needed_keyframe};
 }

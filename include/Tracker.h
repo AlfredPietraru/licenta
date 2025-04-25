@@ -19,6 +19,14 @@
 #include "config.h"
 #include "ORBVocabulary.h"
 #include "MapDrawer.h"
+#include <chrono>
+namespace fs = std::filesystem;
+using namespace std;
+using std::chrono::high_resolution_clock;
+using std::chrono::duration_cast;
+using std::chrono::duration;
+using std::chrono::seconds;
+using std::chrono::milliseconds;
 
 using namespace std;
 using namespace cv;
@@ -43,6 +51,9 @@ public:
     FeatureMatcherFinder *fmf;
     OrbMatcher *matcher;
     MapDrawer *mapDrawer;
+
+    int total_tracking_during_matching = 0;
+    int total_tracking_during_local_map = 0;
 
 
     void TrackReferenceKeyFrame();

@@ -24,7 +24,6 @@ using std::chrono::milliseconds;
 // reprezentare grafica in spatiu 3d -> folosind pangolin
 // separare si abstractizare pentru a putea testa mai multe implementari ale diversilor algoritmi de matching intre frame - uri
 // finalizare thread the local mapping 
-// implementare thread relocalization
 
 
 
@@ -89,8 +88,8 @@ int main(void)
         total_tracking_duration += duration_cast<milliseconds>(end - start).count();
         KeyFrame *kf = tracker_out.first;
         bool needed_keyframe = tracker_out.second;
+        reader->store_entry(kf->Tcw);
         if (needed_keyframe) {
-            reader->store_entry(kf->Tcw);
             std::cout << "ADAUGA AICI UN KEYFRAME\n";
             auto start = high_resolution_clock::now();
             local_mapper->local_map(kf);
@@ -107,6 +106,9 @@ int main(void)
     std::cout << tracker->reference_kf->reference_idx << " nr keyframe-uri create\n";
     auto t2 = high_resolution_clock::now();
     std::cout << duration_cast<seconds>(t2 - t1).count() << "s aici atata a durat" << std::endl;  
+
+    std::cout << tracker->total_tracking_during_matching / 1000 << " matching time taken\n";
+    std::cout << tracker->total_tracking_during_local_map / 1000 << " local map duration\n";
     std::cout << total_tracking_duration / 1000 << " atat a durat tracking sa faaca\n";
     std::cout << total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n"; 
 }
