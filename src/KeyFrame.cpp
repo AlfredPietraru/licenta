@@ -236,3 +236,17 @@ void KeyFrame::debug_keyframe(cv::Mat frame, int miliseconds)
     cv::imshow("Display window", img3);
     cv::waitKey(miliseconds);
 }
+
+
+double* KeyFrame::compute_vector_pose() {
+    double *pose_vector = (double*)malloc(7 * sizeof(double));
+    Eigen::Quaterniond quat = this->Tcw.unit_quaternion();
+    pose_vector[0] = quat.w();
+    pose_vector[1] = quat.x();
+    pose_vector[2] = quat.y();
+    pose_vector[3] = quat.z();
+    pose_vector[4] = this->Tcw.translation().x();
+    pose_vector[5] = this->Tcw.translation().y();
+    pose_vector[6] = this->Tcw.translation().z();
+    return pose_vector;
+}

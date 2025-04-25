@@ -58,6 +58,7 @@ set(SOURCES
     src/LocalMapping.cpp
     src/ORBextractor.cpp
     src/MapDrawer.cpp
+    src/BundleAdjustment.cpp
 )
 
 set(HEADERS
@@ -75,6 +76,7 @@ set(HEADERS
     "include/LocalMapping.h"
     "include/ORBextractor.h"
     "include/MapDrawer.h"
+    "include/BundleAdjustment.h"
 )
 
 

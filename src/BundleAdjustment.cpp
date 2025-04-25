@@ -20,6 +20,18 @@ Sophus::SE3d BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
             if (local_keyframes.find(kf_which_sees_map_point) == local_keyframes.end()) fixed_keyframes.insert(kf_which_sees_map_point);
         } 
     }
-    
-    
+    // ceres::Problem problem;
+    // ceres::Solver::Options options;
+    // options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
+    // options.function_tolerance = 1e-7;
+    // options.gradient_tolerance = 1e-7;
+    // options.parameter_tolerance = 1e-8;
+
+    // options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
+    // options.max_num_iterations = 5;
+    // double chi2Mono = 5.991;
+    // double chi2Stereo = 7.815;
+    // ceres::LossFunction *loss_function_mono = new ceres::HuberLoss(sqrt(chi2Mono));
+    // ceres::LossFunction *loss_function_stereo = new ceres::HuberLoss(sqrt(chi2Stereo));    
+    return frame->Tcw;
 }
