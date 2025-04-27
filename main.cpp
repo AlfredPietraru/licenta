@@ -72,7 +72,7 @@ int main(void)
     // qx qy qz qw
     // 0.6132 0.5962 -0.3311 -0.3986
     // reader->store_entry(Sophus::SE3d(Eigen::Quaterniond(-0.3986, 0.6132, 0.5962, -0.3311), Eigen::Vector3d(-0.6305, -1.3563, 1.6380)));
-    reader->store_entry(Sophus::SE3d(Eigen::Matrix4d::Identity()));
+    // reader->store_entry(Sophus::SE3d(Eigen::Matrix4d::Identity()));
     // reader->store_entry(groundtruth_pose);
 
     int total_tracking_duration = 0;
@@ -88,7 +88,7 @@ int main(void)
         total_tracking_duration += duration_cast<milliseconds>(end - start).count();
         KeyFrame *kf = tracker_out.first;
         bool needed_keyframe = tracker_out.second;
-        reader->store_entry(kf->Tcw);
+        // reader->store_entry(kf->Tcw);
         if (needed_keyframe) {
             std::cout << "ADAUGA AICI UN KEYFRAME\n";
             auto start = high_resolution_clock::now();
@@ -97,16 +97,16 @@ int main(void)
             total_local_mapping_duration += duration_cast<milliseconds>(end - start).count();
 
         }
-        // if (reader->frame_idx == 60) {
-        //     auto t2 = high_resolution_clock::now();
-        //     std::cout << duration_cast<seconds>(t2 - t1).count() << " aici atata a durat" << std::endl;
-        //     break;
-        // }
+        if (reader->frame_idx == 120) {
+            auto t2 = high_resolution_clock::now();
+            std::cout << duration_cast<seconds>(t2 - t1).count() << " aici atata a durat" << std::endl;
+            break;
+        }
     }
     std::cout << tracker->reference_kf->reference_idx << " nr keyframe-uri create\n";
     auto t2 = high_resolution_clock::now();
     std::cout << duration_cast<seconds>(t2 - t1).count() << "s aici atata a durat" << std::endl;  
-
+    std::cout << "\n";
     std::cout << tracker->total_tracking_during_matching / 1000 << " matching time taken\n";
     std::cout << tracker->total_tracking_during_local_map / 1000 << " local map duration\n";
     std::cout << total_tracking_duration / 1000 << " atat a durat tracking sa faaca\n";

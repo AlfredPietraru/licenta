@@ -31,14 +31,15 @@ public:
     DBoW2::FeatureVector features_vec;
     KeyFrame *reference_kf;
     int reference_idx;
+    const double POW_OCTAVE[10] = {1, 1.2, 1.44, 1.728, 2.0736, 2.48832, 2.985984, 3.5831808, 4.29981696, 5.159780352};
 
     std::vector<Feature> features;
     std::unordered_map<MapPoint*, Feature*> mp_correlations; 
     std::unordered_set<MapPoint*> map_points;
     std::unordered_set<MapPoint*> outliers;
 
-    int GRID_HEIGHT = 64;
-    int GRID_WIDTH = 48;
+    const int GRID_HEIGHT = 64;
+    const int GRID_WIDTH = 48;
     int currently_matched_points = 0;
     std::vector<std::vector<std::vector<int>>> grid;
     const double BASELINE = 0.08;

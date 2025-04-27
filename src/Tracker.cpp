@@ -116,9 +116,9 @@ void Tracker::TrackReferenceKeyFrame() {
             std::cout << "STERGEREA OUTLIER A ESUAT\n";
         }
     }
-    if (this->current_kf->mp_correlations.size() < 20) {
-        std::cout << this->current_kf->mp_correlations.size() << "REFERENCE FRAME NU A URMARIT SUFICIENTE INLIERE MAP POINTS\n";
-        exit(1);
+    if (this->current_kf->mp_correlations.size() < 15) {
+        std::cout << this->current_kf->mp_correlations.size() << " REFERENCE FRAME NU A URMARIT SUFICIENTE INLIERE MAP POINTS\n";
+        return;
     } 
 }
 

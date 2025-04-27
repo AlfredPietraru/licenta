@@ -1,88 +1,88 @@
 #include "../include/MotionOnlyBA.h"
 #include "../include/rotation.h"
 
+using SE3Manifold = ceres::ProductManifold<ceres::QuaternionManifold, ceres::EuclideanManifold<3>>;
 class BundleError
 {
 public:
-    BundleError(Eigen::Vector3d observed, Eigen::Vector4<double> map_coordinate, double scale_sigma, Eigen::Matrix3d K,
-                bool is_monocular) : observed(observed), map_coordinate(map_coordinate), scale_sigma(scale_sigma),
-                 K(K), is_monocular(is_monocular) {}
+    BundleError(KeyFrame *kf, MapPoint *mp, Feature *f, bool is_monocular) : kf(kf), mp(mp), f(f), is_monocular(is_monocular) {
+        // for (int i = 0; i < 3; i++) {
+        //     std::cout << mp->wcoord_3d.data()[i] << " ";
+        // } 
+        // std::cout << "\n";
+        // std::cout << mp->wcoord_3d.transpose() << "\n";
+        // std::cout << mp->wcoord_3d(0) << " " << mp->wcoord_3d(1) << " " << mp->wcoord_3d(2) << "\n\n";
+    }
 
     template <typename T>
     bool operator()(const T *const pose, T *residuals) const
     {
-        T map_coordinate_world[3] = {T(map_coordinate(0)), T(map_coordinate(1)), T(map_coordinate(2))};
+        T map_coordinate_world[3] = {T(mp->wcoord_3d(0)), T(mp->wcoord_3d(1)), T(mp->wcoord_3d(2))};
         T camera_coordinates[3];
-        T quat[4];
-        quat[0] = pose[0];
-        quat[1] = pose[1];
-        quat[2] = pose[2];
-        quat[3] = pose[3];
-        ceres::QuaternionRotatePoint(quat, map_coordinate_world, camera_coordinates);
+        ceres::QuaternionRotatePoint(pose, map_coordinate_world, camera_coordinates);
         camera_coordinates[0] += pose[4];
         camera_coordinates[1] += pose[5];
         camera_coordinates[2] += pose[6];
         T inv_d = T(1) / (camera_coordinates[2] + T(1e-6));
-        T x = T(K(0, 0)) * camera_coordinates[0] * inv_d + T(K(0, 2));
-        T y = T(K(1, 1)) * camera_coordinates[1] * inv_d + T(K(1, 2));
-        residuals[0] = (x - observed(0)) / scale_sigma;
-        residuals[1] = (y - observed(1)) / scale_sigma;
+        T x = T(kf->K(0, 0)) * camera_coordinates[0] * inv_d + T(kf->K(0, 2));
+        T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
+        residuals[0] = (x - T(f->kpu.pt.x)) / kf->POW_OCTAVE[f->kpu.octave];
+        residuals[1] = (y - T(f->kpu.pt.y)) / kf->POW_OCTAVE[f->kpu.octave];
         if (this->is_monocular)
             return true;
 
-        T z_projected = x - T(K(0, 0)) * 0.08 * inv_d;
-        residuals[2] = (z_projected - observed(2)) / scale_sigma;
+        T z_projected = x - T(kf->K(0, 0)) * 0.08 * inv_d;
+        residuals[2] = (z_projected - T(f->stereo_depth)) / kf->POW_OCTAVE[f->kpu.octave];
         return true;
     }
 
-    static ceres::CostFunction *Create_Monocular(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
+    static ceres::CostFunction *Create_Monocular(KeyFrame *kf, MapPoint *mp, Feature *f)
     {
         return (new ceres::AutoDiffCostFunction<BundleError, 2, 7>(
-            new BundleError(observed, map_coordinate, scale_sigma, K, true)));
+            new BundleError(kf, mp, f, true)));
     }
 
-    static ceres::CostFunction *Create_Stereo(Eigen::Vector3d observed, Eigen::Vector4d map_coordinate, double scale_sigma, Eigen::Matrix3d K)
+    static ceres::CostFunction *Create_Stereo(KeyFrame *kf, MapPoint *mp, Feature *f)
     {
         return (new ceres::AutoDiffCostFunction<BundleError, 3, 7>(
-            new BundleError(observed, map_coordinate, scale_sigma, K, false)));
+            new BundleError(kf, mp, f, false)));
     }
 
 private:
-    Eigen::Vector3d observed;
-    Eigen::Vector4d map_coordinate;
-    double scale_sigma;
-    Eigen::Matrix3d K;
+    KeyFrame *kf;
+    MapPoint* mp;
+    Feature *f;
     bool is_monocular;
 };
 
-double get_rgbd_reprojection_error(MapPoint *mp, Eigen::Matrix3d K, Sophus::SE3d pose, Feature* feature, double chi2) {
+double MotionOnlyBA::get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Sophus::SE3d &pose, Feature* feature, double chi2) {
     double residuals[3];
     Eigen::Vector3d camera_coordinates = pose.matrix3x4() * mp->wcoord;
     if (camera_coordinates[2] <= 1e-6) return 100000;
     double inv_d = 1 / camera_coordinates[2];
-    double x = K(0, 0) * camera_coordinates[0] * inv_d + K(0, 2);
-    double y = K(1, 1) * camera_coordinates[1] * inv_d + K(1, 2);
+    double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
+    double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
     cv::KeyPoint kpu = feature->kpu;
-    residuals[0] = (x - kpu.pt.x) / std::pow(1.2, kpu.octave);
-    residuals[1] = (y - kpu.pt.y) / std::pow(1.2, kpu.octave);
-    double z_projected = x - K(0, 0) * 0.08 * inv_d;
-    residuals[2] = (z_projected - feature->stereo_depth) / std::pow(1.2, kpu.octave);
+    residuals[0] = (x - kpu.pt.x) / POW_OCTAVE[kpu.octave];
+    residuals[1] = (y - kpu.pt.y) / POW_OCTAVE[kpu.octave];
+    double z_projected = x - kf->K(0, 0) * 0.08 * inv_d;
+    residuals[2] = (z_projected - feature->stereo_depth) / POW_OCTAVE[kpu.octave];
     double a = sqrt(residuals[0] * residuals[0] + residuals[1] * residuals[1] + residuals[2] * residuals[2]);
     if (a <= sqrt(chi2)) return pow(a, 2) / 2;
     return sqrt(chi2) * a - chi2 / 2;
 }
 
 
-double get_monocular_reprojection_error(MapPoint *mp, Eigen::Matrix3d K, Sophus::SE3d pose, Feature* feature, double chi2) {
+double MotionOnlyBA::get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Sophus::SE3d &pose, Feature* feature, double chi2) {
     double residuals[2];
     Eigen::Vector3d camera_coordinates = pose.matrix3x4() * mp->wcoord;
     if (camera_coordinates[2] <= 1e-6) return 100000;
     double inv_d = 1 / camera_coordinates[2];
-    double x = K(0, 0) * camera_coordinates[0] * inv_d + K(0, 2);
-    double y = K(1, 1) * camera_coordinates[1] * inv_d + K(1, 2);
+    double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
+    double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
     cv::KeyPoint kpu = feature->kpu;
-    residuals[0] = (x - kpu.pt.x) / std::pow(1.2, kpu.octave);
-    residuals[1] = (y - kpu.pt.y) / std::pow(1.2, kpu.octave);
+    residuals[0] = (x - kpu.pt.x) / POW_OCTAVE[kpu.octave];
+    residuals[1] = (y - kpu.pt.y) / POW_OCTAVE[kpu.octave];
     double a = sqrt(residuals[0] * residuals[0] + residuals[1] * residuals[1]);
     if (a <= sqrt(chi2)) return pow(a, 2) / 2;
     return sqrt(chi2) * a - chi2 / 2;
@@ -145,14 +145,11 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
         ceres::LossFunction *loss_function_mono = new ceres::HuberLoss(sqrt(chi2Mono[i]));
         ceres::LossFunction *loss_function_stereo = new ceres::HuberLoss(sqrt(chi2Stereo[i]));
         
-        int inlier = 0;
         for (auto it = mono_matches.begin(); it != mono_matches.end(); it++) {
             MapPoint *mp = it->first;
             if (kf->check_map_point_outlier(mp))  continue;
             ceres::CostFunction *cost_function;
-            cv::KeyPoint kpu = it->second->kpu;
-            cost_function = BundleError::Create_Monocular(Eigen::Vector3d(kpu.pt.x, kpu.pt.y, 0), mp->wcoord,
-                                                              std::pow(1.2, kpu.octave), kf->K);
+            cost_function = BundleError::Create_Monocular(kf, mp, it->second);
             problem.AddResidualBlock(cost_function, loss_function_mono, pose_vector);
         }
 
@@ -160,13 +157,10 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
             MapPoint *mp = it->first;
             if (kf->check_map_point_outlier(mp))  continue;
             ceres::CostFunction *cost_function;
-            cv::KeyPoint kpu = it->second->kpu;
-            cost_function = BundleError::Create_Stereo(Eigen::Vector3d(kpu.pt.x, kpu.pt.y, it->second->stereo_depth), mp->wcoord,
-                            std::pow(1.2, kpu.octave), kf->K);    
+            cost_function = BundleError::Create_Stereo(kf, mp, it->second);    
             problem.AddResidualBlock(cost_function, loss_function_stereo, pose_vector);
         }
 
-        using SE3Manifold = ceres::ProductManifold<ceres::QuaternionManifold, ceres::EuclideanManifold<3>>;
         problem.AddParameterBlock(pose_vector, 7);
         problem.SetManifold(pose_vector, new SE3Manifold());
 
@@ -179,23 +173,21 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
         
         for (auto it = mono_matches.begin(); it != mono_matches.end(); it++) {
             MapPoint *mp = it->first;
-            error = get_monocular_reprojection_error(mp, kf->K, intermediate_pose, it->second, chi2Mono[i]);  
+            error = get_monocular_reprojection_error(kf, mp, intermediate_pose, it->second, chi2Mono[i]);  
             if (error > chi2Mono[i]) {
                 kf->add_outlier_element(mp);
             } else {
                 kf->remove_outlier_element(mp);
-                inlier++;
             }
         }
 
         for (auto it = rgbd_matches.begin(); it != rgbd_matches.end(); it++) {
             MapPoint *mp = it->first;
-            error = get_rgbd_reprojection_error(mp, kf->K, intermediate_pose, it->second, chi2Stereo[i]);
+            error = get_rgbd_reprojection_error(kf, mp, intermediate_pose, it->second, chi2Stereo[i]);
             if (error > chi2Stereo[i]) {
                 kf->add_outlier_element(mp);
             } else {
                 kf->remove_outlier_element(mp);
-                inlier++;
             }
         }
     }
