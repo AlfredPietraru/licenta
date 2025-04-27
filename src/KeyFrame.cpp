@@ -126,6 +126,7 @@ KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> dist
 
 void KeyFrame::compute_bow_representation()
 {
+    if (this->bow_vec.size() != 0 && this->features_vec.size() != 0) return;
     std::vector<cv::Mat> vector_descriptors;
     for (int i = 0; i < this->orb_descriptors.rows; i++)
     {

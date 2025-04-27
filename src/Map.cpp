@@ -63,7 +63,7 @@ void Map::add_first_keyframe(KeyFrame *kf) {
     }
 
     this->keyframes.push_back(kf);
-    this->graph.insert({kf, std::unordered_map<KeyFrame*, int>()});
+    this->graph[kf] = std::unordered_map<KeyFrame*, int>();
     this->local_map = kf->map_points;
     kf->compute_bow_representation();
 }
@@ -179,7 +179,6 @@ bool Map::remove_keyframe_reference_from_map_point(MapPoint *mp, KeyFrame *kf) {
  
 void Map::add_new_keyframe(KeyFrame *new_kf) {
     new_kf->compute_bow_representation();
-    std::unordered_map<KeyFrame*, int> edges_new_keyframe;
     bool was_addition_succesfull;
     for (auto it = new_kf->mp_correlations.begin(); it != new_kf->mp_correlations.end(); it++) {
         was_addition_succesfull = Map::add_keyframe_reference_to_map_point(it->first, new_kf);
@@ -188,6 +187,7 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
         }
     }
 
+    std::unordered_map<KeyFrame*, int> edges_new_keyframe;
     int start_idx = ((int)this->keyframes.size() > this->KEYFRAMES_WINDOW) ? this->keyframes.size() - this->KEYFRAMES_WINDOW : 0;
     for (int i = start_idx; i < (int)this->keyframes.size(); i++) {
         KeyFrame *current_kf = this->keyframes[i];
@@ -238,7 +238,15 @@ bool Map::update_graph_connections(KeyFrame *kf1, KeyFrame *kf2) {
         return false;
     }
     int common_values = this->get_number_common_mappoints_between_keyframes(kf1, kf2);
-    if (common_values < 15) return false;
+    if (common_values < 15) {
+        if (this->graph[kf1].find(kf2) != this->graph[kf1].end()) {
+            this->graph[kf1].erase(kf2);
+        }
+        if (this->graph[kf2].find(kf1) != this->graph[kf2].end()) {
+            this->graph[kf2].erase(kf1);
+        }
+        return true;
+    }
     this->graph[kf1][kf2] = common_values;
     this->graph[kf2][kf1] = common_values;
     return true;

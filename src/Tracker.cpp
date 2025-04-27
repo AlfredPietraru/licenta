@@ -194,7 +194,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
     }
-    // int wait_time = this->current_kf->current_idx < 120 ? 20 : 0;
-    // this->current_kf->debug_keyframe(frame, wait_time);
+    int wait_time = this->current_kf->current_idx < 295 ? 20 : 0;
+    this->current_kf->debug_keyframe(frame, wait_time);
     return {this->current_kf, needed_keyframe};
 }
