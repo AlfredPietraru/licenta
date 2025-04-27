@@ -98,6 +98,8 @@ bool Tracker::Is_KeyFrame_needed(Map *mapp, int tracked_by_local_map)
     bool c2 = weak_good_map_points_tracking || needToInsertClose; 
     bool c3 = ((tracked_by_local_map < points_seen_from_multiple_frames_reference * fraction) || needToInsertClose) && (tracked_by_local_map > 15);
     if ((c1 || c2) && c3) {
+        std::cout << tracked_by_local_map << " atatea puncte urmarite in track local map\n";
+        std::cout << points_seen_from_multiple_frames_reference << " atatea puncte urmarite din mai multe cadre\n";
         std::cout << "conditions that lead to that " << c1 << " " << weak_good_map_points_tracking << " " << needToInsertClose << " " << c3 << "\n";
     }
     return (c1 || c2) && c3;
@@ -185,8 +187,6 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
     end = high_resolution_clock::now();
     total_tracking_during_local_map += duration_cast<milliseconds>(end - start).count();
     compute_difference_between_positions(this->current_kf->Tcw, ground_truth_pose, false);
-    std::cout << this->current_kf->map_points.size() << " map point correlate cu un feature\n";
-
     bool needed_keyframe = this->Is_KeyFrame_needed(mapp, this->current_kf->map_points.size()); 
     if (needed_keyframe) {
         this->reference_kf = this->current_kf;
@@ -194,7 +194,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
     }
-    // int wait_time = this->current_kf->current_idx < 297 ? 20 : 20;
+    // int wait_time = this->current_kf->current_idx < 120 ? 20 : 0;
     // this->current_kf->debug_keyframe(frame, wait_time);
     return {this->current_kf, needed_keyframe};
 }

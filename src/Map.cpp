@@ -74,6 +74,7 @@ bool Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp) {
         return false;
     }
 
+    
     bool in_map_points = kf->map_points.find(mp) !=  kf->map_points.end();
     bool in_correlations = kf->mp_correlations.find(mp) != kf->mp_correlations.end();
     bool in_features =  in_correlations ? (kf->mp_correlations[mp]->get_map_point() == mp) : in_correlations; 
@@ -199,10 +200,7 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
             continue;
         } 
         int common_values = get_number_common_mappoints_between_keyframes(new_kf, current_kf); 
-        if (common_values < 15) {
-            std::cout << "AU FOST GASITE MAI PUTIN DE 15 PUNCTE COMUNE INTRE FRAME-uri\n";
-            continue;
-        }
+        if (common_values < 15) continue;
         graph[current_kf].insert({new_kf, common_values});
         edges_new_keyframe.insert({current_kf, common_values});
     }   
@@ -214,9 +212,9 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
 int Map::get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2)
 {
     int out = 0;
-    for (auto it = kf1->map_points.begin(); it != kf1->map_points.end(); it++)
+    for (MapPoint *mp : kf1->map_points)
     {
-        if (kf2->map_points.find(*it) != kf2->map_points.end()) out++;
+        if (kf2->map_points.find(mp) != kf2->map_points.end()) out++;
     }
     return out;
 }
@@ -240,10 +238,7 @@ bool Map::update_graph_connections(KeyFrame *kf1, KeyFrame *kf2) {
         return false;
     }
     int common_values = this->get_number_common_mappoints_between_keyframes(kf1, kf2);
-    if (common_values < 15) {
-        std::cout << "NU EXISTA SUFICIENTE PUNCTE COMUNE INTRE KEYFRAME\n";
-        return false;
-    }
+    if (common_values < 15) return false;
     this->graph[kf1][kf2] = common_values;
     this->graph[kf2][kf1] = common_values;
     return true;

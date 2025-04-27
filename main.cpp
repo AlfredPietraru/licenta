@@ -97,11 +97,11 @@ int main(void)
             total_local_mapping_duration += duration_cast<milliseconds>(end - start).count();
 
         }
-        if (reader->frame_idx == 120) {
-            auto t2 = high_resolution_clock::now();
-            std::cout << duration_cast<seconds>(t2 - t1).count() << " aici atata a durat" << std::endl;
-            break;
-        }
+        // if (reader->frame_idx == 120) {
+        //     auto t2 = high_resolution_clock::now();
+        //     std::cout << duration_cast<seconds>(t2 - t1).count() << " aici atata a durat" << std::endl;
+        //     break;
+        // }
     }
     std::cout << tracker->reference_kf->reference_idx << " nr keyframe-uri create\n";
     auto t2 = high_resolution_clock::now();

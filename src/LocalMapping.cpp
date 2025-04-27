@@ -48,14 +48,18 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
             sort(mp->keyframes.begin(), mp->keyframes.end(), customComparison);
             bool first_two = (mp->keyframes[1]->reference_idx - mp->keyframes[0]->reference_idx) == 1;
             bool last_two = (mp->keyframes[2]->reference_idx - mp->keyframes[1]->reference_idx) == 1;
-            // for (int i = 0; i < (int)mp->keyframes.size(); i++) {
-            //     std::cout << mp->keyframes[i]->reference_idx << " "; 
-            // }
-            // std::cout << (first_two && last_two) << "\n"; 
-            if (!first_two || !last_two) {
-                to_del.push_back(mp);
+            bool last_equal_current_kf = mp->keyframes[2]->reference_idx == curr_kf->reference_idx;
+            for (int i = 0; i < (int)mp->keyframes.size(); i++) {
+                std::cout << mp->keyframes[i]->reference_idx << " "; 
+            }
+            std::cout << "      " << (first_two && last_two) << "\n"; 
+
+            if (first_two && last_two && last_equal_current_kf) {
+                too_old_to_keep_looking.push_back(mp);
                 continue;
             }
+            to_del.push_back(mp);
+            continue;
         }
 
         if (mp->keyframes.size() > 3) {
@@ -65,9 +69,9 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
     }
     for (MapPoint *mp : to_del) this->delete_map_point(mp);
     for (MapPoint *mp : too_old_to_keep_looking) this->recently_added.erase(mp);
-    std::cout << too_old_to_keep_looking.size() << " puncte care au scapat\n";
-    std::cout << to_del.size() << " atatea puncte care vor trebui sterse\n";
+    std::cout << too_old_to_keep_looking.size() << " puncte care au trecut complet testul\n";
     std::cout <<  this->recently_added.size() << " atatea map point-uri ramase care vor mai trebui studiate in viitor\n";
+    std::cout << to_del.size() << " atatea puncte care vor trebui sterse\n";
 }
 
 
