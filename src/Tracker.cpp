@@ -42,6 +42,7 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     cv::Mat descriptors;
     this->fmf->compute_keypoints_descriptors(frame, keypoints, undistorted_kps, descriptors);
     if (this->prev_kf == nullptr && this->current_kf != nullptr) {
+        delete this->prev_kf;
         this->prev_kf = this->current_kf;
         this->current_kf = new KeyFrame(this->prev_kf->Tcw, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 1, 
             frame, this->voc, this->reference_kf, this->prev_kf->reference_idx);

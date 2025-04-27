@@ -87,9 +87,9 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
         MapPoint *mp = f.get_map_point();
         if (mp == nullptr || kf->check_map_point_outlier(mp)) continue;
         point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
+        if (point_camera_coordinates(2) < 1e-6) continue;
         if (point_camera_coordinates(0) < kf->minX || point_camera_coordinates(0) > kf->maxX - 1) continue;
         if (point_camera_coordinates(1) < kf->minY || point_camera_coordinates(1) > kf->maxY - 1) continue;
-        if (point_camera_coordinates(2) < 1e-6) continue;
 
         camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
         double distance = camera_to_map_view_ray.norm();
@@ -146,9 +146,9 @@ void OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoin
     for (MapPoint *mp : map_points) {
         if (kf->check_map_point_outlier(mp)) continue;
         point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
+        if (point_camera_coordinates(2) < 1e-6) continue;
         if (point_camera_coordinates(0) < kf->minX || point_camera_coordinates(0) > kf->maxX - 1) continue;
         if (point_camera_coordinates(1) < kf->minY || point_camera_coordinates(1) > kf->maxY - 1) continue;
-        if (point_camera_coordinates(2) < 1e-6) continue;
         
         camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
         double distance = camera_to_map_view_ray.norm();

@@ -259,14 +259,17 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *reference_kf)
     int window = kf->current_idx > 2 ? 3 : 5;  
     Eigen::Vector3d kf_camera_center = kf->camera_center_world;
     Eigen::Vector3d camera_to_map_view_ray;
-    Eigen::Vector3d point_camera_coordinates;
-    
+    Eigen::Vector4d point_camera_coordinates;
+    double u, v, d;
     for (MapPoint *mp : local_map){
         if (kf->check_map_point_outlier(mp)) continue;
-        point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
-        if (point_camera_coordinates(0) < kf->minX || point_camera_coordinates(0) > kf->maxX - 1) continue;
-        if (point_camera_coordinates(1) < kf->minY || point_camera_coordinates(1) > kf->maxY - 1) continue;
-        if (point_camera_coordinates(2) < 1e-6) continue;
+        point_camera_coordinates = kf->mat_camera_world * mp->wcoord;
+        d = point_camera_coordinates(2);
+        if (d < 1e-6) continue;
+        u = kf->K(0, 0) * point_camera_coordinates(0) / d + kf->K(0, 2);
+        v = kf->K(1, 1) * point_camera_coordinates(1) / d + kf->K(1, 2);
+        if (u < kf->minX || u > kf->maxX - 1) continue;
+        if (v < kf->minY || v > kf->maxY - 1) continue;
         
         camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
         double distance = camera_to_map_view_ray.norm();
@@ -280,9 +283,7 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *reference_kf)
         float radius = dot_product >= 0.998 ? 2.5 : 4;
         radius *= window;
         int predicted_scale = mp->predict_image_scale(distance);
-        int scale_of_search = radius * pow(1.2, predicted_scale);        
-        double u = point_camera_coordinates(0);
-        double v = point_camera_coordinates(1);
+        int scale_of_search = radius * kf->POW_OCTAVE[predicted_scale];
 
         int lowest_idx = -1;
         int lowest_dist = 256;
@@ -295,7 +296,7 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *reference_kf)
         for (int idx : kps_idx)
         {
             if (kf->features[idx].stereo_depth > 1e-6) {
-                double fake_rgbd = u - kf->K(0, 0) * 0.08 / point_camera_coordinates(2);
+                double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
                 float er = fabs(fake_rgbd - kf->features[idx].stereo_depth);
                 if (er > scale_of_search) continue;
             }
