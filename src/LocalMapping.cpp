@@ -11,7 +11,7 @@ void LocalMapping::local_map(KeyFrame *kf) {
     int map_points_computed = this->compute_map_points(kf);
     if (map_points_computed == 0) std::cout << "NICIUN MAP POINT NU A FOST CALCULAT\n";
     std::cout << map_points_computed << " atatea map points noi adaugate\n";
-    // this->search_in_neighbours(kf);
+    this->search_in_neighbours(kf);
     this->update_local_map(kf);
     std::cout << "AICI INCEPE BA\n";
     bundleAdjustment->solve_ceres(this->mapp, kf);

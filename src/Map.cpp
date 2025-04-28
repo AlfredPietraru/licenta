@@ -340,6 +340,7 @@ bool Map::replace_map_points_in_keyframe(KeyFrame *kf, MapPoint *old_mp, MapPoin
         std::cout << "NU A MERS DE STERS ELEMENTUL DESI EXISTA\n";
         return false;
     }
+    Map::remove_keyframe_reference_from_map_point(old_mp, kf);
     if (!new_map_point_found) {
         bool adding_new_map_point_succesfull = Map::add_map_point_to_keyframe(kf, previous_feature_associated, new_mp);
         if(!adding_new_map_point_succesfull) {

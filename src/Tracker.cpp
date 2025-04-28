@@ -169,7 +169,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
     this->get_current_key_frame(frame, depth);
     auto start = high_resolution_clock::now();
     if (this->current_kf->current_idx - this->reference_kf->current_idx <= 2) {
-        std::cout << "URMARIT CU AJUTORUL TRACK REFERENCE KEY FRAME\n" ;
+        // std::cout << "URMARIT CU AJUTORUL TRACK REFERENCE KEY FRAME\n" ;
         this->TrackReferenceKeyFrame();
     }
     if (this->current_kf->current_idx - this->reference_kf->current_idx > 2) {
