@@ -13,7 +13,6 @@ void LocalMapping::local_map(KeyFrame *kf) {
     std::cout << map_points_computed << " atatea map points noi adaugate\n";
     this->search_in_neighbours(kf);
     this->update_local_map(kf);
-    // LOCAL BUNDLE ADJUSTMENT AICI 
     std::cout << "AICI INCEPE BA\n";
     bundleAdjustment->solve_ceres(this->mapp, kf);
     std::cout << "AICI SE TERMINA BA\n";
@@ -29,12 +28,6 @@ bool customComparison(KeyFrame *a, KeyFrame *b)
 void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
     std::vector<MapPoint*> to_del;
     std::vector<MapPoint*> too_old_to_keep_looking;
-    // se strica ordinea din unordered set si se pierd elemente daca fac stergerea direct
-    // std::cout << curr_kf->reference_idx << " reference index for keyframes\n";
-    std::cout <<  this->recently_added.size() << " atatea map point-uri initiale care trebuie studiate\n";
-    if (true) {
-        std::cout << curr_kf->reference_idx << "\n";
-    }
     for (MapPoint *mp : this->recently_added) {
         if (mp->keyframes.size() == 0) {
             to_del.push_back(mp);
@@ -50,11 +43,7 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
             sort(mp->keyframes.begin(), mp->keyframes.end(), customComparison);
             bool first_two = (mp->keyframes[1]->reference_idx - mp->keyframes[0]->reference_idx) == 1;
             bool last_two = (mp->keyframes[2]->reference_idx - mp->keyframes[1]->reference_idx) == 1;
-            bool last_equal_current_kf = mp->keyframes[2]->reference_idx == curr_kf->reference_idx;
-            // for (int i = 0; i < (int)mp->keyframes.size(); i++) {
-            //     std::cout << mp->keyframes[i]->reference_idx << " "; 
-            // }
-            // std::cout << "      " << (first_two && last_two) << "\n"; 
+            bool last_equal_current_kf = mp->keyframes[2]->reference_idx == curr_kf->reference_idx; 
 
             if (first_two && last_two && last_equal_current_kf) {
                 too_old_to_keep_looking.push_back(mp);
@@ -71,9 +60,6 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
     }
     for (MapPoint *mp : to_del) this->delete_map_point(mp);
     for (MapPoint *mp : too_old_to_keep_looking) this->recently_added.erase(mp);
-    std::cout << too_old_to_keep_looking.size() << " puncte care au trecut complet testul\n";
-    std::cout <<  this->recently_added.size() << " atatea map point-uri ramase care vor mai trebui studiate in viitor\n";
-    std::cout << to_del.size() << " atatea puncte care vor trebui sterse\n";
 }
 
 
@@ -83,7 +69,7 @@ bool is_coordinate_valid_for_keyframe(KeyFrame *kf, Feature *f, Eigen::Vector4d 
     const float z1 = projected_on_kf(2);
     if (z1 <= 1e-6) return false;
     const float invz1 = 1.0 / z1;
-    const float &sigmaSquare1 = pow(1.2, 2 * f->get_undistorted_keypoint().octave);
+    const float &sigmaSquare1 = kf->POW_OCTAVE[f->get_undistorted_keypoint().octave] * kf->POW_OCTAVE[f->get_undistorted_keypoint().octave];
     float u1 = kf->K(0, 0) * projected_on_kf(0) * invz1 + kf->K(0, 2);
     float v1 = kf->K(1, 1) * projected_on_kf(1) * invz1 + kf->K(1, 2);
     float errX1 = u1 - f->get_undistorted_keypoint().pt.x;
@@ -100,7 +86,6 @@ bool is_coordinate_valid_for_keyframe(KeyFrame *kf, Feature *f, Eigen::Vector4d 
 
 int LocalMapping::compute_map_points(KeyFrame *kf)
 { 
-    // std::cout << "\n START COMPUTE MAP POINTS\n";
     std::unordered_set<KeyFrame*> keyframes = mapp->get_local_keyframes(kf);
     bool isStereo1 = false;
     bool isStereo2 = false;
@@ -187,7 +172,7 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
                 continue;
 
             const float ratioDist = dist2/dist1;
-            const float ratioOctave = pow(1.2 , f1->get_undistorted_keypoint().octave - f2->get_undistorted_keypoint().octave);
+            const float ratioOctave = kf->POW_OCTAVE[f1->get_undistorted_keypoint().octave] / kf->POW_OCTAVE[f2->get_undistorted_keypoint().octave];
 
             if(ratioDist* 1.8 < ratioOctave || ratioDist>ratioOctave * 1.8)
                 continue;
@@ -214,15 +199,11 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
             }
             nr_points_added++;
         }
-        //std::cout << kf->map_points.size() << "original kf map points dupa initial\n";
-        // std::cout << neighbour_kf->map_points.size() << "neighbvour kf map points dupa initial\n\n";
     }
-    // std::cout << "\n END COMPUTE MAP POINTS\n";
     return nr_points_added;
 }
 
 void LocalMapping::search_in_neighbours(KeyFrame *kf) {
-    // std::cout << "\nSTART SEARCH IN NEIGHBOURS\n";
     std::unordered_set<KeyFrame*> first_degree_neighbours = mapp->get_local_keyframes(kf);
     std::unordered_set<KeyFrame*> second_degree_neighbours;
     second_degree_neighbours.insert(first_degree_neighbours.begin(), first_degree_neighbours.end());
@@ -232,9 +213,7 @@ void LocalMapping::search_in_neighbours(KeyFrame *kf) {
         second_degree_neighbours.insert(vpSecondNeighKFs.begin(), vpSecondNeighKFs.end());
     }
 
-    // Search matches by projection from current KF in target KFs
     second_degree_neighbours.erase(kf);
-    // std::cout << second_degree_neighbours.size() << " atatia vecini de second rang avem\n";
     for(KeyFrame *neighbour_kf : second_degree_neighbours)
     {
         OrbMatcher::Fuse(neighbour_kf, kf, 3);
@@ -245,7 +224,6 @@ void LocalMapping::search_in_neighbours(KeyFrame *kf) {
             continue;
         }
     }
-    // std::cout << "\nEND SEARCH IN NEIGHBOURS\n";
 }
 
 

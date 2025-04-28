@@ -28,19 +28,26 @@
 
 #include<mutex>
 
+class FrameSimulation {
+public:
+    FrameSimulation(Eigen::Vector3d camera_center) : camera_center(camera_center) {}
+    Eigen::Vector3d camera_center;
+};
+
 class MapDrawer
 {
 public:
-    MapDrawer(Map* pMap, Eigen::Matrix4d T);
+    MapDrawer(Map* pMap);
+
 
     Map* mapp;
+    std::vector<FrameSimulation> regular_frames;
 
-    void run(cv::Mat T, std::unordered_set<MapPoint*>& local_map);
-    void DrawMapPoints(std::unordered_set<MapPoint*>& local_map);
-    void DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph);
-    void DrawCurrentCamera(pangolin::OpenGlMatrix &Twc);
-    void SetCurrentCameraPose(const cv::Mat &Tcw);
-    void DrawConsecutiveFrames();
+    void run(KeyFrame *kf, bool is_keyframe);
+    void DrawMapPoints();
+    void DrawKeyFrames();
+    void draw_frame_pose(Eigen::Vector3d p, double red, double green, double blue);
+    void DrawRegularFrames();
     void GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M);
 
 private:
@@ -53,8 +60,6 @@ private:
     float mCameraLineWidth;
 
     cv::Mat mCameraPose;
-
-    std::vector<cv::Mat> matrix_poses; 
     pangolin::OpenGlMatrix Twc;
     pangolin::View d_cam;
     pangolin::OpenGlRenderState s_cam;

@@ -71,7 +71,7 @@ Tracker::Tracker(Mat frame, Mat depth, Map *mapp, Sophus::SE3d pose, Config cfg,
     this->fmf->compute_keypoints_descriptors(frame, keypoints, undistorted_kps, descriptors);
     // this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
     pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
-    // pose = Sophus::SE3d(Eigen::Quaterniond(-0.3986, 0.6132, 0.5962, -0.3311), Eigen::Vector3d(-0.6305, -1.3563, 1.6380));
+    // pose = Sophus::SE3d(Eigen::Quaterniond(-0.3986, 0.6132, 0.5962, -0.3311), Eigen::Vector3d(1.3563, 0.6305, 1.6380));
     this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc, nullptr, 0);
     this->reference_kf = this->current_kf;
     mapp->add_first_keyframe(this->reference_kf); 
@@ -187,7 +187,6 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
     end = high_resolution_clock::now();
     total_tracking_during_local_map += duration_cast<milliseconds>(end - start).count();
     compute_difference_between_positions(this->current_kf->Tcw, ground_truth_pose, false);
-    // std::cout << this->current_kf->map_points.size() << " map points urmarite\n\n";
     bool needed_keyframe = this->Is_KeyFrame_needed(mapp, this->current_kf->map_points.size()); 
     if (needed_keyframe) {
         this->reference_kf = this->current_kf;
@@ -195,7 +194,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
     }
-    // int wait_time = this->current_kf->current_idx < 295 ? 20 : 0;
-    // this->current_kf->debug_keyframe(frame, wait_time);
+    int wait_time = this->current_kf->current_idx < 74 ? 20 : 0;
+    this->current_kf->debug_keyframe(frame, wait_time);
     return {this->current_kf, needed_keyframe};
 }

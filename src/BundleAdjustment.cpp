@@ -40,7 +40,7 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
     ceres::Problem problem;
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::LinearSolverType::SPARSE_SCHUR;
-    options.minimizer_progress_to_stdout = true;
+    // options.minimizer_progress_to_stdout = true;
     options.function_tolerance = 1e-7;
     options.gradient_tolerance = 1e-7;
     options.parameter_tolerance = 1e-8;
@@ -88,7 +88,7 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
     
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
-    std::cout << summary.FullReport() << "\n";
+    // std::cout << summary.FullReport() << "\n";
 }
 
 void restore_computed_values(std::unordered_set<KeyFrame*>& local_keyframes, std::unordered_set<MapPoint*>& local_map_points) {
@@ -99,7 +99,6 @@ void restore_computed_values(std::unordered_set<KeyFrame*>& local_keyframes, std
         mp->update_map_point_coordinate();
     }
 }
-
 
 void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
    std::unordered_set<KeyFrame*> local_keyframes = mapp->get_local_keyframes(frame);
@@ -132,11 +131,10 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
             if (local_keyframes.find(kf_which_sees_map_point) == local_keyframes.end()) fixed_keyframes.insert(kf_which_sees_map_point);
         }
     }
-    std::cout << "INAINTE DE CERES IMPLEMENTATION\n";
 
     execute_problem(local_keyframes, fixed_keyframes, local_map_points, 5);
     restore_computed_values(local_keyframes, local_map_points);
-    std::cout << "DUPA PRIMA CERES ITERATIE\n";
+    
     // remove outliers
     double chi2Mono = 5.991;
     double chi2Stereo = 7.815;

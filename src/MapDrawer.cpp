@@ -23,19 +23,19 @@
 #include "../include/KeyFrame.h"
 #include <pangolin/pangolin.h>
 
-MapDrawer::MapDrawer(Map *pMap, Eigen::Matrix4d T) : mapp(pMap)
+MapDrawer::MapDrawer(Map *pMap) : mapp(pMap)
 {
 
-    mKeyFrameSize = 0.05;
+    mKeyFrameSize = 0.1;
     mKeyFrameLineWidth = 1;
     mGraphLineWidth = 0.9;
-    mPointSize = 2;
+    mPointSize = 3;
     mCameraSize = 0.08;
     mCameraLineWidth = 3;
 
     float mViewpointX = 0;
     float mViewpointY = -0.7;
-    float mViewpointZ = -1.8;
+    float mViewpointZ = -1.0;
     float mViewpointF = 500;
 
     pangolin::CreateWindowAndBind("ORB-SLAM2: Map Viewer", 1024, 768);
@@ -53,157 +53,65 @@ MapDrawer::MapDrawer(Map *pMap, Eigen::Matrix4d T) : mapp(pMap)
     this->d_cam = pangolin::CreateDisplay()
                                 .SetBounds(0.0, 1.0, pangolin::Attach::Pix(175), 1.0, -1024.0f / 768.0f)
                                 .SetHandler(new pangolin::Handler3D(s_cam));
-
-    cv::Mat mat;
-    cv::eigen2cv(T, mat);
     Twc.SetIdentity();
 }
 
-void MapDrawer::run(cv::Mat T, std::unordered_set<MapPoint *> &local_map)
+void MapDrawer::run(KeyFrame *kf, bool is_keyframe)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    T.at<float>(0, 0) += 1; // DE STERS
+    // cv::eigen2cv(kf->Tcw.matrix(), mCameraPose);
     this->GetCurrentOpenGLCameraMatrix(Twc);
     s_cam.Follow(Twc);
     d_cam.Activate(s_cam);
-    glClearColor(1.0f,1.0f,1.0f,1.0f);
-    this->DrawCurrentCamera(Twc);
-    this->DrawKeyFrames(true, true);
-    this->DrawMapPoints(local_map);
+    glClearColor(0.0f, 0.0f,0.0f, 0.0f);
+    // this->DrawCurrentCamera(Twc);
+    this->DrawKeyFrames();
+    if (!is_keyframe) {
+        FrameSimulation frameSimulation(kf->camera_center_world);
+        regular_frames.push_back(frameSimulation);
+    }
+    // this->DrawRegularFrames();
+    this->DrawMapPoints();
     pangolin::FinishFrame();
 }
 
-void MapDrawer::DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph)
-{
+void MapDrawer::draw_frame_pose(Eigen::Vector3d p, double red, double green, double blue) {
     const float &w = mKeyFrameSize;
     const float h = w * 0.75;
     const float z = w * 0.6;
-
-    if (bDrawKF)
-    {
-        for (size_t i = 0; i < mapp->keyframes.size(); i++)
-        {
-            KeyFrame *kf = mapp->keyframes[i];
-            cv::Mat mat;
-            cv::eigen2cv(kf->Tcw.matrix(), mat);
-
-            glPushMatrix();
-
-            glMultMatrixf(mat.ptr<GLfloat>(0));
-
-            glLineWidth(mKeyFrameLineWidth);
-            glColor3f(0.0f, 0.0f, 1.0f);
-            glBegin(GL_LINES);
-            glVertex3f(0, 0, 0);
-            glVertex3f(w, h, z);
-            glVertex3f(0, 0, 0);
-            glVertex3f(w, -h, z);
-            glVertex3f(0, 0, 0);
-            glVertex3f(-w, -h, z);
-            glVertex3f(0, 0, 0);
-            glVertex3f(-w, h, z);
-
-            glVertex3f(w, h, z);
-            glVertex3f(w, -h, z);
-
-            glVertex3f(-w, h, z);
-            glVertex3f(-w, -h, z);
-
-            glVertex3f(-w, h, z);
-            glVertex3f(w, h, z);
-
-            glVertex3f(-w, -h, z);
-            glVertex3f(w, -h, z);
-            glEnd();
-
-            glPopMatrix();
-        }
-    }
-    if (bDrawGraph) {
-        std::cout << "O SA DESENEZE SI GRAPHUL LA UN MOMENT DAT\n";
-    }
-}
-
-
-void MapDrawer::DrawConsecutiveFrames() {
-    const float &w = mKeyFrameSize;
-    const float h = w * 0.75;
-    const float z = w * 0.6;
-    if (matrix_poses.size() == 0) return;
-    for (int i = 0; i < (int)matrix_poses.size(); i++) {
-        cv::Mat mat = matrix_poses[i];
-        glPushMatrix();
-        glMultMatrixf(mat.ptr<GLfloat>(0));
-        glLineWidth(mKeyFrameLineWidth);
-        glColor3f(0.0f, 1.0f, 0.0f);
-        glBegin(GL_LINES);
-        glVertex3f(0, 0, 0);
-        glVertex3f(w, h, z);
-        glVertex3f(0, 0, 0);
-        glVertex3f(w, -h, z);
-        glVertex3f(0, 0, 0);
-        glVertex3f(-w, -h, z);
-        glVertex3f(0, 0, 0);
-        glVertex3f(-w, h, z);
-        glVertex3f(w, h, z);
-        glVertex3f(w, -h, z);
-        glVertex3f(-w, h, z);
-        glVertex3f(-w, -h, z);
-        glVertex3f(-w, h, z);
-        glVertex3f(w, h, z);
-        glVertex3f(-w, -h, z);
-        glVertex3f(w, -h, z);
-        glEnd();
-        glPopMatrix();
-    }
-}
-
-
-void MapDrawer::DrawCurrentCamera(pangolin::OpenGlMatrix &Twc)
-{
-    const float &w = mCameraSize;
-    const float h = w * 0.75;
-    const float z = w * 0.6;
-
-    glPushMatrix();
-
-#ifdef HAVE_GLES
-    glMultMatrixf(Twc.m);
-#else
-    glMultMatrixd(Twc.m);
-#endif
-
-    glLineWidth(mCameraLineWidth);
-    glColor3f(0.0f, 1.0f, 0.0f);
+    glColor3f(red, green, blue);
+    glLineWidth(mKeyFrameLineWidth);
     glBegin(GL_LINES);
-    glVertex3f(0, 0, 0);
-    glVertex3f(w, h, z);
-    glVertex3f(0, 0, 0);
-    glVertex3f(w, -h, z);
-    glVertex3f(0, 0, 0);
-    glVertex3f(-w, -h, z);
-    glVertex3f(0, 0, 0);
-    glVertex3f(-w, h, z);
-
-    glVertex3f(w, h, z);
-    glVertex3f(w, -h, z);
-
-    glVertex3f(-w, h, z);
-    glVertex3f(-w, -h, z);
-
-    glVertex3f(-w, h, z);
-    glVertex3f(w, h, z);
-
-    glVertex3f(-w, -h, z);
-    glVertex3f(w, -h, z);
+    glVertex3f(p.x(), p.y(), p.z());
+    glVertex3f(p.x() + w, p.y() + h, p.z() + z);
+    glVertex3f(p.x(), p.y(), p.z());
+    glVertex3f(p.x() + w, p.y() - h, p.z() + z);
+    glVertex3f(p.x(), p.y(), p.z());
+    glVertex3f(p.x() - w, p.y() - h, p.z() + z);
+    glVertex3f(p.x(), p.y(), p.z());
+    glVertex3f(p.x() - w, p.y() + h, p.z() + z);
+    glVertex3f(p.x() + w, p.y() + h, p.z() + z);
+    glVertex3f(p.x() + w, p.y() - h, p.z() + z);
+    glVertex3f(p.x() - w, p.y() + h, p.z() + z);
+    glVertex3f(p.x() - w, p.y() - h, p.z() + z);
+    glVertex3f(p.x() - w, p.y() + h, p.z() + z);
+    glVertex3f(p.x() + w, p.y() + h, p.z() + z);
+    glVertex3f(p.x() - w, p.y() - h, p.z() + z);
+    glVertex3f(p.x() + w, p.y() - h, p.z() + z);
     glEnd();
-
-    glPopMatrix();
 }
 
-void MapDrawer::SetCurrentCameraPose(const cv::Mat &Tcw)
+void MapDrawer::DrawKeyFrames()
 {
-    mCameraPose = Tcw.clone();
+    for (KeyFrame *kf : mapp->keyframes)
+        draw_frame_pose(kf->camera_center_world, 1.0f, 1.0f, 1.0f);
+}
+
+
+void MapDrawer::DrawRegularFrames() {
+    for (FrameSimulation frameSimulation : regular_frames) {
+        this->draw_frame_pose(frameSimulation.camera_center, 0.0f, 0.0f, 1.0f);
+    }   
 }
 
 void MapDrawer::GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M)
@@ -242,7 +150,7 @@ void MapDrawer::GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M)
 }
 
 
-void MapDrawer::DrawMapPoints(std::unordered_set<MapPoint *> &local_map)
+void MapDrawer::DrawMapPoints()
 {
     const std::unordered_set<MapPoint *> &all_map_points = mapp->get_all_map_points();
     glPointSize(mPointSize);
@@ -252,7 +160,7 @@ void MapDrawer::DrawMapPoints(std::unordered_set<MapPoint *> &local_map)
     for (auto it = all_map_points.begin(); it != all_map_points.end(); it++)
     {
         MapPoint *mp = *it;
-        if (local_map.find(mp) != local_map.end())
+        if (mapp->local_map.find(mp) != mapp->local_map.end())
             continue;
         glVertex3f(mp->wcoord_3d(0), mp->wcoord_3d(1), mp->wcoord_3d(2));
     }
@@ -262,9 +170,8 @@ void MapDrawer::DrawMapPoints(std::unordered_set<MapPoint *> &local_map)
     glBegin(GL_POINTS);
     glColor3f(1.0, 0.0, 0.0);
 
-    for (auto it = local_map.begin(); it != local_map.end(); it++)
+    for (MapPoint *mp : mapp->local_map)
     {
-        MapPoint *mp = *it;
         glVertex3f(mp->wcoord_3d(0), mp->wcoord_3d(1), mp->wcoord_3d(2));
     }
 
