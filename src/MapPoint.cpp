@@ -23,20 +23,20 @@ bool MapPoint::map_point_should_be_deleted() {
 }
 
 
-MapPoint::MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord, 
+MapPoint::MapPoint(KeyFrame *keyframe, int idx,  cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord, 
         cv::Mat orb_descriptor) : wcoord(wcoord)
 {
     this->wcoord_3d = Eigen::Vector3d(this->wcoord(0), this->wcoord(1), this->wcoord(2));
     this->octave = kp.octave;
-    this->add_observation(keyframe, camera_center, orb_descriptor);   
+    this->add_observation(keyframe, idx, camera_center, orb_descriptor);   
 }
 
 bool MapPoint::find_keyframe(KeyFrame *kf) {
     return this->data.find(kf) != this->data.end();
 }
 
-void MapPoint::add_observation(KeyFrame *kf, Eigen::Vector3d camera_center, cv::Mat orb_descriptor) {
-    this->data.insert({kf, new MapPointEntry(-1, camera_center, orb_descriptor)});
+void MapPoint::add_observation(KeyFrame *kf, int idx, Eigen::Vector3d camera_center, cv::Mat orb_descriptor) {
+    this->data.insert({kf, new MapPointEntry(idx, camera_center, orb_descriptor)});
     this->keyframes.push_back(kf);
     this->compute_distinctive_descriptor();
     this->compute_view_direction();

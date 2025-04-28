@@ -15,7 +15,16 @@ void LocalMapping::local_map(KeyFrame *kf) {
     this->update_local_map(kf);
     std::cout << "AICI INCEPE BA\n";
     bundleAdjustment->solve_ceres(this->mapp, kf);
+    this->KeyFrameCulling(kf);
+    // int value_with_problems = 0;
+    // for (KeyFrame *kf : mapp->keyframes) {
+    //     for (MapPoint *mp : kf->map_points) {
+    //         if (!mp->find_keyframe(kf)) value_with_problems++;
+    //     }        
+    // }
+    // std::cout << value_with_problems << " atatea puncte cheie au probleme\n";
     std::cout << "AICI SE TERMINA BA\n";
+
 }
 
 
@@ -177,7 +186,7 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
             if(ratioDist* 1.8 < ratioOctave || ratioDist>ratioOctave * 1.8)
                 continue;
 
-            MapPoint* pMP = new MapPoint(kf, f1->get_undistorted_keypoint(), kf->camera_center_world, coordinates,
+            MapPoint* pMP = new MapPoint(kf, f1->idx, f1->get_undistorted_keypoint(), kf->camera_center_world, coordinates,
                      kf->orb_descriptors.row(correspondence.first));
             this->recently_added.insert(pMP);
             pMP->increase_how_many_times_seen();
@@ -192,7 +201,7 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
                 std::cout << "NU S-A PUTUT REALIZA ADAUGAREA UNUI NOU MAP POINT IN LOCAL MAPPING IN CELALALT FRAME\n";
                 exit(1);
             }
-            was_addition_succesfull = Map::add_keyframe_reference_to_map_point(pMP, neighbour_kf);
+            was_addition_succesfull = Map::add_keyframe_reference_to_map_point(pMP, &neighbour_kf->features[correspondence.second], neighbour_kf);
             if (!was_addition_succesfull) {
                 std::cout << "NU S-A PUTUT ADAUGA REFERINTA PUNCTULUI IN KEYFRAME LOCAL MAPPING\n";
                 continue;
@@ -276,4 +285,47 @@ void LocalMapping::update_local_map(KeyFrame *reference_kf)
     for (KeyFrame* kf : second_degree_key_frames) {
         mapp->local_map.insert(kf->map_points.begin(), kf->map_points.end());     
     }
+}
+
+
+void LocalMapping::KeyFrameCulling(KeyFrame *kf)
+{
+    // Check redundant keyframes (only local keyframes)
+    // A keyframe is considered redundant if the 90% of the MapPoints it sees, are seen
+    // in at least other 3 keyframes (in the same or finer scale)
+    // We only consider close stereo points
+    std::unordered_set<KeyFrame*> local_keyframes = mapp->get_local_keyframes(kf);
+
+    std::vector<KeyFrame*> to_delete_keyframes;
+    for(KeyFrame *kf : local_keyframes)
+    {
+        if(kf->reference_idx == 0) continue;
+        int nRedundantObservations=0;
+        for(std::pair<MapPoint*, Feature*> map_point_feature : kf->mp_correlations)
+        {
+            MapPoint *mp = map_point_feature.first;
+            Feature *f = map_point_feature.second;
+            if (mp->keyframes.size() <= 3) continue; 
+            const int &scaleLevel = f->kpu.octave;
+            int nObs=0;
+            for(KeyFrame *current_kf : mp->keyframes) 
+            {
+                if(current_kf == kf) continue;
+                const int &scaleLeveli = current_kf->features[mp->data[current_kf]->feature_idx].get_undistorted_keypoint().octave;  
+                if(scaleLeveli<=scaleLevel+1)
+                {
+                    nObs++;
+                    if(nObs>=3) break;
+                }
+            }
+            nRedundantObservations += (int)(nObs >= 3);
+        }  
+        // std::cout << nRedundantObservations <<  " " << kf->map_points.size() << " atatea observatii redundante intalnite\n";
+        if(nRedundantObservations > 0.9 * kf->map_points.size())
+            to_delete_keyframes.push_back(kf);
+    }
+    std::cout << to_delete_keyframes.size() << " aceste keyframe-uri ar putea fi sterse to_delete_keyframes\n";
+    // for (KeyFrame *kf : to_delete_keyframes) {
+    //     // aici voi face stergerea
+    // }
 }

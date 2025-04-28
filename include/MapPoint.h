@@ -37,7 +37,7 @@ public:
         bool bad = false;
         int octave = 0;
         
-        MapPoint(KeyFrame *keyframe, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord, cv::Mat orb_descriptor);
+        MapPoint(KeyFrame *keyframe, int idx, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord, cv::Mat orb_descriptor);
         void compute_distinctive_descriptor();
         void compute_distance();
         int predict_image_scale(double distance);
@@ -45,7 +45,7 @@ public:
         void increase_how_many_times_seen();
         void increase_number_associations(int val);
         void decrease_number_associations(int val);
-        void add_observation(KeyFrame *kf, Eigen::Vector3d camera_center, cv::Mat orb_descriptor);
+        void add_observation(KeyFrame *kf, int idx, Eigen::Vector3d camera_center, cv::Mat orb_descriptor);
         void remove_observation(KeyFrame *kf);
         void compute_view_direction();
         int ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b);

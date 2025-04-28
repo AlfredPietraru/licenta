@@ -22,6 +22,7 @@ public:
     int compute_map_points(KeyFrame *kf);
     Eigen::Matrix3d compute_fundamental_matrix(KeyFrame *curr_kf, KeyFrame *neighbour_kf);
     void search_in_neighbours(KeyFrame *kf);
+    void KeyFrameCulling(KeyFrame *kf);
 };
 
 #endif

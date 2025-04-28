@@ -468,7 +468,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
                 }
                 Map::remove_keyframe_reference_from_map_point(source_mp, pKF);
                 Map::add_map_point_to_keyframe(pKF, &pKF->features[bestIdx], source_mp);
-                Map::add_keyframe_reference_to_map_point(source_mp, pKF);
+                Map::add_keyframe_reference_to_map_point(source_mp, &pKF->features[bestIdx], pKF);
                 nFused++;
                 continue;
             }
@@ -477,7 +477,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
                 std::cout << "NU S-A PUTUT ADAUGA MAP POINT DESI ERA NULL MAP POINT LA FEATURE\n";
                 continue;
             } 
-            was_addition_succesful = Map::add_keyframe_reference_to_map_point(source_mp, pKF);
+            was_addition_succesful = Map::add_keyframe_reference_to_map_point(source_mp, &pKF->features[bestIdx], pKF);
             if (!was_addition_succesful) {
                 std::cout << "NU S-A PUTUT ADAUGA MAP POINT TO KEYFRAME IN ORB MATCHER\n";
                 continue;

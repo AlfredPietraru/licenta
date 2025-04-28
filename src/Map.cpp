@@ -54,7 +54,7 @@ void Map::add_first_keyframe(KeyFrame *kf) {
     {
         if (kf->features[i].get_map_point() != nullptr || kf->features[i].depth <= 1e-6) continue;
         Eigen::Vector4d wcoord = kf->fromImageToWorld(i);
-        MapPoint *mp = new MapPoint(kf, kf->features[i].kpu, camera_center, wcoord, kf->features[i].descriptor);
+        MapPoint *mp = new MapPoint(kf, i, kf->features[i].kpu, camera_center, wcoord, kf->features[i].descriptor);
         mp->increase_how_many_times_seen();
         was_addition_succesfull = add_map_point_to_keyframe(kf, &kf->features[i], mp);
         if (!was_addition_succesfull) {
@@ -136,7 +136,7 @@ bool Map::remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp) {
     return true;    
 }
 
-bool Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
+bool Map::add_keyframe_reference_to_map_point(MapPoint *mp, Feature *f, KeyFrame *kf) {
     if (mp == nullptr || kf == nullptr) {
         std::cout << "NU S-A PUTUT REALIZA OPERATIA IN ADD KEYFRAMAE REFERENCE UNUL DINTRE ELEMENTE E NULL\n";
         return false;
@@ -160,7 +160,7 @@ bool Map::add_keyframe_reference_to_map_point(MapPoint *mp, KeyFrame *kf) {
         return false;
     }
     
-    mp->add_observation(kf, kf->camera_center_world, kf->mp_correlations[mp]->descriptor);
+    mp->add_observation(kf, f->idx, kf->camera_center_world, kf->mp_correlations[mp]->descriptor);
     return true;
 }
 
@@ -181,7 +181,7 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
     new_kf->compute_bow_representation();
     bool was_addition_succesfull;
     for (auto it = new_kf->mp_correlations.begin(); it != new_kf->mp_correlations.end(); it++) {
-        was_addition_succesfull = Map::add_keyframe_reference_to_map_point(it->first, new_kf);
+        was_addition_succesfull = Map::add_keyframe_reference_to_map_point(it->first, new_kf->mp_correlations[it->first],  new_kf);
         if (!was_addition_succesfull) {
             std::cout << "NU S-A PUTUT ADAUGA NOUL MAP POINT IN KEYFRAME IN MAP\n";
         }
@@ -347,7 +347,7 @@ bool Map::replace_map_points_in_keyframe(KeyFrame *kf, MapPoint *old_mp, MapPoin
             std::cout << "NU A MERS SA ADAUGE NOUL ELEMENT LA REPLACE\n";
             return false;
         }
-        add_keyframe_reference_to_map_point(new_mp, kf);
+        add_keyframe_reference_to_map_point(new_mp, previous_feature_associated, kf);
         return true;
     }
     
@@ -361,7 +361,7 @@ bool Map::replace_map_points_in_keyframe(KeyFrame *kf, MapPoint *old_mp, MapPoin
     if (!adding_new_map_point_succesfull) {
         std::cout << "NU A MERS SA ADAUGE NOUL ELEMENT LA REPLACE IN CONDITIA 2\n";
     }
-    add_keyframe_reference_to_map_point(new_mp, kf);
+    add_keyframe_reference_to_map_point(new_mp, previous_feature_associated, kf);
     return true;
 }
 
