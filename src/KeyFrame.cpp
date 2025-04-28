@@ -38,7 +38,7 @@ bool KeyFrame::check_number_close_points()
     int close_points_tracked = 0;
     int close_points_untracked = 0;
     for (Feature f : this->features) {
-        if (f.depth < 1e-6 || f.depth > 3.2) continue;
+        if (f.depth <= 1e-6 || f.depth >= 3.2) continue;
         if (f.get_map_point() == nullptr) close_points_untracked++;
         if (f.get_map_point() != nullptr) close_points_tracked++;
     }
@@ -62,7 +62,7 @@ KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> dist
         cv::KeyPoint kpu = undistored_kps[i];
         if (depth <= 1e-6)
         {
-            this->features.push_back(Feature(kp, kpu, orb_descriptors.row(i), i, -10001, -10001));
+            this->features.push_back(Feature(kp, kpu, orb_descriptors.row(i), i, -1, -1));
         }
         else
         {
@@ -133,18 +133,6 @@ void KeyFrame::compute_bow_representation()
         vector_descriptors.push_back(this->orb_descriptors.row(i));
     }
     this->voc->transform(vector_descriptors, this->bow_vec, this->features_vec, 4);
-}
-
-Eigen::Vector3d KeyFrame::fromWorldToImage(Eigen::Vector4d &wcoord)
-{
-    Eigen::Vector4d camera_coordinates = this->mat_camera_world * wcoord;
-    double d = camera_coordinates(2);
-    if (d < 1e-6) {
-        std::cout << "CEVA NU E BINE DEPTH E PREA MIC\n";
-    }
-    double u = this->K(0, 0) * camera_coordinates(0) / d + this->K(0, 2);
-    double v = this->K(1, 1) * camera_coordinates(1) / d + this->K(1, 2);
-    return Eigen::Vector3d(u, v, d);
 }
 
 void KeyFrame::set_keyframe_position(Sophus::SE3d Tcw_new) {

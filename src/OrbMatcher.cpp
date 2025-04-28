@@ -77,7 +77,7 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
 {
     Eigen::Vector3d kf_camera_center = kf->camera_center_world;
     Eigen::Vector3d camera_to_map_view_ray;
-    Eigen::Vector3d point_camera_coordinates;
+    Eigen::Vector4d point_camera_coordinates;
     Eigen::Vector3d kf_camer_center_prev_coordinates = prev_kf->Tcw.rotationMatrix() * kf_camera_center + prev_kf->Tcw.translation(); 
     const bool bForward  =   kf_camer_center_prev_coordinates(2) >  3.2;
     const bool bBackward = -kf_camer_center_prev_coordinates(2) > 3.2;
@@ -86,11 +86,14 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
     //     MapPoint *mp = it->first;
         MapPoint *mp = f.get_map_point();
         if (mp == nullptr || kf->check_map_point_outlier(mp)) continue;
-        point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
-        if (point_camera_coordinates(2) < 1e-6) continue;
-        if (point_camera_coordinates(0) < kf->minX || point_camera_coordinates(0) > kf->maxX - 1) continue;
-        if (point_camera_coordinates(1) < kf->minY || point_camera_coordinates(1) > kf->maxY - 1) continue;
-
+        point_camera_coordinates = kf->mat_camera_world * mp->wcoord;
+        if (point_camera_coordinates(2) <= 1e-6) continue;
+        double d = point_camera_coordinates(2);
+        double u = kf->K(0, 0) * point_camera_coordinates(0) / d + kf->K(0, 2);
+        if (u < kf->minX || u > kf->maxX - 1) continue;
+        double v = kf->K(1, 1) * point_camera_coordinates(1) / d + kf->K(1, 2);
+        if (v < kf->minY || v > kf->maxY - 1) continue;
+        
         camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
         double distance = camera_to_map_view_ray.norm();
         if (distance < mp->dmin || distance > mp->dmax) continue;
@@ -98,11 +101,9 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
         camera_to_map_view_ray.normalize();
         double dot_product = camera_to_map_view_ray.dot(mp->view_direction);
         if (dot_product < 0.5) continue; 
-        double u = point_camera_coordinates(0);
-        double v = point_camera_coordinates(1);
 
         int octave = prev_kf->mp_correlations[mp]->get_key_point().octave;
-        int scale_of_search = window * pow(1.2, octave);
+        int scale_of_search = window * kf->POW_OCTAVE[octave];
         std::vector<int> kps_idx;
         if (bForward) {
             kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, octave - 1, 8);
@@ -119,9 +120,9 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
         for (int idx : kps_idx)
         {
             int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
-            if (kf->features[idx].stereo_depth > 1e-6)
+            if (kf->features[idx].stereo_depth >= 1e-6)
             {
-                double fake_rgbd = u - kf->K(0, 0) * 0.08 / point_camera_coordinates(2);
+                double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
                 float er = fabs(fake_rgbd - kf->features[idx].stereo_depth);
                 if (er > scale_of_search) continue;
             }
@@ -141,14 +142,17 @@ void OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoin
 {
     Eigen::Vector3d kf_camera_center = kf->camera_center_world;
     Eigen::Vector3d camera_to_map_view_ray;
-    Eigen::Vector3d point_camera_coordinates;
+    Eigen::Vector4d point_camera_coordinates;
     
     for (MapPoint *mp : map_points) {
         if (kf->check_map_point_outlier(mp)) continue;
-        point_camera_coordinates = kf->fromWorldToImage(mp->wcoord);
-        if (point_camera_coordinates(2) < 1e-6) continue;
-        if (point_camera_coordinates(0) < kf->minX || point_camera_coordinates(0) > kf->maxX - 1) continue;
-        if (point_camera_coordinates(1) < kf->minY || point_camera_coordinates(1) > kf->maxY - 1) continue;
+        point_camera_coordinates = kf->mat_camera_world * mp->wcoord;
+        if (point_camera_coordinates(2) <= 1e-6) continue;
+        double d = point_camera_coordinates(2);
+        double u = kf->K(0, 0) * point_camera_coordinates(0) / d + kf->K(0, 2);
+        if (u < kf->minX || u > kf->maxX - 1) continue;
+        double v = kf->K(1, 1) * point_camera_coordinates(1) / d + kf->K(1, 2);
+        if (v < kf->minY || v > kf->maxY - 1) continue;
         
         camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
         double distance = camera_to_map_view_ray.norm();
@@ -161,9 +165,7 @@ void OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoin
         float radius = dot_product >= 0.998 ? 2.5 : 4;
         radius *= window_size;
         int predicted_scale = mp->predict_image_scale(distance);
-        int scale_of_search = radius * pow(1.2, predicted_scale);        
-        double u = point_camera_coordinates(0);
-        double v = point_camera_coordinates(1);
+        int scale_of_search = radius * kf->POW_OCTAVE[predicted_scale];
 
         int lowest_idx = -1;
         int lowest_dist = 256;
@@ -175,8 +177,8 @@ void OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoin
         if (kps_idx.size() == 0) continue;
         for (int idx : kps_idx)
         {
-            if (kf->features[idx].stereo_depth > 1e-6) {
-                double fake_rgbd = u - kf->K(0, 0) * 0.08 / point_camera_coordinates(2);
+            if (kf->features[idx].stereo_depth >= 1e-6) {
+                double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
                 float er = fabs(fake_rgbd - kf->features[idx].stereo_depth);
                 if (er > scale_of_search) continue;
             }
@@ -287,7 +289,7 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
                 const cv::Mat &d1 = ref1->orb_descriptors.row(idx1);
                 int bestDist = 50;
                 int bestIdx2 = -1;
-                bStereo1 = ref1->features[idx1].stereo_depth > 1e-6;
+                bStereo1 = ref1->features[idx1].stereo_depth >= 1e-6;
 
                 for(size_t idx2 : f2it->second)
                 {
@@ -303,7 +305,7 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
 
                     const cv::KeyPoint &kpu2 = ref2->features[idx2].get_undistorted_keypoint();
 
-                    bStereo2 = ref2->features[idx2].stereo_depth > 1e-6;
+                    bStereo2 = ref2->features[idx2].stereo_depth >= 1e-6;
                     if(!bStereo1 && !bStereo2)
                     {
                         const float distex = ex - kpu2.pt.x;

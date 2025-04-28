@@ -23,7 +23,12 @@ public:
         camera_coordinates[0] += pose[4];
         camera_coordinates[1] += pose[5];
         camera_coordinates[2] += pose[6];
-        T inv_d = T(1) / (camera_coordinates[2] + T(1e-6));
+        T inv_d;
+        if (camera_coordinates[2] > -1e-3 && camera_coordinates[2] < 1e-3) {
+            inv_d = T(1) / (camera_coordinates[2] + T(1e-2));
+        } else {
+            inv_d = T(1) / camera_coordinates[2];
+        }
         T x = T(kf->K(0, 0)) * camera_coordinates[0] * inv_d + T(kf->K(0, 2));
         T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
         residuals[0] = (x - T(f->kpu.pt.x)) / kf->POW_OCTAVE[f->kpu.octave];

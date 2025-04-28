@@ -2,33 +2,31 @@
 using SE3Manifold = ceres::ProductManifold<ceres::QuaternionManifold, ceres::EuclideanManifold<3>>;
 
 
-double get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2) {
+double get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, double chi2) {
     double residuals[3];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-6) return 100000;
+    if (camera_coordinates[2] >= -1e-2 &&  camera_coordinates[2] <= 1e-2) return 100000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
-    cv::KeyPoint kpu = feature->kpu;
-    residuals[0] = (x - kpu.pt.x) / kf->POW_OCTAVE[kpu.octave];
-    residuals[1] = (y - kpu.pt.y) / kf->POW_OCTAVE[kpu.octave];
+    residuals[0] = (x - f->kpu.pt.x) / kf->POW_OCTAVE[f->kpu.octave];
+    residuals[1] = (y - f->kpu.pt.y) / kf->POW_OCTAVE[f->kpu.octave];
     double z_projected = x - kf->K(0, 0) * 0.08 * inv_d;
-    residuals[2] = (z_projected - feature->stereo_depth) / kf->POW_OCTAVE[kpu.octave];
+    residuals[2] = (z_projected - f->stereo_depth) / kf->POW_OCTAVE[f->kpu.octave];
     double a = sqrt(residuals[0] * residuals[0] + residuals[1] * residuals[1] + residuals[2] * residuals[2]);
     if (a <= sqrt(chi2)) return pow(a, 2) / 2;
     return sqrt(chi2) * a - chi2 / 2;
 }
 
-double get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2) {
+double get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, double chi2) {
     double residuals[2];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-6) return 100000;
+    if (camera_coordinates[2] >= -1e-2 &&  camera_coordinates[2] <= 1e-2) return 100000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
-    cv::KeyPoint kpu = feature->kpu;
-    residuals[0] = (x - kpu.pt.x) / kf->POW_OCTAVE[kpu.octave];
-    residuals[1] = (y - kpu.pt.y) / kf->POW_OCTAVE[kpu.octave];
+    residuals[0] = (x - f->kpu.pt.x) / kf->POW_OCTAVE[f->kpu.octave];
+    residuals[1] = (y - f->kpu.pt.y) / kf->POW_OCTAVE[f->kpu.octave];
     double a = sqrt(residuals[0] * residuals[0] + residuals[1] * residuals[1]);
     if (a <= sqrt(chi2)) return pow(a, 2) / 2;
     return sqrt(chi2) * a - chi2 / 2;
@@ -53,11 +51,18 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
 
     for (MapPoint *mp : local_map_points) {
         for (KeyFrame *kf : mp->keyframes) {
-            if (!kf->check_map_point_in_keyframe(mp)) continue;
+            if (!kf->check_map_point_in_keyframe(mp)) {
+                for (KeyFrame *one_more_kf : mp->keyframes) {
+                    std::cout << one_more_kf->reference_idx << " ";
+                }
+                std::cout << "\n";
+                std::cout << kf->reference_idx << " acesta este index frame\n\n"; 
+                continue;
+            }
             Feature *f = kf->mp_correlations[mp];
             bool is_local_keyframe = local_keyframes.find(kf) != local_keyframes.end();
             bool is_fixed_keyframe = fixed_keyframes.find(kf) != fixed_keyframes.end();
-            bool is_monocular = f->stereo_depth < 1e-6;
+            bool is_monocular = f->stereo_depth <= 1e-6;
             if (is_local_keyframe && is_monocular) {
                 ceres::CostFunction *cost_function = BundleAdjustmentError::Create_Variable_Monocular(kf, f);
                 problem.AddResidualBlock(cost_function, loss_function_mono, kf->pose_vector, mp->wcoord_3d.data());
@@ -132,9 +137,44 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
         }
     }
 
+    // for (KeyFrame *kf : local_keyframes) {
+    //     for (int i = 0; i < 7; i++) {
+    //         std::cout << kf->pose_vector[i] << " ";
+    //     }
+    //     std::cout << "\n";
+    // }
+    // std::cout << "\n\n";
+    // for (KeyFrame *kf : fixed_keyframes) {
+    //     for (int i = 0; i < 7; i++) {
+    //         std::cout << kf->pose_vector[i] << " ";
+    //     }
+    //     std::cout << "\n";
+    // }
+    // std::cout << "\n\n";
+    // for (MapPoint *mp : local_map_points) {
+    //     std::cout << "MapPoint coords: " << mp->wcoord_3d.transpose() << std::endl;
+    // }
+    // std::cout << "\n\n";
     execute_problem(local_keyframes, fixed_keyframes, local_map_points, 5);
+    // for (MapPoint *mp : local_map_points) {
+    //     std::cout << "MapPoint coords: " << mp->wcoord_3d.transpose() << std::endl;
+    // }
+    // std::cout << "\n\n";
     restore_computed_values(local_keyframes, local_map_points);
-    
+    // for (KeyFrame *kf : local_keyframes) {
+    //     for (int i = 0; i < 7; i++) {
+    //         std::cout << kf->pose_vector[i] << " ";
+    //     }
+    //     std::cout << "\n";
+    // }
+    // std::cout << "\n\n";
+    // for (KeyFrame *kf : fixed_keyframes) {
+    //     for (int i = 0; i < 7; i++) {
+    //         std::cout << kf->pose_vector[i] << " ";
+    //     }
+    //     std::cout << "\n";
+    // }
+    // std::cout << "\n\n";
     // remove outliers
     double chi2Mono = 5.991;
     double chi2Stereo = 7.815;
@@ -145,7 +185,7 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
             if (!kf->check_map_point_in_keyframe(mp)) continue;
             Feature *f = kf->mp_correlations[mp];
             bool is_outlier;
-            if (f->stereo_depth < 1e-6) {
+            if (f->stereo_depth <= 1e-6) {
                 double error = get_monocular_reprojection_error(kf, mp, f, chi2Mono);
                 is_outlier = error > chi2Mono;
             } else {
@@ -153,8 +193,16 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
                 is_outlier = error > chi2Stereo;
             }
             if (is_outlier) {
-                Map::remove_map_point_from_keyframe(kf, mp);
-                Map::remove_keyframe_reference_from_map_point(mp, kf);
+                bool result = Map::remove_map_point_from_keyframe(kf, mp);
+                if (!result) {
+                    std::cout << "NU A MERS STERGEREA\n";
+                    continue;
+                }
+                result = Map::remove_keyframe_reference_from_map_point(mp, kf);
+                if (!result) {
+                    std::cout << "NU A PUTUT ELIMINA REFERINTA\n";
+                    continue;
+                }
                 if (mp->keyframes.size() == 0) {
                     to_delete.push_back(mp);
                 }

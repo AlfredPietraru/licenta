@@ -23,13 +23,13 @@ public:
         camera_coordinates[0] += pose[4];
         camera_coordinates[1] += pose[5];
         camera_coordinates[2] += pose[6];
-        T inv_d = T(1) / (camera_coordinates[2] + T(1e-6));
+        if (camera_coordinates[2] <= T(1e-2)) camera_coordinates[2] = T(1e-2); 
+        T inv_d = T(1) / camera_coordinates[2];
         T x = T(kf->K(0, 0)) * camera_coordinates[0] * inv_d + T(kf->K(0, 2));
         T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
         residuals[0] = (x - T(f->kpu.pt.x)) / kf->POW_OCTAVE[f->kpu.octave];
         residuals[1] = (y - T(f->kpu.pt.y)) / kf->POW_OCTAVE[f->kpu.octave];
-        if (this->is_monocular)
-            return true;
+        if (this->is_monocular) return true;
 
         T z_projected = x - T(kf->K(0, 0)) * 0.08 * inv_d;
         residuals[2] = (z_projected - T(f->stereo_depth)) / kf->POW_OCTAVE[f->kpu.octave];
@@ -44,16 +44,16 @@ public:
         camera_coordinates[0] += (T)kf->pose_vector[4];
         camera_coordinates[1] += (T)kf->pose_vector[5];
         camera_coordinates[2] += (T)kf->pose_vector[6];
-        T inv_d = T(1) / (camera_coordinates[2] + T(1e-6));
+        if (camera_coordinates[2] <= T(1e-2)) camera_coordinates[2] = T(1e-2); 
+        T inv_d = T(1) / camera_coordinates[2];
         T x = T(kf->K(0, 0)) * camera_coordinates[0] * inv_d + T(kf->K(0, 2));
         T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
         residuals[0] = (x - T(f->kpu.pt.x)) / kf->POW_OCTAVE[f->kpu.octave];
         residuals[1] = (y - T(f->kpu.pt.y)) / kf->POW_OCTAVE[f->kpu.octave];
-        if (this->is_monocular)
-            return true;
+        if (this->is_monocular) return true;
 
         T z_projected = x - T(kf->K(0, 0)) * 0.08 * inv_d;
-        residuals[2] = (z_projected - T(f->kpu.pt.x)) / kf->POW_OCTAVE[f->kpu.octave];
+        residuals[2] = (z_projected - T(f->stereo_depth)) / kf->POW_OCTAVE[f->kpu.octave];
         return true;
     }
 
@@ -62,14 +62,14 @@ public:
         return (new ceres::AutoDiffCostFunction<BundleAdjustmentError, 2, 7, 3>(new BundleAdjustmentError(kf, f, true)));
     }
 
+    static ceres::CostFunction *Create_Static_Monocular(KeyFrame *kf, Feature *f)
+    {
+        return (new ceres::AutoDiffCostFunction<BundleAdjustmentError, 2, 3>(new BundleAdjustmentError(kf, f, true)));
+    }
+
     static ceres::CostFunction *Create_Variable_Stereo(KeyFrame *kf, Feature *f)
     {
         return (new ceres::AutoDiffCostFunction<BundleAdjustmentError, 3, 7, 3>(new BundleAdjustmentError(kf, f, false)));
-    }
-
-    static ceres::CostFunction *Create_Static_Monocular(KeyFrame *kf, Feature *f)
-    {
-        return (new ceres::AutoDiffCostFunction<BundleAdjustmentError, 2, 3>(new BundleAdjustmentError(kf, f, false)));
     }
 
     static ceres::CostFunction *Create_Static_Stereo(KeyFrame *kf, Feature *f)

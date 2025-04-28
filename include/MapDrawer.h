@@ -48,7 +48,7 @@ public:
     void DrawKeyFrames();
     void draw_frame_pose(Eigen::Vector3d p, double red, double green, double blue);
     void DrawRegularFrames();
-    void GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M);
+    void GetCurrentOpenGLCameraMatrix(Eigen::Matrix3d Rwc, Eigen::Vector3d twc);
 
 private:
 
@@ -58,8 +58,6 @@ private:
     float mPointSize;
     float mCameraSize;
     float mCameraLineWidth;
-
-    cv::Mat mCameraPose;
     pangolin::OpenGlMatrix Twc;
     pangolin::View d_cam;
     pangolin::OpenGlRenderState s_cam;

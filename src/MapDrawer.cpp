@@ -59,12 +59,12 @@ MapDrawer::MapDrawer(Map *pMap) : mapp(pMap)
 void MapDrawer::run(KeyFrame *kf, bool is_keyframe)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    // cv::eigen2cv(kf->Tcw.matrix(), mCameraPose);
-    this->GetCurrentOpenGLCameraMatrix(Twc);
+    Eigen::Matrix3d Rwc = kf->Tcw.inverse().rotationMatrix();
+    Eigen::Vector3d twc = kf->Tcw.inverse().translation();
+    this->GetCurrentOpenGLCameraMatrix(Rwc, twc);
     s_cam.Follow(Twc);
     d_cam.Activate(s_cam);
-    glClearColor(0.0f, 0.0f,0.0f, 0.0f);
-    // this->DrawCurrentCamera(Twc);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     this->DrawKeyFrames();
     if (!is_keyframe) {
         FrameSimulation frameSimulation(kf->camera_center_world);
@@ -114,39 +114,24 @@ void MapDrawer::DrawRegularFrames() {
     }   
 }
 
-void MapDrawer::GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M)
+void MapDrawer::GetCurrentOpenGLCameraMatrix(Eigen::Matrix3d Rwc, Eigen::Vector3d twc)
 {
-    if (!mCameraPose.empty())
-    {
-        cv::Mat Rwc(3, 3, CV_32F);
-        cv::Mat twc(3, 1, CV_32F);
-        {
-            Rwc = mCameraPose.rowRange(0, 3).colRange(0, 3).t();
-            twc = -Rwc * mCameraPose.rowRange(0, 3).col(3);
-        }
-
-        M.m[0] = Rwc.at<float>(0, 0);
-        M.m[1] = Rwc.at<float>(1, 0);
-        M.m[2] = Rwc.at<float>(2, 0);
-        M.m[3] = 0.0;
-
-        M.m[4] = Rwc.at<float>(0, 1);
-        M.m[5] = Rwc.at<float>(1, 1);
-        M.m[6] = Rwc.at<float>(2, 1);
-        M.m[7] = 0.0;
-
-        M.m[8] = Rwc.at<float>(0, 2);
-        M.m[9] = Rwc.at<float>(1, 2);
-        M.m[10] = Rwc.at<float>(2, 2);
-        M.m[11] = 0.0;
-
-        M.m[12] = twc.at<float>(0);
-        M.m[13] = twc.at<float>(1);
-        M.m[14] = twc.at<float>(2);
-        M.m[15] = 1.0;
-    }
-    else
-        M.SetIdentity();
+    Twc.m[0]  = Rwc(0, 0);
+    Twc.m[1]  = Rwc(1, 0);
+    Twc.m[2]  = Rwc(2, 0);
+    Twc.m[3]  = 0.0;
+    Twc.m[4]  = Rwc(0, 1);
+    Twc.m[5]  = Rwc(1, 1);
+    Twc.m[6]  = Rwc(2, 1);
+    Twc.m[7]  = 0.0;
+    Twc.m[8]  = Rwc(0, 2);
+    Twc.m[9]  = Rwc(1, 2);
+    Twc.m[10] = Rwc(2, 2);
+    Twc.m[11] = 0.0;
+    Twc.m[12] = twc(0);
+    Twc.m[13] = twc(1);
+    Twc.m[14] = twc(2);
+    Twc.m[15] = 1.0;
 }
 
 
@@ -155,11 +140,10 @@ void MapDrawer::DrawMapPoints()
     const std::unordered_set<MapPoint *> &all_map_points = mapp->get_all_map_points();
     glPointSize(mPointSize);
     glBegin(GL_POINTS);
-    glColor3f(0.0, 0.0, 0.0);
+    glColor3f(1.0, 0.0, 0.0);
 
-    for (auto it = all_map_points.begin(); it != all_map_points.end(); it++)
+    for (MapPoint *mp : all_map_points)
     {
-        MapPoint *mp = *it;
         if (mapp->local_map.find(mp) != mapp->local_map.end())
             continue;
         glVertex3f(mp->wcoord_3d(0), mp->wcoord_3d(1), mp->wcoord_3d(2));
@@ -168,7 +152,7 @@ void MapDrawer::DrawMapPoints()
 
     glPointSize(mPointSize);
     glBegin(GL_POINTS);
-    glColor3f(1.0, 0.0, 0.0);
+    glColor3f(1.0, 0.0, 1.0);
 
     for (MapPoint *mp : mapp->local_map)
     {

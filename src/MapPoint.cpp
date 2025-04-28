@@ -72,6 +72,9 @@ void MapPoint::decrease_number_associations(int val) {
 }
 
 int MapPoint::predict_image_scale(double distance) {
+    if (distance >= -1e-3 && distance < 1e-3) {
+        std::cout << "BAI NU E BINE E PREA MICA DISTANTA\n";
+    }
     float ratio = this->dmax / distance;
     int scale = ceil(log(ratio) / log(1.2));
     scale = (scale < 0) ? 0 : scale;
@@ -80,7 +83,7 @@ int MapPoint::predict_image_scale(double distance) {
 }
 
 void MapPoint::compute_view_direction() {
-    if (this->data.size() == 0) return;
+    if (this->data.size() == 0 || this->keyframes.size() == 0) return;
     Eigen::Vector3d normal = Eigen::Vector3d(0, 0, 0);
     Eigen::Vector3d current_normal;
     MapPointEntry *mp_entry;

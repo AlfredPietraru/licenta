@@ -68,7 +68,7 @@ int main(void)
     
     Map *mapp = new Map();
     LocalMapping *local_mapper = new LocalMapping(mapp);
-    MapDrawer *mapDrawer = new MapDrawer(mapp);
+    // MapDrawer *mapDrawer = new MapDrawer(mapp);
     Tracker *tracker = new Tracker(frame, depth, mapp,  groundtruth_pose, cfg, voc, orb_matcher_cfg);
     auto t1 = high_resolution_clock::now();
     // reader->store_entry(Sophus::SE3d(Eigen::Quaterniond(-0.3986, 0.6132, 0.5962, -0.3311), Eigen::Vector3d(-0.6305, -1.3563, 1.6380)));
@@ -96,7 +96,7 @@ int main(void)
             total_local_mapping_duration += duration_cast<milliseconds>(end - start).count();
 
         }
-        mapDrawer->run(kf, needed_keyframe);
+        // mapDrawer->run(kf, needed_keyframe);
         // if (reader->frame_idx == 120) {
         //     auto t2 = high_resolution_clock::now();
         //     std::cout << duration_cast<seconds>(t2 - t1).count() << " aici atata a durat" << std::endl;

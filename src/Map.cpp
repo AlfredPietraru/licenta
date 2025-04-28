@@ -268,7 +268,7 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *reference_kf)
         if (kf->check_map_point_outlier(mp)) continue;
         point_camera_coordinates = kf->mat_camera_world * mp->wcoord;
         d = point_camera_coordinates(2);
-        if (d < 1e-6) continue;
+        if (d <= 1e-6) continue;
         u = kf->K(0, 0) * point_camera_coordinates(0) / d + kf->K(0, 2);
         v = kf->K(1, 1) * point_camera_coordinates(1) / d + kf->K(1, 2);
         if (u < kf->minX || u > kf->maxX - 1) continue;
@@ -298,7 +298,7 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *reference_kf)
         if (kps_idx.size() == 0) continue;
         for (int idx : kps_idx)
         {
-            if (kf->features[idx].stereo_depth > 1e-6) {
+            if (kf->features[idx].stereo_depth >= 1e-6) {
                 double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
                 float er = fabs(fake_rgbd - kf->features[idx].stereo_depth);
                 if (er > scale_of_search) continue;
