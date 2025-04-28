@@ -72,9 +72,8 @@ int main(void)
     // qx qy qz qw
     // 0.6132 0.5962 -0.3311 -0.3986
     // reader->store_entry(Sophus::SE3d(Eigen::Quaterniond(-0.3986, 0.6132, 0.5962, -0.3311), Eigen::Vector3d(-0.6305, -1.3563, 1.6380)));
-    // reader->store_entry(Sophus::SE3d(Eigen::Matrix4d::Identity()));
+    reader->store_entry(Sophus::SE3d(Eigen::Matrix4d::Identity()));
     // reader->store_entry(groundtruth_pose);
-
     int total_tracking_duration = 0;
     int total_local_mapping_duration = 0;
     while(!reader->should_end()) {
@@ -88,7 +87,7 @@ int main(void)
         total_tracking_duration += duration_cast<milliseconds>(end - start).count();
         KeyFrame *kf = tracker_out.first;
         bool needed_keyframe = tracker_out.second;
-        // reader->store_entry(kf->Tcw);
+        reader->store_entry(kf->Tcw);
         if (needed_keyframe) {
             std::cout << "ADAUGA AICI UN KEYFRAME\n";
             auto start = high_resolution_clock::now();

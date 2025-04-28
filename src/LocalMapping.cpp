@@ -14,8 +14,9 @@ void LocalMapping::local_map(KeyFrame *kf) {
     this->search_in_neighbours(kf);
     this->update_local_map(kf);
     // LOCAL BUNDLE ADJUSTMENT AICI 
-    // bundleAdjustment->solve_ceres(this->mapp, kf);
-
+    std::cout << "AICI INCEPE BA\n";
+    bundleAdjustment->solve_ceres(this->mapp, kf);
+    std::cout << "AICI SE TERMINA BA\n";
 }
 
 
@@ -23,6 +24,7 @@ bool customComparison(KeyFrame *a, KeyFrame *b)
 {
     return a->reference_idx < b->reference_idx; 
 }
+
 // DE ADAUGAT LOGICA PENTRU STERGERE O DATA LA 3 KF-uri;
 void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
     std::vector<MapPoint*> to_del;
@@ -35,7 +37,7 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
     }
     for (MapPoint *mp : this->recently_added) {
         if (mp->keyframes.size() == 0) {
-            std::cout << "NU AR TREBUI CA IN MAP POINT CULLING SA NU EXISTE NICIUN ELEMENT\n";
+            to_del.push_back(mp);
             continue;
         }
         double ratio = (double)mp->number_associations / mp->number_times_seen;
@@ -49,10 +51,10 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
             bool first_two = (mp->keyframes[1]->reference_idx - mp->keyframes[0]->reference_idx) == 1;
             bool last_two = (mp->keyframes[2]->reference_idx - mp->keyframes[1]->reference_idx) == 1;
             bool last_equal_current_kf = mp->keyframes[2]->reference_idx == curr_kf->reference_idx;
-            for (int i = 0; i < (int)mp->keyframes.size(); i++) {
-                std::cout << mp->keyframes[i]->reference_idx << " "; 
-            }
-            std::cout << "      " << (first_two && last_two) << "\n"; 
+            // for (int i = 0; i < (int)mp->keyframes.size(); i++) {
+            //     std::cout << mp->keyframes[i]->reference_idx << " "; 
+            // }
+            // std::cout << "      " << (first_two && last_two) << "\n"; 
 
             if (first_two && last_two && last_equal_current_kf) {
                 too_old_to_keep_looking.push_back(mp);

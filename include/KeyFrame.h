@@ -44,12 +44,18 @@ public:
     std::vector<std::vector<std::vector<int>>> grid;
     const double BASELINE = 0.08;
     float minX, maxX, minY, maxY;
+
+    Eigen::Matrix4d mat_camera_world;
+    Eigen::Matrix4d mat_world_camera;
+    Eigen::Vector3d camera_center_world;
+    double pose_vector[7];
     
     KeyFrame();
     KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint>& keypoints, std::vector<cv::KeyPoint>& undistored_kps,
              cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, cv::Mat& frame, ORBVocabulary *voc, KeyFrame *reference_kf, int reference_idx);
     Eigen::Vector3d fromWorldToImage(Eigen::Vector4d& wcoord);
     Eigen::Vector4d fromImageToWorld(int kp_idx);
+    Sophus::SE3d compute_pose();
     std::vector<cv::KeyPoint> get_all_keypoints(); 
     std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave); 
     void add_outlier_element(MapPoint *mp);
@@ -62,10 +68,6 @@ public:
     void debug_keyframe(cv::Mat frame, int miliseconds);
     int get_map_points_seen_from_multiple_frames(int nr_frames);
     double *compute_vector_pose();
-    
-    Eigen::Matrix4d mat_camera_world;
-    Eigen::Matrix4d mat_world_camera;
-    Eigen::Vector3d camera_center_world;
 };
 
 #endif

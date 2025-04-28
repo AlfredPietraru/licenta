@@ -105,16 +105,6 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
     
     const float chi2Mono[4]={5.991, 5.991, 5.991, 5.991};
     const float chi2Stereo[4]={7.815, 7.815, 7.815, 7.815};
-    Sophus::SE3d pose = kf->Tcw;
-    Eigen::Quaterniond quat = pose.unit_quaternion();
-    double pose_vector[7];
-    pose_vector[0] = quat.w();
-    pose_vector[1] = quat.x();
-    pose_vector[2] = quat.y();
-    pose_vector[3] = quat.z();
-    pose_vector[4] = pose.translation().x();
-    pose_vector[5] = pose.translation().y();
-    pose_vector[6] = pose.translation().z();
     std::unordered_map<MapPoint *, Feature *> mono_matches;
     std::unordered_map<MapPoint *, Feature *> rgbd_matches;
     for (auto it = kf->mp_correlations.begin(); it != kf->mp_correlations.end(); it++) {
@@ -150,7 +140,7 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
             if (kf->check_map_point_outlier(mp))  continue;
             ceres::CostFunction *cost_function;
             cost_function = BundleError::Create_Monocular(kf, mp, it->second);
-            problem.AddResidualBlock(cost_function, loss_function_mono, pose_vector);
+            problem.AddResidualBlock(cost_function, loss_function_mono, kf->pose_vector);
         }
 
         for (auto it = rgbd_matches.begin(); it != rgbd_matches.end(); it++) {
@@ -158,17 +148,17 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
             if (kf->check_map_point_outlier(mp))  continue;
             ceres::CostFunction *cost_function;
             cost_function = BundleError::Create_Stereo(kf, mp, it->second);    
-            problem.AddResidualBlock(cost_function, loss_function_stereo, pose_vector);
+            problem.AddResidualBlock(cost_function, loss_function_stereo, kf->pose_vector);
         }
 
-        problem.AddParameterBlock(pose_vector, 7);
-        problem.SetManifold(pose_vector, new SE3Manifold());
+        problem.AddParameterBlock(kf->pose_vector, 7);
+        problem.SetManifold(kf->pose_vector, new SE3Manifold());
 
         ceres::Solver::Summary summary;
         ceres::Solve(options, &problem, &summary);
         // std::cout << summary.FullReport() << "\n";
 
-        Sophus::SE3d intermediate_pose = compute_pose(kf, pose_vector);
+        Sophus::SE3d intermediate_pose = compute_pose(kf, kf->pose_vector);
         double error;
         
         for (auto it = mono_matches.begin(); it != mono_matches.end(); it++) {
@@ -191,7 +181,7 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
             }
         }
     }
-    return compute_pose(kf, pose_vector);    
+    return kf->compute_pose();    
 }
 
 Sophus::SE3d MotionOnlyBA::solve_g2o(KeyFrame *kf)

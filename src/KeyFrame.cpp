@@ -152,7 +152,27 @@ void KeyFrame::set_keyframe_position(Sophus::SE3d Tcw_new) {
     this->mat_camera_world = Tcw_new.matrix(); 
     this->mat_world_camera = Tcw_new.inverse().matrix();
     this->camera_center_world = -this->Tcw.rotationMatrix().transpose() * this->Tcw.translation();
+    Eigen::Quaterniond q =  this->Tcw.unit_quaternion();
+    Eigen::Vector3d t = this->Tcw.translation();
+    this->pose_vector[0] = q.w();
+    this->pose_vector[1] = q.x();
+    this->pose_vector[2] = q.y();
+    this->pose_vector[3] = q.z();
+    this->pose_vector[4] = t.x();
+    this->pose_vector[5] = t.y();
+    this->pose_vector[6] = t.z();
 }
+
+Sophus::SE3d KeyFrame::compute_pose() {
+    Eigen::Quaterniond quaternion(this->pose_vector[0], this->pose_vector[1], this->pose_vector[2], this->pose_vector[3]);
+    Eigen::Quaterniond old_quaternion = this->Tcw.unit_quaternion();
+    if (old_quaternion.dot(quaternion) < 0)
+    {
+        quaternion.coeffs() *= -1;
+    }
+    return Sophus::SE3d(quaternion, Eigen::Vector3d(this->pose_vector[4], this->pose_vector[5], this->pose_vector[6]));
+}
+
 
 Eigen::Vector4d KeyFrame::fromImageToWorld(int kp_idx)
 {

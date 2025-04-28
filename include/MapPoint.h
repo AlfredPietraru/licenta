@@ -50,6 +50,7 @@ public:
         void compute_view_direction();
         int ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b);
         bool find_keyframe(KeyFrame *kf);
+        void update_map_point_coordinate();
 };
 
 #endif

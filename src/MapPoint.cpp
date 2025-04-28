@@ -133,3 +133,12 @@ void MapPoint::compute_distinctive_descriptor() {
     }
     this->orb_descriptor =  this->data[this->keyframes[BestIdx]]->descriptor;
 }
+
+
+void MapPoint::update_map_point_coordinate() {
+    this->wcoord(0) = this->wcoord_3d(0);
+    this->wcoord(1) = this->wcoord_3d(1);
+    this->wcoord(2) = this->wcoord_3d(2);
+    this->compute_view_direction();
+    this->compute_distance();
+}

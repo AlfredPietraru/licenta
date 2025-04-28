@@ -187,6 +187,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
     end = high_resolution_clock::now();
     total_tracking_during_local_map += duration_cast<milliseconds>(end - start).count();
     compute_difference_between_positions(this->current_kf->Tcw, ground_truth_pose, false);
+    // std::cout << this->current_kf->map_points.size() << " map points urmarite\n\n";
     bool needed_keyframe = this->Is_KeyFrame_needed(mapp, this->current_kf->map_points.size()); 
     if (needed_keyframe) {
         this->reference_kf = this->current_kf;
@@ -194,7 +195,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
     }
-    int wait_time = this->current_kf->current_idx < 295 ? 20 : 0;
-    this->current_kf->debug_keyframe(frame, wait_time);
+    // int wait_time = this->current_kf->current_idx < 295 ? 20 : 0;
+    // this->current_kf->debug_keyframe(frame, wait_time);
     return {this->current_kf, needed_keyframe};
 }
