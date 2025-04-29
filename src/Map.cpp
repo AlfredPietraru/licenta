@@ -252,14 +252,38 @@ bool Map::update_graph_connections(KeyFrame *kf1, KeyFrame *kf2) {
     return true;
 }
 
-void Map::track_local_map(KeyFrame *kf, KeyFrame *reference_kf)
+
+void Map::update_local_map(KeyFrame *reference_kf, std::unordered_set<KeyFrame*>& keyframes_already_found)
 {
+    this->local_map.clear();
     if (this->graph.find(reference_kf) == this->graph.end()) {
+        std::cout << "NU S-A PUTUT REFERENCE FRAME NU A FOST ADAUGAT IN GRAPH DELOC\n";
+        return;
+    }
+    std::unordered_set<KeyFrame*> first_degree_key_frames =  this->get_local_keyframes(reference_kf);
+    std::unordered_set<KeyFrame*> second_degree_key_frames;
+
+    second_degree_key_frames.insert(first_degree_key_frames.begin(), first_degree_key_frames.end());
+    for (KeyFrame *kf : first_degree_key_frames) {
+        std::unordered_set<KeyFrame*> current_kf_neighbours = this->get_local_keyframes(kf);
+        second_degree_key_frames.insert(current_kf_neighbours.begin(), current_kf_neighbours.end());
+    }
+    second_degree_key_frames.insert(keyframes_already_found.begin(), keyframes_already_found.end());
+
+    for (KeyFrame* kf : second_degree_key_frames) {
+        this->local_map.insert(kf->map_points.begin(), kf->map_points.end());
+    }
+}
+
+void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFrame*>& keyframes_already_found)
+{
+    if (this->graph.find(ref) == this->graph.end()) {
         std::cout << " \nCEVA NU E BINE NU GASESTE KEY FRAME IN COMPUTE LOCAL MAP\n";
         return;
     }
+    this->update_local_map(ref, keyframes_already_found);
 
-    int window = kf->current_idx > 2 ? 3 : 5;  
+    int window = kf->current_idx > 2 ? 3 : 5;
     Eigen::Vector3d kf_camera_center = kf->camera_center_world;
     Eigen::Vector3d camera_to_map_view_ray;
     Eigen::Vector4d point_camera_coordinates;
@@ -325,7 +349,6 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *reference_kf)
         Map::add_map_point_to_keyframe(kf, &kf->features[lowest_idx], mp);
     }
 }
-
 
 bool Map::replace_map_points_in_keyframe(KeyFrame *kf, MapPoint *old_mp, MapPoint *new_mp) {
     bool old_map_point_found = kf->check_map_point_in_keyframe(old_mp);

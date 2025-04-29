@@ -39,6 +39,7 @@ public:
     KeyFrame *current_kf = nullptr;
     KeyFrame* prev_kf = nullptr;
     KeyFrame *reference_kf = nullptr;
+    std::unordered_set<KeyFrame*> local_keyframes;
     Sophus::SE3d velocity = Sophus::SE3d(Eigen::Matrix4d::Identity());
 
     vector<double> mDistCoef;
@@ -55,8 +56,8 @@ public:
 
     int total_tracking_during_matching = 0;
     int total_tracking_during_local_map = 0;
-
-
+  
+    void FindReferenceKeyFrame();
     void TrackReferenceKeyFrame();
     void TrackConsecutiveFrames();
     void TrackLocalMap(Map *mapp);

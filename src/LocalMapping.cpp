@@ -12,7 +12,6 @@ void LocalMapping::local_map(KeyFrame *kf) {
     if (map_points_computed == 0) std::cout << "NICIUN MAP POINT NU A FOST CALCULAT\n";
     std::cout << map_points_computed << " atatea map points noi adaugate\n";
     this->search_in_neighbours(kf);
-    this->update_local_map(kf);
     std::cout << "AICI INCEPE BA\n";
     bundleAdjustment->solve_ceres(this->mapp, kf);
     this->KeyFrameCulling(kf);
@@ -264,27 +263,6 @@ void LocalMapping::delete_map_point(MapPoint *mp) {
     }
     if (this->recently_added.find(mp) != this->recently_added.end()) this->recently_added.erase(mp);
     delete mp;
-}
-
-void LocalMapping::update_local_map(KeyFrame *reference_kf)
-{
-    mapp->local_map.clear();
-    if (this->mapp->graph.find(reference_kf) == this->mapp->graph.end()) {
-        std::cout << "NU S-A PUTUT REFERENCE FRAME NU A FOST ADAUGAT IN GRAPH DELOC\n";
-        return;
-    }
-    std::unordered_set<KeyFrame*> first_degree_key_frames =  mapp->get_local_keyframes(reference_kf);
-    std::unordered_set<KeyFrame*> second_degree_key_frames;
-
-    second_degree_key_frames.insert(first_degree_key_frames.begin(), first_degree_key_frames.end());
-    for (KeyFrame *kf : first_degree_key_frames) {
-        std::unordered_set<KeyFrame*> current_kf_neighbours = mapp->get_local_keyframes(kf);
-        second_degree_key_frames.insert(current_kf_neighbours.begin(), current_kf_neighbours.end());
-    }
-
-    for (KeyFrame* kf : second_degree_key_frames) {
-        mapp->local_map.insert(kf->map_points.begin(), kf->map_points.end());     
-    }
 }
 
 

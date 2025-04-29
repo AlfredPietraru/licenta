@@ -102,11 +102,11 @@ bool Tracker::Is_KeyFrame_needed(Map *mapp, int tracked_by_local_map)
     bool c1 = (this->current_kf->current_idx - this->reference_kf->current_idx) >= 30;
     bool c2 = weak_good_map_points_tracking || needToInsertClose; 
     bool c3 = ((tracked_by_local_map < points_seen_from_multiple_frames_reference * fraction) || needToInsertClose) && (tracked_by_local_map > 15);
-    // if ((c1 || c2) && c3) {
+    if ((c1 || c2) && c3) {
         std::cout << tracked_by_local_map << " atatea puncte urmarite in track local map\n";
         std::cout << points_seen_from_multiple_frames_reference << " atatea puncte urmarite din mai multe cadre\n";
         std::cout << "conditions that lead to that " << c1 << " " << weak_good_map_points_tracking << " " << needToInsertClose << " " << c3 << "\n";
-    // }
+    }
     return (c1 || c2) && c3;
 }
 
@@ -152,8 +152,32 @@ void Tracker::TrackConsecutiveFrames() {
     } 
 }
 
+void Tracker::FindReferenceKeyFrame() {
+    this->local_keyframes.clear();
+    this->reference_kf = nullptr;
+    unordered_map<KeyFrame*, int> umap;
+    for (MapPoint *mp : this->current_kf->map_points) {
+        for (KeyFrame *kf : mp->keyframes) {
+            if (umap.count(kf) > 0) {
+                umap[kf] += 1;
+            } else {
+                umap[kf] = 1;
+            }
+        }
+    }
+    int maxim_nr_map_points = -1;
+    for (auto it = umap.begin(); it != umap.end(); it++) {
+        this->local_keyframes.insert(it->first);
+        if (it->second > maxim_nr_map_points) {
+            this->reference_kf = it->first;
+            maxim_nr_map_points = it->second;
+        }
+    }
+}
+
 void Tracker::TrackLocalMap(Map *mapp) {
-    mapp->track_local_map(this->current_kf, this->reference_kf);
+    this->FindReferenceKeyFrame();
+    mapp->track_local_map(this->current_kf, this->reference_kf, this->local_keyframes);
     if (this->current_kf->mp_correlations.size() < 30) {
         std::cout << " \nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
         return;

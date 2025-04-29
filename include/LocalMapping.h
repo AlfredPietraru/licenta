@@ -16,7 +16,6 @@ public:
     }
 
     void local_map(KeyFrame *kf);
-    void update_local_map(KeyFrame *reference_kf);
     void map_points_culling(KeyFrame *curr_kf);
     void delete_map_point(MapPoint *mp);
     int compute_map_points(KeyFrame *kf);
