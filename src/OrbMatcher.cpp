@@ -246,8 +246,7 @@ void OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref)
                 }
                 if (bestDist1 > DES_DIST) continue;
                 if (bestDist1 > 0.7 * bestDist2) continue;
-                Map::add_map_point_to_keyframe(curr, &curr->features[bestIdx], mp_ref);
-                // std::cout << curr->map_points.size() << " " << curr->mp_correlations.size() << " " << Map::check_valid_features_number(curr) << "\n"; 
+                Map::add_map_point_to_keyframe(curr, &curr->features[bestIdx], mp_ref); 
             }
             f1it++;
             f2it++;

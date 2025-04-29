@@ -22,11 +22,12 @@ public:
     std::unordered_map<KeyFrame*, std::unordered_map<KeyFrame*, int>> graph;
     std::unordered_set<MapPoint*> local_map;
 
-    Map() {}
+    Map() {
+        this->local_map.reserve(2000);
+    }
     std::unordered_set<KeyFrame*> get_local_keyframes(KeyFrame *kf);
     void track_local_map(KeyFrame *curr_kf, KeyFrame *ref, std::unordered_set<KeyFrame*>& keyframes_already_found);
     std::unordered_set<MapPoint*> get_all_map_points();
-    void add_first_keyframe(KeyFrame *new_kf);
     std::unordered_set<MapPoint*> add_new_keyframe(KeyFrame *kf);
 
     
@@ -38,9 +39,8 @@ public:
     static bool remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp);
     static bool replace_map_points_in_keyframe(KeyFrame *kf, MapPoint *old_mp, MapPoint *new_mp);
     bool update_graph_connections(KeyFrame *kf1, KeyFrame *kf2);
-    int get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2);
-    void debug_map(KeyFrame *kf);
-    static int check_valid_features_number(KeyFrame *kf);
+    std::unordered_set<KeyFrame*> get_till_second_degree_keyframes(KeyFrame *kf);
+    void create_map_points_from_features(KeyFrame *kf);
 };
 
 #endif

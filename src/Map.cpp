@@ -15,33 +15,10 @@ int ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b) {
     return dist;
 }
 
-void Map::debug_map(KeyFrame *kf) {
-    if (this->graph.find(kf) == this->graph.end()) {
-        std::cout << " NU A FOST GASIT KEYFRAME-ul\n";
-        return;
-    }
-    std::unordered_map<KeyFrame*, int> edges = this->graph[kf];
-    if (edges.size() == 0) {
-        std::cout << "DIMENSIUNE EDGES ESTE 0, NOD IZOLAT NU E BINE\n\n\n";
-        return;
-    }
-    for (auto it = edges.begin(); it != edges.end(); it++) {
-        std::cout << it->first->current_idx << " " << it->second << " idx keyframe si numarul de conexiuni";
-    }
-}
-
 std::unordered_set<MapPoint*> Map::get_all_map_points() {
     std::unordered_set<MapPoint*> out;
     for (long unsigned int i = 0; i < keyframes.size(); i++) {
         out.insert(keyframes[i]->map_points.begin(), keyframes[i]->map_points.end());
-    }
-    return out;
-}
-
-int Map::check_valid_features_number(KeyFrame *kf) {
-    int out = 0;
-    for (Feature f : kf->features) {
-        out += (int)(f.get_map_point() != nullptr);
     }
     return out;
 }
@@ -68,26 +45,44 @@ std::unordered_map<KeyFrame*, int> Map::get_keyframes_connected(KeyFrame *new_kf
 }
 
 
-void Map::add_first_keyframe(KeyFrame *kf) {
-    kf->isKeyFrame = true;
-    bool was_addition_succesfull;
-    Eigen::Vector3d camera_center = kf->camera_center_world;
+void Map::create_map_points_from_features(KeyFrame *kf) {
     for (long unsigned int i = 0; i < kf->features.size(); i++)
     {
-        if (kf->features[i].get_map_point() != nullptr || kf->features[i].depth <= 1e-6) continue;
+        if (kf->features[i].get_map_point() != nullptr) continue;
+        double depth = kf->features[i].depth;
+        if (depth <= 1e-6 || depth > 3.2) continue;
         Eigen::Vector4d wcoord = kf->fromImageToWorld(i);
-        MapPoint *mp = new MapPoint(kf, i, kf->features[i].kpu, camera_center, wcoord, kf->features[i].descriptor);
+        MapPoint *mp = new MapPoint(kf, i, kf->features[i].kpu, kf->camera_center_world, wcoord, kf->features[i].descriptor);
         mp->increase_how_many_times_seen();
-        was_addition_succesfull = add_map_point_to_keyframe(kf, &kf->features[i], mp);
+        bool was_addition_succesfull = add_map_point_to_keyframe(kf, &kf->features[i], mp);
         if (!was_addition_succesfull) {
             std::cout << "NU S-A PUTUT SA ADAUGE MAP POINT-ul\n";
         }
     }
+}
 
-    this->keyframes.push_back(kf);
-    this->graph[kf] = std::unordered_map<KeyFrame*, int>();
-    this->local_map = kf->map_points;
-    kf->compute_bow_representation();
+std::unordered_set<MapPoint*> Map::add_new_keyframe(KeyFrame *new_kf) {
+    this->keyframes.push_back(new_kf);
+    this->graph[new_kf] = std::unordered_map<KeyFrame*, int>();
+    new_kf->compute_bow_representation();
+    if (this->keyframes.size() == 0) {
+        this->create_map_points_from_features(new_kf);
+        return std::unordered_set<MapPoint*>();
+    }
+    std::unordered_set<MapPoint*> points_added;
+    for (auto it = new_kf->mp_correlations.begin(); it != new_kf->mp_correlations.end(); it++) {
+        bool was_addition_succesfull = Map::add_keyframe_reference_to_map_point(it->first, new_kf->mp_correlations[it->first],  new_kf);
+        if (!was_addition_succesfull) {
+            std::cout << "NU S-A PUTUT ADAUGA NOUL MAP POINT IN KEYFRAME IN MAP INAINTE\n";
+        }
+    }
+    this->create_map_points_from_features(new_kf);    
+    std::unordered_map<KeyFrame*, int> edges_new_keyframe = this->get_keyframes_connected(new_kf, 15);
+    for (auto it = edges_new_keyframe.begin(); it != edges_new_keyframe.end(); it++) {
+        this->graph[it->first][new_kf] = it->second;
+        this->graph[new_kf][it->first] = it->second;
+    }
+    return points_added;
 }
 
 bool Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp) {
@@ -199,51 +194,6 @@ bool Map::remove_keyframe_reference_from_map_point(MapPoint *mp, KeyFrame *kf) {
     return true;
 }
 
-std::unordered_set<MapPoint*> Map::add_new_keyframe(KeyFrame *new_kf) {
-
-    // ESTE INCOMPLETA AICI TREBUIE DE CONSIDERAT CANND NU EXISTA 100 de puncte
-    new_kf->isKeyFrame = true;
-    std::unordered_set<MapPoint*> points_added;
-    new_kf->compute_bow_representation();
-    for (auto it = new_kf->mp_correlations.begin(); it != new_kf->mp_correlations.end(); it++) {
-        bool was_addition_succesfull = Map::add_keyframe_reference_to_map_point(it->first, new_kf->mp_correlations[it->first],  new_kf);
-        if (!was_addition_succesfull) {
-            std::cout << "NU S-A PUTUT ADAUGA NOUL MAP POINT IN KEYFRAME IN MAP INAINTE\n";
-        }
-    }
-
-    for (int i = 0; i < (int)new_kf->features.size(); i++) {
-        if (new_kf->features[i].get_map_point() != nullptr) continue;
-        if (new_kf->features[i].depth < 1e-6 || new_kf->features[i].depth > 3.2) continue;
-        Eigen::Vector4d wcoord = new_kf->fromImageToWorld(i);
-        MapPoint *mp = new MapPoint(new_kf, i, new_kf->features[i].kpu, new_kf->camera_center_world, wcoord, new_kf->features[i].descriptor);
-        points_added.insert(mp);
-        mp->increase_how_many_times_seen();
-        bool was_addition_succesfull = add_map_point_to_keyframe(new_kf, &new_kf->features[i], mp);
-        if (!was_addition_succesfull) {
-            std::cout << "NU S-A PUTUT CREA NOUL MAP POINT IN KEYFRAME\n";
-        }
-    }
-    
-    std::unordered_map<KeyFrame*, int> edges_new_keyframe = this->get_keyframes_connected(new_kf, 15);
-    for (auto it = edges_new_keyframe.begin(); it != edges_new_keyframe.end(); it++) {
-        graph[it->first][new_kf] = it->second;
-    }
-    this->keyframes.push_back(new_kf);
-    this->graph.insert({new_kf, edges_new_keyframe});
-    return points_added;
-}
-
-
-int Map::get_number_common_mappoints_between_keyframes(KeyFrame *kf1, KeyFrame *kf2)
-{
-    int out = 0;
-    for (MapPoint *mp : kf1->map_points)
-    {
-        if (kf2->map_points.find(mp) != kf2->map_points.end()) out++;
-    }
-    return out;
-}
 
 std::unordered_set<KeyFrame*> Map::get_local_keyframes(KeyFrame *kf) {
     if (this->graph.find(kf) == this->graph.end()) {
@@ -258,12 +208,31 @@ std::unordered_set<KeyFrame*> Map::get_local_keyframes(KeyFrame *kf) {
     return out;
 }
 
+std::unordered_set<KeyFrame*> Map::get_till_second_degree_keyframes(KeyFrame *kf) {
+    std::unordered_set<KeyFrame*> first_degree_key_frames =  this->get_local_keyframes(kf);
+    std::unordered_set<KeyFrame*> second_degree_key_frames;
+
+    second_degree_key_frames.insert(first_degree_key_frames.begin(), first_degree_key_frames.end());
+    for (KeyFrame *kf : first_degree_key_frames) {
+        std::unordered_set<KeyFrame*> current_kf_neighbours = this->get_local_keyframes(kf);
+        second_degree_key_frames.insert(current_kf_neighbours.begin(), current_kf_neighbours.end());
+    }
+    if (second_degree_key_frames.find(kf) != second_degree_key_frames.end()) {
+        second_degree_key_frames.erase(kf);
+    }
+    return second_degree_key_frames;
+}
+
 bool Map::update_graph_connections(KeyFrame *kf1, KeyFrame *kf2) {
     if (this->graph.find(kf1) == this->graph.end() || this->graph.find(kf2) == this->graph.end()) {
         std::cout << "NU S-AU GASIT NODURILE IN GRAPH\n";
         return false;
     }
-    int common_values = this->get_number_common_mappoints_between_keyframes(kf1, kf2);
+    int common_values = 0;
+    for (MapPoint *mp : kf1->map_points)
+    {
+        if (kf2->map_points.find(mp) != kf2->map_points.end()) common_values++;
+    }
     if (common_values < 15) {
         if (this->graph[kf1].find(kf2) != this->graph[kf1].end()) {
             this->graph[kf1].erase(kf2);
@@ -286,16 +255,11 @@ void Map::update_local_map(KeyFrame *ref, std::unordered_set<KeyFrame*>& keyfram
         std::cout << "NU S-A PUTUT REFERENCE FRAME NU A FOST ADAUGAT IN GRAPH DELOC\n";
         return;
     }
-    std::unordered_set<KeyFrame*> first_degree_key_frames =  this->get_local_keyframes(ref);
-    std::unordered_set<KeyFrame*> second_degree_key_frames;
 
-    second_degree_key_frames.insert(first_degree_key_frames.begin(), first_degree_key_frames.end());
-    for (KeyFrame *kf : first_degree_key_frames) {
-        std::unordered_set<KeyFrame*> current_kf_neighbours = this->get_local_keyframes(kf);
-        second_degree_key_frames.insert(current_kf_neighbours.begin(), current_kf_neighbours.end());
-    }
+    std::unordered_set<KeyFrame*> second_degree_key_frames = this->get_till_second_degree_keyframes(ref);
     second_degree_key_frames.insert(keyframes_already_found.begin(), keyframes_already_found.end());
 
+    second_degree_key_frames.insert(ref);
     for (KeyFrame* kf : second_degree_key_frames) {
         this->local_map.insert(kf->map_points.begin(), kf->map_points.end());
     }
@@ -314,7 +278,6 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
     this->update_local_map(ref, keyframes_already_found);
 
     int window = kf->current_idx > 2 ? 3 : 5;
-    Eigen::Vector3d kf_camera_center = kf->camera_center_world;
     Eigen::Vector3d camera_to_map_view_ray;
     Eigen::Vector4d point_camera_coordinates;
     double u, v, d;
@@ -328,7 +291,7 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
         if (u < kf->minX || u > kf->maxX - 1) continue;
         if (v < kf->minY || v > kf->maxY - 1) continue;
         
-        camera_to_map_view_ray = (mp->wcoord_3d - kf_camera_center);
+        camera_to_map_view_ray = (mp->wcoord_3d - kf->camera_center_world);
         double distance = camera_to_map_view_ray.norm();
         if (distance < mp->dmin || distance > mp->dmax) continue;
         

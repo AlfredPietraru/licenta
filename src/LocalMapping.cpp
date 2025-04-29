@@ -3,12 +3,6 @@
 
 void LocalMapping::local_map(KeyFrame *kf) {
     // cam shady bucata asta
-    if (this->first_kf) {
-        mapp->add_first_keyframe(kf);
-        this->first_kf = false;
-        std::cout << "LOCAL MAP ISI FACE TREABA\n";
-        return;
-    }
     std::unordered_set<MapPoint*> new_map_points_added = mapp->add_new_keyframe(kf);
     this->recently_added.insert(new_map_points_added.begin(), new_map_points_added.end());
     this->map_points_culling(kf);
@@ -25,7 +19,6 @@ bool customComparison(KeyFrame *a, KeyFrame *b)
     return a->reference_idx < b->reference_idx; 
 }
 
-// DE ADAUGAT LOGICA PENTRU STERGERE O DATA LA 3 KF-uri;
 void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
     std::vector<MapPoint*> to_del;
     std::vector<MapPoint*> too_old_to_keep_looking;
@@ -203,16 +196,7 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
 }
 
 void LocalMapping::search_in_neighbours(KeyFrame *kf) {
-    std::unordered_set<KeyFrame*> first_degree_neighbours = mapp->get_local_keyframes(kf);
-    std::unordered_set<KeyFrame*> second_degree_neighbours;
-    second_degree_neighbours.insert(first_degree_neighbours.begin(), first_degree_neighbours.end());
-    for(KeyFrame* pKFi :  first_degree_neighbours)
-    {
-        std::unordered_set<KeyFrame*> vpSecondNeighKFs = mapp->get_local_keyframes(pKFi);
-        second_degree_neighbours.insert(vpSecondNeighKFs.begin(), vpSecondNeighKFs.end());
-    }
-
-    second_degree_neighbours.erase(kf);
+    std::unordered_set<KeyFrame*> second_degree_neighbours = mapp->get_till_second_degree_keyframes(kf);
     for(KeyFrame *neighbour_kf : second_degree_neighbours)
     {
         OrbMatcher::Fuse(neighbour_kf, kf, 3);

@@ -102,7 +102,6 @@ bool Tracker::Is_KeyFrame_needed()
 
 
 void Tracker::TrackReferenceKeyFrame() {
-
     matcher->match_frame_reference_frame(this->current_kf, this->reference_kf);
     if (this->current_kf->mp_correlations.size() < 15) {
         std::cout << this->current_kf->mp_correlations.size() << " REFERENCE FRAME N A URMARIT SUFICIENTE MAP POINTS PENTRU OPTIMIZARE\n";
@@ -159,6 +158,7 @@ KeyFrame * Tracker::FindReferenceKeyFrame() {
 
 void Tracker::TrackLocalMap(Map *mapp) {
     KeyFrame *current_ref_kf = this->FindReferenceKeyFrame();
+    
     mapp->track_local_map(this->current_kf, current_ref_kf, this->local_keyframes);
     if (this->current_kf->mp_correlations.size() < 30) {
         std::cout << " \nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
