@@ -78,9 +78,10 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
     Eigen::Vector3d kf_camera_center = kf->camera_center_world;
     Eigen::Vector3d camera_to_map_view_ray;
     Eigen::Vector4d point_camera_coordinates;
-    Eigen::Vector3d kf_camer_center_prev_coordinates = prev_kf->Tcw.rotationMatrix() * kf_camera_center + prev_kf->Tcw.translation(); 
-    const bool bForward  =   kf_camer_center_prev_coordinates(2) >  3.2;
-    const bool bBackward = -kf_camer_center_prev_coordinates(2) > 3.2;
+    Eigen::Vector3d kf_camer_center_prev_coordinates = prev_kf->Tcw.rotationMatrix() * kf_camera_center + prev_kf->Tcw.translation();
+    // aici era inainte 3.2 dar nu e corect este 0.08 -> stereo baseline in meters 
+    const bool bForward  = kf_camer_center_prev_coordinates(2) >  0.08;
+    const bool bBackward = -kf_camer_center_prev_coordinates(2) > 0.08;
     for (Feature f : prev_kf->features) {
     // for (auto it = prev_kf->mp_correlations.begin(); it != prev_kf->mp_correlations.end(); it++) {
     //     MapPoint *mp = it->first;
@@ -132,7 +133,7 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
                 best_idx = idx;
             }
         }
-        if (best_dist > DES_DIST) continue;
+        if (best_dist > 100) continue;
         Map::add_map_point_to_keyframe(kf, &kf->features[best_idx], mp);
     }
     this->checkOrientation(kf, prev_kf);

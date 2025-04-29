@@ -58,7 +58,6 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
         this->prev_kf = nullptr;
     }
     this->prev_kf = this->current_kf;
-    std::cout << this->prev_kf->reference_idx << " bai dar avea sens sa aiba o valoare aici\n";
     this->current_kf = new KeyFrame(this->prev_kf->Tcw, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 
         this->prev_kf->current_idx + 1, frame, this->voc, this->reference_kf, this->prev_kf->reference_idx);
 }
@@ -139,7 +138,7 @@ void Tracker::TrackConsecutiveFrames() {
     if (this->current_kf->mp_correlations.size() < 20) {
         matcher->match_consecutive_frames(this->current_kf, this->prev_kf, 2 * window);
         if (this->current_kf->mp_correlations.size() < 20) {
-            std::cout << " \nURMARIREA INTRE FRAME-URI INAINTE DE OPTIMIZARE NU A FUNCTIONAT\n";
+            std::cout << this->current_kf->mp_correlations.size() << "  URMARIREA INTRE FRAME-URI INAINTE DE OPTIMIZARE NU A FUNCTIONAT\n";
             return;
         }
     }
@@ -202,7 +201,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
     }
-    int wait_time = this->current_kf->current_idx < 100 ? 0 : 0;
+    int wait_time = this->current_kf->current_idx < 100 ? 20 : 20;
     this->current_kf->debug_keyframe(frame, wait_time);
     return {this->current_kf, needed_keyframe};
 }
