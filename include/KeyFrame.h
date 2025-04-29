@@ -31,6 +31,7 @@ public:
     DBoW2::FeatureVector features_vec;
     KeyFrame *reference_kf;
     int reference_idx;
+    int isKeyFrame = false;
     const double POW_OCTAVE[10] = {1, 1.2, 1.44, 1.728, 2.0736, 2.48832, 2.985984, 3.5831808, 4.29981696, 5.159780352};
 
     std::vector<Feature> features;
@@ -52,11 +53,12 @@ public:
     
     KeyFrame();
     KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint>& keypoints, std::vector<cv::KeyPoint>& undistored_kps,
-             cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, cv::Mat& frame, ORBVocabulary *voc, KeyFrame *reference_kf, int reference_idx);
+             cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, cv::Mat& frame, ORBVocabulary *voc);
     Eigen::Vector4d fromImageToWorld(int kp_idx);
     Sophus::SE3d compute_pose();
     std::vector<cv::KeyPoint> get_all_keypoints(); 
     std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave); 
+    void set_reference_keyframe(KeyFrame *ref);
     void add_outlier_element(MapPoint *mp);
     void remove_outlier_element(MapPoint *mp);
     bool check_map_point_in_keyframe(MapPoint *mp);

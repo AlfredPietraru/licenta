@@ -2,11 +2,13 @@
 
 
 void LocalMapping::local_map(KeyFrame *kf) {
-    mapp->add_new_keyframe(kf);
     if (this->first_kf) {
+        mapp->add_first_keyframe(kf);
         this->recently_added = kf->map_points;
         this->first_kf = false;
+        return;
     }
+    mapp->add_new_keyframe(kf);
     this->map_points_culling(kf);
     int map_points_computed = this->compute_map_points(kf);
     if (map_points_computed == 0) std::cout << "NICIUN MAP POINT NU A FOST CALCULAT\n";

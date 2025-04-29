@@ -33,9 +33,8 @@ using namespace cv;
 
 class Tracker {
 public:
-    std::pair<KeyFrame*, bool> tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose);
-    Tracker(Mat frame, Mat depth, Map *mapp, Sophus::SE3d pose, Config cfg, 
-        ORBVocabulary* voc, Orb_Matcher orb_matcher_config);
+    KeyFrame* tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose);
+    Tracker(Map *mapp, Config cfg, ORBVocabulary* voc, Orb_Matcher orb_matcher_config);
     KeyFrame *current_kf = nullptr;
     KeyFrame* prev_kf = nullptr;
     KeyFrame *reference_kf = nullptr;
@@ -56,12 +55,13 @@ public:
 
     int total_tracking_during_matching = 0;
     int total_tracking_during_local_map = 0;
-  
+    
+    bool is_first_keyframe = true;
     void FindReferenceKeyFrame();
     void TrackReferenceKeyFrame();
     void TrackConsecutiveFrames();
     void TrackLocalMap(Map *mapp);
-    bool Is_KeyFrame_needed(Map *mapp, int tracked_by_local_map);
+    bool Is_KeyFrame_needed();
     // auxiliary functions
     void get_current_key_frame(Mat frame, Mat depth);
     void tracking_was_lost();

@@ -48,6 +48,7 @@ int Map::check_valid_features_number(KeyFrame *kf) {
 
 
 void Map::add_first_keyframe(KeyFrame *kf) {
+    kf->isKeyFrame = true;
     bool was_addition_succesfull;
     Eigen::Vector3d camera_center = kf->camera_center_world;
     for (long unsigned int i = 0; i < kf->features.size(); i++)
@@ -178,6 +179,7 @@ bool Map::remove_keyframe_reference_from_map_point(MapPoint *mp, KeyFrame *kf) {
 }
  
 void Map::add_new_keyframe(KeyFrame *new_kf) {
+    new_kf->isKeyFrame = true;
     new_kf->compute_bow_representation();
     bool was_addition_succesfull;
     for (auto it = new_kf->mp_correlations.begin(); it != new_kf->mp_correlations.end(); it++) {

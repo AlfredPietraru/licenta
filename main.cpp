@@ -60,49 +60,32 @@ int main(void)
     Orb_Matcher orb_matcher_cfg = load_orb_matcher_config("../config.yaml");
     
     reader = new TumDatasetReader(cfg); 
-    std::pair<cv::Mat, cv::Mat> data = reader->get_next_frame();    
-    Sophus::SE3d groundtruth_pose = reader->get_next_groundtruth_pose();
-    cv::Mat frame = data.first;
-    cv::Mat depth = data.second;
-    
-    
     Map *mapp = new Map();
     LocalMapping *local_mapper = new LocalMapping(mapp);
-    // MapDrawer *mapDrawer = new MapDrawer(mapp);
-    Tracker *tracker = new Tracker(frame, depth, mapp,  groundtruth_pose, cfg, voc, orb_matcher_cfg);
+    Tracker *tracker = new Tracker(mapp, cfg, voc, orb_matcher_cfg);
+
     auto t1 = high_resolution_clock::now();
-    // reader->store_entry(Sophus::SE3d(Eigen::Quaterniond(-0.3986, 0.6132, 0.5962, -0.3311), Eigen::Vector3d(-0.6305, -1.3563, 1.6380)));
-    // reader->store_entry(groundtruth_pose);
-    reader->store_entry(Sophus::SE3d(Eigen::Matrix4d::Identity()));
     int total_tracking_duration = 0;
     int total_local_mapping_duration = 0;
     while(!reader->should_end()) {
-        std::pair<cv::Mat, cv::Mat> data = reader->get_next_frame();    
+        cv::Mat frame = reader->get_next_frame(); 
+        cv::Mat depth = reader->get_next_depth();   
         Sophus::SE3d groundtruth_pose = reader->get_next_groundtruth_pose();
-        frame = data.first;
-        depth = data.second; 
+        
         auto start = high_resolution_clock::now();
-        std::pair<KeyFrame *, bool> tracker_out = tracker->tracking(frame, depth, groundtruth_pose);
+        KeyFrame *kf = tracker->tracking(frame, depth, groundtruth_pose);
         auto end = high_resolution_clock::now();
         total_tracking_duration += duration_cast<milliseconds>(end - start).count();
-        KeyFrame *kf = tracker_out.first;
-        bool needed_keyframe = tracker_out.second;
-        reader->store_entry(kf->Tcw);
-        if (needed_keyframe) {
-            std::cout << "ADAUGA AICI UN KEYFRAME\n";
+        if (kf->isKeyFrame) {
             auto start = high_resolution_clock::now();
             local_mapper->local_map(kf);
             auto end = high_resolution_clock::now();
             total_local_mapping_duration += duration_cast<milliseconds>(end - start).count();
-
         }
-        // mapDrawer->run(kf, needed_keyframe);
-        // if (reader->frame_idx == 120) {
-        //     auto t2 = high_resolution_clock::now();
-        //     std::cout << duration_cast<seconds>(t2 - t1).count() << " aici atata a durat" << std::endl;
-        //     break;
-        // }
+        reader->store_entry(kf->Tcw);
+        reader->increase_idx();
     }
+    
     std::cout << tracker->reference_kf->reference_idx << " nr keyframe-uri create\n";
     auto t2 = high_resolution_clock::now();
     std::cout << duration_cast<seconds>(t2 - t1).count() << "s aici atata a durat" << std::endl;  

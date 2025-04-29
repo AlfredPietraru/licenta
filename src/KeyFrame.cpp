@@ -46,9 +46,9 @@ bool KeyFrame::check_number_close_points()
 }
 
 KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints,
-     std::vector<cv::KeyPoint> &undistored_kps, cv::Mat orb_descriptors, cv::Mat depth_matrix,
-      int current_idx, cv::Mat &frame, ORBVocabulary *voc, KeyFrame *reference_kf, int reference_idx)
-    : K(K), orb_descriptors(orb_descriptors), current_idx(current_idx), voc(voc), reference_kf(reference_kf), reference_idx(reference_idx)
+     std::vector<cv::KeyPoint> &undistored_kps, cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, 
+     cv::Mat &frame, ORBVocabulary *voc) : K(K), orb_descriptors(orb_descriptors),
+       current_idx(current_idx), voc(voc), reference_kf(nullptr), reference_idx(-1)
 {
     this->set_keyframe_position(Tcw);
 
@@ -122,6 +122,12 @@ KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> dist
         this->minY = 0.0f;
         this->maxY = frame.rows;
     }
+}
+
+
+void KeyFrame::set_reference_keyframe(KeyFrame *ref) {
+    this->reference_kf = ref;
+    this->reference_idx = ref->current_idx;
 }
 
 void KeyFrame::compute_bow_representation()

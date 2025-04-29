@@ -37,12 +37,13 @@ public:
     std::string path_to_write;
     std::ofstream outfile;
     std::vector<Sophus::SE3d> poses;
-    int frame_idx = 0;
-    int pos_idx = 0;
+    int idx = 0;
     Config cfg;
     TumDatasetReader(Config cfg);
-    std::pair<cv::Mat, cv::Mat> get_next_frame();
+    cv::Mat get_next_frame();
+    cv::Mat get_next_depth();
     Sophus::SE3d get_next_groundtruth_pose();
+    void increase_idx();
     void store_entry(Sophus::SE3d pose);
     bool should_end();
 };
