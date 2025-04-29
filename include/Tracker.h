@@ -36,9 +36,10 @@ public:
     std::pair<KeyFrame*, bool> tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose);
     Tracker(Mat frame, Mat depth, Map *mapp, Sophus::SE3d pose, Config cfg, 
         ORBVocabulary* voc, Orb_Matcher orb_matcher_config);
-    KeyFrame *current_kf;
+    KeyFrame *current_kf = nullptr;
     KeyFrame* prev_kf = nullptr;
     KeyFrame *reference_kf = nullptr;
+    Sophus::SE3d velocity = Sophus::SE3d(Eigen::Matrix4d::Identity());
 
     vector<double> mDistCoef;
     Mat K; 

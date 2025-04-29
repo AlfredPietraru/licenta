@@ -42,7 +42,6 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     cv::Mat descriptors;
     this->fmf->compute_keypoints_descriptors(frame, keypoints, undistorted_kps, descriptors);
     if (this->prev_kf == nullptr && this->current_kf != nullptr) {
-        delete this->prev_kf;
         this->prev_kf = this->current_kf;
         this->current_kf = new KeyFrame(this->prev_kf->Tcw, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 1, 
             frame, this->voc, this->reference_kf, this->prev_kf->reference_idx);
@@ -50,10 +49,17 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     }
 
     // de incercat ultima transformare ca estimare
-    Sophus::SE3d pose_estimation = this->current_kf->Tcw;
+    // Sophus::SE3d pose_estimation = this->current_kf->Tcw;
     // Sophus::SE3d pose_estimation = this->current_kf->Tcw * this->prev_kf->Tcw.inverse() * this->current_kf->Tcw;
+    // Sophus::SE3d prev_pose = this->prev_kf->Tcw;
+    this->velocity = this->current_kf->Tcw * this->prev_kf->Tcw.inverse();
+    if (this->reference_kf != this->prev_kf) {
+        delete this->prev_kf;
+        this->prev_kf = nullptr;
+    }
     this->prev_kf = this->current_kf;
-    this->current_kf = new KeyFrame(pose_estimation, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 
+    std::cout << this->prev_kf->reference_idx << " bai dar avea sens sa aiba o valoare aici\n";
+    this->current_kf = new KeyFrame(this->prev_kf->Tcw, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 
         this->prev_kf->current_idx + 1, frame, this->voc, this->reference_kf, this->prev_kf->reference_idx);
 }
 
@@ -72,7 +78,7 @@ Tracker::Tracker(Mat frame, Mat depth, Map *mapp, Sophus::SE3d pose, Config cfg,
     // this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc);
     pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
     // pose = Sophus::SE3d(Eigen::Quaterniond(-0.3986, 0.6132, 0.5962, -0.3311), Eigen::Vector3d(1.3563, 0.6305, 1.6380));
-    this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps,  descriptors, depth, 0, frame, this->voc, nullptr, 0);
+    this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 0, frame, this->voc, nullptr, 0);
     this->reference_kf = this->current_kf;
     mapp->add_first_keyframe(this->reference_kf); 
     std::cout << "SFARSIT INITIALIZARE\n\n";
@@ -98,9 +104,9 @@ bool Tracker::Is_KeyFrame_needed(Map *mapp, int tracked_by_local_map)
     bool c2 = weak_good_map_points_tracking || needToInsertClose; 
     bool c3 = ((tracked_by_local_map < points_seen_from_multiple_frames_reference * fraction) || needToInsertClose) && (tracked_by_local_map > 15);
     // if ((c1 || c2) && c3) {
-    //     std::cout << tracked_by_local_map << " atatea puncte urmarite in track local map\n";
-    //     std::cout << points_seen_from_multiple_frames_reference << " atatea puncte urmarite din mai multe cadre\n";
-    //     std::cout << "conditions that lead to that " << c1 << " " << weak_good_map_points_tracking << " " << needToInsertClose << " " << c3 << "\n";
+        std::cout << tracked_by_local_map << " atatea puncte urmarite in track local map\n";
+        std::cout << points_seen_from_multiple_frames_reference << " atatea puncte urmarite din mai multe cadre\n";
+        std::cout << "conditions that lead to that " << c1 << " " << weak_good_map_points_tracking << " " << needToInsertClose << " " << c3 << "\n";
     // }
     return (c1 || c2) && c3;
 }
@@ -119,7 +125,7 @@ void Tracker::TrackReferenceKeyFrame() {
             std::cout << "STERGEREA OUTLIER A ESUAT\n";
         }
     }
-    if (this->current_kf->mp_correlations.size() < 15) {
+    if (this->current_kf->mp_correlations.size() < 10) {
         std::cout << this->current_kf->mp_correlations.size() << " REFERENCE FRAME NU A URMARIT SUFICIENTE INLIERE MAP POINTS\n";
         return;
     } 
@@ -127,6 +133,8 @@ void Tracker::TrackReferenceKeyFrame() {
 
 void Tracker::TrackConsecutiveFrames() {
     int window = 15;
+    // set estimation current kf:
+    this->current_kf->set_keyframe_position(this->velocity * this->prev_kf->Tcw);
     matcher->match_consecutive_frames(this->current_kf, this->prev_kf, window);
     if (this->current_kf->mp_correlations.size() < 20) {
         matcher->match_consecutive_frames(this->current_kf, this->prev_kf, 2 * window);
@@ -194,7 +202,7 @@ std::pair<KeyFrame*, bool> Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d 
         this->prev_kf = this->current_kf;
         this->keyframes_from_last_global_relocalization = 0;
     }
-    int wait_time = this->current_kf->current_idx < 100 ? 20 : 20;
+    int wait_time = this->current_kf->current_idx < 100 ? 0 : 0;
     this->current_kf->debug_keyframe(frame, wait_time);
     return {this->current_kf, needed_keyframe};
 }
