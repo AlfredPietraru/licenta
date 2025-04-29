@@ -177,15 +177,30 @@ bool Map::remove_keyframe_reference_from_map_point(MapPoint *mp, KeyFrame *kf) {
     mp->remove_observation(kf);
     return true;
 }
- 
+
+
+
 void Map::add_new_keyframe(KeyFrame *new_kf) {
+
+    // ESTE INCOMPLETA AICI TREBUIE DE CONSIDERAT CANND NU EXISTA 100 de puncte
     new_kf->isKeyFrame = true;
     new_kf->compute_bow_representation();
-    bool was_addition_succesfull;
     for (auto it = new_kf->mp_correlations.begin(); it != new_kf->mp_correlations.end(); it++) {
-        was_addition_succesfull = Map::add_keyframe_reference_to_map_point(it->first, new_kf->mp_correlations[it->first],  new_kf);
+        bool was_addition_succesfull = Map::add_keyframe_reference_to_map_point(it->first, new_kf->mp_correlations[it->first],  new_kf);
         if (!was_addition_succesfull) {
-            std::cout << "NU S-A PUTUT ADAUGA NOUL MAP POINT IN KEYFRAME IN MAP\n";
+            std::cout << "NU S-A PUTUT ADAUGA NOUL MAP POINT IN KEYFRAME IN MAP INAINTE\n";
+        }
+    }
+
+    for (int i = 0; i < (int)new_kf->features.size(); i++) {
+        if (new_kf->features[i].get_map_point() != nullptr) continue;
+        if (new_kf->features[i].depth < 1e-6 || new_kf->features[i].depth > 3.2) continue;
+        Eigen::Vector4d wcoord = new_kf->fromImageToWorld(i);
+        MapPoint *mp = new MapPoint(new_kf, i, new_kf->features[i].kpu, new_kf->camera_center_world, wcoord, new_kf->features[i].descriptor);
+        mp->increase_how_many_times_seen();
+        bool was_addition_succesfull = add_map_point_to_keyframe(new_kf, &new_kf->features[i], mp);
+        if (!was_addition_succesfull) {
+            std::cout << "NU S-A PUTUT CREA NOUL MAP POINT IN KEYFRAME\n";
         }
     }
 
@@ -255,14 +270,14 @@ bool Map::update_graph_connections(KeyFrame *kf1, KeyFrame *kf2) {
 }
 
 
-void Map::update_local_map(KeyFrame *reference_kf, std::unordered_set<KeyFrame*>& keyframes_already_found)
+void Map::update_local_map(KeyFrame *ref, std::unordered_set<KeyFrame*>& keyframes_already_found)
 {
     this->local_map.clear();
-    if (this->graph.find(reference_kf) == this->graph.end()) {
+    if (this->graph.find(ref) == this->graph.end()) {
         std::cout << "NU S-A PUTUT REFERENCE FRAME NU A FOST ADAUGAT IN GRAPH DELOC\n";
         return;
     }
-    std::unordered_set<KeyFrame*> first_degree_key_frames =  this->get_local_keyframes(reference_kf);
+    std::unordered_set<KeyFrame*> first_degree_key_frames =  this->get_local_keyframes(ref);
     std::unordered_set<KeyFrame*> second_degree_key_frames;
 
     second_degree_key_frames.insert(first_degree_key_frames.begin(), first_degree_key_frames.end());

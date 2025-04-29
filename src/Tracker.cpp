@@ -44,8 +44,7 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     this->fmf->compute_keypoints_descriptors(frame, keypoints, undistorted_kps, descriptors);
 
     // primul cadru
-    if (this->prev_kf == nullptr && this->current_kf == nullptr && this->reference_kf == nullptr) {
-        std::cout << "primul cadru\n";
+    if (this->prev_kf == nullptr && this->current_kf == nullptr) {
         Sophus::SE3d pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
         this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 0, frame, this->voc);
         this->reference_kf = this->current_kf;
@@ -53,15 +52,13 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
     }
 
     // al doilea cadru
-    if (this->prev_kf == nullptr && this->current_kf != nullptr && this->reference_kf != nullptr) {
-        std::cout << "al doilea cadru\n";
+    if (this->prev_kf == nullptr && this->current_kf != nullptr) {
         this->prev_kf = this->current_kf;
         this->current_kf = new KeyFrame(this->prev_kf->Tcw, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 1, frame, this->voc);
         return;
     }
 
     // restul cadrelor
-    std::cout << "restul cadrelor\n";
     this->velocity = this->current_kf->Tcw * this->prev_kf->Tcw.inverse();
     if (!this->prev_kf->isKeyFrame) {
         delete this->prev_kf;
@@ -100,11 +97,12 @@ bool Tracker::Is_KeyFrame_needed()
     bool c1 = (this->current_kf->current_idx - this->reference_kf->current_idx) >= 30;
     bool c2 = weak_good_map_points_tracking || needToInsertClose; 
     bool c3 = ((current_kf->map_points.size() < points_seen_from_multiple_frames_reference * fraction) || needToInsertClose) && (current_kf->map_points.size() > 15);
-    // if ((c1 || c2) && c3) {
+    std::cout << current_kf->map_points.size() << " atatea puncte urmarite in track local map\n";
+    if ((c1 || c2) && c3) {
         std::cout << current_kf->map_points.size() << " atatea puncte urmarite in track local map\n";
         std::cout << points_seen_from_multiple_frames_reference << " atatea puncte urmarite din mai multe cadre\n";
         std::cout << "conditions that lead to that " << c1 << " " << weak_good_map_points_tracking << " " << needToInsertClose << " " << c3 << "\n";
-    // }
+    }
     return (c1 || c2) && c3;
 }
 
@@ -223,14 +221,11 @@ KeyFrame* Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose
     end = high_resolution_clock::now();
     total_tracking_during_local_map += duration_cast<milliseconds>(end - start).count();
     compute_difference_between_positions(this->current_kf->Tcw, ground_truth_pose, false);
-    this->current_kf->isKeyFrame = this->Is_KeyFrame_needed(); 
+    this->current_kf->isKeyFrame = this->Is_KeyFrame_needed();
     if (this->current_kf->isKeyFrame) {
         this->reference_kf = this->current_kf;
-        this->reference_kf->reference_idx += 1;
-        this->prev_kf = this->current_kf;
-        this->keyframes_from_last_global_relocalization = 0;
     }
-    // int wait_time = this->current_kf->current_idx < 100 ? 20 : 20;
+    // int wait_time = this->current_kf->current_idx < 115 ? 20 : 0;
     // this->current_kf->debug_keyframe(frame, wait_time);
     return this->current_kf;
 }

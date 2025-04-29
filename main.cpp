@@ -25,8 +25,6 @@ using std::chrono::milliseconds;
 // separare si abstractizare pentru a putea testa mai multe implementari ale diversilor algoritmi de matching intre frame - uri
 // finalizare thread the local mapping 
 
-
-
 TumDatasetReader *reader;
 void signalHandler(int signum) {
     std::cout << "Interrupt signal (" << signum << ") received.\n";
@@ -86,7 +84,6 @@ int main(void)
         reader->increase_idx();
     }
     
-    std::cout << tracker->reference_kf->reference_idx << " nr keyframe-uri create\n";
     auto t2 = high_resolution_clock::now();
     std::cout << duration_cast<seconds>(t2 - t1).count() << "s aici atata a durat" << std::endl;  
     std::cout << "\n";
