@@ -46,6 +46,23 @@ int Map::check_valid_features_number(KeyFrame *kf) {
     return out;
 }
 
+std::unordered_map<KeyFrame*, int> Map::get_keyframes_connected(KeyFrame *new_kf, int limit) {
+    std::unordered_map<KeyFrame*, int> edges_new_keyframe;
+    for (MapPoint *mp : new_kf->map_points) {
+        for (KeyFrame *kf : mp->keyframes) {
+            if (edges_new_keyframe.count(kf) > 0) {
+                edges_new_keyframe[kf] += 1;
+            } else {
+                edges_new_keyframe[kf] = 1;
+            }
+        } 
+    }
+    for (auto it = edges_new_keyframe.begin(); it != edges_new_keyframe.end(); it++) {
+        if (it->second < limit) edges_new_keyframe.erase(it->first);
+    }
+    return edges_new_keyframe;
+}
+
 
 void Map::add_first_keyframe(KeyFrame *kf) {
     kf->isKeyFrame = true;
@@ -178,12 +195,11 @@ bool Map::remove_keyframe_reference_from_map_point(MapPoint *mp, KeyFrame *kf) {
     return true;
 }
 
-
-
-void Map::add_new_keyframe(KeyFrame *new_kf) {
+std::unordered_set<MapPoint*> Map::add_new_keyframe(KeyFrame *new_kf) {
 
     // ESTE INCOMPLETA AICI TREBUIE DE CONSIDERAT CANND NU EXISTA 100 de puncte
     new_kf->isKeyFrame = true;
+    std::unordered_set<MapPoint*> points_added;
     new_kf->compute_bow_representation();
     for (auto it = new_kf->mp_correlations.begin(); it != new_kf->mp_correlations.end(); it++) {
         bool was_addition_succesfull = Map::add_keyframe_reference_to_map_point(it->first, new_kf->mp_correlations[it->first],  new_kf);
@@ -197,32 +213,21 @@ void Map::add_new_keyframe(KeyFrame *new_kf) {
         if (new_kf->features[i].depth < 1e-6 || new_kf->features[i].depth > 3.2) continue;
         Eigen::Vector4d wcoord = new_kf->fromImageToWorld(i);
         MapPoint *mp = new MapPoint(new_kf, i, new_kf->features[i].kpu, new_kf->camera_center_world, wcoord, new_kf->features[i].descriptor);
+        points_added.insert(mp);
         mp->increase_how_many_times_seen();
         bool was_addition_succesfull = add_map_point_to_keyframe(new_kf, &new_kf->features[i], mp);
         if (!was_addition_succesfull) {
             std::cout << "NU S-A PUTUT CREA NOUL MAP POINT IN KEYFRAME\n";
         }
     }
-
-    std::unordered_map<KeyFrame*, int> edges_new_keyframe;
-    int start_idx = ((int)this->keyframes.size() > this->KEYFRAMES_WINDOW) ? this->keyframes.size() - this->KEYFRAMES_WINDOW : 0;
-    for (int i = start_idx; i < (int)this->keyframes.size(); i++) {
-        KeyFrame *current_kf = this->keyframes[i];
-        if (current_kf == nullptr) {
-            std::cout << "A FOST NULL current_kf cand adaugam keyframe\n";
-            continue;
-        }
-        if (graph.find(current_kf) == graph.end()) {
-            std::cout << " NU A FOST GASIT KEYFRAME-ul in graph\n";
-            continue;
-        } 
-        int common_values = get_number_common_mappoints_between_keyframes(new_kf, current_kf); 
-        if (common_values < 15) continue;
-        graph[current_kf].insert({new_kf, common_values});
-        edges_new_keyframe.insert({current_kf, common_values});
-    }   
+    
+    std::unordered_map<KeyFrame*, int> edges_new_keyframe = this->get_keyframes_connected(new_kf, 15);
+    for (auto it = edges_new_keyframe.begin(); it != edges_new_keyframe.end(); it++) {
+        graph[it->first][new_kf] = it->second;
+    }
     this->keyframes.push_back(new_kf);
     this->graph.insert({new_kf, edges_new_keyframe});
+    return points_added;
 }
 
 

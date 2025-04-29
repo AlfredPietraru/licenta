@@ -8,29 +8,13 @@ void LocalMapping::local_map(KeyFrame *kf) {
         this->first_kf = false;
         return;
     }
-    if (this->second_kf) {
-        this->second_kf = false;
-        this->recently_added = kf->map_points;
-    }
-    // pana aici inclusiv e shady
-    mapp->add_new_keyframe(kf);
+    std::unordered_set<MapPoint*> new_map_points_added = mapp->add_new_keyframe(kf);
+    this->recently_added.insert(new_map_points_added.begin(), new_map_points_added.end());
     this->map_points_culling(kf);
-    int map_points_computed = this->compute_map_points(kf);
-    if (map_points_computed == 0) std::cout << "NICIUN MAP POINT NU A FOST CALCULAT\n";
-    std::cout << map_points_computed << " atatea map points noi adaugate\n";
+    this->compute_map_points(kf);
     this->search_in_neighbours(kf);
-    std::cout << "AICI INCEPE BA\n";
     bundleAdjustment->solve_ceres(this->mapp, kf);
     this->KeyFrameCulling(kf);
-    // int value_with_problems = 0;
-    // for (KeyFrame *kf : mapp->keyframes) {
-    //     for (MapPoint *mp : kf->map_points) {
-    //         if (!mp->find_keyframe(kf)) value_with_problems++;
-    //     }        
-    // }
-    // std::cout << value_with_problems << " atatea puncte cheie au probleme\n";
-    std::cout << "AICI SE TERMINA BA\n";
-
 }
 
 
@@ -76,8 +60,6 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
     for (MapPoint *mp : to_del) this->delete_map_point(mp);
     for (MapPoint *mp : too_old_to_keep_looking) this->recently_added.erase(mp);
 }
-
-
 
 bool is_coordinate_valid_for_keyframe(KeyFrame *kf, Feature *f, Eigen::Vector4d coordinates,  bool isStereo) {
     Eigen::Vector3d projected_on_kf = kf->Tcw.matrix3x4() * coordinates;
@@ -268,7 +250,6 @@ void LocalMapping::delete_map_point(MapPoint *mp) {
             continue;
         }
     }
-    if (this->recently_added.find(mp) != this->recently_added.end()) this->recently_added.erase(mp);
     delete mp;
 }
 
@@ -296,7 +277,7 @@ void LocalMapping::KeyFrameCulling(KeyFrame *kf)
             for(KeyFrame *current_kf : mp->keyframes) 
             {
                 if(current_kf == kf) continue;
-                const int &scaleLeveli = current_kf->features[mp->data[current_kf]->feature_idx].get_undistorted_keypoint().octave;  
+                const int &scaleLeveli = current_kf->features[mp->data[current_kf]->feature_idx].get_undistorted_keypoint().octave;
                 if(scaleLeveli<=scaleLevel+1)
                 {
                     nObs++;
@@ -304,13 +285,9 @@ void LocalMapping::KeyFrameCulling(KeyFrame *kf)
                 }
             }
             nRedundantObservations += (int)(nObs >= 3);
-        }  
-        // std::cout << nRedundantObservations <<  " " << kf->map_points.size() << " atatea observatii redundante intalnite\n";
+        }
         if(nRedundantObservations > 0.9 * kf->map_points.size())
             to_delete_keyframes.push_back(kf);
     }
     std::cout << to_delete_keyframes.size() << " aceste keyframe-uri ar putea fi sterse to_delete_keyframes\n";
-    // for (KeyFrame *kf : to_delete_keyframes) {
-    //     // aici voi face stergerea
-    // }
 }

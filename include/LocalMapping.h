@@ -8,7 +8,6 @@ class LocalMapping {
 public:
     Map *mapp;
     bool first_kf = true;
-    bool second_kf = true;
     std::unordered_set<MapPoint*> recently_added;
     BundleAdjustment *bundleAdjustment;
     LocalMapping(Map *mapp) {

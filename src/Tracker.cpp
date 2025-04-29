@@ -50,14 +50,13 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
         this->reference_kf = this->current_kf;
         return;
     }
-
     // al doilea cadru
     if (this->prev_kf == nullptr && this->current_kf != nullptr) {
         this->prev_kf = this->current_kf;
-        this->current_kf = new KeyFrame(this->prev_kf->Tcw, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 1, frame, this->voc);
+        this->current_kf = new KeyFrame(this->prev_kf, keypoints, undistorted_kps, descriptors, depth);
         return;
     }
-
+    
     // restul cadrelor
     this->velocity = this->current_kf->Tcw * this->prev_kf->Tcw.inverse();
     if (!this->prev_kf->isKeyFrame) {
@@ -65,8 +64,7 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
         this->prev_kf = nullptr;
     }
     this->prev_kf = this->current_kf;
-    this->current_kf = new KeyFrame(this->prev_kf->Tcw, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 
-        this->prev_kf->current_idx + 1, frame, this->voc);
+    this->current_kf = new KeyFrame(this->prev_kf, keypoints, undistorted_kps, descriptors, depth);
 }
 
 Tracker::Tracker(Map *mapp, Config cfg, ORBVocabulary* voc, Orb_Matcher orb_matcher_config) : mapp(mapp), voc(voc) {

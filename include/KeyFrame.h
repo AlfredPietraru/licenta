@@ -54,6 +54,13 @@ public:
     KeyFrame();
     KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint>& keypoints, std::vector<cv::KeyPoint>& undistored_kps,
              cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, cv::Mat& frame, ORBVocabulary *voc);
+
+    KeyFrame(KeyFrame* old_keyframe, std::vector<cv::KeyPoint> &keypoints, std::vector<cv::KeyPoint> &undistored_kps,
+         cv::Mat orb_descriptors, cv::Mat depth_matrix);
+
+    void create_grid_matrix();
+    void create_feature_vector(std::vector<cv::KeyPoint> &keypoints, std::vector<cv::KeyPoint> &undistored_kps,
+            cv::Mat orb_descriptors, cv::Mat depth_matrix);           
     Eigen::Vector4d fromImageToWorld(int kp_idx);
     Sophus::SE3d compute_pose();
     std::vector<cv::KeyPoint> get_all_keypoints(); 

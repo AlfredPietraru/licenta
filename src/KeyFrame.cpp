@@ -20,6 +20,22 @@ bool KeyFrame::check_map_point_outlier(MapPoint *mp)
     return false;
 }
 
+void KeyFrame::set_keyframe_position(Sophus::SE3d Tcw_new) {
+    this->Tcw = Tcw_new;
+    this->mat_camera_world = Tcw_new.matrix(); 
+    this->mat_world_camera = Tcw_new.inverse().matrix();
+    this->camera_center_world = -this->Tcw.rotationMatrix().transpose() * this->Tcw.translation();
+    Eigen::Quaterniond q =  this->Tcw.unit_quaternion();
+    Eigen::Vector3d t = this->Tcw.translation();
+    this->pose_vector[0] = q.w();
+    this->pose_vector[1] = q.x();
+    this->pose_vector[2] = q.y();
+    this->pose_vector[3] = q.z();
+    this->pose_vector[4] = t.x();
+    this->pose_vector[5] = t.y();
+    this->pose_vector[6] = t.z();
+}
+
 bool KeyFrame::check_map_point_in_keyframe(MapPoint *mp) {
     bool in_mp_correlations = this->mp_correlations.find(mp) != this->mp_correlations.end();
     bool in_map_points = this->map_points.find(mp) != this->map_points.end();
@@ -31,7 +47,6 @@ bool KeyFrame::check_map_point_in_keyframe(MapPoint *mp) {
     }
     return false;
 }
-
 
 bool KeyFrame::check_number_close_points()
 {
@@ -45,15 +60,9 @@ bool KeyFrame::check_number_close_points()
     return (close_points_tracked < 100) && (close_points_untracked > 70);
 }
 
-KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints,
-     std::vector<cv::KeyPoint> &undistored_kps, cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, 
-     cv::Mat &frame, ORBVocabulary *voc) : K(K), orb_descriptors(orb_descriptors),
-       current_idx(current_idx), voc(voc), reference_kf(nullptr), reference_idx(-1)
-{
-    this->set_keyframe_position(Tcw);
-
-    for (int i = 0; i < (int)keypoints.size(); i++)
-    {
+void KeyFrame::create_feature_vector(std::vector<cv::KeyPoint> &keypoints, std::vector<cv::KeyPoint> &undistored_kps,
+ cv::Mat orb_descriptors, cv::Mat depth_matrix) {
+    for (int i = 0; i < (int)keypoints.size(); i++) {
         cv::KeyPoint kp = keypoints[i];
         int x = std::round(kp.pt.x);
         int y = std::round(kp.pt.y);
@@ -70,7 +79,9 @@ KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> dist
             this->features.push_back(Feature(kp, kpu, orb_descriptors.row(i), i, depth, rgbd_right_coordinate));
         }
     }
+}
 
+void KeyFrame::create_grid_matrix() {
     this->grid = std::vector<std::vector<std::vector<int>>>(10, std::vector<std::vector<int>>(10, std::vector<int>()));
     
     for (int i = 0; i < (int)this->features.size(); i++)
@@ -80,16 +91,29 @@ KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> dist
         int x_idx = (int)kpu.pt.x;
         this->grid[y_idx / GRID_WIDTH][x_idx / GRID_HEIGHT].push_back(i);
     }
+}
 
-    // for (int i = 0; i < 10; i++) {
-    //     for (int j = 0; j < 10; j++) {
-    //         std::cout << this->grid[i][j].size() <<  " " << i * GRID_WIDTH << " " << j * GRID_HEIGHT << " dimensiune initiala\n";
-    //         for (int k = 0; k < this->grid[i][j].size(); k++) {
-    //             std::cout << this->features[this->grid[i][j][k]].kpu.pt.y  << " " << this->features[this->grid[i][j][k]].kpu.pt.x << "     ";
-    //         }
-    //         std::cout << "\n\n";
-    //     }
-    // }
+KeyFrame::KeyFrame(KeyFrame* old_kf, std::vector<cv::KeyPoint> &keypoints,
+    std::vector<cv::KeyPoint> &undistored_kps, cv::Mat orb_descriptors, cv::Mat depth_matrix) : K(old_kf->K), 
+        orb_descriptors(orb_descriptors), voc(old_kf->voc), reference_kf(nullptr), reference_idx(-1) {
+    this->set_keyframe_position(old_kf->Tcw);
+    this->current_idx = old_kf->current_idx + 1;
+    this->create_feature_vector(keypoints, undistored_kps, orb_descriptors, depth_matrix);        
+    this->create_grid_matrix();
+    this->minX = old_kf->minX;
+    this->maxX = old_kf->maxX;
+    this->minY = old_kf->minY;
+    this->maxY = old_kf->maxY;
+}
+
+KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints,
+     std::vector<cv::KeyPoint> &undistored_kps, cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, 
+     cv::Mat &frame, ORBVocabulary *voc) : K(K), orb_descriptors(orb_descriptors),
+       current_idx(current_idx), voc(voc), reference_kf(nullptr), reference_idx(-1)
+{
+    this->set_keyframe_position(Tcw);
+    this->create_feature_vector(keypoints, undistored_kps, orb_descriptors, depth_matrix);
+    this->create_grid_matrix();
 
     if (distorsion[0] != 0.0)
     {
@@ -139,22 +163,6 @@ void KeyFrame::compute_bow_representation()
         vector_descriptors.push_back(this->orb_descriptors.row(i));
     }
     this->voc->transform(vector_descriptors, this->bow_vec, this->features_vec, 4);
-}
-
-void KeyFrame::set_keyframe_position(Sophus::SE3d Tcw_new) {
-    this->Tcw = Tcw_new;
-    this->mat_camera_world = Tcw_new.matrix(); 
-    this->mat_world_camera = Tcw_new.inverse().matrix();
-    this->camera_center_world = -this->Tcw.rotationMatrix().transpose() * this->Tcw.translation();
-    Eigen::Quaterniond q =  this->Tcw.unit_quaternion();
-    Eigen::Vector3d t = this->Tcw.translation();
-    this->pose_vector[0] = q.w();
-    this->pose_vector[1] = q.x();
-    this->pose_vector[2] = q.y();
-    this->pose_vector[3] = q.z();
-    this->pose_vector[4] = t.x();
-    this->pose_vector[5] = t.y();
-    this->pose_vector[6] = t.z();
 }
 
 Sophus::SE3d KeyFrame::compute_pose() {
