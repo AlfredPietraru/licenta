@@ -37,17 +37,14 @@ void print_pose(Sophus::SE3d pose, std::string message) {
 }
 
 void Tracker::get_current_key_frame(Mat frame, Mat depth) {
- 
     std::vector<cv::KeyPoint> keypoints;
     std::vector<cv::KeyPoint> undistorted_kps;
     cv::Mat descriptors;
     this->fmf->compute_keypoints_descriptors(frame, keypoints, undistorted_kps, descriptors);
-
     // primul cadru
     if (this->prev_kf == nullptr && this->current_kf == nullptr) {
         Sophus::SE3d pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
         this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 0, frame, this->voc);
-        this->reference_kf = this->current_kf;
         return;
     }
     // al doilea cadru
@@ -56,7 +53,7 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth) {
         this->current_kf = new KeyFrame(this->prev_kf, keypoints, undistorted_kps, descriptors, depth);
         return;
     }
-    
+
     // restul cadrelor
     this->velocity = this->current_kf->Tcw * this->prev_kf->Tcw.inverse();
     if (!this->prev_kf->isKeyFrame) {
@@ -95,7 +92,6 @@ bool Tracker::Is_KeyFrame_needed()
     bool c1 = (this->current_kf->current_idx - this->reference_kf->current_idx) >= 30;
     bool c2 = weak_good_map_points_tracking || needToInsertClose; 
     bool c3 = ((current_kf->map_points.size() < points_seen_from_multiple_frames_reference * fraction) || needToInsertClose) && (current_kf->map_points.size() > 15);
-    std::cout << current_kf->map_points.size() << " atatea puncte urmarite in track local map\n";
     if ((c1 || c2) && c3) {
         std::cout << current_kf->map_points.size() << " atatea puncte urmarite in track local map\n";
         std::cout << points_seen_from_multiple_frames_reference << " atatea puncte urmarite din mai multe cadre\n";
@@ -127,7 +123,6 @@ void Tracker::TrackReferenceKeyFrame() {
 
 void Tracker::TrackConsecutiveFrames() {
     int window = 15;
-    // set estimation current kf:
     this->current_kf->set_keyframe_position(this->velocity * this->prev_kf->Tcw);
     matcher->match_consecutive_frames(this->current_kf, this->prev_kf, window);
     if (this->current_kf->mp_correlations.size() < 20) {
@@ -147,32 +142,24 @@ void Tracker::TrackConsecutiveFrames() {
     } 
 }
 
-void Tracker::FindReferenceKeyFrame() {
+KeyFrame * Tracker::FindReferenceKeyFrame() {
     this->local_keyframes.clear();
-    this->reference_kf = nullptr;
-    unordered_map<KeyFrame*, int> umap;
-    for (MapPoint *mp : this->current_kf->map_points) {
-        for (KeyFrame *kf : mp->keyframes) {
-            if (umap.count(kf) > 0) {
-                umap[kf] += 1;
-            } else {
-                umap[kf] = 1;
-            }
-        }
-    }
+    unordered_map<KeyFrame*, int> umap = this->mapp->get_keyframes_connected(this->current_kf, 0);
+    KeyFrame *new_ref_kf = nullptr;
     int maxim_nr_map_points = -1;
     for (auto it = umap.begin(); it != umap.end(); it++) {
         this->local_keyframes.insert(it->first);
         if (it->second > maxim_nr_map_points) {
-            this->reference_kf = it->first;
+            new_ref_kf = it->first;
             maxim_nr_map_points = it->second;
         }
     }
+    return new_ref_kf;
 }
 
 void Tracker::TrackLocalMap(Map *mapp) {
-    this->FindReferenceKeyFrame();
-    mapp->track_local_map(this->current_kf, this->reference_kf, this->local_keyframes);
+    KeyFrame *current_ref_kf = this->FindReferenceKeyFrame();
+    mapp->track_local_map(this->current_kf, current_ref_kf, this->local_keyframes);
     if (this->current_kf->mp_correlations.size() < 30) {
         std::cout << " \nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
         return;
@@ -196,10 +183,11 @@ KeyFrame* Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose
     if (this->is_first_keyframe) {
         this->is_first_keyframe = false;
         this->current_kf->isKeyFrame = true;
+        this->reference_kf = this->current_kf; 
         std::cout << "PRIMUL KEYFRAME VA FI ADAUGAT\n";
         return this->current_kf;
     }
-    auto start = high_resolution_clock::now();
+
     if (this->current_kf->current_idx - this->reference_kf->current_idx <= 2) {
         std::cout << "URMARIT CU AJUTORUL TRACK REFERENCE KEY FRAME\n" ;
         this->TrackReferenceKeyFrame();
@@ -211,13 +199,7 @@ KeyFrame* Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose
             this->TrackReferenceKeyFrame();
         }
     } 
-    auto end = high_resolution_clock::now();
-    total_tracking_during_matching += duration_cast<milliseconds>(end - start).count();
-
-    start = high_resolution_clock::now();
     this->TrackLocalMap(mapp);
-    end = high_resolution_clock::now();
-    total_tracking_during_local_map += duration_cast<milliseconds>(end - start).count();
     compute_difference_between_positions(this->current_kf->Tcw, ground_truth_pose, false);
     this->current_kf->isKeyFrame = this->Is_KeyFrame_needed();
     if (this->current_kf->isKeyFrame) {

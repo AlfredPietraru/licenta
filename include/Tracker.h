@@ -57,7 +57,7 @@ public:
     int total_tracking_during_local_map = 0;
     
     bool is_first_keyframe = true;
-    void FindReferenceKeyFrame();
+    KeyFrame* FindReferenceKeyFrame();
     void TrackReferenceKeyFrame();
     void TrackConsecutiveFrames();
     void TrackLocalMap(Map *mapp);

@@ -6,15 +6,17 @@ void LocalMapping::local_map(KeyFrame *kf) {
     if (this->first_kf) {
         mapp->add_first_keyframe(kf);
         this->first_kf = false;
+        std::cout << "LOCAL MAP ISI FACE TREABA\n";
         return;
     }
     std::unordered_set<MapPoint*> new_map_points_added = mapp->add_new_keyframe(kf);
     this->recently_added.insert(new_map_points_added.begin(), new_map_points_added.end());
     this->map_points_culling(kf);
-    this->compute_map_points(kf);
+    // this->compute_map_points(kf);
     this->search_in_neighbours(kf);
-    bundleAdjustment->solve_ceres(this->mapp, kf);
+    // bundleAdjustment->solve_ceres(this->mapp, kf);
     this->KeyFrameCulling(kf);
+    std::cout << "LOCAL MAP ISI FACE TREABA\n";
 }
 
 

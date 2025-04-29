@@ -15,9 +15,7 @@ void KeyFrame::remove_outlier_element(MapPoint *mp)
 
 bool KeyFrame::check_map_point_outlier(MapPoint *mp)
 {
-    if (this->outliers.find(mp) != this->outliers.end())
-        return true;
-    return false;
+    return this->outliers.find(mp) != this->outliers.end(); 
 }
 
 void KeyFrame::set_keyframe_position(Sophus::SE3d Tcw_new) {
@@ -95,7 +93,7 @@ void KeyFrame::create_grid_matrix() {
 
 KeyFrame::KeyFrame(KeyFrame* old_kf, std::vector<cv::KeyPoint> &keypoints,
     std::vector<cv::KeyPoint> &undistored_kps, cv::Mat orb_descriptors, cv::Mat depth_matrix) : K(old_kf->K), 
-        orb_descriptors(orb_descriptors), voc(old_kf->voc), reference_kf(nullptr), reference_idx(-1) {
+        orb_descriptors(orb_descriptors), voc(old_kf->voc), reference_kf(old_kf->reference_kf), reference_idx(old_kf->reference_idx) {
     this->set_keyframe_position(old_kf->Tcw);
     this->current_idx = old_kf->current_idx + 1;
     this->create_feature_vector(keypoints, undistored_kps, orb_descriptors, depth_matrix);        
@@ -104,6 +102,8 @@ KeyFrame::KeyFrame(KeyFrame* old_kf, std::vector<cv::KeyPoint> &keypoints,
     this->maxX = old_kf->maxX;
     this->minY = old_kf->minY;
     this->maxY = old_kf->maxY;
+    this->mp_correlations.reserve(this->features.size() * 1.3); 
+    this->map_points.reserve(this->features.size() * 1.3);
 }
 
 KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints,
@@ -146,6 +146,8 @@ KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> dist
         this->minY = 0.0f;
         this->maxY = frame.rows;
     }
+    this->mp_correlations.reserve(this->features.size() * 1.3); 
+    this->map_points.reserve(this->features.size() * 1.3);
 }
 
 
@@ -258,18 +260,4 @@ void KeyFrame::debug_keyframe(cv::Mat frame, int miliseconds)
     cv::drawKeypoints(frame, keypoints, img3, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT);
     cv::imshow("Display window", img3);
     cv::waitKey(miliseconds);
-}
-
-
-double* KeyFrame::compute_vector_pose() {
-    double *pose_vector = (double*)malloc(7 * sizeof(double));
-    Eigen::Quaterniond quat = this->Tcw.unit_quaternion();
-    pose_vector[0] = quat.w();
-    pose_vector[1] = quat.x();
-    pose_vector[2] = quat.y();
-    pose_vector[3] = quat.z();
-    pose_vector[4] = this->Tcw.translation().x();
-    pose_vector[5] = this->Tcw.translation().y();
-    pose_vector[6] = this->Tcw.translation().z();
-    return pose_vector;
 }

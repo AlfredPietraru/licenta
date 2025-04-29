@@ -50,15 +50,19 @@ std::unordered_map<KeyFrame*, int> Map::get_keyframes_connected(KeyFrame *new_kf
     std::unordered_map<KeyFrame*, int> edges_new_keyframe;
     for (MapPoint *mp : new_kf->map_points) {
         for (KeyFrame *kf : mp->keyframes) {
-            if (edges_new_keyframe.count(kf) > 0) {
+            if (edges_new_keyframe.find(kf) != edges_new_keyframe.end()) {
                 edges_new_keyframe[kf] += 1;
             } else {
                 edges_new_keyframe[kf] = 1;
             }
         } 
     }
+    std::vector<KeyFrame*> to_remove;
     for (auto it = edges_new_keyframe.begin(); it != edges_new_keyframe.end(); it++) {
-        if (it->second < limit) edges_new_keyframe.erase(it->first);
+        if (it->second < limit) to_remove.push_back(it->first);
+    }
+    for (KeyFrame *kf : to_remove) {
+        edges_new_keyframe.erase(kf);
     }
     return edges_new_keyframe;
 }
@@ -299,6 +303,10 @@ void Map::update_local_map(KeyFrame *ref, std::unordered_set<KeyFrame*>& keyfram
 
 void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFrame*>& keyframes_already_found)
 {
+    if (ref == nullptr) {
+        std::cout << "ESTE REFERENCE FRAME GOL IN TRACK LOCAL MAP\n";
+        return;
+    }
     if (this->graph.find(ref) == this->graph.end()) {
         std::cout << " \nCEVA NU E BINE NU GASESTE KEY FRAME IN COMPUTE LOCAL MAP\n";
         return;

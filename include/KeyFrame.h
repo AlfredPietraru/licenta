@@ -75,7 +75,6 @@ public:
     void set_keyframe_position(Sophus::SE3d Tcw_new);
     void debug_keyframe(cv::Mat frame, int miliseconds);
     int get_map_points_seen_from_multiple_frames(int nr_frames);
-    double *compute_vector_pose();
 };
 
 #endif
