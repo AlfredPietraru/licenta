@@ -3,7 +3,7 @@
 
 void LocalMapping::local_map(KeyFrame *kf) {
     // cam shady bucata asta
-    std::unordered_set<MapPoint*> new_map_points_added = mapp->add_new_keyframe(kf);
+    std::vector<MapPoint*> new_map_points_added = mapp->add_new_keyframe(kf);
     this->recently_added.insert(new_map_points_added.begin(), new_map_points_added.end());
     this->map_points_culling(kf);
     // this->compute_map_points(kf);
@@ -38,6 +38,10 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
             bool first_two = (mp->keyframes[1]->reference_idx - mp->keyframes[0]->reference_idx) == 1;
             bool last_two = (mp->keyframes[2]->reference_idx - mp->keyframes[1]->reference_idx) == 1;
             bool last_equal_current_kf = mp->keyframes[2]->reference_idx == curr_kf->reference_idx; 
+            for (int i = 0; i < (int)mp->keyframes.size(); i++) {
+                std::cout << mp->keyframes[i]->reference_idx << " "; 
+            }
+            std::cout << "\n";
 
             if (first_two && last_two && last_equal_current_kf) {
                 too_old_to_keep_looking.push_back(mp);
@@ -54,6 +58,7 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
     }
     for (MapPoint *mp : to_del) this->delete_map_point(mp);
     for (MapPoint *mp : too_old_to_keep_looking) this->recently_added.erase(mp);
+    std::cout << to_del.size() << " " << " atatea puncte care vor fi sterse\n";
 }
 
 bool is_coordinate_valid_for_keyframe(KeyFrame *kf, Feature *f, Eigen::Vector4d coordinates,  bool isStereo) {
@@ -236,6 +241,7 @@ void LocalMapping::delete_map_point(MapPoint *mp) {
             continue;
         }
     }
+    if (this->recently_added.find(mp) != this->recently_added.end()) this->recently_added.erase(mp);
     delete mp;
 }
 
@@ -275,5 +281,5 @@ void LocalMapping::KeyFrameCulling(KeyFrame *kf)
         if(nRedundantObservations > 0.9 * kf->map_points.size())
             to_delete_keyframes.push_back(kf);
     }
-    std::cout << to_delete_keyframes.size() << " aceste keyframe-uri ar putea fi sterse to_delete_keyframes\n";
+    // std::cout << to_delete_keyframes.size() << " aceste keyframe-uri ar putea fi sterse to_delete_keyframes\n";
 }

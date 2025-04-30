@@ -82,6 +82,7 @@ int main(void)
         }
         reader->store_entry(kf->Tcw);
         reader->increase_idx();
+        // if (reader->idx == 120) break;
     }
     
     auto t2 = high_resolution_clock::now();

@@ -144,20 +144,18 @@ void MapDrawer::DrawMapPoints()
 
     for (MapPoint *mp : all_map_points)
     {
-        if (mapp->local_map.find(mp) != mapp->local_map.end())
-            continue;
         glVertex3f(mp->wcoord_3d(0), mp->wcoord_3d(1), mp->wcoord_3d(2));
     }
     glEnd();
 
-    glPointSize(mPointSize);
-    glBegin(GL_POINTS);
-    glColor3f(1.0, 0.0, 1.0);
+    // glPointSize(mPointSize);
+    // glBegin(GL_POINTS);
+    // glColor3f(1.0, 0.0, 1.0);
 
-    for (MapPoint *mp : mapp->local_map)
-    {
-        glVertex3f(mp->wcoord_3d(0), mp->wcoord_3d(1), mp->wcoord_3d(2));
-    }
+    // for (MapPoint *mp : mapp->local_map)
+    // {
+    //     glVertex3f(mp->wcoord_3d(0), mp->wcoord_3d(1), mp->wcoord_3d(2));
+    // }
 
     glEnd();
 }

@@ -20,19 +20,19 @@ class Map {
 public:
     std::vector<KeyFrame*> keyframes;
     std::unordered_map<KeyFrame*, std::unordered_map<KeyFrame*, int>> graph;
-    std::unordered_set<MapPoint*> local_map;
+    // std::unordered_set<MapPoint*> local_map;
+    std::unordered_set<KeyFrame*> local_keyframes;
 
     Map() {
-        this->local_map.reserve(2000);
+        // this->local_map.reserve(5000);
     }
     std::unordered_set<KeyFrame*> get_local_keyframes(KeyFrame *kf);
     void track_local_map(KeyFrame *curr_kf, KeyFrame *ref, std::unordered_set<KeyFrame*>& keyframes_already_found);
     std::unordered_set<MapPoint*> get_all_map_points();
-    std::unordered_set<MapPoint*> add_new_keyframe(KeyFrame *kf);
+    std::vector<MapPoint*> add_new_keyframe(KeyFrame *kf);
 
     
     std::unordered_map<KeyFrame*, int> get_keyframes_connected(KeyFrame *kf, int limit);
-    void update_local_map(KeyFrame *ref, std::unordered_set<KeyFrame*>& keyframes_already_found);
     static bool remove_keyframe_reference_from_map_point(MapPoint *mp, KeyFrame *kf);  
     static bool add_keyframe_reference_to_map_point(MapPoint *mp, Feature *f, KeyFrame *kf);
     static bool add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp); 
@@ -40,7 +40,7 @@ public:
     static bool replace_map_points_in_keyframe(KeyFrame *kf, MapPoint *old_mp, MapPoint *new_mp);
     bool update_graph_connections(KeyFrame *kf1, KeyFrame *kf2);
     std::unordered_set<KeyFrame*> get_till_second_degree_keyframes(KeyFrame *kf);
-    void create_map_points_from_features(KeyFrame *kf);
+    std::vector<MapPoint*> create_map_points_from_features(KeyFrame *kf);
 };
 
 #endif

@@ -22,6 +22,17 @@ bool MapPoint::map_point_should_be_deleted() {
     return ratio < 0.25f;
 }
 
+MapPoint::~MapPoint() {
+    std::unordered_map<KeyFrame*, MapPointEntry*> data;
+    std::vector<MapPointEntry*> map_point_entries;
+    for (auto it = data.begin(); it != data.end(); it++) {
+        map_point_entries.push_back(it->second);
+    }
+    for (MapPointEntry* entry : map_point_entries) {
+        delete entry;
+    }
+}
+
 
 MapPoint::MapPoint(KeyFrame *keyframe, int idx,  cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord, 
         cv::Mat orb_descriptor) : wcoord(wcoord)

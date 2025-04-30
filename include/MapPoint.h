@@ -38,6 +38,7 @@ public:
         int octave = 0;
         
         MapPoint(KeyFrame *keyframe, int idx, cv::KeyPoint kp, Eigen::Vector3d camera_center, Eigen::Vector4d wcoord, cv::Mat orb_descriptor);
+        ~MapPoint();
         void compute_distinctive_descriptor();
         void compute_distance();
         int predict_image_scale(double distance);
