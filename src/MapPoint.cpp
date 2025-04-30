@@ -17,11 +17,6 @@ int MapPoint::ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b) {
     return dist;
 }
 
-bool MapPoint::map_point_should_be_deleted() {
-    double ratio = (double)this->number_associations / this->number_times_seen;
-    return ratio < 0.25f;
-}
-
 MapPoint::~MapPoint() {
     std::unordered_map<KeyFrame*, MapPointEntry*> data;
     std::vector<MapPointEntry*> map_point_entries;

@@ -42,7 +42,6 @@ public:
         void compute_distinctive_descriptor();
         void compute_distance();
         int predict_image_scale(double distance);
-        bool map_point_should_be_deleted();
         void increase_how_many_times_seen();
         void increase_number_associations(int val);
         void decrease_number_associations(int val);

@@ -202,10 +202,12 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
 
 void LocalMapping::search_in_neighbours(KeyFrame *kf) {
     std::unordered_set<KeyFrame*> second_degree_neighbours = mapp->get_till_second_degree_keyframes(kf);
+
     for(KeyFrame *neighbour_kf : second_degree_neighbours)
     {
-        OrbMatcher::Fuse(neighbour_kf, kf, 3);
-        OrbMatcher::Fuse(kf, neighbour_kf, 3);
+        int fused_n_kf = OrbMatcher::Fuse(neighbour_kf, kf, 3);
+        int fused_kf_n = OrbMatcher::Fuse(kf, neighbour_kf, 3);
+        std::cout << fused_kf_n + fused_n_kf << " atatea puncte fusionate\n"; 
         bool result = mapp->update_graph_connections(kf, neighbour_kf);
         if (!result) {
             std::cout << "NU A REUSIT SA FACA UPDATE LA GRAPH\n";
