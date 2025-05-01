@@ -33,6 +33,7 @@ std::unordered_map<KeyFrame *, int> Map::get_keyframes_connected(KeyFrame *new_k
     {
         for (KeyFrame *kf : mp->keyframes)
         {
+            if (kf == new_kf) continue;
             if (edges_new_keyframe.find(kf) != edges_new_keyframe.end())
             {
                 edges_new_keyframe[kf] += 1;
@@ -84,7 +85,6 @@ std::vector<MapPoint*> Map::create_map_points_from_features(KeyFrame *kf)
 std::vector<MapPoint*> Map::add_new_keyframe(KeyFrame *new_kf)
 {
     new_kf->reference_idx += 1;
-    std::cout << new_kf->reference_idx << " acesta este indexul map point-ului\n";
     this->keyframes.push_back(new_kf);
     this->graph[new_kf] = std::unordered_map<KeyFrame *, int>();
     new_kf->compute_bow_representation();
@@ -123,8 +123,8 @@ bool Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp)
     bool in_map_points = kf->map_points.find(mp) != kf->map_points.end();
     bool in_correlations = kf->mp_correlations.find(mp) != kf->mp_correlations.end();
     bool in_features = in_correlations ? (kf->mp_correlations[mp]->get_map_point() == mp) : in_correlations;
-    if (in_map_points && in_correlations && in_features)
-        return false;
+    if (in_map_points && in_correlations && in_features) return false;
+    
     if (in_map_points != in_correlations || in_correlations != in_features)
     {
         std::cout << kf->map_points.size() << " " << kf->mp_correlations.size() << "\n";
@@ -351,7 +351,7 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
                 continue;
             for (int idx : kps_idx)
             {
-                if (kf->features[idx].stereo_depth >= 1e-6)
+                if (kf->features[idx].stereo_depth > 1e-6)
                 {
                     double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
                     float er = fabs(fake_rgbd - kf->features[idx].stereo_depth);

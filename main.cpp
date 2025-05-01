@@ -86,10 +86,8 @@ int main(void)
     }
     
     auto t2 = high_resolution_clock::now();
-    std::cout << duration_cast<seconds>(t2 - t1).count() << "s aici atata a durat" << std::endl;  
-    std::cout << "\n";
-    std::cout << tracker->total_tracking_during_matching / 1000 << " matching time taken\n";
-    std::cout << tracker->total_tracking_during_local_map / 1000 << " local map duration\n";
+    std::cout << duration_cast<seconds>(t2 - t1).count() << "s aici atata a durat\n\n";  
+    std::cout << tracker->reference_kf->reference_idx << " atatea keyframe-uri avute\n";
     std::cout << total_tracking_duration / 1000 << " atat a durat tracking sa faaca\n";
     std::cout << total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n"; 
 }

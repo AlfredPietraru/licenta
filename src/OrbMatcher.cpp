@@ -121,7 +121,7 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
         for (int idx : kps_idx)
         {
             int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
-            if (kf->features[idx].stereo_depth >= 1e-6)
+            if (kf->features[idx].stereo_depth > 1e-6)
             {
                 double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
                 float er = fabs(fake_rgbd - kf->features[idx].stereo_depth);
@@ -179,7 +179,7 @@ void OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoin
         if (kps_idx.size() == 0) continue;
         for (int idx : kps_idx)
         {
-            if (kf->features[idx].stereo_depth >= 1e-6) {
+            if (kf->features[idx].stereo_depth > 1e-6) {
                 double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
                 float er = fabs(fake_rgbd - kf->features[idx].stereo_depth);
                 if (er > scale_of_search) continue;
@@ -292,13 +292,12 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
                 const cv::Mat &d1 = ref1->orb_descriptors.row(idx1);
                 int bestDist = 50;
                 int bestIdx2 = -1;
-                bStereo1 = ref1->features[idx1].stereo_depth >= 1e-6;
+                bStereo1 = ref1->features[idx1].stereo_depth > 1e-6;
 
                 for(size_t idx2 : f2it->second)
                 {
                     MapPoint* kf2_mp = ref2->features[idx2].get_map_point();
-                    if (kf2_mp != nullptr) continue;
-                    if(vbMatched2[idx2]) continue;
+                    if (vbMatched2[idx2] || kf2_mp != nullptr) continue;
                     
                     const cv::Mat &d2 = ref2->orb_descriptors.row(idx2);
                     
@@ -308,7 +307,7 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
 
                     const cv::KeyPoint &kpu2 = ref2->features[idx2].get_undistorted_keypoint();
 
-                    bStereo2 = ref2->features[idx2].stereo_depth >= 1e-6;
+                    bStereo2 = ref2->features[idx2].stereo_depth > 1e-6;
                     if(!bStereo1 && !bStereo2)
                     {
                         const float distex = ex - kpu2.pt.x;
@@ -379,7 +378,6 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
     const float &cy = pKF->K(1, 2);
 
     int nFused=0;
-    std::cout <<  source_kf->map_points.size() << " " << pKF->map_points.size() << " puncte totale source_kf si pKF\n";
     std::unordered_set<MapPoint*> copy_map_points(source_kf->map_points.begin(), source_kf->map_points.end());
     int out = 0;
     for(MapPoint *source_mp : copy_map_points)
@@ -465,13 +463,10 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         }
 
         if (pkf_mp != nullptr && pkf_mp->keyframes.size() < source_mp->keyframes.size()) {
-            // retire pkf_mp;
-            // replace it with source_mp;
             Map::replace_map_point(pkf_mp, source_mp);
             nFused++;
             continue;
         }
     }
-    std::cout << out  << " pana la filtrare ajung atatea puncte din source_kf pe pKF\n";
     return nFused;
 }
