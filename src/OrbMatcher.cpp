@@ -134,6 +134,7 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
             }
         }
         if (best_dist > 100) continue;
+        if (!Map::check_new_map_point_better(&kf->features[best_idx], mp)) continue;
         Map::add_map_point_to_keyframe(kf, &kf->features[best_idx], mp);
     }
     this->checkOrientation(kf, prev_kf);
@@ -202,6 +203,7 @@ void OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoin
         }
         if (lowest_dist > DES_DIST)  continue;
         if(lowest_level == second_lowest_level && lowest_dist > 0.8 * second_lowest_dist) continue;
+        if (!Map::check_new_map_point_better(&kf->features[lowest_idx], mp)) continue;
         Map::add_map_point_to_keyframe(kf, &kf->features[lowest_idx], mp);
     }
 }
@@ -246,6 +248,7 @@ void OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref)
                 }
                 if (bestDist1 > DES_DIST) continue;
                 if (bestDist1 > 0.7 * bestDist2) continue;
+                if (!Map::check_new_map_point_better(&curr->features[bestIdx], mp_ref)) continue;
                 Map::add_map_point_to_keyframe(curr, &curr->features[bestIdx], mp_ref); 
             }
             f1it++;
@@ -345,7 +348,7 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
     return vMatchedPairs;
 } 
 
-// NU ESTE CLAR EPIPOLAR CONSTRAINS PART
+
 bool OrbMatcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const Eigen::Matrix3d &F12)
 {
     // Epipolar line in second image l = x1'F12 = [a b c]

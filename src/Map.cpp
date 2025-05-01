@@ -70,6 +70,8 @@ std::vector<MapPoint*> Map::create_map_points_from_features(KeyFrame *kf)
         MapPoint *mp = new MapPoint(kf, i, kf->features[i].kpu, kf->camera_center_world, wcoord, kf->features[i].descriptor);
         out.push_back(mp);
         mp->increase_how_many_times_seen();
+        if (!check_new_map_point_better(&kf->features[i], mp)) continue;
+
         bool was_addition_succesfull = add_map_point_to_keyframe(kf, &kf->features[i], mp);
         if (!was_addition_succesfull)
         {
@@ -133,25 +135,13 @@ bool Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp)
 
     kf->remove_outlier_element(mp);
     MapPoint *old_mp = f->get_map_point();
+    if (old_mp != nullptr) {
+        bool deletion_result = remove_map_point_from_keyframe(kf, old_mp);
+        if (!deletion_result) std::cout << "NU A REUSIT SA STEARGA\n";
+        remove_keyframe_reference_from_map_point(old_mp, kf); 
+    }
+
     int current_hamming_distance = ComputeHammingDistance(mp->orb_descriptor, f->descriptor);
-    if (old_mp == nullptr)
-    {
-        mp->increase_number_associations(1);
-        f->set_map_point(mp, current_hamming_distance);
-        kf->mp_correlations.insert({mp, f});
-        kf->map_points.insert(mp);
-        return true;
-    }
-    if (current_hamming_distance >= f->curr_hamming_dist)
-        return false;
-
-    bool deletion_result = remove_map_point_from_keyframe(kf, old_mp);
-    if (!deletion_result)
-    {
-        std::cout << "NU S-A PUTUT CAND FACEA ADAUGAREA ALTUI ELEMENT NU L-A PUTUT STERGE PE CEL VECHI\n";
-        return false;
-    }
-
     mp->increase_number_associations(1);
     f->set_map_point(mp, current_hamming_distance);
     kf->mp_correlations.insert({mp, f});
@@ -170,7 +160,6 @@ bool Map::remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp)
     bool not_in_map_points = kf->map_points.find(mp) == kf->map_points.end();
     bool not_in_correlations = kf->mp_correlations.find(mp) == kf->mp_correlations.end();
     bool not_in_features = not_in_correlations ? not_in_correlations : kf->mp_correlations[mp]->get_map_point() != mp;
-    // bool already_found_in_keyframe = mp->find_keyframe(kf);
 
     if (not_in_map_points && not_in_correlations && not_in_features)
         return true;
@@ -228,11 +217,7 @@ bool Map::remove_keyframe_reference_from_map_point(MapPoint *mp, KeyFrame *kf)
         std::cout << "NU S-A PUTUT REALIZA OPERATIA DE REMOVE KEYFRAME REFERENCE UNUL DINTRE ELEMENTE E NULL\n";
         return false;
     }
-    if (!mp->find_keyframe(kf))
-    {
-        std::cout << "NU S-A PUTUT REALIZA OPERATIA DE REMOVE MAP POINT-ul NU EXISTA CA REFERINTA IN KEYFRAME\n";
-        return false;
-    }
+    if (!mp->find_keyframe(kf)) return true;
     mp->remove_observation(kf);
     return true;
 }
@@ -394,6 +379,7 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
                 continue;
             if (lowest_level == second_lowest_level && lowest_dist > 0.8 * second_lowest_dist)
                 continue;
+            if (!Map::check_new_map_point_better(&kf->features[lowest_idx], mp)) continue;
             Map::add_map_point_to_keyframe(kf, &kf->features[lowest_idx], mp);
         }
     }
@@ -407,15 +393,16 @@ bool Map::replace_map_point(MapPoint *old_mp, MapPoint *new_mp)
         Feature *old_map_point_feature = kf->mp_correlations[old_mp];
         Map::remove_map_point_from_keyframe(kf, old_mp);
         Map::remove_keyframe_reference_from_map_point(old_mp, kf);
-        if (!kf->check_map_point_in_keyframe(new_mp)) {
-            Map::add_map_point_to_keyframe(kf, old_map_point_feature, new_mp);
-            Map::remove_keyframe_reference_from_map_point(new_mp, kf);
-        }
+
+        if (kf->check_map_point_in_keyframe(new_mp)) continue;
+        if (!Map::check_new_map_point_better(old_map_point_feature, new_mp)) continue;
+        Map::add_map_point_to_keyframe(kf, old_map_point_feature, new_mp);
+        Map::add_keyframe_reference_to_map_point(new_mp, old_map_point_feature, kf);
     }
     return true;
 }
 
-bool Map::new_map_point_better(Feature *f, MapPoint *new_map_point) {
+bool Map::check_new_map_point_better(Feature *f, MapPoint *new_map_point) {
     MapPoint *old_mp = f->get_map_point();
     if (old_mp == nullptr) return true;
     int dist = ComputeHammingDistance(f->descriptor, new_map_point->orb_descriptor);
