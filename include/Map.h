@@ -37,7 +37,9 @@ public:
     static bool add_keyframe_reference_to_map_point(MapPoint *mp, Feature *f, KeyFrame *kf);
     static bool add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp); 
     static bool remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp);
-    static bool replace_map_points_in_keyframe(KeyFrame *kf, MapPoint *old_mp, MapPoint *new_mp);
+    static bool replace_map_point(MapPoint *old_mp, MapPoint *new_mp);
+    static bool new_map_point_better(Feature *f, MapPoint *new_map_point);
+    
     bool update_graph_connections(KeyFrame *kf1, KeyFrame *kf2);
     std::unordered_set<KeyFrame*> get_till_second_degree_keyframes(KeyFrame *kf);
     std::vector<MapPoint*> create_map_points_from_features(KeyFrame *kf);

@@ -93,11 +93,11 @@ bool Tracker::Is_KeyFrame_needed()
     bool c2 = weak_good_map_points_tracking || needToInsertClose; 
     bool c3 = ((current_kf->map_points.size() < points_seen_from_multiple_frames_reference * fraction) || needToInsertClose) && (current_kf->map_points.size() > 15);
     // std::cout << current_kf->map_points.size() << " atatea puncte urmarite in track local map\n";
-    if ((c1 || c2) && c3) {
-        std::cout << current_kf->map_points.size() << " atatea puncte urmarite in track local map\n";
-        std::cout << points_seen_from_multiple_frames_reference << " atatea puncte urmarite din mai multe cadre\n";
-        std::cout << "conditions that lead to that " << c1 << " " << weak_good_map_points_tracking << " " << needToInsertClose << " " << c3 << "\n\n";
-    }
+    // if ((c1 || c2) && c3) {
+    //     std::cout << current_kf->map_points.size() << " atatea puncte urmarite in track local map\n";
+    //     std::cout << points_seen_from_multiple_frames_reference << " atatea puncte urmarite din mai multe cadre\n";
+    //     std::cout << "conditions that lead to that " << c1 << " " << weak_good_map_points_tracking << " " << needToInsertClose << " " << c3 << "\n\n";
+    // }
     return (c1 || c2) && c3;
 }
 

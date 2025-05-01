@@ -399,47 +399,25 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
     }
 }
 
-bool Map::replace_map_points_in_keyframe(KeyFrame *kf, MapPoint *old_mp, MapPoint *new_mp)
+bool Map::replace_map_point(MapPoint *old_mp, MapPoint *new_mp)
 {
-    bool old_map_point_found = kf->check_map_point_in_keyframe(old_mp);
-    bool new_map_point_found = kf->check_map_point_in_keyframe(new_mp);
-    if (!old_map_point_found)
-    {
-        std::cout << "NU S-A PUTUT EXECUTA OPERATIA PUNCTUL VECHI NU EXISTA IN KEYFRAME\n";
-        return false;
-    }
-    Feature *previous_feature_associated = kf->mp_correlations[old_mp];
-    bool deletion_old_point_succesfull = Map::remove_map_point_from_keyframe(kf, old_mp);
-    if (!deletion_old_point_succesfull)
-    {
-        std::cout << "NU A MERS DE STERS ELEMENTUL DESI EXISTA\n";
-        return false;
-    }
-    Map::remove_keyframe_reference_from_map_point(old_mp, kf);
-    if (!new_map_point_found)
-    {
-        bool adding_new_map_point_succesfull = Map::add_map_point_to_keyframe(kf, previous_feature_associated, new_mp);
-        if (!adding_new_map_point_succesfull)
-        {
-            std::cout << "NU A MERS SA ADAUGE NOUL ELEMENT LA REPLACE\n";
-            return false;
+    if (old_mp == new_mp) return true;
+    std::vector<KeyFrame*> copy_keyframes(old_mp->keyframes.begin(), old_mp->keyframes.end());
+    for (KeyFrame *kf : copy_keyframes) {
+        Feature *old_map_point_feature = kf->mp_correlations[old_mp];
+        Map::remove_map_point_from_keyframe(kf, old_mp);
+        Map::remove_keyframe_reference_from_map_point(old_mp, kf);
+        if (!kf->check_map_point_in_keyframe(new_mp)) {
+            Map::add_map_point_to_keyframe(kf, old_map_point_feature, new_mp);
+            Map::remove_keyframe_reference_from_map_point(new_mp, kf);
         }
-        add_keyframe_reference_to_map_point(new_mp, previous_feature_associated, kf);
-        return true;
     }
-
-    bool deletion_new_point_succesfull = Map::remove_map_point_from_keyframe(kf, new_mp);
-    if (!deletion_new_point_succesfull)
-    {
-        std::cout << "NU A MERS SA STEARGA UN PUNCT CARE ERA VALID\n";
-        return false;
-    }
-    remove_keyframe_reference_from_map_point(new_mp, kf);
-    bool adding_new_map_point_succesfull = Map::add_map_point_to_keyframe(kf, previous_feature_associated, new_mp);
-    if (!adding_new_map_point_succesfull)
-    {
-        std::cout << "NU A MERS SA ADAUGE NOUL ELEMENT LA REPLACE IN CONDITIA 2\n";
-    }
-    add_keyframe_reference_to_map_point(new_mp, previous_feature_associated, kf);
     return true;
+}
+
+bool Map::new_map_point_better(Feature *f, MapPoint *new_map_point) {
+    MapPoint *old_mp = f->get_map_point();
+    if (old_mp == nullptr) return true;
+    int dist = ComputeHammingDistance(f->descriptor, new_map_point->orb_descriptor);
+    return dist < f->curr_hamming_dist;
 }

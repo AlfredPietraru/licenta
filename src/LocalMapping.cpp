@@ -38,10 +38,10 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
             bool first_two = (mp->keyframes[1]->reference_idx - mp->keyframes[0]->reference_idx) == 1;
             bool last_two = (mp->keyframes[2]->reference_idx - mp->keyframes[1]->reference_idx) == 1;
             bool last_equal_current_kf = mp->keyframes[2]->reference_idx == curr_kf->reference_idx; 
-            for (int i = 0; i < (int)mp->keyframes.size(); i++) {
-                std::cout << mp->keyframes[i]->reference_idx << " "; 
-            }
-            std::cout << "\n";
+            // for (int i = 0; i < (int)mp->keyframes.size(); i++) {
+            //     std::cout << mp->keyframes[i]->reference_idx << " "; 
+            // }
+            // std::cout << "\n";
 
             if (first_two && last_two && last_equal_current_kf) {
                 too_old_to_keep_looking.push_back(mp);
@@ -202,9 +202,10 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
 
 void LocalMapping::search_in_neighbours(KeyFrame *kf) {
     std::unordered_set<KeyFrame*> second_degree_neighbours = mapp->get_till_second_degree_keyframes(kf);
-
+    std::cout << "\n\nAICI INCEPE FUSE\n";
     for(KeyFrame *neighbour_kf : second_degree_neighbours)
     {
+
         int fused_n_kf = OrbMatcher::Fuse(neighbour_kf, kf, 3);
         int fused_kf_n = OrbMatcher::Fuse(kf, neighbour_kf, 3);
         std::cout << fused_kf_n + fused_n_kf << " atatea puncte fusionate\n"; 
@@ -214,6 +215,7 @@ void LocalMapping::search_in_neighbours(KeyFrame *kf) {
             continue;
         }
     }
+    std::cout << "\nAICI SE TERMINA FUSE\n\n";
 }
 
 

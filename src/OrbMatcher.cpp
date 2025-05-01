@@ -374,19 +374,17 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
     const float &fy = pKF->K(1, 1);
     const float &cx = pKF->K(0, 2);
     const float &cy = pKF->K(1, 2);
-    const float &bf = 3.2;
-
-    Eigen::Vector3d Ow = pKF->camera_center_world;
 
     int nFused=0;
-    bool was_addition_succesful; 
+    std::cout <<  source_kf->map_points.size() << " " << pKF->map_points.size() << " puncte totale source_kf si pKF\n";
     std::unordered_set<MapPoint*> copy_map_points(source_kf->map_points.begin(), source_kf->map_points.end());
+    int out = 0;
     for(MapPoint *source_mp : copy_map_points)
     {
-        if(source_mp->find_keyframe(pKF)) continue;
+        if(pKF->check_map_point_in_keyframe(source_mp)) continue;
 
         Eigen::Vector3d p3Dc = Rcw * source_mp->wcoord_3d + tcw;
-        if(p3Dc(2)<0.0f) continue;
+        if(p3Dc(2) <= 1e-6) continue;
 
         const float invz = 1/p3Dc(2);
         const float x = p3Dc(0) * invz;
@@ -397,9 +395,9 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
 
         if (u < pKF->minX || u > pKF->maxX - 1) continue;
         if (v < pKF->minY || v > pKF->maxY - 1) continue;
-        const float ur = u-bf*invz;
+        const float ur = u - fx * 0.08 * invz;
 
-        Eigen::Vector3d camera_to_map_view_ray = (source_mp->wcoord_3d - Ow);
+        Eigen::Vector3d camera_to_map_view_ray = (source_mp->wcoord_3d - pKF->camera_center_world);
         double distance = camera_to_map_view_ray.norm();
         if (distance < source_mp->dmin || distance > source_mp->dmax) continue;
         
@@ -408,44 +406,31 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
             continue;
 
         int nPredictedLevel = source_mp->predict_image_scale(distance);
-        const float radius = th * pow(1.2, nPredictedLevel);
+        const float radius = th * pKF->POW_OCTAVE[nPredictedLevel];
 
         const std::vector<int>  vIndices = pKF->get_vector_keypoints_after_reprojection(u, v, radius, -1, 9); 
 
         if(vIndices.empty()) continue;
 
         // Match to the most similar keypoint in the radius
-        int bestDist = 1000;
+        int bestDist = 256;
         int bestIdx = -1;
         for(int kp_idx : vIndices)
         {
             const cv::KeyPoint &kpu = pKF->features[kp_idx].get_undistorted_keypoint();
-
-            const int &kpLevel= kpu.octave;
-
-            if(kpLevel<nPredictedLevel-1 || kpLevel>nPredictedLevel) continue;
-
-            if(pKF->features[kp_idx].stereo_depth >= 0)
-            {
-                // Check reprojection error in stereo
-                const float &kpx = kpu.pt.x;
-                const float &kpy = kpu.pt.y;
-                const float &kpr = pKF->features[kp_idx].stereo_depth;
-                const float ex = u-kpx;
-                const float ey = v-kpy;
-                const float er = ur-kpr;
-                const float e2 = ex*ex+ey*ey+er*er;
-                if(e2 * pow(1.2, 2 * kpLevel) > 7.8) continue;
-            }
-            else
-            {
-                const float &kpx = kpu.pt.x;
-                const float &kpy = kpu.pt.y;
-                const float ex = u-kpx;
-                const float ey = v-kpy;
+            if(kpu.octave < nPredictedLevel-1 || kpu.octave > nPredictedLevel) continue;
+            const float ex = u  - kpu.pt.x;
+            const float ey = v  - kpu.pt.y;
+            if (pKF->features[kp_idx].stereo_depth <= 1e-6) {
                 const float e2 = ex*ex+ey*ey;
-                if(e2 * pow(1.2, 2 * kpLevel) > 5.99) continue;
+                if(e2 / pow(1.2, 2 * kpu.octave) > 5.99) continue;
+            } 
+            if (pKF->features[kp_idx].stereo_depth > 1e-6) {
+                const float er = ur - pKF->features[kp_idx].stereo_depth;
+                const float e2 = ex*ex+ey*ey+er*er;
+                if(e2 / pow(1.2, 2 * kpu.octave) > 7.8) continue;
             }
+
             const int dist = ComputeHammingDistance(source_mp->orb_descriptor, pKF->features[kp_idx].descriptor);
 
             if(dist<bestDist)
@@ -456,51 +441,34 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         }
         // If there is already a MapPoint replace otherwise add new measurement
         if (bestDist > 50) continue;
+        out++;
         MapPoint* pkf_mp = pKF->features[bestIdx].get_map_point();
         if (pkf_mp == nullptr) {
-            // punctul exista deja iar feature-ul pe care il are e cel mai bun // nu fac nimic
-            if (pKF->check_map_point_in_keyframe(source_mp)) {
-                if (pKF->mp_correlations[source_mp] == &pKF->features[bestIdx]) continue;
-                bool result =  Map::remove_map_point_from_keyframe(pKF, source_mp);
-                if (!result) {
-                    std::cout << "NU A MERS SA STEARGA IN PRIMA CONDITIE DIN MATCHER\n";
-                    continue;
-                }
-                Map::remove_keyframe_reference_from_map_point(source_mp, pKF);
-                Map::add_map_point_to_keyframe(pKF, &pKF->features[bestIdx], source_mp);
-                Map::add_keyframe_reference_to_map_point(source_mp, &pKF->features[bestIdx], pKF);
-                nFused++;
-                continue;
-            }
-            was_addition_succesful = Map::add_map_point_to_keyframe(pKF, &pKF->features[bestIdx], source_mp);
-            if (!was_addition_succesful) {
-                std::cout << "NU S-A PUTUT ADAUGA MAP POINT DESI ERA NULL MAP POINT LA FEATURE\n";
-                continue;
-            } 
-            was_addition_succesful = Map::add_keyframe_reference_to_map_point(source_mp, &pKF->features[bestIdx], pKF);
-            if (!was_addition_succesful) {
+            Feature *f = &pKF->features[bestIdx];
+            bool map_to_kf = Map::add_map_point_to_keyframe(pKF, f, source_mp);
+            bool kf_to_map = Map::add_keyframe_reference_to_map_point(source_mp, f, pKF);
+            if (!map_to_kf ||  !kf_to_map) {
                 std::cout << "NU S-A PUTUT ADAUGA MAP POINT TO KEYFRAME IN ORB MATCHER\n";
                 continue;
             }
             nFused++;
             continue;
         }
+
         if(pkf_mp != nullptr && pkf_mp->keyframes.size() > source_mp->keyframes.size()) {
-            // retire source_mp,
-            // replace it pkf_mp; 
-            // trebuie ceva pentru sters referinta KEYFRAME-ului din map point;
-            // nu are sens linia asta
-            bool replacement_result = Map::replace_map_points_in_keyframe(source_kf, source_mp, pkf_mp);
-            nFused = replacement_result ? nFused + 1 : nFused;
+            Map::replace_map_point(source_mp, pkf_mp);
+            nFused++;
             continue;
         }
+
         if (pkf_mp != nullptr && pkf_mp->keyframes.size() < source_mp->keyframes.size()) {
             // retire pkf_mp;
             // replace it with source_mp;
-            bool replacement_result = Map::replace_map_points_in_keyframe(pKF, pkf_mp, source_mp);
-            nFused = replacement_result ? nFused + 1 : nFused;
+            Map::replace_map_point(pkf_mp, source_mp);
+            nFused++;
             continue;
         }
     }
+    std::cout << out  << " pana la filtrare ajung atatea puncte din source_kf pe pKF\n";
     return nFused;
 }
