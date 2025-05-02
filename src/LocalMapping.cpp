@@ -4,11 +4,14 @@
 void LocalMapping::local_map(KeyFrame *kf) {
     // cam shady bucata asta
     std::vector<MapPoint*> new_map_points_added = mapp->add_new_keyframe(kf);
+    std::cout << kf->debug_keyframe_valid() << " frame-ul current e valid\n";
     this->recently_added.insert(new_map_points_added.begin(), new_map_points_added.end());
     this->map_points_culling(kf);
     this->compute_map_points(kf);
     this->search_in_neighbours(kf);
-    // bundleAdjustment->solve_ceres(this->mapp, kf);
+    std::cout << "INCEPE BA\n";
+    bundleAdjustment->solve_ceres(this->mapp, kf);
+    std::cout << "SE TERMINA BA\n";
     // this->KeyFrameCulling(kf);
     std::cout << "LOCAL MAP ISI FACE TREABA\n";
 }
@@ -58,7 +61,7 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
     }
     for (MapPoint *mp : to_del) this->delete_map_point(mp);
     for (MapPoint *mp : too_old_to_keep_looking) this->recently_added.erase(mp);
-    std::cout << to_del.size() << " " << " atatea puncte care vor fi sterse\n";
+    // std::cout << to_del.size() << " " << " atatea puncte care vor fi sterse\n";
 }
 
 bool is_coordinate_valid_for_keyframe(KeyFrame *kf, Feature *f, Eigen::Vector4d coordinates,  bool isStereo) {
@@ -95,7 +98,6 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
         }
         Eigen::Matrix3d fundamental_mat =  this->compute_fundamental_matrix(kf, neighbour_kf);
         std::vector<std::pair<int, int>> vMatchedIndices = OrbMatcher::search_for_triangulation(kf, neighbour_kf, fundamental_mat);
-        std::cout << vMatchedIndices.size() << " atatea perechi au fost match=uite\n";
         for (std::pair<int, int> correspondence : vMatchedIndices) {
             Feature *f1 = &kf->features[correspondence.first];
             Feature *f2 = &neighbour_kf->features[correspondence.second];

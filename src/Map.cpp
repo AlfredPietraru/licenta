@@ -408,3 +408,9 @@ bool Map::check_new_map_point_better(Feature *f, MapPoint *new_map_point) {
     int dist = ComputeHammingDistance(f->descriptor, new_map_point->orb_descriptor);
     return dist < f->curr_hamming_dist;
 }
+
+
+bool Map::debug_map_points() {
+    return true;
+}
+

@@ -41,6 +41,8 @@ public:
     static bool check_new_map_point_better(Feature *f, MapPoint *new_map_point);
     
     bool update_graph_connections(KeyFrame *kf1, KeyFrame *kf2);
+
+    bool debug_map_points();
     std::unordered_set<KeyFrame*> get_till_second_degree_keyframes(KeyFrame *kf);
     std::vector<MapPoint*> create_map_points_from_features(KeyFrame *kf);
 };

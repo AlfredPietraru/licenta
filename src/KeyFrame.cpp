@@ -261,3 +261,14 @@ void KeyFrame::debug_keyframe(cv::Mat frame, int miliseconds)
     cv::imshow("Display window", img3);
     cv::waitKey(miliseconds);
 }
+
+
+bool KeyFrame::debug_keyframe_valid() {
+    for (MapPoint *mp : this->map_points) {
+        if (this->mp_correlations.find(mp) == this->mp_correlations.end()) return false;
+        Feature *f = this->mp_correlations[mp];
+        if (f->get_map_point() != mp) return false;
+        if (this->outliers.find(mp) != this->outliers.end()) return false;
+    }
+    return true;
+}

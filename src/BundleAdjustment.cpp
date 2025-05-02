@@ -5,7 +5,7 @@ using SE3Manifold = ceres::ProductManifold<ceres::QuaternionManifold, ceres::Euc
 double get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, double chi2) {
     double residuals[3];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] >= -1e-2 &&  camera_coordinates[2] <= 1e-2) return 100000;
+    if (camera_coordinates[2] <= 1e-6) return 100000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
@@ -21,7 +21,7 @@ double get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, doubl
 double get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, double chi2) {
     double residuals[2];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] >= -1e-2 &&  camera_coordinates[2] <= 1e-2) return 100000;
+    if (camera_coordinates[2] <= 1e-6) return 100000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
@@ -34,11 +34,11 @@ double get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, 
 
 
 void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unordered_set<KeyFrame*> &fixed_keyframes,
-        std::unordered_set<MapPoint*>& local_map_points, int number_iterations) {
+        std::unordered_set<MapPoint*>& local_map_points, int number_iterations, bool to_output) {
     ceres::Problem problem;
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::LinearSolverType::SPARSE_SCHUR;
-    // options.minimizer_progress_to_stdout = true;
+    options.minimizer_progress_to_stdout = to_output;
     options.function_tolerance = 1e-7;
     options.gradient_tolerance = 1e-7;
     options.parameter_tolerance = 1e-8;
@@ -51,14 +51,6 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
 
     for (MapPoint *mp : local_map_points) {
         for (KeyFrame *kf : mp->keyframes) {
-            if (!kf->check_map_point_in_keyframe(mp)) {
-                for (KeyFrame *one_more_kf : mp->keyframes) {
-                    std::cout << one_more_kf->reference_idx << " ";
-                }
-                std::cout << "\n";
-                std::cout << kf->reference_idx << " acesta este index frame\n\n"; 
-                continue;
-            }
             Feature *f = kf->mp_correlations[mp];
             bool is_local_keyframe = local_keyframes.find(kf) != local_keyframes.end();
             bool is_fixed_keyframe = fixed_keyframes.find(kf) != fixed_keyframes.end();
@@ -93,7 +85,9 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
     
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
-    // std::cout << summary.FullReport() << "\n";
+    if (to_output) {
+        std::cout << summary.FullReport() << "\n";
+    }
 }
 
 void restore_computed_values(std::unordered_set<KeyFrame*>& local_keyframes, std::unordered_set<MapPoint*>& local_map_points) {
@@ -106,6 +100,7 @@ void restore_computed_values(std::unordered_set<KeyFrame*>& local_keyframes, std
 }
 
 void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
+    if (mapp->keyframes.size() == 1) return;
    std::unordered_set<KeyFrame*> local_keyframes = mapp->get_local_keyframes(frame);
     if (local_keyframes.size() == 0) {
         std::cout << "CEVA E GRESIT IN BUNDLE ADJUSTMENT ACEST KEYFRAME ESTE IZOLAT\n";
@@ -136,53 +131,15 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
             if (local_keyframes.find(kf_which_sees_map_point) == local_keyframes.end()) fixed_keyframes.insert(kf_which_sees_map_point);
         }
     }
-
-    // for (KeyFrame *kf : local_keyframes) {
-    //     for (int i = 0; i < 7; i++) {
-    //         std::cout << kf->pose_vector[i] << " ";
-    //     }
-    //     std::cout << "\n";
-    // }
-    // std::cout << "\n\n";
-    // for (KeyFrame *kf : fixed_keyframes) {
-    //     for (int i = 0; i < 7; i++) {
-    //         std::cout << kf->pose_vector[i] << " ";
-    //     }
-    //     std::cout << "\n";
-    // }
-    // std::cout << "\n\n";
-    // for (MapPoint *mp : local_map_points) {
-    //     std::cout << "MapPoint coords: " << mp->wcoord_3d.transpose() << std::endl;
-    // }
-    // std::cout << "\n\n";
-    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 5);
-    // for (MapPoint *mp : local_map_points) {
-    //     std::cout << "MapPoint coords: " << mp->wcoord_3d.transpose() << std::endl;
-    // }
-    // std::cout << "\n\n";
+    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 5, false);
     restore_computed_values(local_keyframes, local_map_points);
-    // for (KeyFrame *kf : local_keyframes) {
-    //     for (int i = 0; i < 7; i++) {
-    //         std::cout << kf->pose_vector[i] << " ";
-    //     }
-    //     std::cout << "\n";
-    // }
-    // std::cout << "\n\n";
-    // for (KeyFrame *kf : fixed_keyframes) {
-    //     for (int i = 0; i < 7; i++) {
-    //         std::cout << kf->pose_vector[i] << " ";
-    //     }
-    //     std::cout << "\n";
-    // }
-    // std::cout << "\n\n";
-    // remove outliers
     double chi2Mono = 5.991;
     double chi2Stereo = 7.815;
 
     std::vector<MapPoint *> to_delete; 
     for (MapPoint *mp : local_map_points) {
-        for (KeyFrame *kf : mp->keyframes) {
-            if (!kf->check_map_point_in_keyframe(mp)) continue;
+        std::vector<KeyFrame*> copy_keyframe_vector(mp->keyframes.begin(), mp->keyframes.end());
+        for (KeyFrame *kf : copy_keyframe_vector) {
             Feature *f = kf->mp_correlations[mp];
             bool is_outlier;
             if (f->stereo_depth <= 1e-6) {
@@ -193,20 +150,12 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
                 is_outlier = error > chi2Stereo;
             }
             if (is_outlier) {
-                bool result = Map::remove_map_point_from_keyframe(kf, mp);
-                if (!result) {
-                    std::cout << "NU A MERS STERGEREA\n";
-                    continue;
-                }
-                result = Map::remove_keyframe_reference_from_map_point(mp, kf);
-                if (!result) {
-                    std::cout << "NU A PUTUT ELIMINA REFERINTA\n";
-                    continue;
-                }
-                if (mp->keyframes.size() == 0) {
-                    to_delete.push_back(mp);
-                }
+                Map::remove_map_point_from_keyframe(kf, mp);
+                Map::remove_keyframe_reference_from_map_point(mp, kf);
             }
+        }
+        if (mp->keyframes.size() == 0) {
+            to_delete.push_back(mp);
         }
     }
     std::cout << to_delete.size() << " ATATEA PUNCTE AU FOST GASITE DE STERS\n";
@@ -214,6 +163,6 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
         local_map_points.erase(mp);
     }
 
-    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 10);
+    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 10, false);
     restore_computed_values(local_keyframes, local_map_points);
 }
