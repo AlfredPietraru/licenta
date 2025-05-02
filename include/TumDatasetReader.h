@@ -29,6 +29,11 @@ struct Position_Entry
 };
 
 
+struct FramePoseEntry {
+    bool isKeyFrame;
+    Sophus::SE3d pose;
+};
+
 class TumDatasetReader
 {
 public:
@@ -36,7 +41,8 @@ public:
     std::vector<std::string> depth_path;
     std::string path_to_write;
     std::ofstream outfile;
-    std::vector<Sophus::SE3d> poses;
+    std::vector<Sophus::SE3d> groundtruth_poses;
+    std::vector<FramePoseEntry> frame_poses;
     int idx = 0;
     Config cfg;
     TumDatasetReader(Config cfg);
@@ -44,7 +50,9 @@ public:
     cv::Mat get_next_depth();
     Sophus::SE3d get_next_groundtruth_pose();
     void increase_idx();
-    void store_entry(Sophus::SE3d pose);
+    void store_entry(Sophus::SE3d pose, bool isKeyFrame);
+    void write_entry(Sophus::SE3d pose, int index);
+    void write_all_entries();
     bool should_end();
 };
 

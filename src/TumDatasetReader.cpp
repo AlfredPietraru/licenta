@@ -99,12 +99,12 @@ TumDatasetReader::TumDatasetReader(Config cfg) {
         if (map_rgb_pose.find(pair_names.first) == map_rgb_pose.end()) continue;
         this->rgb_path.push_back(map_rgb_file_name_path[pair_names.first]);
         this->depth_path.push_back(map_depth_file_name_path[pair_names.second]);
-        this->poses.push_back(map_rgb_pose[pair_names.first].pose);
+        this->groundtruth_poses.push_back(map_rgb_pose[pair_names.first].pose);
     }
 }   
 
 Sophus::SE3d TumDatasetReader::get_next_groundtruth_pose() {
-    Sophus::SE3d pose = this->poses[idx];
+    Sophus::SE3d pose = this->groundtruth_poses[idx];
     return pose;
 }
 
@@ -133,10 +133,30 @@ void TumDatasetReader::increase_idx() {
 }
 
 
-void TumDatasetReader::store_entry(Sophus::SE3d pose) {
-    std::string path = this->rgb_path[idx];
+void TumDatasetReader::store_entry(Sophus::SE3d pose, bool isKeyFrame) {
+    FramePoseEntry framePoseEntry;
+    framePoseEntry.pose = pose;
+    framePoseEntry.isKeyFrame = isKeyFrame;
+    this->frame_poses.push_back(framePoseEntry);
+}
+
+
+void TumDatasetReader::write_entry(Sophus::SE3d pose, int index) {
+    std::string path = this->rgb_path[index];
     std::string file_name = extract_timestamp(path);
     this->outfile << file_name <<  " " << -pose.translation().y() << " " << -pose.translation().x() << " " << pose.translation().z() << " ";
     this->outfile << pose.unit_quaternion().x() << " " << pose.unit_quaternion().y() << " "  << pose.unit_quaternion().z() << " " << pose.unit_quaternion().w() << std::endl; 
+}
+
+
+void TumDatasetReader::write_all_entries() {
+    std::cout << "AICI INCEPE SCRIEREA IN FISIER\n";
+    // int last_keyframe_idx = 0;
+    for (int i = 0; i <  (int)this->frame_poses.size(); i++) {
+        FramePoseEntry framePoseEntry = this->frame_poses[i]; 
+        // last_keyframe_idx = i;
+        write_entry(framePoseEntry.pose, i);
+    }
+    std::cout << "AICI SE TERMINA SCRIEREA IN FISIER\n";
 }
 
