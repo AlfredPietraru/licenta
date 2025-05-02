@@ -1,11 +1,10 @@
 #include "../include/BundleAdjustment.h"
 using SE3Manifold = ceres::ProductManifold<ceres::QuaternionManifold, ceres::EuclideanManifold<3>>;
 
-
 double get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, double chi2) {
     double residuals[3];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-6) return 100000;
+    if (camera_coordinates[2] <= 1e-6) return 1e-6;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
@@ -21,7 +20,7 @@ double get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, doubl
 double get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, double chi2) {
     double residuals[2];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-6) return 100000;
+    if (camera_coordinates[2] <= 1e-6) return 1e-6;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
@@ -48,6 +47,14 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
     double chi2Stereo = 7.815;
     ceres::LossFunction *loss_function_mono = new ceres::HuberLoss(sqrt(chi2Mono));
     ceres::LossFunction *loss_function_stereo = new ceres::HuberLoss(sqrt(chi2Stereo));
+
+    for (KeyFrame *kf : local_keyframes) {
+        double* pose = kf->pose_vector;
+        double norm = sqrt(pose[0]*pose[0] + pose[1]*pose[1] + pose[2]*pose[2] + pose[3]*pose[3]);
+        assert(std::abs(norm - 1.0) < 1e-3);
+        problem.AddParameterBlock(kf->pose_vector, 7);
+        problem.SetManifold(kf->pose_vector, new SE3Manifold());
+    }
 
     for (MapPoint *mp : local_map_points) {
         for (KeyFrame *kf : mp->keyframes) {
@@ -77,11 +84,6 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
             }
         }
     }
-
-    for (KeyFrame *kf : local_keyframes) {
-        problem.AddParameterBlock(kf->pose_vector, 7);
-        problem.SetManifold(kf->pose_vector, new SE3Manifold());
-    }
     
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
@@ -107,30 +109,31 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
         return;
     }
     local_keyframes.insert(frame);
-    KeyFrame *first_kf = nullptr;
     for (KeyFrame *kf : local_keyframes) {
         if (kf->reference_idx == 0) {
-            first_kf = kf;
+            local_keyframes.erase(kf);
             break;
         } 
     }
-    local_keyframes.erase(first_kf);
+
 
     std::unordered_set<MapPoint*> local_map_points;
     for (KeyFrame *kf : local_keyframes) {
         local_map_points.insert(kf->map_points.begin(), kf->map_points.end());
     }
+    
     if (local_map_points.size() == 0) {
         std::cout << "CEVA NU E BINE NU EXISTA DELOC PUNCTE IN LOCAL MAP PENTRU OPTIMIZARE\n";
         return;
     }
+
     std::unordered_set<KeyFrame*> fixed_keyframes;
-    if (first_kf != nullptr) fixed_keyframes.insert(first_kf);
     for (MapPoint *mp : local_map_points) {
         for (KeyFrame *kf_which_sees_map_point : mp->keyframes) {
             if (local_keyframes.find(kf_which_sees_map_point) == local_keyframes.end()) fixed_keyframes.insert(kf_which_sees_map_point);
         }
     }
+
     execute_problem(local_keyframes, fixed_keyframes, local_map_points, 5, false);
     restore_computed_values(local_keyframes, local_map_points);
     double chi2Mono = 5.991;
@@ -163,6 +166,6 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
         local_map_points.erase(mp);
     }
 
-    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 10, false);
+    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 10, true);
     restore_computed_values(local_keyframes, local_map_points);
 }

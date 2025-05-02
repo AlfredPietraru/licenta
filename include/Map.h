@@ -39,6 +39,7 @@ public:
     static bool remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp);
     static bool replace_map_point(MapPoint *old_mp, MapPoint *new_mp);
     static bool check_new_map_point_better(Feature *f, MapPoint *new_map_point);
+    std::unordered_set<KeyFrame *> get_best_covisible_keyframes(KeyFrame *kf, int n);
     
     bool update_graph_connections(KeyFrame *kf1, KeyFrame *kf2);
 

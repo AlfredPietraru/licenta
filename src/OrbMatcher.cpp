@@ -202,7 +202,7 @@ void OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoin
             }
         }
         if (lowest_dist > DES_DIST)  continue;
-        if(lowest_level == second_lowest_level && lowest_dist > 0.8 * second_lowest_dist) continue;
+        if(lowest_level == second_lowest_level && lowest_dist > 0.7 * second_lowest_dist) continue;
         if (!Map::check_new_map_point_better(&kf->features[lowest_idx], mp)) continue;
         Map::add_map_point_to_keyframe(kf, &kf->features[lowest_idx], mp);
     }

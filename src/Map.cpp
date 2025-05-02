@@ -33,7 +33,8 @@ std::unordered_map<KeyFrame *, int> Map::get_keyframes_connected(KeyFrame *new_k
     {
         for (KeyFrame *kf : mp->keyframes)
         {
-            if (kf == new_kf) continue;
+            if (kf == new_kf)
+                continue;
             if (edges_new_keyframe.find(kf) != edges_new_keyframe.end())
             {
                 edges_new_keyframe[kf] += 1;
@@ -57,9 +58,9 @@ std::unordered_map<KeyFrame *, int> Map::get_keyframes_connected(KeyFrame *new_k
     return edges_new_keyframe;
 }
 
-std::vector<MapPoint*> Map::create_map_points_from_features(KeyFrame *kf)
+std::vector<MapPoint *> Map::create_map_points_from_features(KeyFrame *kf)
 {
-    std::vector<MapPoint*> out;
+    std::vector<MapPoint *> out;
     for (long unsigned int i = 0; i < kf->features.size(); i++)
     {
         if (kf->features[i].get_map_point() != nullptr)
@@ -71,7 +72,8 @@ std::vector<MapPoint*> Map::create_map_points_from_features(KeyFrame *kf)
         MapPoint *mp = new MapPoint(kf, i, kf->features[i].kpu, kf->camera_center_world, wcoord, kf->features[i].descriptor);
         out.push_back(mp);
         mp->increase_how_many_times_seen();
-        if (!check_new_map_point_better(&kf->features[i], mp)) continue;
+        if (!check_new_map_point_better(&kf->features[i], mp))
+            continue;
 
         bool was_addition_succesfull = add_map_point_to_keyframe(kf, &kf->features[i], mp);
         if (!was_addition_succesfull)
@@ -82,7 +84,7 @@ std::vector<MapPoint*> Map::create_map_points_from_features(KeyFrame *kf)
     return out;
 }
 
-std::vector<MapPoint*> Map::add_new_keyframe(KeyFrame *new_kf)
+std::vector<MapPoint *> Map::add_new_keyframe(KeyFrame *new_kf)
 {
     new_kf->reference_idx += 1;
     this->keyframes.push_back(new_kf);
@@ -91,9 +93,9 @@ std::vector<MapPoint*> Map::add_new_keyframe(KeyFrame *new_kf)
     if (this->keyframes.size() == 1)
     {
         (void)this->create_map_points_from_features(new_kf);
-        return std::vector<MapPoint*>();
+        return std::vector<MapPoint *>();
     }
-    
+
     for (auto it = new_kf->mp_correlations.begin(); it != new_kf->mp_correlations.end(); it++)
     {
         bool was_addition_succesfull = Map::add_keyframe_reference_to_map_point(it->first, new_kf->mp_correlations[it->first], new_kf);
@@ -102,7 +104,7 @@ std::vector<MapPoint*> Map::add_new_keyframe(KeyFrame *new_kf)
             std::cout << "NU S-A PUTUT ADAUGA NOUL MAP POINT IN KEYFRAME IN MAP INAINTE\n";
         }
     }
-    std::vector<MapPoint*> points_added = this->create_map_points_from_features(new_kf);
+    std::vector<MapPoint *> points_added = this->create_map_points_from_features(new_kf);
     std::unordered_map<KeyFrame *, int> edges_new_keyframe = this->get_keyframes_connected(new_kf, 15);
     for (auto it = edges_new_keyframe.begin(); it != edges_new_keyframe.end(); it++)
     {
@@ -123,8 +125,9 @@ bool Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp)
     bool in_map_points = kf->map_points.find(mp) != kf->map_points.end();
     bool in_correlations = kf->mp_correlations.find(mp) != kf->mp_correlations.end();
     bool in_features = in_correlations ? (kf->mp_correlations[mp]->get_map_point() == mp) : in_correlations;
-    if (in_map_points && in_correlations && in_features) return false;
-    
+    if (in_map_points && in_correlations && in_features)
+        return false;
+
     if (in_map_points != in_correlations || in_correlations != in_features)
     {
         std::cout << kf->map_points.size() << " " << kf->mp_correlations.size() << "\n";
@@ -135,10 +138,12 @@ bool Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp)
 
     kf->remove_outlier_element(mp);
     MapPoint *old_mp = f->get_map_point();
-    if (old_mp != nullptr) {
+    if (old_mp != nullptr)
+    {
         bool deletion_result = remove_map_point_from_keyframe(kf, old_mp);
-        if (!deletion_result) std::cout << "NU A REUSIT SA STEARGA\n";
-        remove_keyframe_reference_from_map_point(old_mp, kf); 
+        if (!deletion_result)
+            std::cout << "NU A REUSIT SA STEARGA\n";
+        remove_keyframe_reference_from_map_point(old_mp, kf);
     }
 
     int current_hamming_distance = ComputeHammingDistance(mp->orb_descriptor, f->descriptor);
@@ -217,7 +222,8 @@ bool Map::remove_keyframe_reference_from_map_point(MapPoint *mp, KeyFrame *kf)
         std::cout << "NU S-A PUTUT REALIZA OPERATIA DE REMOVE KEYFRAME REFERENCE UNUL DINTRE ELEMENTE E NULL\n";
         return false;
     }
-    if (!mp->find_keyframe(kf)) return true;
+    if (!mp->find_keyframe(kf))
+        return true;
     mp->remove_observation(kf);
     return true;
 }
@@ -235,6 +241,42 @@ std::unordered_set<KeyFrame *> Map::get_local_keyframes(KeyFrame *kf)
     {
         out.insert(it->first);
     }
+    return out;
+}
+
+std::unordered_set<KeyFrame *> Map::get_best_covisible_keyframes(KeyFrame *kf, int n)
+{
+    if (this->graph.find(kf) == this->graph.end())
+    {
+        std::cout << "NU EXISTA KEYFRAME-ul IN GRAPH\n";
+        return {};
+    }
+    if (n <= 0)
+    {
+        std::cout << "VALOAREA LUI N NU ARE SENS\n";
+        return {};
+    }
+    std::unordered_map<KeyFrame *, int> neighbours = this->graph[kf];
+    std::unordered_set<KeyFrame *> out;
+    if ((int)neighbours.size() < n)
+    {
+        for (auto it = neighbours.begin(); it != neighbours.end(); it++)
+        {
+            out.insert(it->first);
+        }
+        return out;
+    }
+    std::vector<std::pair<KeyFrame *, int>> neighbours_data(neighbours.begin(), neighbours.end());
+    std::sort(neighbours_data.begin(), neighbours_data.end(),
+              [](const std::pair<KeyFrame *, int> &a, const std::pair<KeyFrame *, int> &b)
+              {
+                  return a.second > b.second;
+              });
+    for (int i = 0; i < n; ++i)
+    {
+        out.insert(neighbours_data[i].first);
+    }
+
     return out;
 }
 
@@ -379,7 +421,8 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
                 continue;
             if (lowest_level == second_lowest_level && lowest_dist > 0.8 * second_lowest_dist)
                 continue;
-            if (!Map::check_new_map_point_better(&kf->features[lowest_idx], mp)) continue;
+            if (!Map::check_new_map_point_better(&kf->features[lowest_idx], mp))
+                continue;
             Map::add_map_point_to_keyframe(kf, &kf->features[lowest_idx], mp);
         }
     }
@@ -387,30 +430,40 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
 
 bool Map::replace_map_point(MapPoint *old_mp, MapPoint *new_mp)
 {
-    if (old_mp == new_mp) return true;
-    std::vector<KeyFrame*> copy_keyframes(old_mp->keyframes.begin(), old_mp->keyframes.end());
-    for (KeyFrame *kf : copy_keyframes) {
+    if (old_mp == new_mp)
+        return true;
+    std::vector<KeyFrame *> copy_keyframes(old_mp->keyframes.begin(), old_mp->keyframes.end());
+    for (KeyFrame *kf : copy_keyframes)
+    {
         Feature *old_map_point_feature = kf->mp_correlations[old_mp];
         Map::remove_map_point_from_keyframe(kf, old_mp);
         Map::remove_keyframe_reference_from_map_point(old_mp, kf);
 
-        if (kf->check_map_point_in_keyframe(new_mp)) continue;
-        if (!Map::check_new_map_point_better(old_map_point_feature, new_mp)) continue;
+        if (kf->check_map_point_in_keyframe(new_mp))
+            continue;
+        if (!Map::check_new_map_point_better(old_map_point_feature, new_mp))
+            continue;
         Map::add_map_point_to_keyframe(kf, old_map_point_feature, new_mp);
         Map::add_keyframe_reference_to_map_point(new_mp, old_map_point_feature, kf);
     }
     return true;
 }
 
-bool Map::check_new_map_point_better(Feature *f, MapPoint *new_map_point) {
+bool Map::check_new_map_point_better(Feature *f, MapPoint *new_map_point)
+{
     MapPoint *old_mp = f->get_map_point();
-    if (old_mp == nullptr) return true;
+    if (old_mp == nullptr)
+        return true;
     int dist = ComputeHammingDistance(f->descriptor, new_map_point->orb_descriptor);
     return dist < f->curr_hamming_dist;
 }
 
-
-bool Map::debug_map_points() {
+bool Map::debug_map_points()
+{
     return true;
-}
+    // for (KeyFrame *kf : this->keyframes) {
+    //     for (MapPoint *mp : kf->map_points) {
 
+    //     }
+    // }
+}
