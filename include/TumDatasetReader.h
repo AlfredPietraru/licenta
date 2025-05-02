@@ -17,6 +17,7 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d.hpp>
 #include "config.h"
+#include "Map.h"
 #include <unordered_set>
 namespace fs = std::filesystem;
 
@@ -30,7 +31,7 @@ struct Position_Entry
 
 
 struct FramePoseEntry {
-    bool isKeyFrame;
+    int last_keyframe_idx;
     Sophus::SE3d pose;
 };
 
@@ -50,9 +51,9 @@ public:
     cv::Mat get_next_depth();
     Sophus::SE3d get_next_groundtruth_pose();
     void increase_idx();
-    void store_entry(Sophus::SE3d pose, bool isKeyFrame);
+    void store_entry(KeyFrame *current_kf);
     void write_entry(Sophus::SE3d pose, int index);
-    void write_all_entries();
+    void write_all_entries(Map *mapp);
     bool should_end();
 };
 

@@ -183,7 +183,7 @@ KeyFrame* Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose
     this->get_current_key_frame(frame, depth);
     if (this->is_first_keyframe) {
         this->is_first_keyframe = false;
-        this->current_kf->isKeyFrame = true;
+        this->current_kf->isKeyFrame = true;  
         this->reference_kf = this->current_kf; 
         std::cout << "PRIMUL KEYFRAME VA FI ADAUGAT\n";
         return this->current_kf;
@@ -205,7 +205,8 @@ KeyFrame* Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose
     this->current_kf->isKeyFrame = this->Is_KeyFrame_needed();
     if (this->current_kf->isKeyFrame) {
         this->reference_kf = this->current_kf;
-    }
+    } 
+    this->current_kf->reference_kf = this->reference_kf;
     // int wait_time = this->current_kf->current_idx < 115 ? 20 : 0;
     // this->current_kf->debug_keyframe(frame, wait_time);
     return this->current_kf;

@@ -80,12 +80,12 @@ int main(void)
             auto end = high_resolution_clock::now();
             total_local_mapping_duration += duration_cast<milliseconds>(end - start).count();
         }
-        reader->store_entry(kf->Tcw, kf->isKeyFrame);
+        reader->store_entry(kf);
         reader->increase_idx();
         // if (reader->idx == 120) break;
     }
 
-    reader->write_all_entries();
+    reader->write_all_entries(mapp);
     auto t2 = high_resolution_clock::now();
     std::cout << duration_cast<seconds>(t2 - t1).count() << "s aici atata a durat\n\n";  
     std::cout << tracker->reference_kf->reference_idx << " atatea keyframe-uri avute\n";
