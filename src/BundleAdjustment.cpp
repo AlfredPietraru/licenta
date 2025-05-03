@@ -4,14 +4,17 @@ using SE3Manifold = ceres::ProductManifold<ceres::QuaternionManifold, ceres::Euc
 double get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, double chi2) {
     double residuals[3];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-6) return 1e-6;
+    if (camera_coordinates[2] <= 1e-6) return 1000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
     residuals[0] = (x - f->kpu.pt.x) / kf->POW_OCTAVE[f->kpu.octave];
     residuals[1] = (y - f->kpu.pt.y) / kf->POW_OCTAVE[f->kpu.octave];
-    double z_projected = x - kf->K(0, 0) * 0.08 * inv_d;
-    residuals[2] = (z_projected - f->right_coordinate) / kf->POW_OCTAVE[f->kpu.octave];
+
+
+    double disp_pred = kf->K(0, 0) * 0.08 * inv_d;
+    double disp_meas = f->kpu.pt.x - f->right_coordinate;      
+    residuals[2] = (disp_pred - disp_meas) * kf->POW_OCTAVE[f->kpu.octave];
     double a = sqrt(residuals[0] * residuals[0] + residuals[1] * residuals[1] + residuals[2] * residuals[2]);
     if (a <= sqrt(chi2)) return pow(a, 2) / 2;
     return sqrt(chi2) * a - chi2 / 2;
@@ -20,7 +23,7 @@ double get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, doubl
 double get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, double chi2) {
     double residuals[2];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-6) return 1e-6;
+    if (camera_coordinates[2] <= 1e-6) return 10000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
@@ -166,6 +169,6 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
         local_map_points.erase(mp);
     }
 
-    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 10, false);
+    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 10, true);
     restore_computed_values(local_keyframes, local_map_points);
 }

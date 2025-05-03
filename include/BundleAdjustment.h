@@ -32,8 +32,9 @@ public:
         residuals[1] = (y - T(f->kpu.pt.y)) / kf->POW_OCTAVE[f->kpu.octave];
         if (this->is_monocular) return true;
 
-        T z_projected = x - T(kf->K(0, 0)) * 0.08 * inv_d;
-        residuals[2] = (z_projected - T(f->right_coordinate)) / kf->POW_OCTAVE[f->kpu.octave];
+        T disp_pred = T(kf->K(0, 0)) * 0.08 * inv_d;
+        T disp_meas = T(f->kpu.pt.x) - T(f->right_coordinate);      
+        residuals[2] = (disp_pred - disp_meas) * kf->POW_OCTAVE[f->kpu.octave];
         return true;
     }
 
@@ -53,8 +54,9 @@ public:
         residuals[1] = (y - T(f->kpu.pt.y)) / kf->POW_OCTAVE[f->kpu.octave];
         if (this->is_monocular) return true;
 
-        T z_projected = x - T(kf->K(0, 0)) * 0.08 * inv_d;
-        residuals[2] = (z_projected - T(f->right_coordinate)) / kf->POW_OCTAVE[f->kpu.octave];
+        T disp_pred = T(kf->K(0, 0)) * 0.08 * inv_d;
+        T disp_meas = T(f->kpu.pt.x) - T(f->right_coordinate);      
+        residuals[2] = (disp_pred - disp_meas) * kf->POW_OCTAVE[f->kpu.octave];
         return true;
     }
 
