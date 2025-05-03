@@ -9,7 +9,7 @@ void LocalMapping::local_map(KeyFrame *kf) {
     this->compute_map_points(kf);
     this->search_in_neighbours(kf);
     // std::cout << "INCEPE BA\n";
-    bundleAdjustment->solve_ceres(this->mapp, kf);
+    // bundleAdjustment->solve_ceres(this->mapp, kf);
     // std::cout << "SE TERMINA BA\n";
     // this->KeyFrameCulling(kf);
     std::cout << "LOCAL MAP ISI FACE TREABA\n";

@@ -40,7 +40,7 @@ public:
     static bool replace_map_point(MapPoint *old_mp, MapPoint *new_mp);
     static bool check_new_map_point_better(Feature *f, MapPoint *new_map_point);
     std::unordered_set<KeyFrame *> get_best_covisible_keyframes(KeyFrame *kf, int n);
-    
+    std::vector<MapPoint*> create_closest_map_points_from_features(KeyFrame *kf);
     bool update_graph_connections(KeyFrame *kf1, KeyFrame *kf2);
 
     bool debug_map_points();

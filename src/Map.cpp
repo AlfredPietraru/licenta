@@ -84,6 +84,38 @@ std::vector<MapPoint *> Map::create_map_points_from_features(KeyFrame *kf)
     return out;
 }
 
+bool customComparison(Feature *a, Feature *b)
+{
+    return a->depth < b->depth; 
+}
+
+std::vector<MapPoint*> Map::create_closest_map_points_from_features(KeyFrame *kf) {
+    std::vector<MapPoint *> out;
+    std::vector<Feature*> copy_feature;
+    for (long unsigned int i = 0; i < kf->features.size(); i++) {
+        if (kf->features[i].depth <= 1e-6 || kf->features[i].depth > 3.2) continue;
+        copy_feature.push_back(&kf->features[i]);
+    }
+    sort(copy_feature.begin(), copy_feature.end(), customComparison);
+    for (int i = 0; i < std::min((int)copy_feature.size(), 100); i++) {
+        int idx = copy_feature[i]->idx;
+        Eigen::Vector4d wcoord = kf->fromImageToWorld(idx);
+        MapPoint *mp = new MapPoint(kf, idx, kf->features[idx].kpu, kf->camera_center_world, wcoord, kf->features[idx].descriptor);
+        out.push_back(mp);
+        mp->increase_how_many_times_seen();
+        if (!check_new_map_point_better(&kf->features[idx], mp))
+            continue;
+
+        bool was_addition_succesfull = add_map_point_to_keyframe(kf, &kf->features[idx], mp);
+        if (!was_addition_succesfull)
+        {
+            std::cout << "NU S-A PUTUT SA ADAUGE MAP POINT-ul\n";
+        }
+    }
+    std::cout << out.size() << " atatea map points create la adaugarea keyframe-ului\n";
+    return out;
+}
+
 std::vector<MapPoint *> Map::add_new_keyframe(KeyFrame *new_kf)
 {
     new_kf->reference_idx += 1;
@@ -104,7 +136,7 @@ std::vector<MapPoint *> Map::add_new_keyframe(KeyFrame *new_kf)
             std::cout << "NU S-A PUTUT ADAUGA NOUL MAP POINT IN KEYFRAME IN MAP INAINTE\n";
         }
     }
-    std::vector<MapPoint *> points_added = this->create_map_points_from_features(new_kf);
+    std::vector<MapPoint *> points_added = this->create_closest_map_points_from_features(new_kf);
     std::unordered_map<KeyFrame *, int> edges_new_keyframe = this->get_keyframes_connected(new_kf, 15);
     for (auto it = edges_new_keyframe.begin(); it != edges_new_keyframe.end(); it++)
     {

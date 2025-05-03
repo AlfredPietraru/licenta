@@ -207,7 +207,7 @@ KeyFrame* Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose
         this->reference_kf = this->current_kf;
     } 
     this->current_kf->reference_kf = this->reference_kf;
-    // int wait_time = this->current_kf->current_idx < 115 ? 0 : 0;
+    // int wait_time = this->current_kf->current_idx < 227 ? 20 : 0;
     // this->current_kf->debug_keyframe(frame, wait_time);
     return this->current_kf;
 }
