@@ -11,7 +11,7 @@ double get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, doubl
     residuals[0] = (x - f->kpu.pt.x) / kf->POW_OCTAVE[f->kpu.octave];
     residuals[1] = (y - f->kpu.pt.y) / kf->POW_OCTAVE[f->kpu.octave];
     double z_projected = x - kf->K(0, 0) * 0.08 * inv_d;
-    residuals[2] = (z_projected - f->stereo_depth) / kf->POW_OCTAVE[f->kpu.octave];
+    residuals[2] = (z_projected - f->right_coordinate) / kf->POW_OCTAVE[f->kpu.octave];
     double a = sqrt(residuals[0] * residuals[0] + residuals[1] * residuals[1] + residuals[2] * residuals[2]);
     if (a <= sqrt(chi2)) return pow(a, 2) / 2;
     return sqrt(chi2) * a - chi2 / 2;
@@ -61,7 +61,7 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
             Feature *f = kf->mp_correlations[mp];
             bool is_local_keyframe = local_keyframes.find(kf) != local_keyframes.end();
             bool is_fixed_keyframe = fixed_keyframes.find(kf) != fixed_keyframes.end();
-            bool is_monocular = f->stereo_depth <= 1e-6;
+            bool is_monocular = f->right_coordinate <= 1e-6;
             if (is_local_keyframe && is_monocular) {
                 ceres::CostFunction *cost_function = BundleAdjustmentError::Create_Variable_Monocular(kf, f);
                 problem.AddResidualBlock(cost_function, loss_function_mono, kf->pose_vector, mp->wcoord_3d.data());
@@ -121,7 +121,7 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
     for (KeyFrame *kf : local_keyframes) {
         local_map_points.insert(kf->map_points.begin(), kf->map_points.end());
     }
-    
+
     if (local_map_points.size() == 0) {
         std::cout << "CEVA NU E BINE NU EXISTA DELOC PUNCTE IN LOCAL MAP PENTRU OPTIMIZARE\n";
         return;
@@ -145,7 +145,7 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
         for (KeyFrame *kf : copy_keyframe_vector) {
             Feature *f = kf->mp_correlations[mp];
             bool is_outlier;
-            if (f->stereo_depth <= 1e-6) {
+            if (f->right_coordinate <= 1e-6) {
                 double error = get_monocular_reprojection_error(kf, mp, f, chi2Mono);
                 is_outlier = error > chi2Mono;
             } else {
@@ -161,11 +161,11 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
             to_delete.push_back(mp);
         }
     }
-    std::cout << to_delete.size() << " ATATEA PUNCTE AU FOST GASITE DE STERS\n";
+    // std::cout << to_delete.size() << " ATATEA PUNCTE AU FOST GASITE DE STERS\n";
     for (MapPoint *mp : to_delete) {
         local_map_points.erase(mp);
     }
 
-    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 10, true);
+    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 10, false);
     restore_computed_values(local_keyframes, local_map_points);
 }

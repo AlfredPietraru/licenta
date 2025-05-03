@@ -23,7 +23,8 @@ public:
         camera_coordinates[0] += pose[4];
         camera_coordinates[1] += pose[5];
         camera_coordinates[2] += pose[6];
-        if (camera_coordinates[2] <= T(1e-6)) camera_coordinates[2] = T(1e-6); 
+        if (camera_coordinates[2] <= T(1e-6)) return false;
+        // if (camera_coordinates[2] <= T(1e-6)) camera_coordinates[2] = T(1e-6); 
         T inv_d = T(1) / camera_coordinates[2];
         T x = T(kf->K(0, 0)) * camera_coordinates[0] * inv_d + T(kf->K(0, 2));
         T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
@@ -32,7 +33,7 @@ public:
         if (this->is_monocular) return true;
 
         T z_projected = x - T(kf->K(0, 0)) * 0.08 * inv_d;
-        residuals[2] = (z_projected - T(f->stereo_depth)) / kf->POW_OCTAVE[f->kpu.octave];
+        residuals[2] = (z_projected - T(f->right_coordinate)) / kf->POW_OCTAVE[f->kpu.octave];
         return true;
     }
 
@@ -53,7 +54,7 @@ public:
         if (this->is_monocular) return true;
 
         T z_projected = x - T(kf->K(0, 0)) * 0.08 * inv_d;
-        residuals[2] = (z_projected - T(f->stereo_depth)) / kf->POW_OCTAVE[f->kpu.octave];
+        residuals[2] = (z_projected - T(f->right_coordinate)) / kf->POW_OCTAVE[f->kpu.octave];
         return true;
     }
 

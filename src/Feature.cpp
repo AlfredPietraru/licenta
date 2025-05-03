@@ -1,7 +1,7 @@
 #include "../include/Feature.h"
 
-Feature::Feature(cv::KeyPoint kp, cv::KeyPoint kpu, cv::Mat descriptor, int idx, double depth, double stereo_depth) : kp(kp), kpu(kpu),
-    descriptor(descriptor), idx(idx), depth(depth), stereo_depth(stereo_depth) {}
+Feature::Feature(cv::KeyPoint kp, cv::KeyPoint kpu, cv::Mat descriptor, int idx, double depth, double right_coordinate) : kp(kp), kpu(kpu),
+    descriptor(descriptor), idx(idx), depth(depth), right_coordinate(right_coordinate) {}
 
 void Feature::set_map_point(MapPoint *mp, int hamming_distance) {
     this->mp = mp;

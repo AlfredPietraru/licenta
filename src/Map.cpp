@@ -393,10 +393,10 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
                 continue;
             for (int idx : kps_idx)
             {
-                if (kf->features[idx].stereo_depth > 1e-6)
+                if (kf->features[idx].right_coordinate > 1e-6)
                 {
                     double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
-                    float er = fabs(fake_rgbd - kf->features[idx].stereo_depth);
+                    float er = fabs(fake_rgbd - kf->features[idx].right_coordinate);
                     if (er > scale_of_search)
                         continue;
                 }
@@ -460,10 +460,12 @@ bool Map::check_new_map_point_better(Feature *f, MapPoint *new_map_point)
 
 bool Map::debug_map_points()
 {
+    for (KeyFrame *kf : this->keyframes) {
+        for (MapPoint *mp : kf->map_points) {
+            for (KeyFrame *kff : mp->keyframes) {
+                if (!kff->check_map_point_in_keyframe(mp)) return false;
+            }
+        }
+    }
     return true;
-    // for (KeyFrame *kf : this->keyframes) {
-    //     for (MapPoint *mp : kf->map_points) {
-
-    //     }
-    // }
 }

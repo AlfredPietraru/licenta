@@ -19,12 +19,12 @@ public:
     cv::Mat descriptor;
     int idx;
     double depth;
-    double stereo_depth;
+    double right_coordinate;
     int curr_hamming_dist = 10000;
     MapPoint *mp = nullptr;
 
     Feature() {}
-    Feature(cv::KeyPoint kp, cv::KeyPoint kpu, cv::Mat descriptor, int idx, double depth, double stereo_depth);
+    Feature(cv::KeyPoint kp, cv::KeyPoint kpu, cv::Mat descriptor, int idx, double depth, double right_coordinate);
     void set_map_point(MapPoint *mp, int hamming_distance);
     MapPoint* get_map_point();
     cv::KeyPoint get_key_point();

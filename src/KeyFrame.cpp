@@ -73,8 +73,8 @@ void KeyFrame::create_feature_vector(std::vector<cv::KeyPoint> &keypoints, std::
         }
         else
         {
-            double rgbd_right_coordinate = kpu.pt.x - (this->K(0, 0) * BASELINE / depth);
-            this->features.push_back(Feature(kp, kpu, orb_descriptors.row(i), i, depth, rgbd_right_coordinate));
+            double right_coordinate = kpu.pt.x - (this->K(0, 0) * BASELINE / depth);
+            this->features.push_back(Feature(kp, kpu, orb_descriptors.row(i), i, depth, right_coordinate));
         }
     }
 }

@@ -5,14 +5,7 @@ using SE3Manifold = ceres::ProductManifold<ceres::QuaternionManifold, ceres::Euc
 class BundleError
 {
 public:
-    BundleError(KeyFrame *kf, MapPoint *mp, Feature *f, bool is_monocular) : kf(kf), mp(mp), f(f), is_monocular(is_monocular) {
-        // for (int i = 0; i < 3; i++) {
-        //     std::cout << mp->wcoord_3d.data()[i] << " ";
-        // } 
-        // std::cout << "\n";
-        // std::cout << mp->wcoord_3d.transpose() << "\n";
-        // std::cout << mp->wcoord_3d(0) << " " << mp->wcoord_3d(1) << " " << mp->wcoord_3d(2) << "\n\n";
-    }
+    BundleError(KeyFrame *kf, MapPoint *mp, Feature *f, bool is_monocular) : kf(kf), mp(mp), f(f), is_monocular(is_monocular) {}
 
     template <typename T>
     bool operator()(const T *const pose, T *residuals) const
@@ -37,7 +30,7 @@ public:
             return true;
 
         T z_projected = x - T(kf->K(0, 0)) * 0.08 * inv_d;
-        residuals[2] = (z_projected - T(f->stereo_depth)) / kf->POW_OCTAVE[f->kpu.octave];
+        residuals[2] = (z_projected - T(f->right_coordinate)) / kf->POW_OCTAVE[f->kpu.octave];
         return true;
     }
 
@@ -60,9 +53,9 @@ private:
     bool is_monocular;
 };
 
-double MotionOnlyBA::get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Sophus::SE3d &pose, Feature* feature, double chi2) {
+double MotionOnlyBA::get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2) {
     double residuals[3];
-    Eigen::Vector3d camera_coordinates = pose.matrix3x4() * mp->wcoord;
+    Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
     if (camera_coordinates[2] <= 1e-6) return 100000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
@@ -71,16 +64,17 @@ double MotionOnlyBA::get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Sop
     residuals[0] = (x - kpu.pt.x) / POW_OCTAVE[kpu.octave];
     residuals[1] = (y - kpu.pt.y) / POW_OCTAVE[kpu.octave];
     double z_projected = x - kf->K(0, 0) * 0.08 * inv_d;
-    residuals[2] = (z_projected - feature->stereo_depth) / POW_OCTAVE[kpu.octave];
+    residuals[2] = (z_projected - feature->right_coordinate) / POW_OCTAVE[kpu.octave];
+    // std::cout << residuals[2] << " ";
     double a = sqrt(residuals[0] * residuals[0] + residuals[1] * residuals[1] + residuals[2] * residuals[2]);
     if (a <= sqrt(chi2)) return pow(a, 2) / 2;
     return sqrt(chi2) * a - chi2 / 2;
 }
 
 
-double MotionOnlyBA::get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Sophus::SE3d &pose, Feature* feature, double chi2) {
+double MotionOnlyBA::get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2) {
     double residuals[2];
-    Eigen::Vector3d camera_coordinates = pose.matrix3x4() * mp->wcoord;
+    Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
     if (camera_coordinates[2] <= 1e-6) return 100000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
@@ -113,7 +107,7 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
     std::unordered_map<MapPoint *, Feature *> mono_matches;
     std::unordered_map<MapPoint *, Feature *> rgbd_matches;
     for (auto it = kf->mp_correlations.begin(); it != kf->mp_correlations.end(); it++) {
-        if (it->second->stereo_depth <= 1e-6)
+        if (it->second->right_coordinate <= 1e-6)
         {
             mono_matches.insert({it->first, it->second});
             continue;
@@ -130,11 +124,11 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
         options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
         options.function_tolerance = 1e-7;
         options.gradient_tolerance = 1e-7;
-        options.parameter_tolerance = 1e-8;
+        options.parameter_tolerance = 1e-7;
 
         options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-        // options.check_gradients = true;
-        // options.minimizer_progress_to_stdout = true;
+        options.check_gradients = false;
+        options.minimizer_progress_to_stdout = false;
         options.max_num_iterations = 10;
         
         ceres::LossFunction *loss_function_mono = new ceres::HuberLoss(sqrt(chi2Mono[i]));
@@ -163,12 +157,12 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
         ceres::Solve(options, &problem, &summary);
         // std::cout << summary.FullReport() << "\n";
 
-        Sophus::SE3d intermediate_pose = compute_pose(kf, kf->pose_vector);
+        kf->set_keyframe_position(kf->compute_pose()); 
         double error;
         
         for (auto it = mono_matches.begin(); it != mono_matches.end(); it++) {
             MapPoint *mp = it->first;
-            error = get_monocular_reprojection_error(kf, mp, intermediate_pose, it->second, chi2Mono[i]);  
+            error = get_monocular_reprojection_error(kf, mp, it->second, chi2Mono[i]);  
             if (error > chi2Mono[i]) {
                 kf->add_outlier_element(mp);
             } else {
@@ -178,7 +172,7 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
 
         for (auto it = rgbd_matches.begin(); it != rgbd_matches.end(); it++) {
             MapPoint *mp = it->first;
-            error = get_rgbd_reprojection_error(kf, mp, intermediate_pose, it->second, chi2Stereo[i]);
+            error = get_rgbd_reprojection_error(kf, mp, it->second, chi2Stereo[i]);
             if (error > chi2Stereo[i]) {
                 kf->add_outlier_element(mp);
             } else {
@@ -266,7 +260,7 @@ Sophus::SE3d MotionOnlyBA::solve_g2o(KeyFrame *kf)
                 g2o::EdgeStereoSE3ProjectXYZOnlyPose* e = new g2o::EdgeStereoSE3ProjectXYZOnlyPose();
 
                 e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(0)));
-                e->setMeasurement(g2o::Vector3(kpUn.pt.x, kpUn.pt.y, f->stereo_depth));
+                e->setMeasurement(g2o::Vector3(kpUn.pt.x, kpUn.pt.y, f->right_coordinate));
                 const float invSigma2 = 1 / pow(1.2, 2* kpUn.octave);
                 Eigen::Matrix3d Info = Eigen::Matrix3d::Identity()*invSigma2;
                 e->setInformation(Info);
