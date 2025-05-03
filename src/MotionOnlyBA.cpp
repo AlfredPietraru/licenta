@@ -17,7 +17,7 @@ public:
         camera_coordinates[1] += pose[5];
         camera_coordinates[2] += pose[6];
         T inv_d;
-        if (camera_coordinates[2] > -1e-3 && camera_coordinates[2] < 1e-3) {
+        if (camera_coordinates[2] >= -1e-3 && camera_coordinates[2] <= 1e-3) {
             inv_d = T(1) / (camera_coordinates[2] + T(1e-2));
         } else {
             inv_d = T(1) / camera_coordinates[2];
@@ -29,8 +29,9 @@ public:
         if (this->is_monocular)
             return true;
 
-        T z_projected = x - T(kf->K(0, 0)) * 0.08 * inv_d;
-        residuals[2] = (z_projected - T(f->right_coordinate)) / kf->POW_OCTAVE[f->kpu.octave];
+        T disp_pred = T(kf->K(0, 0)) * 0.08 * inv_d;
+        T disp_meas = T(f->kpu.pt.x) - T(f->right_coordinate);      
+        residuals[2] = (disp_pred - disp_meas) * kf->POW_OCTAVE[f->kpu.octave];
         return true;
     }
 
@@ -56,16 +57,17 @@ private:
 double MotionOnlyBA::get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2) {
     double residuals[3];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-6) return 100000;
+    if (camera_coordinates[2] >= -1e-3 && camera_coordinates[2] <= 1e-3) return 100000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
     cv::KeyPoint kpu = feature->kpu;
     residuals[0] = (x - kpu.pt.x) / POW_OCTAVE[kpu.octave];
     residuals[1] = (y - kpu.pt.y) / POW_OCTAVE[kpu.octave];
-    double z_projected = x - kf->K(0, 0) * 0.08 * inv_d;
-    residuals[2] = (z_projected - feature->right_coordinate) / POW_OCTAVE[kpu.octave];
-    // std::cout << residuals[2] << " ";
+
+    double disp_pred = kf->K(0, 0) * 0.08 * inv_d;
+    double disp_meas = kpu.pt.x - feature->right_coordinate;      
+    residuals[2] = (disp_pred - disp_meas) * kf->POW_OCTAVE[feature->kpu.octave];
     double a = sqrt(residuals[0] * residuals[0] + residuals[1] * residuals[1] + residuals[2] * residuals[2]);
     if (a <= sqrt(chi2)) return pow(a, 2) / 2;
     return sqrt(chi2) * a - chi2 / 2;
@@ -75,7 +77,7 @@ double MotionOnlyBA::get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Fea
 double MotionOnlyBA::get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2) {
     double residuals[2];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-6) return 100000;
+    if (camera_coordinates[2] >= -1e-3 && camera_coordinates[2] <= 1e-3) return 100000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
