@@ -47,14 +47,15 @@ public:
     Eigen::Matrix3d slam_to_tum_R;
     int idx = 0;
     Config cfg;
-    TumDatasetReader(Config cfg);
+    Map *mapp;
+    TumDatasetReader(Config cfg, Map *mapp);
     cv::Mat get_next_frame();
     cv::Mat get_next_depth();
     Sophus::SE3d get_next_groundtruth_pose();
     void increase_idx();
     void store_entry(KeyFrame *current_kf);
     void write_entry(Sophus::SE3d pose, int index);
-    void write_all_entries(Map *mapp);
+    void write_all_entries();
     bool should_end();
 };
 

@@ -78,8 +78,9 @@ std::unordered_map<std::string, Position_Entry> get_mapping_between_rgb_position
     return out_map;
 }
 
-TumDatasetReader::TumDatasetReader(Config cfg) {
+TumDatasetReader::TumDatasetReader(Config cfg, Map *mapp) {
     this->cfg = cfg;
+    this->mapp = mapp;
     std::string path_to_write = "../rgbd_dataset_freiburg1_xyz/estimated.txt";
     this->outfile = std::ofstream(path_to_write);
     std::string rgb_path = "../rgbd_dataset_freiburg1_xyz/rgb";
@@ -157,11 +158,11 @@ void TumDatasetReader::write_entry(Sophus::SE3d pose, int index) {
 }
 
 
-void TumDatasetReader::write_all_entries(Map *mapp) {
+void TumDatasetReader::write_all_entries() {
     std::cout << "AICI INCEPE SCRIEREA IN FISIER\n";
     for (int i = 0; i <  (int)this->frame_poses.size(); i++) {
         FramePoseEntry framePoseEntry = this->frame_poses[i]; 
-        Sophus::SE3d lastKeyFramePose = mapp->keyframes[framePoseEntry.last_keyframe_idx]->Tcw;
+        Sophus::SE3d lastKeyFramePose = this->mapp->keyframes[framePoseEntry.last_keyframe_idx]->Tcw;
         Sophus::SE3d currentFramePose = framePoseEntry.pose * lastKeyFramePose;
         write_entry(currentFramePose, i + 1);
     }

@@ -56,15 +56,15 @@ bool KeyFrame::check_number_close_points()
         if (f.get_map_point() == nullptr) close_points_untracked++;
         if (f.get_map_point() != nullptr) close_points_tracked++;
     }
-    return (close_points_tracked < 100) && (close_points_untracked > 70);
+    return (close_points_tracked < 150) && (close_points_untracked > 70);
 }
 
 void KeyFrame::create_feature_vector(std::vector<cv::KeyPoint> &keypoints, std::vector<cv::KeyPoint> &undistored_kps,
  cv::Mat orb_descriptors, cv::Mat depth_matrix) {
-    for (int i = 0; i < (int)keypoints.size(); i++) {
+    for (int i = 0; i < (int)keypoints.size(); i++) { 
         cv::KeyPoint kp = keypoints[i];
-        int x = std::round(kp.pt.x);
-        int y = std::round(kp.pt.y);
+        int x = std::round(keypoints[i].pt.x);
+        int y = std::round(keypoints[i].pt.y);
         uint16_t d = depth_matrix.at<uint16_t>(y, x);
         float depth = d / 5000.0f;
         cv::KeyPoint kpu = undistored_kps[i];
@@ -86,9 +86,9 @@ void KeyFrame::create_grid_matrix() {
     for (int i = 0; i < (int)this->features.size(); i++)
     {
         cv::KeyPoint kpu = this->features[i].get_undistorted_keypoint();
-        int y_idx = (int)kpu.pt.y;
-        int x_idx = (int)kpu.pt.x;
-        this->grid[y_idx / GRID_WIDTH][x_idx / GRID_HEIGHT].push_back(i);
+        int row = (int)kpu.pt.y / GRID_HEIGHT;
+        int col = (int)kpu.pt.x / GRID_WIDTH;
+        this->grid[row][col].push_back(i);
     }
 }
 
@@ -205,30 +205,29 @@ std::vector<cv::KeyPoint> KeyFrame::get_all_keypoints()
 
 std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave)
 {
-    int u_min = lround(u - window);
+    int u_min = std::floor(u - window);
     u_min = (u_min < this->minX) ? this->minX : (u_min >= this->maxX) ? this->maxX - 1
     : u_min;
-    int u_max = lround(u + window);
+    int u_max = std::ceil(u + window);
     u_max = (u_max < this->minX) ? this->minX : (u_max >= this->maxX) ? this->maxX - 1
     : u_max;
-    int v_min = round(v - window);
+    int v_min = std::floor(v - window);
     v_min = (v_min < this->minY) ? this->minY : (v_min >= this->maxY) ? this->maxY - 1
     : v_min;
-    int v_max = lround(v + window);
+    int v_max = std::ceil(v + window);
     v_max = (v_max < this->minY) ? this->minY : (v_max >= this->maxY) ? this->maxY - 1
     : v_max;
     
     std::vector<int> kps_idx;
-    int min_bin_u = u_min / GRID_HEIGHT;
-    int max_bin_u = u_max / GRID_HEIGHT;
-    int min_bin_v = v_min / GRID_WIDTH;
-    int max_bin_v = v_max / GRID_WIDTH;
+    int min_bin_u = u_min / GRID_WIDTH;
+    int max_bin_u = u_max / GRID_WIDTH;
+    int min_bin_v = v_min / GRID_HEIGHT;
+    int max_bin_v = v_max / GRID_HEIGHT;
     for (int i = min_bin_u; i <= max_bin_u; i++)
     {
         for (int j = min_bin_v; j <= max_bin_v; j++)
         {
-            std::vector<int> current_feature_idxs = this->grid[j][i];
-            for (int idx : current_feature_idxs) {
+            for (int idx : this->grid[j][i]) {
                 cv::KeyPoint kpu = this->features[idx].kpu;
                 if (kpu.octave < minOctave || kpu.octave > maxOctave)
                     continue;

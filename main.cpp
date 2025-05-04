@@ -28,6 +28,7 @@ using std::chrono::milliseconds;
 TumDatasetReader *reader;
 void signalHandler(int signum) {
     std::cout << "Interrupt signal (" << signum << ") received.\n";
+    reader->write_all_entries();
     reader->outfile.close();
     exit(signum);
 }
@@ -43,7 +44,7 @@ void signalHandler(int signum) {
 // care varianta e cea mai buna
 // RGBD -> time of flight, structured light
 
-int main(void)
+int main()
 {
     std::signal(SIGINT, signalHandler);
     ORBVocabulary *voc = new ORBVocabulary();
@@ -57,8 +58,8 @@ int main(void)
     Config cfg = loadConfig("../config.yaml");
     Orb_Matcher orb_matcher_cfg = load_orb_matcher_config("../config.yaml");
     
-    reader = new TumDatasetReader(cfg); 
     Map *mapp = new Map();
+    reader = new TumDatasetReader(cfg, mapp); 
     LocalMapping *local_mapper = new LocalMapping(mapp);
     Tracker *tracker = new Tracker(mapp, cfg, voc, orb_matcher_cfg);
 
@@ -85,7 +86,7 @@ int main(void)
         // if (reader->idx == 250) break;
 }
 
-    reader->write_all_entries(mapp);
+    reader->write_all_entries();
     auto t2 = high_resolution_clock::now();
     std::cout << duration_cast<seconds>(t2 - t1).count() << "s aici atata a durat\n\n";  
     std::cout << tracker->reference_kf->reference_idx << " atatea keyframe-uri avute\n";

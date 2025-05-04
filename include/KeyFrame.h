@@ -22,7 +22,6 @@ class KeyFrame
 public:
     Sophus::SE3d Tcw;
     Eigen::Matrix3d K;
-    // cv::Mat orb_descriptors;
     int current_idx;
     ORBVocabulary *voc;
     DBoW2::BowVector bow_vec;
@@ -30,15 +29,15 @@ public:
     KeyFrame *reference_kf;
     int reference_idx;
     int isKeyFrame = false;
-    const double POW_OCTAVE[10] = {1, 1.2, 1.44, 1.728, 2.0736, 2.48832, 2.985984, 3.5831808, 4.29981696, 5.159780352};
+    const double POW_OCTAVE[8] = {1, 1.2, 1.44, 1.728, 2.0736, 2.48832, 2.985984, 3.5831808};
 
     std::vector<Feature> features;
     std::unordered_map<MapPoint*, Feature*> mp_correlations; 
     std::unordered_set<MapPoint*> map_points;
     std::unordered_set<MapPoint*> outliers;
 
-    const int GRID_HEIGHT = 64;
-    const int GRID_WIDTH = 48;
+    const int GRID_HEIGHT = 48;
+    const int GRID_WIDTH = 64;
     int currently_matched_points = 0;
     std::vector<std::vector<std::vector<int>>> grid;
     const double BASELINE = 0.08;
