@@ -171,6 +171,7 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
     double chi2Mono = 5.991;
     double chi2Stereo = 7.815;
 
+    delete_outliers(local_map_points, chi2Mono, chi2Stereo);
     execute_problem(local_keyframes, fixed_keyframes, local_map_points, 5, false);
     restore_computed_values(local_keyframes, local_map_points);
     delete_outliers(local_map_points, chi2Mono, chi2Stereo);

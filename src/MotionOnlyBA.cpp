@@ -51,7 +51,7 @@ public:
         camera_coordinates[0] += pose[4];
         camera_coordinates[1] += pose[5];
         camera_coordinates[2] += pose[6];
-        if (camera_coordinates[2] <= 1e-1) camera_coordinates[2] = T(1e-1);
+        camera_coordinates[2] = ceres::fmax(camera_coordinates[2], 1e-1);
         T inv_d = T(1) / camera_coordinates[2];
         T x = T(kf->K(0, 0)) * camera_coordinates[0] * inv_d + T(kf->K(0, 2));
         T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
