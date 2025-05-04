@@ -136,7 +136,7 @@ std::vector<MapPoint *> Map::add_new_keyframe(KeyFrame *new_kf)
             std::cout << "NU S-A PUTUT ADAUGA NOUL MAP POINT IN KEYFRAME IN MAP INAINTE\n";
         }
     }
-    std::vector<MapPoint *> points_added = this->create_closest_map_points_from_features(new_kf);
+    std::vector<MapPoint *> points_added = this->create_map_points_from_features(new_kf);
     std::unordered_map<KeyFrame *, int> edges_new_keyframe = this->get_keyframes_connected(new_kf, 15);
     for (auto it = edges_new_keyframe.begin(); it != edges_new_keyframe.end(); it++)
     {

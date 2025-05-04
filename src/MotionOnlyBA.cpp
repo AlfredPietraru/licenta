@@ -53,8 +53,11 @@ public:
         camera_coordinates[1] += pose[5];
         camera_coordinates[2] += pose[6];
         T inv_d;
-        if (camera_coordinates[2] <= 1e-3) camera_coordinates[2] = T(1e-3);
-        inv_d = T(1) / camera_coordinates[2];
+        if (camera_coordinates[2] >= -1e-3 && camera_coordinates[2] <= 1e-3) {
+            inv_d = T(1) / (camera_coordinates[2] + T(1e-2));
+        } else {
+            inv_d = T(1) / camera_coordinates[2];
+        }
         T x = T(kf->K(0, 0)) * camera_coordinates[0] * inv_d + T(kf->K(0, 2));
         T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
         residuals[0] = (x - T(f->kpu.pt.x)) / kf->POW_OCTAVE[f->kpu.octave];
@@ -90,7 +93,7 @@ private:
 double MotionOnlyBA::get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2) {
     double residuals[3];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-3) return 100000;
+    if (camera_coordinates[2] >= -1e-3 && camera_coordinates[2] <= 1e-3) return 100000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
@@ -110,7 +113,7 @@ double MotionOnlyBA::get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Fea
 double MotionOnlyBA::get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2) {
     double residuals[2];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-3) return 100000;
+    if (camera_coordinates[2] >= -1e-3 && camera_coordinates[2] <= 1e-3) return 100000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
@@ -132,30 +135,6 @@ Sophus::SE3d compute_pose(KeyFrame *kf, double *pose) {
     return Sophus::SE3d(quaternion, Eigen::Vector3d(pose[4], pose[5], pose[6]));
 }
 
-
-void MotionOnlyBA::eliminate_outliers(KeyFrame *kf, std::unordered_map<MapPoint *, Feature *> &mono_matches,
-    std::unordered_map<MapPoint *, Feature *> &rgbd_matches, double chi2Mono, double chi2Stereo) {
-    double error;
-    for (auto it = mono_matches.begin(); it != mono_matches.end(); it++) {
-        MapPoint *mp = it->first;
-        error = get_monocular_reprojection_error(kf, mp, it->second, chi2Mono);  
-        if (error > chi2Mono) {
-            kf->add_outlier_element(mp);
-        } else {
-            kf->remove_outlier_element(mp);
-        }
-    }
-    for (auto it = rgbd_matches.begin(); it != rgbd_matches.end(); it++) {
-        MapPoint *mp = it->first;
-        error = get_rgbd_reprojection_error(kf, mp, it->second, chi2Stereo);
-        if (error > chi2Stereo) {
-            kf->add_outlier_element(mp);
-        } else {
-            kf->remove_outlier_element(mp);
-        }
-    }
-}
-
 Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
 {
     if (kf->mp_correlations.size() < 3)
@@ -174,8 +153,10 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
         rgbd_matches.insert({it->first, it->second});
     }
 
+
     for (int i = 0; i < 4; i++)
     {
+
         ceres::Problem problem;
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
@@ -215,7 +196,27 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
         // std::cout << summary.FullReport() << "\n";
 
         kf->set_keyframe_position(kf->compute_pose()); 
-        eliminate_outliers(kf, mono_matches, rgbd_matches, chi2Mono[i], chi2Stereo[i]);
+        double error;
+        
+        for (auto it = mono_matches.begin(); it != mono_matches.end(); it++) {
+            MapPoint *mp = it->first;
+            error = get_monocular_reprojection_error(kf, mp, it->second, chi2Mono[i]);  
+            if (error > chi2Mono[i]) {
+                kf->add_outlier_element(mp);
+            } else {
+                kf->remove_outlier_element(mp);
+            }
+        }
+
+        for (auto it = rgbd_matches.begin(); it != rgbd_matches.end(); it++) {
+            MapPoint *mp = it->first;
+            error = get_rgbd_reprojection_error(kf, mp, it->second, chi2Stereo[i]);
+            if (error > chi2Stereo[i]) {
+                kf->add_outlier_element(mp);
+            } else {
+                kf->remove_outlier_element(mp);
+            }
+        }
     }
     return kf->compute_pose();    
 }

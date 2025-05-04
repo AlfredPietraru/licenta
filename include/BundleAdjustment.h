@@ -10,10 +10,10 @@
 #include "Map.h"
 
 
-class BundleAdjustmentVariableError
+class BundleAdjustmentError
 {
 public:
-    BundleAdjustmentVariableError(KeyFrame *kf, Feature *f, bool is_monocular) : kf(kf), f(f), is_monocular(is_monocular) {}
+    BundleAdjustmentError(KeyFrame *kf, Feature *f, bool is_monocular) : kf(kf), f(f), is_monocular(is_monocular) {}
 
     template <typename T>
     bool operator()(const T *const pose, const T *map_coordinate, T *residuals) const
@@ -23,9 +23,9 @@ public:
         camera_coordinates[0] += pose[4];
         camera_coordinates[1] += pose[5];
         camera_coordinates[2] += pose[6];
-        if (camera_coordinates[2] <= T(1e-3)) camera_coordinates[2] = T(1e-3);
+        if (camera_coordinates[2] <= T(1e-6)) return false;
+        // if (camera_coordinates[2] <= T(1e-6)) camera_coordinates[2] = T(1e-6); 
         T inv_d = T(1) / camera_coordinates[2];
-        
         T x = T(kf->K(0, 0)) * camera_coordinates[0] * inv_d + T(kf->K(0, 2));
         T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
         residuals[0] = (x - T(f->kpu.pt.x)) / kf->POW_OCTAVE[f->kpu.octave];
@@ -37,28 +37,6 @@ public:
         residuals[2] = (disp_pred - disp_meas) * kf->POW_OCTAVE[f->kpu.octave];
         return true;
     }
-
-    static ceres::CostFunction *CreateMonocular(KeyFrame *kf, Feature *f)
-    {
-        return (new ceres::AutoDiffCostFunction<BundleAdjustmentVariableError, 2, 7, 3>(new BundleAdjustmentVariableError(kf, f, true)));
-    }
-
-    static ceres::CostFunction *CreateStereo(KeyFrame *kf, Feature *f)
-    {
-        return (new ceres::AutoDiffCostFunction<BundleAdjustmentVariableError, 3, 7, 3>(new BundleAdjustmentVariableError(kf, f, false)));
-    }
-
-    private:
-    KeyFrame *kf;
-    Feature *f;
-    bool is_monocular;
-};
-
-
-class BundleAdjustmentStaticError
-{
-public:
-    BundleAdjustmentStaticError(KeyFrame *kf, Feature *f, bool is_monocular) : kf(kf), f(f), is_monocular(is_monocular) {}
 
     template <typename T>
     bool operator()(const T *const map_coordinate, T *residuals) const
@@ -68,7 +46,7 @@ public:
         camera_coordinates[0] += (T)kf->pose_vector[4];
         camera_coordinates[1] += (T)kf->pose_vector[5];
         camera_coordinates[2] += (T)kf->pose_vector[6];
-        if (camera_coordinates[2] <= T(1e-3)) camera_coordinates[2] = T(1e-3); 
+        if (camera_coordinates[2] <= T(1e-6)) camera_coordinates[2] = T(1e-6); 
         T inv_d = T(1) / camera_coordinates[2];
         T x = T(kf->K(0, 0)) * camera_coordinates[0] * inv_d + T(kf->K(0, 2));
         T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
@@ -82,14 +60,24 @@ public:
         return true;
     }
 
-    static ceres::CostFunction *CreateMonocular(KeyFrame *kf, Feature *f)
+    static ceres::CostFunction *Create_Variable_Monocular(KeyFrame *kf, Feature *f)
     {
-        return (new ceres::AutoDiffCostFunction<BundleAdjustmentStaticError, 2, 3>(new BundleAdjustmentStaticError(kf, f, true)));
+        return (new ceres::AutoDiffCostFunction<BundleAdjustmentError, 2, 7, 3>(new BundleAdjustmentError(kf, f, true)));
     }
 
-    static ceres::CostFunction *CreateStereo(KeyFrame *kf, Feature *f)
+    static ceres::CostFunction *Create_Static_Monocular(KeyFrame *kf, Feature *f)
     {
-        return (new ceres::AutoDiffCostFunction<BundleAdjustmentStaticError, 3, 3>(new BundleAdjustmentStaticError(kf, f, false)));
+        return (new ceres::AutoDiffCostFunction<BundleAdjustmentError, 2, 3>(new BundleAdjustmentError(kf, f, true)));
+    }
+
+    static ceres::CostFunction *Create_Variable_Stereo(KeyFrame *kf, Feature *f)
+    {
+        return (new ceres::AutoDiffCostFunction<BundleAdjustmentError, 3, 7, 3>(new BundleAdjustmentError(kf, f, false)));
+    }
+
+    static ceres::CostFunction *Create_Static_Stereo(KeyFrame *kf, Feature *f)
+    {
+        return (new ceres::AutoDiffCostFunction<BundleAdjustmentError, 3, 3>(new BundleAdjustmentError(kf, f, false)));
     }
 
 private:

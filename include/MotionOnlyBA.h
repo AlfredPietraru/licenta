@@ -29,9 +29,6 @@ public:
     Sophus::SE3d solve_g2o(KeyFrame *frame);
     double get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2);
     double get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2);
-    void eliminate_outliers(KeyFrame *kf, std::unordered_map<MapPoint *, Feature *> &mono_matches, std::unordered_map<MapPoint *, Feature *> &rgbd_matches, 
-            double chi2Mono, double chi2Stereo);
-    
 };
 
 #endif
