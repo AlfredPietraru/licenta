@@ -130,7 +130,7 @@ Sophus::SE3d compute_pose(KeyFrame *kf, double *pose) {
     return Sophus::SE3d(quaternion, Eigen::Vector3d(pose[4], pose[5], pose[6]));
 }
 
-Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
+Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf, bool display)
 {
     if (kf->mp_correlations.size() < 3)
         return kf->Tcw;
@@ -161,7 +161,7 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
 
         options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
         options.check_gradients = false;
-        options.minimizer_progress_to_stdout = false;
+        options.minimizer_progress_to_stdout = display;
         options.max_num_iterations = 10;
         
         ceres::LossFunction *loss_function_mono = new ceres::HuberLoss(sqrt(chi2Mono[i]));
@@ -188,7 +188,9 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
 
         ceres::Solver::Summary summary;
         ceres::Solve(options, &problem, &summary);
-        // std::cout << summary.FullReport() << "\n";
+        if (display) {
+            std::cout << summary.FullReport() << "\n";
+        }
 
         kf->set_keyframe_position(kf->compute_pose()); 
         double error;

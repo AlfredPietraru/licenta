@@ -1,5 +1,5 @@
 #include "../include/BundleAdjustment.h"
-using SE3Manifold = ceres::ProductManifold<ceres::QuaternionManifold, ceres::EuclideanManifold<3>>;
+using SE3Manifold = ceres::ProductManifold<ceres::EigenQuaternionManifold, ceres::EuclideanManifold<3>>;
 
 double get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, double chi2) {
     double residuals[3];
@@ -57,6 +57,10 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
         assert(std::abs(norm - 1.0) < 1e-3);
         problem.AddParameterBlock(kf->pose_vector, 7);
         problem.SetManifold(kf->pose_vector, new SE3Manifold());
+    }
+
+    for (MapPoint *mp: local_map_points) {
+        problem.AddParameterBlock(mp->wcoord_3d.data(), 3);
     }
 
     for (MapPoint *mp : local_map_points) {
@@ -167,7 +171,7 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
     double chi2Mono = 5.991;
     double chi2Stereo = 7.815;
 
-    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 5, true);
+    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 5, false);
     restore_computed_values(local_keyframes, local_map_points);
     delete_outliers(local_map_points, chi2Mono, chi2Stereo);
     

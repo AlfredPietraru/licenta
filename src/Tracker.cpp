@@ -136,7 +136,7 @@ void Tracker::TrackReferenceKeyFrame()
         std::cout << this->current_kf->mp_correlations.size() << " REFERENCE FRAME N A URMARIT SUFICIENTE MAP POINTS PENTRU OPTIMIZARE\n";
         exit(1);
     }
-    this->current_kf->set_keyframe_position(this->motionOnlyBA->solve_ceres(this->current_kf));
+    this->current_kf->set_keyframe_position(this->motionOnlyBA->solve_ceres(this->current_kf, false));
     for (MapPoint *mp : this->current_kf->outliers)
     {
         bool removal_succesfull = Map::remove_map_point_from_keyframe(this->current_kf, mp);
@@ -166,7 +166,7 @@ void Tracker::TrackConsecutiveFrames()
             return;
         }
     }
-    this->current_kf->set_keyframe_position(this->motionOnlyBA->solve_ceres(this->current_kf));
+    this->current_kf->set_keyframe_position(this->motionOnlyBA->solve_ceres(this->current_kf, false));
     for (MapPoint *mp : this->current_kf->outliers)
     {
         Map::remove_map_point_from_keyframe(this->current_kf, mp);
@@ -206,7 +206,7 @@ void Tracker::TrackLocalMap(Map *mapp)
         std::cout << " \nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
         return;
     }
-    this->current_kf->set_keyframe_position(this->motionOnlyBA->solve_ceres(this->current_kf));
+    this->current_kf->set_keyframe_position(this->motionOnlyBA->solve_ceres(this->current_kf, false));
     for (MapPoint *mp : this->current_kf->outliers)
     {
         bool removal_succesfull = Map::remove_map_point_from_keyframe(this->current_kf, mp);
@@ -259,7 +259,7 @@ KeyFrame *Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose
     }
 
     this->current_kf->reference_kf = this->reference_kf;
-    // int wait_time = this->current_kf->current_idx < 225 ? 20 : 0;
+    // int wait_time = this->current_kf->current_idx < 225 ? 0 : 0;
     // this->current_kf->debug_keyframe(frame, wait_time);
     return this->current_kf;
 }
