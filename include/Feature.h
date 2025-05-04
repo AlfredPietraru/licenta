@@ -22,6 +22,7 @@ public:
     double right_coordinate;
     int curr_hamming_dist = 10000;
     MapPoint *mp = nullptr;
+    bool is_monocular;
 
     Feature() {}
     Feature(cv::KeyPoint kp, cv::KeyPoint kpu, cv::Mat descriptor, int idx, double depth, double right_coordinate);

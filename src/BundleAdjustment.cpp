@@ -4,7 +4,7 @@ using SE3Manifold = ceres::ProductManifold<ceres::QuaternionManifold, ceres::Euc
 double get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, double chi2) {
     double residuals[3];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-3) return 10000;
+    if (camera_coordinates[2] <= 1e-1) return 10000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
@@ -23,7 +23,7 @@ double get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, doubl
 double get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* f, double chi2) {
     double residuals[2];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-3) return 10000;
+    if (camera_coordinates[2] <= 1e-1) return 10000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
@@ -64,23 +64,22 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
             Feature *f = kf->mp_correlations[mp];
             bool is_local_keyframe = local_keyframes.find(kf) != local_keyframes.end();
             bool is_fixed_keyframe = fixed_keyframes.find(kf) != fixed_keyframes.end();
-            bool is_monocular = f->depth <= 1e-6;
-            if (is_local_keyframe && is_monocular) {
+            if (is_local_keyframe && f->is_monocular) {
                 ceres::CostFunction *cost_function = BundleAdjustmentError::Create_Variable_Monocular(kf, f);
                 problem.AddResidualBlock(cost_function, loss_function_mono, kf->pose_vector, mp->wcoord_3d.data());
                 continue;
             }
-            if (is_local_keyframe && !is_monocular) {
+            if (is_local_keyframe && !f->is_monocular) {
                 ceres::CostFunction *cost_function = BundleAdjustmentError::Create_Variable_Stereo(kf, f);
                 problem.AddResidualBlock(cost_function, loss_function_stereo, kf->pose_vector, mp->wcoord_3d.data());
                 continue;
             }
-            if (is_fixed_keyframe && is_monocular) {
+            if (is_fixed_keyframe && f->is_monocular) {
                 ceres::CostFunction *cost_function = BundleAdjustmentError::Create_Static_Monocular(kf, f);
                 problem.AddResidualBlock(cost_function, loss_function_mono, mp->wcoord_3d.data());
                 continue;
             }
-            if (is_fixed_keyframe && !is_monocular) {
+            if (is_fixed_keyframe && !f->is_monocular) {
                 ceres::CostFunction *cost_function = BundleAdjustmentError::Create_Static_Stereo(kf, f);
                 problem.AddResidualBlock(cost_function, loss_function_stereo, mp->wcoord_3d.data());
                 continue;
@@ -148,7 +147,7 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
         for (KeyFrame *kf : copy_keyframe_vector) {
             Feature *f = kf->mp_correlations[mp];
             bool is_outlier;
-            if (f->right_coordinate <= 1e-6) {
+            if (f->is_monocular) {
                 double error = get_monocular_reprojection_error(kf, mp, f, chi2Mono);
                 is_outlier = error > chi2Mono;
             } else {

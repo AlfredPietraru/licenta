@@ -65,8 +65,8 @@ std::vector<MapPoint *> Map::create_map_points_from_features(KeyFrame *kf)
     {
         if (kf->features[i].get_map_point() != nullptr)
             continue;
-        double depth = kf->features[i].depth;
-        if (depth <= 1e-6 || depth > 3.2)
+
+        if (kf->features[i].is_monocular || kf->features[i].depth >= 3.2)
             continue;
         Eigen::Vector4d wcoord = kf->fromImageToWorld(i);
         MapPoint *mp = new MapPoint(kf, i, kf->features[i].kpu, kf->camera_center_world, wcoord, kf->features[i].descriptor);
@@ -93,11 +93,11 @@ std::vector<MapPoint*> Map::create_closest_map_points_from_features(KeyFrame *kf
     std::vector<MapPoint *> out;
     std::vector<Feature*> copy_feature;
     for (long unsigned int i = 0; i < kf->features.size(); i++) {
-        if (kf->features[i].depth <= 1e-6 || kf->features[i].depth >= 3.2) continue;
+        if (kf->features[i].is_monocular || kf->features[i].depth >= 3.2) continue;
         copy_feature.push_back(&kf->features[i]);
     }
     sort(copy_feature.begin(), copy_feature.end(), customComparison);
-    for (int i = 0; i < std::min((int)copy_feature.size(), 200); i++) {
+    for (int i = 0; i < std::min((int)copy_feature.size(), 100); i++) {
         int idx = copy_feature[i]->idx;
         Eigen::Vector4d wcoord = kf->fromImageToWorld(idx);
         MapPoint *mp = new MapPoint(kf, idx, kf->features[idx].kpu, kf->camera_center_world, wcoord, kf->features[idx].descriptor);
@@ -389,7 +389,7 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
                 continue;
             point_camera_coordinates = kf->mat_camera_world * mp->wcoord;
             d = point_camera_coordinates(2);
-            if (d <= 1e-6)
+            if (d <= 1e-1)
                 continue;
             u = kf->K(0, 0) * point_camera_coordinates(0) / d + kf->K(0, 2);
             v = kf->K(1, 1) * point_camera_coordinates(1) / d + kf->K(1, 2);
@@ -425,7 +425,7 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
                 continue;
             for (int idx : kps_idx)
             {
-                if (kf->features[idx].depth > 1e-6)
+                if (!kf->features[idx].is_monocular)
                 {
                     double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
                     float er = fabs(fake_rgbd - kf->features[idx].right_coordinate);

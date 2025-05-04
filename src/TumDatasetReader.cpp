@@ -138,7 +138,7 @@ void TumDatasetReader::increase_idx() {
 void TumDatasetReader::store_entry(KeyFrame *current_kf) {
     if (current_kf->isKeyFrame) return;
     FramePoseEntry framePoseEntry;
-    framePoseEntry.pose = current_kf->reference_kf->Tcw.inverse() * current_kf->Tcw;
+    framePoseEntry.pose = current_kf->Tcw * current_kf->reference_kf->Tcw.inverse();
     framePoseEntry.last_keyframe_idx = current_kf->reference_idx;
     this->frame_poses.push_back(framePoseEntry);
 }
@@ -147,11 +147,11 @@ void TumDatasetReader::store_entry(KeyFrame *current_kf) {
 void TumDatasetReader::write_entry(Sophus::SE3d pose, int index) {
     std::string path = this->rgb_path[index];
     std::string file_name = extract_timestamp(path);
-    Eigen::Matrix3d R_tum = slam_to_tum_R * pose.rotationMatrix();
+    Eigen::Matrix3d R_tum = pose.rotationMatrix();
     Eigen::Quaterniond q_tum(R_tum);
-    Eigen::Vector3d t_tum = slam_to_tum_R * pose.translation();
+    Eigen::Vector3d t_tum = pose.translation();
     this->outfile << file_name << " "
-              << t_tum.x() << " " << t_tum.y() << " " << t_tum.z() << " "
+              << t_tum.y() << " " << t_tum.x() << " " << t_tum.z() << " "
               << q_tum.x() << " " << q_tum.y() << " " << q_tum.z() << " " << q_tum.w()
               << std::endl;
 }
@@ -162,8 +162,8 @@ void TumDatasetReader::write_all_entries(Map *mapp) {
     for (int i = 0; i <  (int)this->frame_poses.size(); i++) {
         FramePoseEntry framePoseEntry = this->frame_poses[i]; 
         Sophus::SE3d lastKeyFramePose = mapp->keyframes[framePoseEntry.last_keyframe_idx]->Tcw;
-        Sophus::SE3d currentFramePose = lastKeyFramePose * framePoseEntry.pose;
-        write_entry(currentFramePose, i);
+        Sophus::SE3d currentFramePose = framePoseEntry.pose * lastKeyFramePose;
+        write_entry(currentFramePose, i + 1);
     }
     std::cout << "AICI SE TERMINA SCRIEREA IN FISIER\n";
 }

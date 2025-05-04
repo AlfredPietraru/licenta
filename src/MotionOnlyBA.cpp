@@ -1,8 +1,7 @@
 #include "../include/MotionOnlyBA.h"
 #include "../include/rotation.h"
 
-using SE3Manifold = ceres::ProductManifold<ceres::QuaternionManifold, ceres::EuclideanManifold<3>>;
-
+using SE3Manifold = ceres::ProductManifold<ceres::EigenQuaternionManifold, ceres::EuclideanManifold<3>>;
 #include <ceres/ceres.h>
 #include <sophus/se3.hpp>
 
@@ -52,7 +51,7 @@ public:
         camera_coordinates[0] += pose[4];
         camera_coordinates[1] += pose[5];
         camera_coordinates[2] += pose[6];
-        if (camera_coordinates[2] <= 1e-3) camera_coordinates[2] = T(1e-3);
+        if (camera_coordinates[2] <= 1e-1) camera_coordinates[2] = T(1e-1);
         T inv_d = T(1) / camera_coordinates[2];
         T x = T(kf->K(0, 0)) * camera_coordinates[0] * inv_d + T(kf->K(0, 2));
         T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
@@ -89,7 +88,7 @@ private:
 double MotionOnlyBA::get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2) {
     double residuals[3];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-3) return 100000;
+    if (camera_coordinates[2] <= 1e-1) return 100000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
@@ -109,7 +108,7 @@ double MotionOnlyBA::get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Fea
 double MotionOnlyBA::get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2) {
     double residuals[2];
     Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-3) return 100000;
+    if (camera_coordinates[2] <= 1e-1) return 100000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
@@ -141,7 +140,7 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
     std::unordered_map<MapPoint *, Feature *> mono_matches;
     std::unordered_map<MapPoint *, Feature *> rgbd_matches;
     for (auto it = kf->mp_correlations.begin(); it != kf->mp_correlations.end(); it++) {
-        if (it->second->depth <= 1e-6)
+        if (it->second->is_monocular)
         {
             mono_matches.insert({it->first, it->second});
             continue;
@@ -157,8 +156,8 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
         options.function_tolerance = 1e-8;
-        options.gradient_tolerance = 1e-10;
-        options.parameter_tolerance = 1e-9;
+        options.gradient_tolerance = 1e-7;
+        options.parameter_tolerance = 1e-7;
 
         options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
         options.check_gradients = false;
@@ -260,7 +259,7 @@ Sophus::SE3d MotionOnlyBA::solve_g2o(KeyFrame *kf)
         if(pMP)
         {
             // Monocular observation
-            if(f->depth <= 1e-6)
+            if(f->is_monocular)
             {
 
                 Eigen::Matrix<double,2,1> obs;

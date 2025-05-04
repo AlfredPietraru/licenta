@@ -88,7 +88,7 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
         MapPoint *mp = f.get_map_point();
         if (mp == nullptr || kf->check_map_point_outlier(mp)) continue;
         point_camera_coordinates = kf->mat_camera_world * mp->wcoord;
-        if (point_camera_coordinates(2) <= 1e-6) continue;
+        if (point_camera_coordinates(2) <= 1e-1) continue;
         double d = point_camera_coordinates(2);
         double u = kf->K(0, 0) * point_camera_coordinates(0) / d + kf->K(0, 2);
         if (u < kf->minX || u > kf->maxX - 1) continue;
@@ -121,7 +121,7 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
         for (int idx : kps_idx)
         {
             int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
-            if (kf->features[idx].depth > 1e-6)
+            if (!kf->features[idx].is_monocular)
             {
                 double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
                 float er = fabs(fake_rgbd - kf->features[idx].right_coordinate);
@@ -149,7 +149,7 @@ void OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoin
     for (MapPoint *mp : map_points) {
         if (kf->check_map_point_outlier(mp)) continue;
         point_camera_coordinates = kf->mat_camera_world * mp->wcoord;
-        if (point_camera_coordinates(2) <= 1e-6) continue;
+        if (point_camera_coordinates(2) <= 1e-1) continue;
         double d = point_camera_coordinates(2);
         double u = kf->K(0, 0) * point_camera_coordinates(0) / d + kf->K(0, 2);
         if (u < kf->minX || u > kf->maxX - 1) continue;
@@ -179,7 +179,7 @@ void OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoin
         if (kps_idx.size() == 0) continue;
         for (int idx : kps_idx)
         {
-            if (kf->features[idx].depth > 1e-6) {
+            if (!kf->features[idx].is_monocular) {
                 double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
                 float er = fabs(fake_rgbd - kf->features[idx].right_coordinate);
                 if (er > scale_of_search) continue;
@@ -292,7 +292,7 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
                 const cv::Mat &d1 = ref1->orb_descriptors.row(idx1);
                 int bestDist = 50;
                 int bestIdx2 = -1;
-                bStereo1 = ref1->features[idx1].depth > 1e-6;
+                bStereo1 = !ref1->features[idx1].is_monocular;
 
                 for(size_t idx2 : f2it->second)
                 {
@@ -307,7 +307,7 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
 
                     const cv::KeyPoint &kpu2 = ref2->features[idx2].get_undistorted_keypoint();
 
-                    bStereo2 = ref2->features[idx2].depth > 1e-6;
+                    bStereo2 = !ref2->features[idx2].is_monocular;
                     if(!bStereo1 && !bStereo2)
                     {
                         const float distex = ex - kpu2.pt.x;
@@ -385,7 +385,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         if(pKF->check_map_point_in_keyframe(source_mp)) continue;
 
         Eigen::Vector3d p3Dc = Rcw * source_mp->wcoord_3d + tcw;
-        if(p3Dc(2) <= 1e-6) continue;
+        if(p3Dc(2) <= 1e-1) continue;
 
         const float invz = 1/p3Dc(2);
         const float x = p3Dc(0) * invz;
@@ -422,11 +422,11 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
             if(kpu.octave < nPredictedLevel-1 || kpu.octave > nPredictedLevel) continue;
             const float ex = u  - kpu.pt.x;
             const float ey = v  - kpu.pt.y;
-            if (pKF->features[kp_idx].depth <= 1e-6) {
+            if (pKF->features[kp_idx].is_monocular) {
                 const float e2 = ex*ex+ey*ey;
                 if(e2 / pow(1.2, 2 * kpu.octave) > 5.99) continue;
             } 
-            if (pKF->features[kp_idx].depth > 1e-6) {
+            if (!pKF->features[kp_idx].is_monocular) {
                 const float er = ur - pKF->features[kp_idx].right_coordinate;
                 const float e2 = ex*ex+ey*ey+er*er;
                 if(e2 / pow(1.2, 2 * kpu.octave) > 7.8) continue;

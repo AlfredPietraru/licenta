@@ -1,7 +1,9 @@
 #include "../include/Feature.h"
 
 Feature::Feature(cv::KeyPoint kp, cv::KeyPoint kpu, cv::Mat descriptor, int idx, double depth, double right_coordinate) : kp(kp), kpu(kpu),
-    descriptor(descriptor), idx(idx), depth(depth), right_coordinate(right_coordinate) {}
+    descriptor(descriptor), idx(idx), depth(depth), right_coordinate(right_coordinate) {
+        this->is_monocular = depth <= 1e-1;
+    }
 
 void Feature::set_map_point(MapPoint *mp, int hamming_distance) {
     this->mp = mp;

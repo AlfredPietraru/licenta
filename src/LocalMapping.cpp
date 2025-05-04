@@ -8,11 +8,10 @@ void LocalMapping::local_map(KeyFrame *kf) {
     this->map_points_culling(kf);
     this->compute_map_points(kf);
     this->search_in_neighbours(kf);
-    // std::cout << "INCEPE BA\n";
-    // bundleAdjustment->solve_ceres(this->mapp, kf);
-    // std::cout << "SE TERMINA BA\n";
+    std::cout << "INCEPE BA\n";
+    bundleAdjustment->solve_ceres(this->mapp, kf);
+    std::cout << "SE TERMINA BA\n";
     // this->KeyFrameCulling(kf);
-    std::cout << "LOCAL MAP ISI FACE TREABA\n";
 }
 
 
@@ -66,7 +65,7 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
 bool is_coordinate_valid_for_keyframe(KeyFrame *kf, Feature *f, Eigen::Vector4d coordinates,  bool isStereo) {
     Eigen::Vector3d projected_on_kf = kf->Tcw.matrix3x4() * coordinates;
     const float z1 = projected_on_kf(2);
-    if (z1 <= 1e-6) return false;
+    if (z1 <= 1e-1) return false;
     const float invz1 = 1.0 / z1;
     const float &sigmaSquare1 = kf->POW_OCTAVE[f->get_undistorted_keypoint().octave] * kf->POW_OCTAVE[f->get_undistorted_keypoint().octave];
     float u1 = kf->K(0, 0) * projected_on_kf(0) * invz1 + kf->K(0, 2);
@@ -100,8 +99,8 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
         for (std::pair<int, int> correspondence : vMatchedIndices) {
             Feature *f1 = &kf->features[correspondence.first];
             Feature *f2 = &neighbour_kf->features[correspondence.second];
-            isStereo1 = f1->depth > 1e-6;
-            isStereo2 = f2->depth > 1e-6;
+            isStereo1 = !f1->is_monocular;
+            isStereo2 = !f2->is_monocular;
 
             double new_x1 = (f1->get_undistorted_keypoint().pt.x - kf->K(0, 2)) / kf->K(0, 0);
             double new_y1 = (f1->get_undistorted_keypoint().pt.y - kf->K(1, 2)) / kf->K(1, 1);

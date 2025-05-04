@@ -52,7 +52,7 @@ bool KeyFrame::check_number_close_points()
     int close_points_tracked = 0;
     int close_points_untracked = 0;
     for (Feature f : this->features) {
-        if (f.depth <= 1e-6 || f.depth >= 3.2) continue;
+        if (f.is_monocular || f.depth >= 3.2) continue;
         if (f.get_map_point() == nullptr) close_points_untracked++;
         if (f.get_map_point() != nullptr) close_points_tracked++;
     }
@@ -68,9 +68,9 @@ void KeyFrame::create_feature_vector(std::vector<cv::KeyPoint> &keypoints, std::
         uint16_t d = depth_matrix.at<uint16_t>(y, x);
         float depth = d / 5000.0f;
         cv::KeyPoint kpu = undistored_kps[i];
-        if (depth <= 1e-6)
+        if (depth <= 1e-1)
         {
-            this->features.push_back(Feature(kp, kpu, orb_descriptors.row(i), i, -1, -1));
+            this->features.push_back(Feature(kp, kpu, orb_descriptors.row(i), i, depth, -100001123));
         }
         else
         {
