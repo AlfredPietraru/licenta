@@ -103,6 +103,35 @@ void restore_computed_values(std::unordered_set<KeyFrame*>& local_keyframes, std
     }
 }
 
+void delete_outliers(std::unordered_set<MapPoint*>& local_map_points, double chi2Mono, double chi2Stereo) {
+    std::vector<MapPoint *> to_delete; 
+    for (MapPoint *mp : local_map_points) {
+        std::vector<KeyFrame*> copy_keyframe_vector(mp->keyframes.begin(), mp->keyframes.end());
+        for (KeyFrame *kf : copy_keyframe_vector) {
+            Feature *f = kf->mp_correlations[mp];
+            bool is_outlier;
+            if (f->is_monocular) {
+                double error = get_monocular_reprojection_error(kf, mp, f, chi2Mono);
+                is_outlier = error > chi2Mono;
+            } else {
+                double error = get_rgbd_reprojection_error(kf, mp, f, chi2Stereo);
+                is_outlier = error > chi2Stereo;
+            }
+            if (is_outlier) {
+                Map::remove_map_point_from_keyframe(kf, mp);
+                Map::remove_keyframe_reference_from_map_point(mp, kf);
+            }
+        }
+        if (mp->keyframes.size() == 0) {
+            to_delete.push_back(mp);
+        }
+    }
+    // std::cout << to_delete.size() << " ATATEA PUNCTE AU FOST GASITE DE STERS\n";
+    for (MapPoint *mp : to_delete) {
+        local_map_points.erase(mp);
+    }
+}
+
 void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
     if (mapp->keyframes.size() <= 2) return;
    std::unordered_set<KeyFrame*> local_keyframes = mapp->get_local_keyframes(frame);
@@ -135,39 +164,14 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
             if (local_keyframes.find(kf_which_sees_map_point) == local_keyframes.end()) fixed_keyframes.insert(kf_which_sees_map_point);
         }
     }
-
-    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 5, true);
-    restore_computed_values(local_keyframes, local_map_points);
     double chi2Mono = 5.991;
     double chi2Stereo = 7.815;
 
-    std::vector<MapPoint *> to_delete; 
-    for (MapPoint *mp : local_map_points) {
-        std::vector<KeyFrame*> copy_keyframe_vector(mp->keyframes.begin(), mp->keyframes.end());
-        for (KeyFrame *kf : copy_keyframe_vector) {
-            Feature *f = kf->mp_correlations[mp];
-            bool is_outlier;
-            if (f->is_monocular) {
-                double error = get_monocular_reprojection_error(kf, mp, f, chi2Mono);
-                is_outlier = error > chi2Mono;
-            } else {
-                double error = get_rgbd_reprojection_error(kf, mp, f, chi2Stereo);
-                is_outlier = error > chi2Stereo;
-            }
-            if (is_outlier) {
-                Map::remove_map_point_from_keyframe(kf, mp);
-                Map::remove_keyframe_reference_from_map_point(mp, kf);
-            }
-        }
-        if (mp->keyframes.size() == 0) {
-            to_delete.push_back(mp);
-        }
-    }
-    // std::cout << to_delete.size() << " ATATEA PUNCTE AU FOST GASITE DE STERS\n";
-    for (MapPoint *mp : to_delete) {
-        local_map_points.erase(mp);
-    }
-
+    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 5, true);
+    restore_computed_values(local_keyframes, local_map_points);
+    delete_outliers(local_map_points, chi2Mono, chi2Stereo);
+    
     execute_problem(local_keyframes, fixed_keyframes, local_map_points, 10, true);
     restore_computed_values(local_keyframes, local_map_points);
+    delete_outliers(local_map_points, chi2Mono, chi2Stereo);
 }
