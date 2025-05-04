@@ -40,8 +40,6 @@ private:
     Feature *f;
 };
 
-
-
 class BundleAjustmentVariableKeyFrameStereo {
 public:
     BundleAjustmentVariableKeyFrameStereo(KeyFrame *kf, Feature *f) : kf(kf), f(f) {}
@@ -75,9 +73,6 @@ private:
     Feature *f;
 };
 
-
-
-
 class BundleAjustmentFixedKeyFrameMonocular {
 public:
     BundleAjustmentFixedKeyFrameMonocular(KeyFrame *kf, Feature *f) : kf(kf), f(f) {}
@@ -85,7 +80,12 @@ public:
     bool operator()(const T *const map_coordinate, T *residuals) const
     {
         T camera_coordinates[3];
-        ceres::QuaternionRotatePoint((T*)kf->pose_vector, map_coordinate, camera_coordinates);
+        T pose[4];
+        pose[0] = T(kf->pose_vector[0]);
+        pose[1] = T(kf->pose_vector[1]);
+        pose[2] = T(kf->pose_vector[2]);
+        pose[3] = T(kf->pose_vector[3]);
+        ceres::QuaternionRotatePoint(pose, map_coordinate, camera_coordinates);
         camera_coordinates[0] += (T)kf->pose_vector[4];
         camera_coordinates[1] += (T)kf->pose_vector[5];
         camera_coordinates[2] += (T)kf->pose_vector[6];
@@ -109,9 +109,6 @@ private:
     Feature *f;
 };
 
-
-
-
 class BundleAjustmentFixedKeyFrameStereo {
 
 public:
@@ -121,7 +118,12 @@ public:
     bool operator()(const T *const map_coordinate, T *residuals) const
     {
         T camera_coordinates[3];
-        ceres::QuaternionRotatePoint((T*)kf->pose_vector, map_coordinate, camera_coordinates);
+        T pose[4];
+        pose[0] = T(kf->pose_vector[0]);
+        pose[1] = T(kf->pose_vector[1]);
+        pose[2] = T(kf->pose_vector[2]);
+        pose[3] = T(kf->pose_vector[3]);
+        ceres::QuaternionRotatePoint(pose, map_coordinate, camera_coordinates);
         camera_coordinates[0] += (T)kf->pose_vector[4];
         camera_coordinates[1] += (T)kf->pose_vector[5];
         camera_coordinates[2] += (T)kf->pose_vector[6];

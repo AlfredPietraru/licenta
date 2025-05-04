@@ -70,7 +70,7 @@ void KeyFrame::create_feature_vector(std::vector<cv::KeyPoint> &keypoints, std::
         cv::KeyPoint kpu = undistored_kps[i];
         if (depth <= 1e-1)
         {
-            this->features.push_back(Feature(kp, kpu, orb_descriptors.row(i), i, depth, -100001123));
+            this->features.push_back(Feature(kp, kpu, orb_descriptors.row(i), i, depth, 0));
         }
         else
         {

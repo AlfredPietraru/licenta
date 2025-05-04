@@ -63,29 +63,36 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
         problem.AddParameterBlock(mp->wcoord_3d.data(), 3);
     }
 
+
+    std::vector<ceres::ResidualBlockId> monocular_ids;
+    std::vector<ceres::ResidualBlockId> stereo_ids;
     for (MapPoint *mp : local_map_points) {
         for (KeyFrame *kf : mp->keyframes) {
             Feature *f = kf->mp_correlations[mp];
             bool is_local_keyframe = local_keyframes.find(kf) != local_keyframes.end();
-            bool is_fixed_keyframe = fixed_keyframes.find(kf) != fixed_keyframes.end();
+            bool is_fixed_keyframe = fixed_keyframes.find(kf) != fixed_keyframes.end();            
             if (is_local_keyframe && f->is_monocular) {
                 ceres::CostFunction *cost_function = BundleAjustmentVariableKeyFrameMonocular::CreateVariableMonocular(kf, f);
-                problem.AddResidualBlock(cost_function, loss_function_mono, kf->pose_vector, mp->wcoord_3d.data());
+                auto id = problem.AddResidualBlock(cost_function, loss_function_mono, kf->pose_vector, mp->wcoord_3d.data());
+                monocular_ids.push_back(id);
                 continue;
             }
             if (is_local_keyframe && !f->is_monocular) {
                 ceres::CostFunction *cost_function = BundleAjustmentVariableKeyFrameStereo::CreateVariableStereo(kf, f);
-                problem.AddResidualBlock(cost_function, loss_function_stereo, kf->pose_vector, mp->wcoord_3d.data());
+                auto id = problem.AddResidualBlock(cost_function, loss_function_stereo, kf->pose_vector, mp->wcoord_3d.data());
+                stereo_ids.push_back(id);
                 continue;
             }
             if (is_fixed_keyframe && f->is_monocular) {
                 ceres::CostFunction *cost_function = BundleAjustmentFixedKeyFrameMonocular::CreateFixedMonocular(kf, f);
-                problem.AddResidualBlock(cost_function, loss_function_mono, mp->wcoord_3d.data());
+                auto id = problem.AddResidualBlock(cost_function, loss_function_mono, mp->wcoord_3d.data());
+                monocular_ids.push_back(id);
                 continue;
             }
             if (is_fixed_keyframe && !f->is_monocular) {
                 ceres::CostFunction *cost_function = BundleAjustmentFixedKeyFrameStereo::CreateFixedStereo(kf, f);
-                problem.AddResidualBlock(cost_function, loss_function_stereo, mp->wcoord_3d.data());
+                auto id = problem.AddResidualBlock(cost_function, loss_function_stereo, mp->wcoord_3d.data());
+                stereo_ids.push_back(id);
                 continue;
             }
         }
@@ -93,6 +100,40 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
     
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
+
+    for (ceres::ResidualBlockId id : monocular_ids) {
+        ceres::Problem::EvaluateOptions eval_options;
+        eval_options.residual_blocks = {id};  // evaluate this specific block
+        std::vector<double> residuals;
+        double cost;
+        bool ok = problem.Evaluate(eval_options, &cost, &residuals, nullptr, nullptr);
+        if (!ok) {
+            std::cerr << "[ERROR] Failed to evaluate residual for monocular block\n";
+            continue;
+        }
+        double norm = residuals[0]*residuals[0] + residuals[1]*residuals[1];
+        if (fabs(norm) < 10) continue;
+        std::cout << "[MONO] Residual norm: " << norm << "   "
+                  << "residual x: " << residuals[0] << ", y: " << residuals[1] << "\n";
+    }
+
+    for (ceres::ResidualBlockId id : stereo_ids) {
+        ceres::Problem::EvaluateOptions eval_options;
+        eval_options.residual_blocks = {id};
+        std::vector<double> residuals;
+        double cost;
+        bool ok = problem.Evaluate(eval_options, &cost, &residuals, nullptr, nullptr);
+        if (!ok) {
+            std::cerr << "[ERROR] Failed to evaluate residual for stereo block\n";
+            continue;
+        }
+        double norm = residuals[0]*residuals[0] + residuals[1]*residuals[1] + residuals[2]*residuals[2];
+        if (fabs(norm) < 10) continue;
+        std::cout << "[STEREO] Residual norm: " 
+                  << norm << "   " 
+                  << "residual cost: " << cost << "     "
+                  << "residual x: " << residuals[0] << ", y: " << residuals[1] << ", disparity: " << residuals[2] << "\n";
+    }
     if (to_output) {
         std::cout << summary.FullReport() << "\n";
     }
@@ -130,7 +171,7 @@ void delete_outliers(std::unordered_set<MapPoint*>& local_map_points, double chi
             to_delete.push_back(mp);
         }
     }
-    // std::cout << to_delete.size() << " ATATEA PUNCTE AU FOST GASITE DE STERS\n";
+    std::cout << to_delete.size() << " ATATEA PUNCTE AU FOST GASITE DE STERS\n";
     for (MapPoint *mp : to_delete) {
         local_map_points.erase(mp);
     }
@@ -172,7 +213,7 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
     double chi2Stereo = 7.815;
 
     delete_outliers(local_map_points, chi2Mono, chi2Stereo);
-    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 5, false);
+    execute_problem(local_keyframes, fixed_keyframes, local_map_points, 5, true);
     restore_computed_values(local_keyframes, local_map_points);
     delete_outliers(local_map_points, chi2Mono, chi2Stereo);
     
