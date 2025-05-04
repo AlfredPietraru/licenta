@@ -224,7 +224,7 @@ void OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref)
             {
                 MapPoint *mp_ref = ref->features[feature_idx].get_map_point();
                 if (mp_ref == nullptr) continue;
-                const cv::Mat &d1 = ref->orb_descriptors.row(feature_idx);
+                const cv::Mat &d1 = ref->features[feature_idx].descriptor;
                 
                 int bestDist1 = 256;
                 int bestIdx = -1;
@@ -232,7 +232,7 @@ void OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref)
                 
                 for (int feature_curr : f2it->second)
                 {
-                    const cv::Mat &d2 = curr->orb_descriptors.row(feature_curr);
+                    const cv::Mat &d2 = curr->features[feature_curr].descriptor; 
                     int dist = this->ComputeHammingDistance(d1, d2);
                     
                     if (dist < bestDist1)
@@ -289,7 +289,7 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
                 MapPoint* mp = ref1->features[idx1].get_map_point();
                 if (mp != nullptr) continue;
                 cv::KeyPoint kpu1 = ref1->features[idx1].get_undistorted_keypoint();
-                const cv::Mat &d1 = ref1->orb_descriptors.row(idx1);
+                const cv::Mat &d1 = ref1->features[idx1].descriptor;
                 int bestDist = 50;
                 int bestIdx2 = -1;
                 bStereo1 = !ref1->features[idx1].is_monocular;
@@ -299,7 +299,7 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
                     MapPoint* kf2_mp = ref2->features[idx2].get_map_point();
                     if (vbMatched2[idx2] || kf2_mp != nullptr) continue;
                     
-                    const cv::Mat &d2 = ref2->orb_descriptors.row(idx2);
+                    const cv::Mat &d2 = ref2->features[idx2].descriptor;
                     
                     const int dist = ComputeHammingDistance(d1,d2);
                     

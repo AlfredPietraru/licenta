@@ -180,7 +180,7 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
                 continue;
 
             MapPoint* pMP = new MapPoint(kf, f1->idx, f1->get_undistorted_keypoint(), kf->camera_center_world, coordinates,
-                     kf->orb_descriptors.row(correspondence.first));
+                     kf->features[correspondence.first].descriptor);
 
             pMP->increase_how_many_times_seen();
             pMP->increase_how_many_times_seen(); 

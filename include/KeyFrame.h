@@ -11,8 +11,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/features2d/features2d.hpp>
-#include "opencv2/highgui/highgui.hpp"
-#include <opencv2/dnn/dnn.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
@@ -24,7 +22,7 @@ class KeyFrame
 public:
     Sophus::SE3d Tcw;
     Eigen::Matrix3d K;
-    cv::Mat orb_descriptors;
+    // cv::Mat orb_descriptors;
     int current_idx;
     ORBVocabulary *voc;
     DBoW2::BowVector bow_vec;

@@ -93,8 +93,7 @@ void KeyFrame::create_grid_matrix() {
 }
 
 KeyFrame::KeyFrame(KeyFrame* old_kf, std::vector<cv::KeyPoint> &keypoints,
-    std::vector<cv::KeyPoint> &undistored_kps, cv::Mat orb_descriptors, cv::Mat depth_matrix) : K(old_kf->K), 
-        orb_descriptors(orb_descriptors), voc(old_kf->voc), reference_kf(old_kf->reference_kf), reference_idx(old_kf->reference_idx) {
+    std::vector<cv::KeyPoint> &undistored_kps, cv::Mat orb_descriptors, cv::Mat depth_matrix) : K(old_kf->K), voc(old_kf->voc), reference_kf(old_kf->reference_kf), reference_idx(old_kf->reference_idx) {
     this->set_keyframe_position(old_kf->Tcw);
     this->current_idx = old_kf->current_idx + 1;
     this->create_feature_vector(keypoints, undistored_kps, orb_descriptors, depth_matrix);        
@@ -109,8 +108,7 @@ KeyFrame::KeyFrame(KeyFrame* old_kf, std::vector<cv::KeyPoint> &keypoints,
 
 KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints,
      std::vector<cv::KeyPoint> &undistored_kps, cv::Mat orb_descriptors, cv::Mat depth_matrix, int current_idx, 
-     cv::Mat &frame, ORBVocabulary *voc) : K(K), orb_descriptors(orb_descriptors),
-       current_idx(current_idx), voc(voc), reference_kf(nullptr), reference_idx(-1)
+     cv::Mat &frame, ORBVocabulary *voc) : K(K), current_idx(current_idx), voc(voc), reference_kf(nullptr), reference_idx(-1)
 {
     this->set_keyframe_position(Tcw);
     this->create_feature_vector(keypoints, undistored_kps, orb_descriptors, depth_matrix);
@@ -161,9 +159,9 @@ void KeyFrame::compute_bow_representation()
 {
     if (this->bow_vec.size() != 0 && this->features_vec.size() != 0) return;
     std::vector<cv::Mat> vector_descriptors;
-    for (int i = 0; i < this->orb_descriptors.rows; i++)
+    for (int i = 0; i < (int)this->features.size(); i++)
     {
-        vector_descriptors.push_back(this->orb_descriptors.row(i));
+        vector_descriptors.push_back(this->features[i].descriptor);
     }
     this->voc->transform(vector_descriptors, this->bow_vec, this->features_vec, 4);
 }
