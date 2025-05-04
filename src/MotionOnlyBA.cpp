@@ -93,8 +93,8 @@ double MotionOnlyBA::get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Fea
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
     cv::KeyPoint kpu = feature->kpu;
-    residuals[0] = (x - kpu.pt.x) / POW_OCTAVE[kpu.octave];
-    residuals[1] = (y - kpu.pt.y) / POW_OCTAVE[kpu.octave];
+    residuals[0] = (x - kpu.pt.x) / kf->POW_OCTAVE[kpu.octave];
+    residuals[1] = (y - kpu.pt.y) / kf->POW_OCTAVE[kpu.octave];
 
     double disp_pred = kf->K(0, 0) * 0.08 * inv_d;
     double disp_meas = kpu.pt.x - feature->right_coordinate;      
@@ -113,8 +113,8 @@ double MotionOnlyBA::get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
     double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
     cv::KeyPoint kpu = feature->kpu;
-    residuals[0] = (x - kpu.pt.x) / POW_OCTAVE[kpu.octave];
-    residuals[1] = (y - kpu.pt.y) / POW_OCTAVE[kpu.octave];
+    residuals[0] = (x - kpu.pt.x) / kf->POW_OCTAVE[kpu.octave];
+    residuals[1] = (y - kpu.pt.y) / kf->POW_OCTAVE[kpu.octave];
     double a = sqrt(residuals[0] * residuals[0] + residuals[1] * residuals[1]);
     if (a <= sqrt(chi2)) return pow(a, 2) / 2;
     return sqrt(chi2) * a - chi2 / 2;

@@ -83,8 +83,8 @@ int MapPoint::predict_image_scale(double distance) {
     }
     float ratio = this->dmax / distance;
     int scale = ceil(log(ratio) / log(1.2));
-    scale = (scale < 0) ? 0 : scale;
-    scale = (scale >= 8) ? scale - 1 : scale;
+    if (scale < 0) return 0;
+    if (scale > 7) return 7;
     return scale;
 }
 

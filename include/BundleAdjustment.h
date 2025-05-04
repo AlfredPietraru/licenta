@@ -141,7 +141,6 @@ private:
 
 class BundleAdjustment {
 public:
-    // const double POW_OCTAVE[10] = {1, 1.2, 1.44, 1.728, 2.0736, 2.48832, 2.985984, 3.5831808, 4.29981696, 5.159780352};
     BundleAdjustment() {};
     void solve_ceres(Map *mapp, KeyFrame *frame);
 };
