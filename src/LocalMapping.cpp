@@ -9,7 +9,7 @@ void LocalMapping::local_map(KeyFrame *kf) {
     this->compute_map_points(kf);
     this->search_in_neighbours(kf);
     // std::cout << "INCEPE BA\n";
-    bundleAdjustment->solve_ceres(this->mapp, kf);
+    // bundleAdjustment->solve_ceres(this->mapp, kf);
     // std::cout << "SE TERMINA BA\n";
     // this->KeyFrameCulling(kf);
     std::cout << "LOCAL MAP ISI FACE TREABA\n";
@@ -100,8 +100,8 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
         for (std::pair<int, int> correspondence : vMatchedIndices) {
             Feature *f1 = &kf->features[correspondence.first];
             Feature *f2 = &neighbour_kf->features[correspondence.second];
-            isStereo1 = f1->right_coordinate > 1e-6;
-            isStereo2 = f2->right_coordinate > 1e-6;
+            isStereo1 = f1->depth > 1e-6;
+            isStereo2 = f2->depth > 1e-6;
 
             double new_x1 = (f1->get_undistorted_keypoint().pt.x - kf->K(0, 2)) / kf->K(0, 0);
             double new_y1 = (f1->get_undistorted_keypoint().pt.y - kf->K(1, 2)) / kf->K(1, 1);

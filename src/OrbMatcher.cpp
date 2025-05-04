@@ -121,7 +121,7 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
         for (int idx : kps_idx)
         {
             int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
-            if (kf->features[idx].right_coordinate > 1e-6)
+            if (kf->features[idx].depth > 1e-6)
             {
                 double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
                 float er = fabs(fake_rgbd - kf->features[idx].right_coordinate);
@@ -179,7 +179,7 @@ void OrbMatcher::match_frame_map_points(KeyFrame *kf, std::unordered_set<MapPoin
         if (kps_idx.size() == 0) continue;
         for (int idx : kps_idx)
         {
-            if (kf->features[idx].right_coordinate > 1e-6) {
+            if (kf->features[idx].depth > 1e-6) {
                 double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
                 float er = fabs(fake_rgbd - kf->features[idx].right_coordinate);
                 if (er > scale_of_search) continue;
@@ -292,7 +292,7 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
                 const cv::Mat &d1 = ref1->orb_descriptors.row(idx1);
                 int bestDist = 50;
                 int bestIdx2 = -1;
-                bStereo1 = ref1->features[idx1].right_coordinate > 1e-6;
+                bStereo1 = ref1->features[idx1].depth > 1e-6;
 
                 for(size_t idx2 : f2it->second)
                 {
@@ -307,7 +307,7 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
 
                     const cv::KeyPoint &kpu2 = ref2->features[idx2].get_undistorted_keypoint();
 
-                    bStereo2 = ref2->features[idx2].right_coordinate > 1e-6;
+                    bStereo2 = ref2->features[idx2].depth > 1e-6;
                     if(!bStereo1 && !bStereo2)
                     {
                         const float distex = ex - kpu2.pt.x;
@@ -422,11 +422,11 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
             if(kpu.octave < nPredictedLevel-1 || kpu.octave > nPredictedLevel) continue;
             const float ex = u  - kpu.pt.x;
             const float ey = v  - kpu.pt.y;
-            if (pKF->features[kp_idx].right_coordinate <= 1e-6) {
+            if (pKF->features[kp_idx].depth <= 1e-6) {
                 const float e2 = ex*ex+ey*ey;
                 if(e2 / pow(1.2, 2 * kpu.octave) > 5.99) continue;
             } 
-            if (pKF->features[kp_idx].right_coordinate > 1e-6) {
+            if (pKF->features[kp_idx].depth > 1e-6) {
                 const float er = ur - pKF->features[kp_idx].right_coordinate;
                 const float e2 = ex*ex+ey*ey+er*er;
                 if(e2 / pow(1.2, 2 * kpu.octave) > 7.8) continue;

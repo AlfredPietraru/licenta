@@ -24,7 +24,7 @@ class MotionOnlyBA
 {
 public:     
     MotionOnlyBA() {};
-    const double POW_OCTAVE[10] = {1, 1.2, 1.44, 1.728, 2.0736, 2.48832, 2.985984, 3.5831808, 4.29981696, 5.159780352};
+const double POW_OCTAVE[10] = {1, 1.2, 1.44, 1.728, 2.0736, 2.48832, 2.985984, 3.5831808, 4.29981696, 5.159780352};
     Sophus::SE3d solve_ceres(KeyFrame *frame);
     Sophus::SE3d solve_g2o(KeyFrame *frame);
     double get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2);

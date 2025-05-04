@@ -82,8 +82,8 @@ int main(void)
         }
         reader->store_entry(kf);
         reader->increase_idx();
-        if (reader->idx == 225) break;
-    }
+        // if (reader->idx == 225) break;
+}
 
     reader->write_all_entries(mapp);
     auto t2 = high_resolution_clock::now();

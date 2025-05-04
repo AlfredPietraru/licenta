@@ -34,6 +34,7 @@ void KeyFrame::set_keyframe_position(Sophus::SE3d Tcw_new) {
     this->pose_vector[6] = t.z();
 }
 
+
 bool KeyFrame::check_map_point_in_keyframe(MapPoint *mp) {
     bool in_mp_correlations = this->mp_correlations.find(mp) != this->mp_correlations.end();
     bool in_map_points = this->map_points.find(mp) != this->map_points.end();

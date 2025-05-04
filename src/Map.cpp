@@ -425,7 +425,7 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
                 continue;
             for (int idx : kps_idx)
             {
-                if (kf->features[idx].right_coordinate > 1e-6)
+                if (kf->features[idx].depth > 1e-6)
                 {
                     double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
                     float er = fabs(fake_rgbd - kf->features[idx].right_coordinate);
