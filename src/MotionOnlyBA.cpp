@@ -2,6 +2,42 @@
 #include "../include/rotation.h"
 
 using SE3Manifold = ceres::ProductManifold<ceres::QuaternionManifold, ceres::EuclideanManifold<3>>;
+
+#include <ceres/ceres.h>
+#include <sophus/se3.hpp>
+
+// struct SE3RotationPriorCost {
+//     SE3RotationPriorCost(const Sophus::SO3d& R_prior, double weight)
+//         : R_prior_(R_prior), weight_(weight) {}
+
+//     template <typename T>
+//     bool operator()(const T* const se3_raw, T* residuals) const {
+//         const Sophus::SE3<T> T_curr(Eigen::Quaternion<T>(se3_raw[0], se3_raw[1], se3_raw[2], se3_raw[3]), 
+//             Eigen::Vector3d(se3_raw[4], se3_raw[5], se3_raw[6]));
+//         Sophus::SO3<T> R_curr = T_curr.so3();
+//         Sophus::SO3<T> R_pri = R_prior_.so3();
+//         Sophus::SO3<T> R_rel = R_pri.inverse() * R_curr;
+//         Eigen::Matrix<T,3,1> rot_error = R_rel.log();
+
+//         // Apply weight
+//         residuals[0] = T(weight_) * rot_error[0];
+//         residuals[1] = T(weight_) * rot_error[1];
+//         residuals[2] = T(weight_) * rot_error[2];
+
+//         return true;
+//     }
+
+//     static ceres::CostFunction* Create(const Sophus::SO3d& R_prior, double weight) {
+//         return (new ceres::AutoDiffCostFunction<SE3RotationPriorCost, 3, 7>(
+//             new SE3RotationPriorCost(R_prior, weight)));
+//     }
+
+//     Sophus::SO3d R_prior_;
+//     double weight_;
+// };
+
+
+
 class BundleError
 {
 public:
@@ -143,9 +179,9 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf)
         ceres::Problem problem;
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
-        options.function_tolerance = 1e-7;
-        options.gradient_tolerance = 1e-7;
-        options.parameter_tolerance = 1e-7;
+        options.function_tolerance = 1e-8;
+        options.gradient_tolerance = 1e-10;
+        options.parameter_tolerance = 1e-9;
 
         options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
         options.check_gradients = false;

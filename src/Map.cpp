@@ -93,11 +93,11 @@ std::vector<MapPoint*> Map::create_closest_map_points_from_features(KeyFrame *kf
     std::vector<MapPoint *> out;
     std::vector<Feature*> copy_feature;
     for (long unsigned int i = 0; i < kf->features.size(); i++) {
-        if (kf->features[i].depth <= 1e-6 || kf->features[i].depth > 3.2) continue;
+        if (kf->features[i].depth <= 1e-6 || kf->features[i].depth >= 3.2) continue;
         copy_feature.push_back(&kf->features[i]);
     }
     sort(copy_feature.begin(), copy_feature.end(), customComparison);
-    for (int i = 0; i < std::min((int)copy_feature.size(), 100); i++) {
+    for (int i = 0; i < std::min((int)copy_feature.size(), 200); i++) {
         int idx = copy_feature[i]->idx;
         Eigen::Vector4d wcoord = kf->fromImageToWorld(idx);
         MapPoint *mp = new MapPoint(kf, idx, kf->features[idx].kpu, kf->camera_center_world, wcoord, kf->features[idx].descriptor);

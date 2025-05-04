@@ -102,6 +102,7 @@ TumDatasetReader::TumDatasetReader(Config cfg) {
         this->groundtruth_poses.push_back(map_rgb_pose[pair_names.first].pose);
     }
     this->outfile << "# timestamp tx ty tz qx qy qz qw\n";
+    slam_to_tum_R <<  0,  1,  0, -1, 0,  0, 0, 0,  1;
 }   
 
 Sophus::SE3d TumDatasetReader::get_next_groundtruth_pose() {
@@ -146,8 +147,13 @@ void TumDatasetReader::store_entry(KeyFrame *current_kf) {
 void TumDatasetReader::write_entry(Sophus::SE3d pose, int index) {
     std::string path = this->rgb_path[index];
     std::string file_name = extract_timestamp(path);
-    this->outfile << file_name <<  " " << -pose.translation().y() << " " << -pose.translation().x() << " " << pose.translation().z() << " ";
-    this->outfile << pose.unit_quaternion().x() << " " << pose.unit_quaternion().y() << " "  << pose.unit_quaternion().z() << " " << pose.unit_quaternion().w() << std::endl; 
+    Eigen::Matrix3d R_tum = slam_to_tum_R * pose.rotationMatrix();
+    Eigen::Quaterniond q_tum(R_tum);
+    Eigen::Vector3d t_tum = slam_to_tum_R * pose.translation();
+    this->outfile << file_name << " "
+              << t_tum.x() << " " << t_tum.y() << " " << t_tum.z() << " "
+              << q_tum.x() << " " << q_tum.y() << " " << q_tum.z() << " " << q_tum.w()
+              << std::endl;
 }
 
 

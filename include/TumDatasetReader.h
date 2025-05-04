@@ -44,6 +44,7 @@ public:
     std::ofstream outfile;
     std::vector<Sophus::SE3d> groundtruth_poses;
     std::vector<FramePoseEntry> frame_poses;
+    Eigen::Matrix3d slam_to_tum_R;
     int idx = 0;
     Config cfg;
     TumDatasetReader(Config cfg);

@@ -49,7 +49,7 @@ public:
     Eigen::Matrix4d mat_camera_world;
     Eigen::Matrix4d mat_world_camera;
     Eigen::Vector3d camera_center_world;
-    double pose_vector[7];
+    double pose_vector[7] = {1, 0, 0, 0, 0, 0, 0};
     
     KeyFrame();
     KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint>& keypoints, std::vector<cv::KeyPoint>& undistored_kps,
