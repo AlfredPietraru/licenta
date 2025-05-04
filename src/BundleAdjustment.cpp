@@ -65,22 +65,22 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
             bool is_local_keyframe = local_keyframes.find(kf) != local_keyframes.end();
             bool is_fixed_keyframe = fixed_keyframes.find(kf) != fixed_keyframes.end();
             if (is_local_keyframe && f->is_monocular) {
-                ceres::CostFunction *cost_function = BundleAdjustmentError::Create_Variable_Monocular(kf, f);
+                ceres::CostFunction *cost_function = BundleAjustmentVariableKeyFrameMonocular::CreateVariableMonocular(kf, f);
                 problem.AddResidualBlock(cost_function, loss_function_mono, kf->pose_vector, mp->wcoord_3d.data());
                 continue;
             }
             if (is_local_keyframe && !f->is_monocular) {
-                ceres::CostFunction *cost_function = BundleAdjustmentError::Create_Variable_Stereo(kf, f);
+                ceres::CostFunction *cost_function = BundleAjustmentVariableKeyFrameStereo::CreateVariableStereo(kf, f);
                 problem.AddResidualBlock(cost_function, loss_function_stereo, kf->pose_vector, mp->wcoord_3d.data());
                 continue;
             }
             if (is_fixed_keyframe && f->is_monocular) {
-                ceres::CostFunction *cost_function = BundleAdjustmentError::Create_Static_Monocular(kf, f);
+                ceres::CostFunction *cost_function = BundleAjustmentFixedKeyFrameMonocular::CreateFixedMonocular(kf, f);
                 problem.AddResidualBlock(cost_function, loss_function_mono, mp->wcoord_3d.data());
                 continue;
             }
             if (is_fixed_keyframe && !f->is_monocular) {
-                ceres::CostFunction *cost_function = BundleAdjustmentError::Create_Static_Stereo(kf, f);
+                ceres::CostFunction *cost_function = BundleAjustmentFixedKeyFrameStereo::CreateFixedStereo(kf, f);
                 problem.AddResidualBlock(cost_function, loss_function_stereo, mp->wcoord_3d.data());
                 continue;
             }
@@ -104,7 +104,7 @@ void restore_computed_values(std::unordered_set<KeyFrame*>& local_keyframes, std
 }
 
 void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
-    if (mapp->keyframes.size() == 1) return;
+    if (mapp->keyframes.size() <= 2) return;
    std::unordered_set<KeyFrame*> local_keyframes = mapp->get_local_keyframes(frame);
     if (local_keyframes.size() == 0) {
         std::cout << "CEVA E GRESIT IN BUNDLE ADJUSTMENT ACEST KEYFRAME ESTE IZOLAT\n";

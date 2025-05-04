@@ -9,11 +9,9 @@
 #include "rotation.h"
 #include "Map.h"
 
-
-class BundleAdjustmentError
-{
+class BundleAjustmentVariableKeyFrameMonocular {
 public:
-    BundleAdjustmentError(KeyFrame *kf, Feature *f, bool is_monocular) : kf(kf), f(f), is_monocular(is_monocular) {}
+    BundleAjustmentVariableKeyFrameMonocular(KeyFrame *kf, Feature *f) : kf(kf), f(f) {}
 
     template <typename T>
     bool operator()(const T *const pose, const T *map_coordinate, T *residuals) const
@@ -29,14 +27,56 @@ public:
         T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
         residuals[0] = (x - T(f->kpu.pt.x)) / kf->POW_OCTAVE[f->kpu.octave];
         residuals[1] = (y - T(f->kpu.pt.y)) / kf->POW_OCTAVE[f->kpu.octave];
-        if (this->is_monocular) return true;
+        return true;
+    }
 
+    static ceres::CostFunction *CreateVariableMonocular(KeyFrame *kf, Feature *f)
+    {
+        return (new ceres::AutoDiffCostFunction<BundleAjustmentVariableKeyFrameMonocular, 2, 7, 3>(new BundleAjustmentVariableKeyFrameMonocular(kf, f)));
+    }
+
+private:
+    KeyFrame *kf;
+    Feature *f;
+};
+
+class BundleAjustmentVariableKeyFrameStereo {
+public:
+    BundleAjustmentVariableKeyFrameStereo(KeyFrame *kf, Feature *f) : kf(kf), f(f) {}
+    template <typename T>
+    bool operator()(const T *const pose, const T *map_coordinate, T *residuals) const
+    {
+        T camera_coordinates[3];
+        ceres::QuaternionRotatePoint(pose, map_coordinate, camera_coordinates);
+        camera_coordinates[0] += pose[4];
+        camera_coordinates[1] += pose[5];
+        camera_coordinates[2] += pose[6];
+        if (camera_coordinates[2] <= T(1e-1)) camera_coordinates[2] = T(1e-1); 
+        T inv_d = T(1) / camera_coordinates[2];
+        T x = T(kf->K(0, 0)) * camera_coordinates[0] * inv_d + T(kf->K(0, 2));
+        T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
         T disp_pred = T(kf->K(0, 0)) * kf->BASELINE * inv_d;
-        T disp_meas = T(f->kpu.pt.x) - T(f->right_coordinate);      
+        T disp_meas = T(f->kpu.pt.x) - T(f->right_coordinate);   
+
+        residuals[0] = (x - T(f->kpu.pt.x)) / kf->POW_OCTAVE[f->kpu.octave];
+        residuals[1] = (y - T(f->kpu.pt.y)) / kf->POW_OCTAVE[f->kpu.octave];   
         residuals[2] = (disp_pred - disp_meas) / kf->POW_OCTAVE[f->kpu.octave];
         return true;
     }
 
+    static ceres::CostFunction *CreateVariableStereo(KeyFrame *kf, Feature *f)
+    {
+        return (new ceres::AutoDiffCostFunction<BundleAjustmentVariableKeyFrameStereo, 3, 7, 3>(new BundleAjustmentVariableKeyFrameStereo(kf, f)));
+    }
+
+private:
+    KeyFrame *kf;
+    Feature *f;
+};
+
+class BundleAjustmentFixedKeyFrameMonocular {
+public:
+    BundleAjustmentFixedKeyFrameMonocular(KeyFrame *kf, Feature *f) : kf(kf), f(f) {}
     template <typename T>
     bool operator()(const T *const map_coordinate, T *residuals) const
     {
@@ -51,38 +91,52 @@ public:
         T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
         residuals[0] = (x - T(f->kpu.pt.x)) / kf->POW_OCTAVE[f->kpu.octave];
         residuals[1] = (y - T(f->kpu.pt.y)) / kf->POW_OCTAVE[f->kpu.octave];
-        if (this->is_monocular) return true;
-
-        T disp_pred = T(kf->K(0, 0)) * kf->BASELINE * inv_d;
-        T disp_meas = T(f->kpu.pt.x) - T(f->right_coordinate);      
-        residuals[2] = (disp_pred - disp_meas) / kf->POW_OCTAVE[f->kpu.octave];
         return true;
     }
 
-    static ceres::CostFunction *Create_Variable_Monocular(KeyFrame *kf, Feature *f)
+    static ceres::CostFunction *CreateFixedMonocular(KeyFrame *kf, Feature *f)
     {
-        return (new ceres::AutoDiffCostFunction<BundleAdjustmentError, 2, 7, 3>(new BundleAdjustmentError(kf, f, true)));
-    }
-
-    static ceres::CostFunction *Create_Static_Monocular(KeyFrame *kf, Feature *f)
-    {
-        return (new ceres::AutoDiffCostFunction<BundleAdjustmentError, 2, 3>(new BundleAdjustmentError(kf, f, true)));
-    }
-
-    static ceres::CostFunction *Create_Variable_Stereo(KeyFrame *kf, Feature *f)
-    {
-        return (new ceres::AutoDiffCostFunction<BundleAdjustmentError, 3, 7, 3>(new BundleAdjustmentError(kf, f, false)));
-    }
-
-    static ceres::CostFunction *Create_Static_Stereo(KeyFrame *kf, Feature *f)
-    {
-        return (new ceres::AutoDiffCostFunction<BundleAdjustmentError, 3, 3>(new BundleAdjustmentError(kf, f, false)));
+        return (new ceres::AutoDiffCostFunction<BundleAjustmentFixedKeyFrameMonocular, 2, 3>(new BundleAjustmentFixedKeyFrameMonocular(kf, f)));
     }
 
 private:
     KeyFrame *kf;
     Feature *f;
-    bool is_monocular;
+};
+
+class BundleAjustmentFixedKeyFrameStereo {
+
+public:
+    BundleAjustmentFixedKeyFrameStereo(KeyFrame *kf, Feature *f) : kf(kf), f(f) {}
+
+    template <typename T>
+    bool operator()(const T *const map_coordinate, T *residuals) const
+    {
+        T camera_coordinates[3];
+        ceres::QuaternionRotatePoint((T*)kf->pose_vector, map_coordinate, camera_coordinates);
+        camera_coordinates[0] += (T)kf->pose_vector[4];
+        camera_coordinates[1] += (T)kf->pose_vector[5];
+        camera_coordinates[2] += (T)kf->pose_vector[6];
+        if (camera_coordinates[2] <= T(1e-1)) camera_coordinates[2] = T(1e-1); 
+        T inv_d = T(1) / camera_coordinates[2];
+        T x = T(kf->K(0, 0)) * camera_coordinates[0] * inv_d + T(kf->K(0, 2));
+        T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
+        T disp_pred = T(kf->K(0, 0)) * kf->BASELINE * inv_d;
+        T disp_meas = T(f->kpu.pt.x) - T(f->right_coordinate);      
+        residuals[0] = (x - T(f->kpu.pt.x)) / kf->POW_OCTAVE[f->kpu.octave];
+        residuals[1] = (y - T(f->kpu.pt.y)) / kf->POW_OCTAVE[f->kpu.octave];
+        residuals[2] = (disp_pred - disp_meas) / kf->POW_OCTAVE[f->kpu.octave];
+        return true;
+    }
+
+    static ceres::CostFunction *CreateFixedStereo(KeyFrame *kf, Feature *f)
+    {
+        return (new ceres::AutoDiffCostFunction<BundleAjustmentFixedKeyFrameStereo, 3, 3>(new BundleAjustmentFixedKeyFrameStereo(kf, f)));
+    }
+
+private:
+    KeyFrame *kf;
+    Feature *f;
 };
 
 class BundleAdjustment {
