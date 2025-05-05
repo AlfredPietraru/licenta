@@ -66,17 +66,6 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf, bool display)
     
     const float chi2Mono[4]={5.991, 5.991, 5.991, 5.991};
     const float chi2Stereo[4]={7.815, 7.815, 7.815, 7.815};
-    std::unordered_map<MapPoint *, Feature *> mono_matches;
-    std::unordered_map<MapPoint *, Feature *> rgbd_matches;
-    for (auto it = kf->mp_correlations.begin(); it != kf->mp_correlations.end(); it++) {
-        if (it->second->is_monocular)
-        {
-            mono_matches.insert({it->first, it->second});
-            continue;
-        }
-        rgbd_matches.insert({it->first, it->second});
-    }
-
 
     for (int i = 0; i < 4; i++)
     {
@@ -95,25 +84,26 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf, bool display)
         
         ceres::LossFunction *loss_function_mono = new ceres::HuberLoss(sqrt(chi2Mono[i]));
         ceres::LossFunction *loss_function_stereo = new ceres::HuberLoss(sqrt(chi2Stereo[i]));
-        
-        for (auto it = mono_matches.begin(); it != mono_matches.end(); it++) {
-            MapPoint *mp = it->first;
-            if (kf->check_map_point_outlier(mp))  continue;
-            ceres::CostFunction *cost_function;
-            cost_function = BundleError::Create_Monocular(kf, mp, it->second);
-            problem.AddResidualBlock(cost_function, loss_function_mono, kf->pose_vector);
-        }
-
-        for (auto it = rgbd_matches.begin(); it != rgbd_matches.end(); it++) {
-            MapPoint *mp = it->first;
-            if (kf->check_map_point_outlier(mp))  continue;
-            ceres::CostFunction *cost_function;
-            cost_function = BundleError::Create_Stereo(kf, mp, it->second);    
-            problem.AddResidualBlock(cost_function, loss_function_stereo, kf->pose_vector);
-        }
 
         problem.AddParameterBlock(kf->pose_vector, 7);
         problem.SetManifold(kf->pose_vector, new SE3Manifold());
+
+        for (std::pair<MapPoint*, Feature*> it : kf->mp_correlations) {
+            MapPoint *mp = it.first;
+            Feature *f = it.second;
+            if (kf->check_map_point_outlier(mp)) continue;
+            if (f->is_monocular) {
+                ceres::CostFunction *cost_function;
+                cost_function = BundleError::Create_Monocular(kf, mp, f);
+                problem.AddResidualBlock(cost_function, loss_function_mono, kf->pose_vector);   
+                continue; 
+            }
+            if (!f->is_monocular) {
+                ceres::CostFunction *cost_function;
+                cost_function = BundleError::Create_Stereo(kf, mp, f);    
+                problem.AddResidualBlock(cost_function, loss_function_stereo, kf->pose_vector);
+            }
+        }
 
         ceres::Solver::Summary summary;
         ceres::Solve(options, &problem, &summary);
@@ -123,24 +113,26 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf, bool display)
 
         kf->set_keyframe_position(kf->compute_pose()); 
         double error;
-        
-        for (auto it = mono_matches.begin(); it != mono_matches.end(); it++) {
-            MapPoint *mp = it->first;
-            error = Common::get_monocular_reprojection_error(kf, mp, it->second, chi2Mono[i]);  
-            if (error > chi2Mono[i]) {
-                kf->add_outlier_element(mp);
-            } else {
-                kf->remove_outlier_element(mp);
-            }
-        }
 
-        for (auto it = rgbd_matches.begin(); it != rgbd_matches.end(); it++) {
-            MapPoint *mp = it->first;
-            error = Common::get_rgbd_reprojection_error(kf, mp, it->second, chi2Stereo[i]);
-            if (error > chi2Stereo[i]) {
-                kf->add_outlier_element(mp);
-            } else {
-                kf->remove_outlier_element(mp);
+        for (std::pair<MapPoint*, Feature*> it : kf->mp_correlations) {
+            MapPoint *mp = it.first;
+            Feature *f = it.second;
+            if (f->is_monocular) {
+                error = Common::get_monocular_reprojection_error(kf, mp, f, chi2Mono[i]);  
+                if (error > chi2Mono[i]) {
+                    kf->add_outlier_element(mp);
+                } else {
+                    kf->remove_outlier_element(mp);
+                }
+                continue; 
+            }
+            if (!f->is_monocular) {
+                error = Common::get_rgbd_reprojection_error(kf, mp, f, chi2Stereo[i]);
+                if (error > chi2Stereo[i]) {
+                    kf->add_outlier_element(mp);
+                } else {
+                    kf->remove_outlier_element(mp);
+                }
             }
         }
     }

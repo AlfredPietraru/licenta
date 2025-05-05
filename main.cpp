@@ -26,9 +26,17 @@ using std::chrono::milliseconds;
 // finalizare thread the local mapping 
 
 TumDatasetReader *reader;
+Tracker *tracker;
+int total_tracking_duration = 0;
+int total_local_mapping_duration = 0;
 void signalHandler(int signum) {
     std::cout << "Interrupt signal (" << signum << ") received.\n";
     reader->write_all_entries();
+    std::cout << tracker->reference_kf->reference_idx << " atatea keyframe-uri avute\n";
+    std::cout << total_tracking_duration / 1000 << " atat a durat tracking sa faaca\n";
+    std::cout << tracker->total_tracking_during_matching / 1000 << " tracking between feature matching\n";
+    std::cout << tracker->total_tracking_during_local_map / 1000 << " atat a durat doar local map matching\n";
+    std::cout << total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n";
     reader->outfile.close();
     exit(signum);
 }
@@ -61,11 +69,9 @@ int main()
     Map *mapp = new Map();
     reader = new TumDatasetReader(cfg, mapp); 
     LocalMapping *local_mapper = new LocalMapping(mapp);
-    Tracker *tracker = new Tracker(mapp, cfg, voc, orb_matcher_cfg);
+    tracker = new Tracker(mapp, cfg, voc, orb_matcher_cfg);
 
     auto t1 = high_resolution_clock::now();
-    int total_tracking_duration = 0;
-    int total_local_mapping_duration = 0;
     while(!reader->should_end()) {
         cv::Mat frame = reader->get_next_frame(); 
         cv::Mat depth = reader->get_next_depth();   
@@ -91,6 +97,8 @@ int main()
     std::cout << duration_cast<seconds>(t2 - t1).count() << "s aici atata a durat\n\n";  
     std::cout << tracker->reference_kf->reference_idx << " atatea keyframe-uri avute\n";
     std::cout << total_tracking_duration / 1000 << " atat a durat tracking sa faaca\n";
+    std::cout << tracker->total_tracking_during_matching / 1000 << " tracking between feature matching\n";
+    std::cout << tracker->total_tracking_during_local_map / 1000 << " atat a durat doar local map matching\n";
     std::cout << total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n"; 
 }
 

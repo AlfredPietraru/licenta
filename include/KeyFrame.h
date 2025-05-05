@@ -33,7 +33,6 @@ public:
 
     std::vector<Feature> features;
     std::unordered_map<MapPoint*, Feature*> mp_correlations; 
-    // std::unordered_set<MapPoint*> map_points;
     std::unordered_set<MapPoint*> outliers;
 
     const int GRID_HEIGHT = 48;
@@ -41,7 +40,7 @@ public:
     int currently_matched_points = 0;
     std::vector<std::vector<std::vector<int>>> grid;
     const double BASELINE = 0.08;
-    float minX, maxX, minY, maxY;
+    double minX, maxX, minY, maxY;
 
     Eigen::Matrix4d mat_camera_world;
     Eigen::Matrix4d mat_world_camera;

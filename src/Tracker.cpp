@@ -92,18 +92,20 @@ void Tracker::tracking_was_lost()
 
 bool Tracker::Is_KeyFrame_needed()
 {
-    float fraction = mapp->keyframes.size() <= 2 ? 0.75f : 0.4f;
-    int nr_references = (int)mapp->keyframes.size() <= 2 ? 2 : 3;
-    int points_seen_from_multiple_frames_reference = this->reference_kf->get_map_points_seen_from_multiple_frames(nr_references);
-    bool weak_good_map_points_tracking = current_kf->mp_correlations.size() <= 0.25 * points_seen_from_multiple_frames_reference;
-    bool needToInsertClose = this->current_kf->check_number_close_points();
-    bool c1 = (this->current_kf->current_idx - this->reference_kf->current_idx) >= 30;
-    bool c2 = weak_good_map_points_tracking || needToInsertClose;
-    bool c3 = ((current_kf->mp_correlations.size() < points_seen_from_multiple_frames_reference * fraction) || needToInsertClose) && (current_kf->mp_correlations.size() > 15);
-    // std::cout << current_kf->map_points.size() << " atatea puncte urmarite in track local map\n";
+    const bool at_the_beginning = mapp->keyframes.size() <= 2;
+    float fraction = at_the_beginning * 0.75f + 0.4f * (!at_the_beginning);
+    int nr_references = at_the_beginning * 2 + 3 * (!at_the_beginning);
+    const int nr_points_matched = (int)current_kf->mp_correlations.size();
+    const int points_seen_from_multiple_frames_reference = this->reference_kf->get_map_points_seen_from_multiple_frames(nr_references);
+    const bool weak_good_map_points_tracking = nr_points_matched <= 0.25 * points_seen_from_multiple_frames_reference;
+    const bool needToInsertClose = this->current_kf->check_number_close_points();
+    const bool c1 = (this->current_kf->current_idx - this->reference_kf->current_idx) >= 30;
+    const bool c2 = weak_good_map_points_tracking || needToInsertClose;
+    const bool c3 = ((nr_points_matched < points_seen_from_multiple_frames_reference * fraction) || needToInsertClose) && (nr_points_matched > 15);
+    
     if ((c1 || c2) && c3)
     {
-        std::cout << current_kf->mp_correlations.size() << " atatea puncte urmarite in track local map\n";
+        std::cout << nr_points_matched << " atatea puncte urmarite in track local map\n";
         std::cout << points_seen_from_multiple_frames_reference << " atatea puncte urmarite din mai multe cadre\n";
         std::cout << "conditions that lead to that " << c1 << " " << weak_good_map_points_tracking << " " << needToInsertClose << " " << c3 << "\n\n";
     }
@@ -211,6 +213,7 @@ void Tracker::TrackLocalMap(Map *mapp)
 
 KeyFrame *Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose)
 {
+    auto start = high_resolution_clock::now();
     this->get_current_key_frame(frame, depth);
     if (this->is_first_keyframe)
     {
@@ -235,7 +238,14 @@ KeyFrame *Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose
             this->TrackReferenceKeyFrame();
         }
     }
+    auto end = high_resolution_clock::now();
+    total_tracking_during_matching += duration_cast<milliseconds>(end - start).count();
+
+    start = high_resolution_clock::now();
     this->TrackLocalMap(mapp);
+    end = high_resolution_clock::now();
+    total_tracking_during_local_map += duration_cast<milliseconds>(end - start).count();
+
     compute_difference_between_positions(this->current_kf->Tcw, ground_truth_pose, false);
     this->current_kf->isKeyFrame = this->Is_KeyFrame_needed();
 

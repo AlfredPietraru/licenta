@@ -213,34 +213,23 @@ std::vector<cv::KeyPoint> KeyFrame::get_all_keypoints()
 
 std::vector<int> KeyFrame::get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave)
 {
-    int u_min = std::floor(u - window);
-    u_min = (u_min < this->minX) ? this->minX : (u_min >= this->maxX) ? this->maxX - 1
-    : u_min;
-    int u_max = std::ceil(u + window);
-    u_max = (u_max < this->minX) ? this->minX : (u_max >= this->maxX) ? this->maxX - 1
-    : u_max;
-    int v_min = std::floor(v - window);
-    v_min = (v_min < this->minY) ? this->minY : (v_min >= this->maxY) ? this->maxY - 1
-    : v_min;
-    int v_max = std::ceil(v + window);
-    v_max = (v_max < this->minY) ? this->minY : (v_max >= this->maxY) ? this->maxY - 1
-    : v_max;
-    
+    const int min_bin_u = std::max(u - window, this->minX) / GRID_WIDTH;
+    const int max_bin_u = std::min(u + window, this->maxX - 1) / GRID_WIDTH;
+    const int min_bin_v = std::max(v - window, this->minY) / GRID_HEIGHT;
+    const int max_bin_v = std::min(v + window, this->maxY - 1) / GRID_HEIGHT;
     std::vector<int> kps_idx;
-    int min_bin_u = u_min / GRID_WIDTH;
-    int max_bin_u = u_max / GRID_WIDTH;
-    int min_bin_v = v_min / GRID_HEIGHT;
-    int max_bin_v = v_max / GRID_HEIGHT;
+    kps_idx.reserve((max_bin_u - min_bin_u + 1) * (max_bin_v - min_bin_v + 1) * 5);
     for (int i = min_bin_u; i <= max_bin_u; i++)
     {
         for (int j = min_bin_v; j <= max_bin_v; j++)
         {
+            if (this->grid[j][i].empty()) continue;
             for (int idx : this->grid[j][i]) {
-                cv::KeyPoint kpu = this->features[idx].kpu;
+                const cv::KeyPoint kpu = this->features[idx].kpu;
                 if (kpu.octave < minOctave || kpu.octave > maxOctave)
                     continue;
-                float xdist = kpu.pt.x - u;
-                float ydist = kpu.pt.y - v;
+                const float xdist = kpu.pt.x - u;
+                const float ydist = kpu.pt.y - v;
                 if (fabs(xdist) > window || fabs(ydist) > window)
                     continue;
                 kps_idx.push_back(idx);

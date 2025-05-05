@@ -384,10 +384,10 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
     double u, v, d;
     for (KeyFrame *local_map_kf : second_degree_key_frames)
     {
-        for (std::pair<MapPoint*, Feature*> it : local_map_kf->mp_correlations)
+        for (Feature f : local_map_kf->features)
         {
-            MapPoint *mp = it.first;
-            if (kf->check_map_point_outlier(mp))
+            MapPoint *mp = f.get_map_point();
+            if (mp == nullptr || kf->check_map_point_outlier(mp) || kf->check_map_point_in_keyframe(mp))
                 continue;
             point_camera_coordinates = kf->mat_camera_world * mp->wcoord;
             d = point_camera_coordinates(2);

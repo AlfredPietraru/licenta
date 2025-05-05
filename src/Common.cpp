@@ -3,7 +3,7 @@
 
 double Common::get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2) {
     double residuals[3];
-    Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
+    Eigen::Vector4d camera_coordinates = kf->mat_camera_world * mp->wcoord;
     if (camera_coordinates[2] <= 1e-1) return 100000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
@@ -22,7 +22,7 @@ double Common::get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* 
 
 double Common::get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2) {
     double residuals[2];
-    Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
+    Eigen::Vector4d camera_coordinates = kf->mat_camera_world * mp->wcoord;
     if (camera_coordinates[2] <= 1e-1) return 100000;
     double inv_d = 1 / camera_coordinates[2];
     double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
