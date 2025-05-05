@@ -33,7 +33,7 @@ public:
 
     std::vector<Feature> features;
     std::unordered_map<MapPoint*, Feature*> mp_correlations; 
-    std::unordered_set<MapPoint*> map_points;
+    // std::unordered_set<MapPoint*> map_points;
     std::unordered_set<MapPoint*> outliers;
 
     const int GRID_HEIGHT = 48;
@@ -72,7 +72,8 @@ public:
     void set_keyframe_position(Sophus::SE3d Tcw_new);
     void debug_keyframe(cv::Mat frame, int miliseconds);
     int get_map_points_seen_from_multiple_frames(int nr_frames);
-    
+    std::vector<MapPoint*> get_map_points(); 
+
     bool debug_keyframe_valid();
 };
 

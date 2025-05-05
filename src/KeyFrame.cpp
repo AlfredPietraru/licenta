@@ -18,6 +18,15 @@ bool KeyFrame::check_map_point_outlier(MapPoint *mp)
     return this->outliers.find(mp) != this->outliers.end(); 
 }
 
+
+std::vector<MapPoint*> KeyFrame::get_map_points() {
+    std::vector<MapPoint*> mps;
+    for (std::pair<MapPoint*, Feature*> it : this->mp_correlations) {
+        mps.push_back(it.first);
+    }
+    return mps;
+}
+
 void KeyFrame::set_keyframe_position(Sophus::SE3d Tcw_new) {
     this->Tcw = Tcw_new;
     this->mat_camera_world = Tcw_new.matrix(); 
@@ -37,11 +46,10 @@ void KeyFrame::set_keyframe_position(Sophus::SE3d Tcw_new) {
 
 bool KeyFrame::check_map_point_in_keyframe(MapPoint *mp) {
     bool in_mp_correlations = this->mp_correlations.find(mp) != this->mp_correlations.end();
-    bool in_map_points = this->map_points.find(mp) != this->map_points.end();
     bool in_features = in_mp_correlations ? this->mp_correlations[mp]->get_map_point() == mp : in_mp_correlations;
-    if (in_mp_correlations && in_map_points && in_features) return true;
-    if (!in_mp_correlations && !in_map_points && !in_features) return false;
-    if (in_mp_correlations != in_map_points || in_map_points != in_features) {
+    if (in_mp_correlations && in_features) return true;
+    if (!in_mp_correlations && !in_features) return false;
+    if (in_mp_correlations != in_features) {
         std::cout << "NU S-A PUTUT NU ESTE SINCRONIZAT KEYFRAME-ul\n";
     }
     return false;
@@ -103,7 +111,6 @@ KeyFrame::KeyFrame(KeyFrame* old_kf, std::vector<cv::KeyPoint> &keypoints,
     this->minY = old_kf->minY;
     this->maxY = old_kf->maxY;
     this->mp_correlations.reserve(this->features.size() * 1.3); 
-    this->map_points.reserve(this->features.size() * 1.3);
 }
 
 KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints,
@@ -145,8 +152,7 @@ KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> dist
         this->minY = 0.0f;
         this->maxY = frame.rows;
     }
-    this->mp_correlations.reserve(this->features.size() * 1.3); 
-    this->map_points.reserve(this->features.size() * 1.3);
+    this->mp_correlations.reserve(this->features.size() * 1.3);
 }
 
 
@@ -187,7 +193,9 @@ Eigen::Vector4d KeyFrame::fromImageToWorld(int kp_idx)
 
 int KeyFrame::get_map_points_seen_from_multiple_frames(int nr_frames) {
     int out = 0;
-    for (MapPoint *mp : this->map_points) {
+    for (Feature f : this->features) {
+        MapPoint *mp = f.get_map_point();
+        if (mp == nullptr) continue;
         if ((int)mp->data.size() >= nr_frames) out++;
     }
     return out;
@@ -262,9 +270,9 @@ void KeyFrame::debug_keyframe(cv::Mat frame, int miliseconds)
 
 
 bool KeyFrame::debug_keyframe_valid() {
-    for (MapPoint *mp : this->map_points) {
-        if (this->mp_correlations.find(mp) == this->mp_correlations.end()) return false;
-        Feature *f = this->mp_correlations[mp];
+    for (std::pair<MapPoint*, Feature*> it : this->mp_correlations) {
+        MapPoint *mp = it.first;
+        Feature *f = it.second;
         if (f->get_map_point() != mp) return false;
         if (this->outliers.find(mp) != this->outliers.end()) return false;
     }

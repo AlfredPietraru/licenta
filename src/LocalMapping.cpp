@@ -285,7 +285,7 @@ void LocalMapping::KeyFrameCulling(KeyFrame *kf)
             }
             nRedundantObservations += (int)(nObs >= 3);
         }
-        if(nRedundantObservations > 0.9 * kf->map_points.size())
+        if(nRedundantObservations > 0.9 * kf->mp_correlations.size())
             to_delete_keyframes.push_back(kf);
     }
     // std::cout << to_delete_keyframes.size() << " aceste keyframe-uri ar putea fi sterse to_delete_keyframes\n";

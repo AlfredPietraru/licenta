@@ -21,7 +21,11 @@ std::unordered_set<MapPoint *> Map::get_all_map_points()
     std::unordered_set<MapPoint *> out;
     for (long unsigned int i = 0; i < keyframes.size(); i++)
     {
-        out.insert(keyframes[i]->map_points.begin(), keyframes[i]->map_points.end());
+        for (int j = 0; j < (int)keyframes[i]->features.size(); j++) {
+            MapPoint *mp = keyframes[i]->features[j].get_map_point();
+            if (mp == nullptr) continue;
+            out.insert(mp);    
+        }
     }
     return out;
 }
@@ -29,8 +33,9 @@ std::unordered_set<MapPoint *> Map::get_all_map_points()
 std::unordered_map<KeyFrame *, int> Map::get_keyframes_connected(KeyFrame *new_kf, int limit)
 {
     std::unordered_map<KeyFrame *, int> edges_new_keyframe;
-    for (MapPoint *mp : new_kf->map_points)
+    for (std::pair<MapPoint*, Feature*> it : new_kf->mp_correlations)
     {
+        MapPoint *mp = it.first;
         for (KeyFrame *kf : mp->keyframes)
         {
             if (kf == new_kf)
@@ -154,16 +159,15 @@ bool Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp)
         return false;
     }
 
-    bool in_map_points = kf->map_points.find(mp) != kf->map_points.end();
     bool in_correlations = kf->mp_correlations.find(mp) != kf->mp_correlations.end();
     bool in_features = in_correlations ? (kf->mp_correlations[mp]->get_map_point() == mp) : in_correlations;
-    if (in_map_points && in_correlations && in_features)
+    if (in_correlations && in_features)
         return false;
 
-    if (in_map_points != in_correlations || in_correlations != in_features)
+    if (in_correlations != in_features)
     {
-        std::cout << kf->map_points.size() << " " << kf->mp_correlations.size() << "\n";
-        std::cout << in_map_points << " " << in_correlations << " " << in_features << "\n";
+        std::cout << kf->mp_correlations.size() << "\n";
+        std::cout << in_correlations << " " << in_features << "\n";
         std::cout << "NU S-A PUTUT ADAUGA MAP POINT IN KEYFRAME, KEYFRAME NESINCRONIZAT\n";
         return false;
     }
@@ -182,7 +186,6 @@ bool Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp)
     mp->increase_number_associations(1);
     f->set_map_point(mp, current_hamming_distance);
     kf->mp_correlations.insert({mp, f});
-    kf->map_points.insert(mp);
     return true;
 }
 
@@ -194,13 +197,12 @@ bool Map::remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp)
         return false;
     }
 
-    bool not_in_map_points = kf->map_points.find(mp) == kf->map_points.end();
     bool not_in_correlations = kf->mp_correlations.find(mp) == kf->mp_correlations.end();
     bool not_in_features = not_in_correlations ? not_in_correlations : kf->mp_correlations[mp]->get_map_point() != mp;
 
-    if (not_in_map_points && not_in_correlations && not_in_features)
+    if (not_in_correlations && not_in_features)
         return true;
-    if (not_in_correlations != not_in_features || not_in_features != not_in_map_points)
+    if (not_in_correlations != not_in_features)
     {
         std::cout << "KEYFRAME UL NU ESTE SINCRONIZAT LA STERGERE\n";
         return false;
@@ -210,7 +212,6 @@ bool Map::remove_map_point_from_keyframe(KeyFrame *kf, MapPoint *mp)
     Feature *f = kf->mp_correlations[mp];
     f->unmatch_map_point();
     kf->mp_correlations.erase(mp);
-    kf->map_points.erase(mp);
     return true;
 }
 
@@ -222,17 +223,16 @@ bool Map::add_keyframe_reference_to_map_point(MapPoint *mp, Feature *f, KeyFrame
         return false;
     }
 
-    bool not_in_map_points = kf->map_points.find(mp) == kf->map_points.end();
     bool not_in_correlations = kf->mp_correlations.find(mp) == kf->mp_correlations.end();
     bool not_in_features = not_in_correlations ? not_in_correlations : kf->mp_correlations[mp]->get_map_point() != mp;
     bool already_found_in_keyframe = mp->find_keyframe(kf);
 
-    if (not_in_map_points && not_in_correlations && not_in_features)
+    if (not_in_correlations && not_in_features)
     {
         std::cout << "NU S-A PUTUT REALIZA ADAUGAREA KEYFRAME LA REFERINTA MAP POINT NU EXISTA PUNCTUL IN KEYFRAME\n";
         return false;
     }
-    if (not_in_map_points != not_in_correlations || not_in_features != not_in_correlations)
+    if (not_in_features != not_in_correlations)
     {
         std::cout << "NU S-A PUTUT REALIZA ADAUGAREA KEYFRAME LA REFERINTA MISMATCH IN KEYFRAME\n";
         return false;
@@ -338,9 +338,10 @@ bool Map::update_graph_connections(KeyFrame *kf1, KeyFrame *kf2)
         return false;
     }
     int common_values = 0;
-    for (MapPoint *mp : kf1->map_points)
+    for (std::pair<MapPoint*, Feature*> it : kf1->mp_correlations)
     {
-        if (kf2->map_points.find(mp) != kf2->map_points.end())
+        MapPoint *mp = it.first;
+        if (kf2->mp_correlations.find(mp) != kf2->mp_correlations.end())
             common_values++;
     }
     if (common_values < 15)
@@ -383,8 +384,9 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
     double u, v, d;
     for (KeyFrame *local_map_kf : second_degree_key_frames)
     {
-        for (MapPoint *mp : local_map_kf->map_points)
+        for (std::pair<MapPoint*, Feature*> it : local_map_kf->mp_correlations)
         {
+            MapPoint *mp = it.first;
             if (kf->check_map_point_outlier(mp))
                 continue;
             point_camera_coordinates = kf->mat_camera_world * mp->wcoord;
@@ -493,7 +495,8 @@ bool Map::check_new_map_point_better(Feature *f, MapPoint *new_map_point)
 bool Map::debug_map_points()
 {
     for (KeyFrame *kf : this->keyframes) {
-        for (MapPoint *mp : kf->map_points) {
+        for (std::pair<MapPoint*, Feature*> it : kf->mp_correlations) {
+            MapPoint *mp = it.first;
             for (KeyFrame *kff : mp->keyframes) {
                 if (!kff->check_map_point_in_keyframe(mp)) return false;
             }

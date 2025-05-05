@@ -165,7 +165,8 @@ void BundleAdjustment::solve_ceres(Map *mapp, KeyFrame *frame) {
 
     std::unordered_set<MapPoint*> local_map_points;
     for (KeyFrame *kf : local_keyframes) {
-        local_map_points.insert(kf->map_points.begin(), kf->map_points.end());
+        std::vector<MapPoint*> mps = kf->get_map_points();  
+        local_map_points.insert(mps.begin(), mps.end());
     }
 
     if (local_map_points.size() == 0) {

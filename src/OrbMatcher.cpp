@@ -309,9 +309,9 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
     const float &cy = pKF->K(1, 2);
 
     int nFused=0;
-    std::unordered_set<MapPoint*> copy_map_points(source_kf->map_points.begin(), source_kf->map_points.end());
+    // std::unordered_set<MapPoint*> copy_map_points(source_kf->map_points.begin(), source_kf->map_points.end());
     int out = 0;
-    for(MapPoint *source_mp : copy_map_points)
+    for(MapPoint *source_mp : source_kf->get_map_points())
     {
         if(pKF->check_map_point_in_keyframe(source_mp)) continue;
 
