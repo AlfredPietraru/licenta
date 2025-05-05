@@ -34,7 +34,6 @@ public:
     
     void match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref);
     void match_consecutive_frames(KeyFrame* kf, KeyFrame *kf2, int window);
-    void match_frame_map_points(KeyFrame *curr, std::unordered_set<MapPoint*>& map_points, int window_size);
     static std::vector<std::pair<int, int>> search_for_triangulation(KeyFrame *ref1, KeyFrame *ref2, Eigen::Matrix3d fundamental_matrix);
     static int ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b); 
     static bool CheckDistEpipolarLine(const cv::KeyPoint &kp1,const cv::KeyPoint &kp2,const Eigen::Matrix3d &F12);

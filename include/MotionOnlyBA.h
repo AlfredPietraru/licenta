@@ -1,7 +1,6 @@
 #ifndef BUNDLE_ADJUSTMENT_H
 #define BUNDLE_ADJUSTMENT_H
 
-#include <iostream>
 #include <Eigen/Core>
 #include <opencv2/core/core.hpp>
 #include "ceres/ceres.h"
@@ -15,7 +14,9 @@
 #include "g2o/core/robust_kernel_impl.h"
 #include "g2o/solvers/dense/linear_solver_dense.h"
 #include "g2o/types/sim3/types_seven_dof_expmap.h"
+#include "../include/rotation.h"
 #include <iostream>
+#include "Common.h"
 
 typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>> BlockSolverType;
 typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType;
@@ -26,8 +27,6 @@ public:
     MotionOnlyBA() {};
     Sophus::SE3d solve_ceres(KeyFrame *frame, bool display);
     Sophus::SE3d solve_g2o(KeyFrame *frame);
-    double get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2);
-    double get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2);
 };
 
 #endif

@@ -103,7 +103,7 @@ TumDatasetReader::TumDatasetReader(Config cfg, Map *mapp) {
         this->groundtruth_poses.push_back(map_rgb_pose[pair_names.first].pose);
     }
     this->outfile << "# timestamp tx ty tz qx qy qz qw\n";
-    slam_to_tum_R <<  0,  1,  0, -1, 0,  0, 0, 0,  1;
+    slam_to_tum_R <<  -1,  0,  0, 0, -1, 0, 0, 0,  1;
 }   
 
 Sophus::SE3d TumDatasetReader::get_next_groundtruth_pose() {
@@ -152,8 +152,8 @@ void TumDatasetReader::write_entry(Sophus::SE3d pose, int index) {
     Eigen::Quaterniond q_tum(R_tum);
     Eigen::Vector3d t_tum = pose.translation();
     this->outfile << file_name << " "
-              << t_tum.y() << " " << t_tum.x() << " " << t_tum.z() << " "
-              << q_tum.x() << " " << q_tum.y() << " " << q_tum.z() << " " << q_tum.w()
+              << -t_tum.y() << " " << -t_tum.x() << " " << t_tum.z() << " "
+              << -q_tum.x() << " " << q_tum.y() << " " << q_tum.z() << " " << q_tum.w()
               << std::endl;
 }
 
@@ -164,7 +164,7 @@ void TumDatasetReader::write_all_entries() {
         FramePoseEntry framePoseEntry = this->frame_poses[i]; 
         Sophus::SE3d lastKeyFramePose = this->mapp->keyframes[framePoseEntry.last_keyframe_idx]->Tcw;
         Sophus::SE3d currentFramePose = framePoseEntry.pose * lastKeyFramePose;
-        write_entry(currentFramePose, i + 1);
+        write_entry(currentFramePose, i);
     }
     std::cout << "AICI SE TERMINA SCRIEREA IN FISIER\n";
 }

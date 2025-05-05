@@ -7,7 +7,7 @@
 #include "ceres/ceres.h"
 #include <iostream>
 #include "rotation.h"
-#include "Map.h"
+#include "Common.h"
 
 class BundleAjustmentVariableKeyFrameMonocular {
 public:

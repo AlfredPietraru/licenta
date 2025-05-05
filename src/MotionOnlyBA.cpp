@@ -1,41 +1,5 @@
 #include "../include/MotionOnlyBA.h"
-#include "../include/rotation.h"
-
 using SE3Manifold = ceres::ProductManifold<ceres::EigenQuaternionManifold, ceres::EuclideanManifold<3>>;
-#include <ceres/ceres.h>
-#include <sophus/se3.hpp>
-
-// struct SE3RotationPriorCost {
-//     SE3RotationPriorCost(const Sophus::SO3d& R_prior, double weight)
-//         : R_prior_(R_prior), weight_(weight) {}
-
-//     template <typename T>
-//     bool operator()(const T* const se3_raw, T* residuals) const {
-//         const Sophus::SE3<T> T_curr(Eigen::Quaternion<T>(se3_raw[0], se3_raw[1], se3_raw[2], se3_raw[3]), 
-//             Eigen::Vector3d(se3_raw[4], se3_raw[5], se3_raw[6]));
-//         Sophus::SO3<T> R_curr = T_curr.so3();
-//         Sophus::SO3<T> R_pri = R_prior_.so3();
-//         Sophus::SO3<T> R_rel = R_pri.inverse() * R_curr;
-//         Eigen::Matrix<T,3,1> rot_error = R_rel.log();
-
-//         // Apply weight
-//         residuals[0] = T(weight_) * rot_error[0];
-//         residuals[1] = T(weight_) * rot_error[1];
-//         residuals[2] = T(weight_) * rot_error[2];
-
-//         return true;
-//     }
-
-//     static ceres::CostFunction* Create(const Sophus::SO3d& R_prior, double weight) {
-//         return (new ceres::AutoDiffCostFunction<SE3RotationPriorCost, 3, 7>(
-//             new SE3RotationPriorCost(R_prior, weight)));
-//     }
-
-//     Sophus::SO3d R_prior_;
-//     double weight_;
-// };
-
-
 
 class BundleError
 {
@@ -84,41 +48,6 @@ private:
     Feature *f;
     bool is_monocular;
 };
-
-double MotionOnlyBA::get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2) {
-    double residuals[3];
-    Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-1) return 100000;
-    double inv_d = 1 / camera_coordinates[2];
-    double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
-    double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
-    cv::KeyPoint kpu = feature->kpu;
-    residuals[0] = (x - kpu.pt.x) / kf->POW_OCTAVE[kpu.octave];
-    residuals[1] = (y - kpu.pt.y) / kf->POW_OCTAVE[kpu.octave];
-
-    double disp_pred = kf->K(0, 0) * 0.08 * inv_d;
-    double disp_meas = kpu.pt.x - feature->right_coordinate;      
-    residuals[2] = (disp_pred - disp_meas) / kf->POW_OCTAVE[feature->kpu.octave];
-    double a = sqrt(residuals[0] * residuals[0] + residuals[1] * residuals[1] + residuals[2] * residuals[2]);
-    if (a <= sqrt(chi2)) return pow(a, 2) / 2;
-    return sqrt(chi2) * a - chi2 / 2;
-}
-
-
-double MotionOnlyBA::get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* feature, double chi2) {
-    double residuals[2];
-    Eigen::Vector3d camera_coordinates = kf->Tcw.matrix3x4() * mp->wcoord;
-    if (camera_coordinates[2] <= 1e-1) return 100000;
-    double inv_d = 1 / camera_coordinates[2];
-    double x = kf->K(0, 0) * camera_coordinates[0] * inv_d + kf->K(0, 2);
-    double y = kf->K(1, 1) * camera_coordinates[1] * inv_d + kf->K(1, 2);
-    cv::KeyPoint kpu = feature->kpu;
-    residuals[0] = (x - kpu.pt.x) / kf->POW_OCTAVE[kpu.octave];
-    residuals[1] = (y - kpu.pt.y) / kf->POW_OCTAVE[kpu.octave];
-    double a = sqrt(residuals[0] * residuals[0] + residuals[1] * residuals[1]);
-    if (a <= sqrt(chi2)) return pow(a, 2) / 2;
-    return sqrt(chi2) * a - chi2 / 2;
-}
 
 Sophus::SE3d compute_pose(KeyFrame *kf, double *pose) {
     Eigen::Quaterniond quaternion(pose[0], pose[1], pose[2], pose[3]);
@@ -197,7 +126,7 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf, bool display)
         
         for (auto it = mono_matches.begin(); it != mono_matches.end(); it++) {
             MapPoint *mp = it->first;
-            error = get_monocular_reprojection_error(kf, mp, it->second, chi2Mono[i]);  
+            error = Common::get_monocular_reprojection_error(kf, mp, it->second, chi2Mono[i]);  
             if (error > chi2Mono[i]) {
                 kf->add_outlier_element(mp);
             } else {
@@ -207,7 +136,7 @@ Sophus::SE3d MotionOnlyBA::solve_ceres(KeyFrame *kf, bool display)
 
         for (auto it = rgbd_matches.begin(); it != rgbd_matches.end(); it++) {
             MapPoint *mp = it->first;
-            error = get_rgbd_reprojection_error(kf, mp, it->second, chi2Stereo[i]);
+            error = Common::get_rgbd_reprojection_error(kf, mp, it->second, chi2Stereo[i]);
             if (error > chi2Stereo[i]) {
                 kf->add_outlier_element(mp);
             } else {

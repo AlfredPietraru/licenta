@@ -59,9 +59,11 @@ set(SOURCES
     src/ORBextractor.cpp
     src/MapDrawer.cpp
     src/BundleAdjustment.cpp
+    src/Common.cpp
 )
 
 set(HEADERS
+    "include/Common.h"
     "include/MotionOnlyBA.h"
     "include/Feature.h"
     "include/FeatureFinderMatcher.h"

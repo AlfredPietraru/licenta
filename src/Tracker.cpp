@@ -2,7 +2,8 @@
 
 void compute_difference_between_positions(const Sophus::SE3d &estimated, const Sophus::SE3d &ground_truth, bool print_now)
 {
-
+    if (!print_now)
+        return;
     Sophus::SE3d relative = ground_truth.inverse() * estimated;
     double APE = relative.log().norm();
 
@@ -20,8 +21,6 @@ void compute_difference_between_positions(const Sophus::SE3d &estimated, const S
     Eigen::Vector3d t_rel = relative.translation();
     double translation_diff = t_rel.norm();
 
-    if (!print_now)
-        return;
     std::cout << "APE score: " << APE << "\n";
     std::cout << "Rotation Difference (Total): " << total_angle_diff << " degrees\n";
     std::cout << "Rotation Difference (X): " << angle_axis(0) << " degrees\n";
@@ -48,19 +47,6 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth)
     // primul cadru
     if (this->prev_kf == nullptr && this->current_kf == nullptr)
     {
-        // Eigen::Quaterniond q_tum(-0.3266, 0.6583, 0.6112, -0.2938); 
-        // Eigen::Vector3d t_tum(1.3434, 0.6271, 1.6606);
-        // Eigen::Matrix3d tum_to_slam_R;
-        // tum_to_slam_R << 0, -1, 0,
-        // 1, 0, 0,
-        // 0, 0, 1;
-        
-        // Eigen::Matrix3d R_tum = q_tum.normalized().toRotationMatrix();
-        // Eigen::Matrix3d R_slam = tum_to_slam_R * R_tum;
-        // Eigen::Vector3d t_slam = tum_to_slam_R * t_tum;
-        
-        // Eigen::Quaterniond q_slam(R_slam);
-        // Sophus::SE3d pose(q_slam, t_slam);
         Sophus::SE3d pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
         this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 0, frame, this->voc);
         this->velocity = pose;

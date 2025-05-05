@@ -1,5 +1,5 @@
 #include "../include/Map.h"
-int ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b)
+inline int ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b)
 {
     const int *pa = a.ptr<int32_t>();
     const int *pb = b.ptr<int32_t>();
