@@ -83,10 +83,8 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
     const bool bForward  = kf_camer_center_prev_coordinates(2) >  0.08;
     const bool bBackward = -kf_camer_center_prev_coordinates(2) > 0.08;
     for (Feature f : prev_kf->features) {
-    // for (auto it = prev_kf->mp_correlations.begin(); it != prev_kf->mp_correlations.end(); it++) {
-    //     MapPoint *mp = it->first;
         MapPoint *mp = f.get_map_point();
-        if (mp == nullptr || kf->check_map_point_outlier(mp)) continue;
+        if (mp == nullptr) continue;
         point_camera_coordinates = kf->mat_camera_world * mp->wcoord;
         if (point_camera_coordinates(2) <= 1e-1) continue;
         double d = point_camera_coordinates(2);

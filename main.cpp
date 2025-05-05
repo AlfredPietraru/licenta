@@ -52,6 +52,15 @@ void signalHandler(int signum) {
 // care varianta e cea mai buna
 // RGBD -> time of flight, structured light
 
+
+void display_timing_information() {  
+    std::cout << tracker->reference_kf->reference_idx << " atatea keyframe-uri avute\n";
+    // std::cout << total_tracking_duration / 1000 << " atat a durat tracking sa faaca\n";
+    std::cout << tracker->total_tracking_during_matching / 1000 << " tracking between feature matching\n";
+    std::cout << tracker->total_tracking_during_local_map / 1000 << " atat a durat doar local map matching\n";
+    std::cout << total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n"; 
+}
+
 int main()
 {
     std::signal(SIGINT, signalHandler);
@@ -89,17 +98,16 @@ int main()
         }
         reader->store_entry(kf);
         reader->increase_idx();
-        // if (reader->idx == 250) break;
-}
+        // if (reader->idx % 30 == 0) {
+        //     display_timing_information();
+        // }
+        // if (reader->idx == 120) break;
+    }
 
     reader->write_all_entries();
     auto t2 = high_resolution_clock::now();
     std::cout << duration_cast<seconds>(t2 - t1).count() << "s aici atata a durat\n\n";  
-    std::cout << tracker->reference_kf->reference_idx << " atatea keyframe-uri avute\n";
-    std::cout << total_tracking_duration / 1000 << " atat a durat tracking sa faaca\n";
-    std::cout << tracker->total_tracking_during_matching / 1000 << " tracking between feature matching\n";
-    std::cout << tracker->total_tracking_during_local_map / 1000 << " atat a durat doar local map matching\n";
-    std::cout << total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n"; 
+    display_timing_information();
 }
 
 

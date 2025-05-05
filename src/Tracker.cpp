@@ -112,6 +112,33 @@ bool Tracker::Is_KeyFrame_needed()
     return (c1 || c2) && c3;
 }
 
+void Tracker::RemoveOutliersCurrentFrame(double chi2Mono, double chi2Stereo) {
+    double error;
+    std::vector<std::pair<MapPoint*, Feature*>> copy_mp_correlations(this->current_kf->mp_correlations.begin(), this->current_kf->mp_correlations.end());
+    for (std::pair<MapPoint*, Feature*> it : copy_mp_correlations) {
+        MapPoint *mp = it.first;
+        Feature *f = it.second;
+        if (f->is_monocular) {
+            error = Common::get_monocular_reprojection_error(this->current_kf, mp, f, chi2Mono); 
+            if (error > chi2Mono) {
+                Map::remove_map_point_from_keyframe(this->current_kf, mp);
+                this->current_kf->add_outlier_element(mp);
+            }
+            continue; 
+        }
+        if (!f->is_monocular) {
+            error = Common::get_rgbd_reprojection_error(this->current_kf, mp, f, chi2Stereo);
+            if (error > chi2Stereo) {
+                Map::remove_map_point_from_keyframe(this->current_kf, mp);  
+                this->current_kf->add_outlier_element(mp);
+            }
+            continue;
+        }
+    }
+}
+
+
+
 void Tracker::TrackReferenceKeyFrame()
 {
     if (this->prev_kf != nullptr)
@@ -124,15 +151,11 @@ void Tracker::TrackReferenceKeyFrame()
         std::cout << this->current_kf->mp_correlations.size() << " REFERENCE FRAME N A URMARIT SUFICIENTE MAP POINTS PENTRU OPTIMIZARE\n";
         exit(1);
     }
-    this->current_kf->set_keyframe_position(this->motionOnlyBA->solve_ceres(this->current_kf, false));
-    for (MapPoint *mp : this->current_kf->outliers)
-    {
-        bool removal_succesfull = Map::remove_map_point_from_keyframe(this->current_kf, mp);
-        if (!removal_succesfull)
-        {
-            std::cout << "STERGEREA OUTLIER A ESUAT\n";
-        }
-    }
+    std::cout << " inainte de solver ceres\n";
+    this->motionOnlyBA->solve_ceres(this->current_kf, false);
+    std::cout << " dupa de solver ceres\n";
+    this->RemoveOutliersCurrentFrame(5.991, 7.815);
+    std::cout << "a functionat remove outliers\n";
     if (this->current_kf->mp_correlations.size() < 10)
     {
         std::cout << this->current_kf->mp_correlations.size() << " REFERENCE FRAME NU A URMARIT SUFICIENTE INLIERE MAP POINTS\n";
@@ -154,11 +177,8 @@ void Tracker::TrackConsecutiveFrames()
             return;
         }
     }
-    this->current_kf->set_keyframe_position(this->motionOnlyBA->solve_ceres(this->current_kf, false));
-    for (MapPoint *mp : this->current_kf->outliers)
-    {
-        Map::remove_map_point_from_keyframe(this->current_kf, mp);
-    }
+    this->motionOnlyBA->solve_ceres(this->current_kf, false);
+    this->RemoveOutliersCurrentFrame(5.991, 7.815);
     if (this->current_kf->mp_correlations.size() < 10)
     {
         std::cout << " \nURMARIREA INTRE FRAME-URI NU A FUNCTIONAT DUPA OPTIMIZARE\n";
@@ -194,15 +214,8 @@ void Tracker::TrackLocalMap(Map *mapp)
         std::cout << " \nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
         return;
     }
-    this->current_kf->set_keyframe_position(this->motionOnlyBA->solve_ceres(this->current_kf, false));
-    for (MapPoint *mp : this->current_kf->outliers)
-    {
-        bool removal_succesfull = Map::remove_map_point_from_keyframe(this->current_kf, mp);
-        if (!removal_succesfull)
-        {
-            std::cout << "STERGEREA OUTLIER A ESUAT\n";
-        }
-    }
+    this->motionOnlyBA->solve_ceres(this->current_kf, false);
+    this->RemoveOutliersCurrentFrame(5.991, 7.815);
     int minim_number_points_necessary = mapp->keyframes.size() <= 2 ? 30 : 50;
     if ((int)this->current_kf->mp_correlations.size() < minim_number_points_necessary)
     {

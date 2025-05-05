@@ -19,6 +19,7 @@
 #include "config.h"
 #include "ORBVocabulary.h"
 #include "MapDrawer.h"
+#include "Common.h"
 #include <chrono>
 namespace fs = std::filesystem;
 using namespace std;
@@ -62,6 +63,7 @@ public:
     void TrackConsecutiveFrames();
     void TrackLocalMap(Map *mapp);
     bool Is_KeyFrame_needed();
+    void RemoveOutliersCurrentFrame(double chi2Mono, double chi2Stereo);
     // auxiliary functions
     void get_current_key_frame(Mat frame, Mat depth);
     void tracking_was_lost();

@@ -21,10 +21,12 @@ std::unordered_set<MapPoint *> Map::get_all_map_points()
     std::unordered_set<MapPoint *> out;
     for (long unsigned int i = 0; i < keyframes.size(); i++)
     {
-        for (int j = 0; j < (int)keyframes[i]->features.size(); j++) {
+        for (int j = 0; j < (int)keyframes[i]->features.size(); j++)
+        {
             MapPoint *mp = keyframes[i]->features[j].get_map_point();
-            if (mp == nullptr) continue;
-            out.insert(mp);    
+            if (mp == nullptr)
+                continue;
+            out.insert(mp);
         }
     }
     return out;
@@ -33,7 +35,7 @@ std::unordered_set<MapPoint *> Map::get_all_map_points()
 std::unordered_map<KeyFrame *, int> Map::get_keyframes_connected(KeyFrame *new_kf, int limit)
 {
     std::unordered_map<KeyFrame *, int> edges_new_keyframe;
-    for (std::pair<MapPoint*, Feature*> it : new_kf->mp_correlations)
+    for (std::pair<MapPoint *, Feature *> it : new_kf->mp_correlations)
     {
         MapPoint *mp = it.first;
         for (KeyFrame *kf : mp->keyframes)
@@ -91,18 +93,22 @@ std::vector<MapPoint *> Map::create_map_points_from_features(KeyFrame *kf)
 
 bool customComparison(Feature *a, Feature *b)
 {
-    return a->depth < b->depth; 
+    return a->depth < b->depth;
 }
 
-std::vector<MapPoint*> Map::create_closest_map_points_from_features(KeyFrame *kf) {
+std::vector<MapPoint *> Map::create_closest_map_points_from_features(KeyFrame *kf)
+{
     std::vector<MapPoint *> out;
-    std::vector<Feature*> copy_feature;
-    for (long unsigned int i = 0; i < kf->features.size(); i++) {
-        if (kf->features[i].is_monocular || kf->features[i].depth >= 3.2) continue;
+    std::vector<Feature *> copy_feature;
+    for (long unsigned int i = 0; i < kf->features.size(); i++)
+    {
+        if (kf->features[i].is_monocular || kf->features[i].depth >= 3.2)
+            continue;
         copy_feature.push_back(&kf->features[i]);
     }
     sort(copy_feature.begin(), copy_feature.end(), customComparison);
-    for (int i = 0; i < std::min((int)copy_feature.size(), 100); i++) {
+    for (int i = 0; i < std::min((int)copy_feature.size(), 100); i++)
+    {
         int idx = copy_feature[i]->idx;
         Eigen::Vector4d wcoord = kf->fromImageToWorld(idx);
         MapPoint *mp = new MapPoint(kf, idx, kf->features[idx].kpu, kf->camera_center_world, wcoord, kf->features[idx].descriptor);
@@ -338,7 +344,7 @@ bool Map::update_graph_connections(KeyFrame *kf1, KeyFrame *kf2)
         return false;
     }
     int common_values = 0;
-    for (std::pair<MapPoint*, Feature*> it : kf1->mp_correlations)
+    for (std::pair<MapPoint *, Feature *> it : kf1->mp_correlations)
     {
         MapPoint *mp = it.first;
         if (kf2->mp_correlations.find(mp) != kf2->mp_correlations.end())
@@ -378,87 +384,91 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
     second_degree_key_frames.insert(keyframes_already_found.begin(), keyframes_already_found.end());
     second_degree_key_frames.insert(ref);
 
+    std::unordered_set<MapPoint *> local_map_points;
+    for (KeyFrame *local_map_kf : second_degree_key_frames)
+    {
+        std::vector<MapPoint *> mps = local_map_kf->get_map_points();
+        local_map_points.insert(mps.begin(), mps.end());
+    }
+
     int window = kf->current_idx > 2 ? 3 : 5;
     Eigen::Vector3d camera_to_map_view_ray;
     Eigen::Vector4d point_camera_coordinates;
     double u, v, d;
-    for (KeyFrame *local_map_kf : second_degree_key_frames)
+    std::cout << local_map_points.size() << " atatea map points gasite acum\n";
+    for (MapPoint *mp : local_map_points)
     {
-        for (Feature f : local_map_kf->features)
+        if (kf->check_map_point_in_keyframe(mp) || kf->check_map_point_outlier(mp))
+            continue;
+        point_camera_coordinates = kf->mat_camera_world * mp->wcoord;
+        d = point_camera_coordinates(2);
+        if (d <= 1e-1)
+            continue;
+        u = kf->K(0, 0) * point_camera_coordinates(0) / d + kf->K(0, 2);
+        v = kf->K(1, 1) * point_camera_coordinates(1) / d + kf->K(1, 2);
+        if (u < kf->minX || u > kf->maxX - 1)
+            continue;
+        if (v < kf->minY || v > kf->maxY - 1)
+            continue;
+
+        camera_to_map_view_ray = (mp->wcoord_3d - kf->camera_center_world);
+        double distance = camera_to_map_view_ray.norm();
+        if (distance < mp->dmin || distance > mp->dmax)
+            continue;
+
+        camera_to_map_view_ray.normalize();
+        double dot_product = camera_to_map_view_ray.dot(mp->view_direction);
+        if (dot_product < 0.5)
+            continue;
+        mp->increase_how_many_times_seen();
+
+        float radius = dot_product >= 0.998 ? 2.5 : 4;
+        radius *= window;
+        int predicted_scale = mp->predict_image_scale(distance);
+        int scale_of_search = radius * kf->POW_OCTAVE[predicted_scale];
+
+        int lowest_idx = -1;
+        int lowest_dist = 256;
+        int lowest_level = -1;
+
+        int second_lowest_dist = 256;
+        int second_lowest_level = -1;
+        std::vector<int> kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, predicted_scale - 1, predicted_scale + 1);
+        if (kps_idx.size() == 0)
+            continue;
+        for (int idx : kps_idx)
         {
-            MapPoint *mp = f.get_map_point();
-            if (mp == nullptr || kf->check_map_point_outlier(mp) || kf->check_map_point_in_keyframe(mp))
-                continue;
-            point_camera_coordinates = kf->mat_camera_world * mp->wcoord;
-            d = point_camera_coordinates(2);
-            if (d <= 1e-1)
-                continue;
-            u = kf->K(0, 0) * point_camera_coordinates(0) / d + kf->K(0, 2);
-            v = kf->K(1, 1) * point_camera_coordinates(1) / d + kf->K(1, 2);
-            if (u < kf->minX || u > kf->maxX - 1)
-                continue;
-            if (v < kf->minY || v > kf->maxY - 1)
-                continue;
-
-            camera_to_map_view_ray = (mp->wcoord_3d - kf->camera_center_world);
-            double distance = camera_to_map_view_ray.norm();
-            if (distance < mp->dmin || distance > mp->dmax)
-                continue;
-
-            camera_to_map_view_ray.normalize();
-            double dot_product = camera_to_map_view_ray.dot(mp->view_direction);
-            if (dot_product < 0.5)
-                continue;
-            mp->increase_how_many_times_seen();
-
-            float radius = dot_product >= 0.998 ? 2.5 : 4;
-            radius *= window;
-            int predicted_scale = mp->predict_image_scale(distance);
-            int scale_of_search = radius * kf->POW_OCTAVE[predicted_scale];
-
-            int lowest_idx = -1;
-            int lowest_dist = 256;
-            int lowest_level = -1;
-
-            int second_lowest_dist = 256;
-            int second_lowest_level = -1;
-            std::vector<int> kps_idx = kf->get_vector_keypoints_after_reprojection(u, v, scale_of_search, predicted_scale - 1, predicted_scale + 1);
-            if (kps_idx.size() == 0)
-                continue;
-            for (int idx : kps_idx)
+            if (!kf->features[idx].is_monocular)
             {
-                if (!kf->features[idx].is_monocular)
-                {
-                    double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
-                    float er = fabs(fake_rgbd - kf->features[idx].right_coordinate);
-                    if (er > scale_of_search)
-                        continue;
-                }
-
-                int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
-
-                if (cur_hamm_dist < lowest_dist)
-                {
-                    second_lowest_dist = lowest_dist;
-                    second_lowest_level = lowest_level;
-                    lowest_idx = idx;
-                    lowest_dist = cur_hamm_dist;
-                    lowest_level = kf->features[idx].get_undistorted_keypoint().octave;
-                }
-                else if (cur_hamm_dist < second_lowest_dist)
-                {
-                    second_lowest_dist = cur_hamm_dist;
-                    second_lowest_level = kf->features[idx].get_undistorted_keypoint().octave;
-                }
+                double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
+                float er = fabs(fake_rgbd - kf->features[idx].right_coordinate);
+                if (er > scale_of_search)
+                    continue;
             }
-            if (lowest_dist > 50)
-                continue;
-            if (lowest_level == second_lowest_level && lowest_dist > 0.8 * second_lowest_dist)
-                continue;
-            if (!Map::check_new_map_point_better(&kf->features[lowest_idx], mp))
-                continue;
-            Map::add_map_point_to_keyframe(kf, &kf->features[lowest_idx], mp);
+
+            int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
+
+            if (cur_hamm_dist < lowest_dist)
+            {
+                second_lowest_dist = lowest_dist;
+                second_lowest_level = lowest_level;
+                lowest_idx = idx;
+                lowest_dist = cur_hamm_dist;
+                lowest_level = kf->features[idx].get_undistorted_keypoint().octave;
+            }
+            else if (cur_hamm_dist < second_lowest_dist)
+            {
+                second_lowest_dist = cur_hamm_dist;
+                second_lowest_level = kf->features[idx].get_undistorted_keypoint().octave;
+            }
         }
+        if (lowest_dist > 50)
+            continue;
+        if (lowest_level == second_lowest_level && lowest_dist > 0.8 * second_lowest_dist)
+            continue;
+        if (!Map::check_new_map_point_better(&kf->features[lowest_idx], mp))
+            continue;
+        Map::add_map_point_to_keyframe(kf, &kf->features[lowest_idx], mp);
     }
 }
 
@@ -494,11 +504,15 @@ bool Map::check_new_map_point_better(Feature *f, MapPoint *new_map_point)
 
 bool Map::debug_map_points()
 {
-    for (KeyFrame *kf : this->keyframes) {
-        for (std::pair<MapPoint*, Feature*> it : kf->mp_correlations) {
+    for (KeyFrame *kf : this->keyframes)
+    {
+        for (std::pair<MapPoint *, Feature *> it : kf->mp_correlations)
+        {
             MapPoint *mp = it.first;
-            for (KeyFrame *kff : mp->keyframes) {
-                if (!kff->check_map_point_in_keyframe(mp)) return false;
+            for (KeyFrame *kff : mp->keyframes)
+            {
+                if (!kff->check_map_point_in_keyframe(mp))
+                    return false;
             }
         }
     }

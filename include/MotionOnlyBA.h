@@ -25,7 +25,7 @@ class MotionOnlyBA
 {
 public:     
     MotionOnlyBA() {};
-    Sophus::SE3d solve_ceres(KeyFrame *frame, bool display);
+    void solve_ceres(KeyFrame *frame, bool display);
     Sophus::SE3d solve_g2o(KeyFrame *frame);
 };
 
