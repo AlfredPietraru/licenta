@@ -19,16 +19,16 @@ int inline::OrbMatcher::ComputeHammingDistance(const cv::Mat &a, const cv::Mat &
     return dist;
 }
 
-void OrbMatcher::checkOrientation(KeyFrame *curr_kf, KeyFrame *prev_kf)
+void OrbMatcher::checkOrientation(std::vector<std::pair<MapPoint*, Feature*>>& current_correlations, KeyFrame *curr, KeyFrame *prev_kf)
 {
-    std::vector<std::vector<MapPoint *>> histogram(30, std::vector<MapPoint *>());
+    std::vector<std::vector<int>> histogram(30, std::vector<int>());
     const float factor = 1.0f / 30;
-    for (auto it = curr_kf->mp_correlations.begin(); it != curr_kf->mp_correlations.end(); it++)
+    for (int idx = 0; idx < (int)current_correlations.size(); idx++)
     {
-        MapPoint *mp = it->first;
-        cv::KeyPoint current_kpu = it->second->get_undistorted_keypoint();
-        if (prev_kf->mp_correlations.find(mp) == prev_kf->mp_correlations.end()) 
-        {
+        MapPoint *mp = current_correlations[idx].first;
+        Feature *f = current_correlations[idx].second;
+        cv::KeyPoint current_kpu = f->get_undistorted_keypoint();
+        if (!prev_kf->check_map_point_in_keyframe(mp)) {
             if (mp->keyframes.size() == 0) {
                 std::cout << "NU ARE NICIUN KEYFRAME ASOCIAT\n";
             }
@@ -45,8 +45,9 @@ void OrbMatcher::checkOrientation(KeyFrame *curr_kf, KeyFrame *prev_kf)
         if (rot < 0.0) rot += 360.0f;
         int bin = lround(rot * factor);
         if (bin == 30) bin = 0;
-        histogram[bin].push_back(mp);
+        histogram[bin].push_back(idx);
     }
+
     int max = 0;
     int index = 0;
     for (int i = 0; i < 30; i++) {
@@ -65,10 +66,16 @@ void OrbMatcher::checkOrientation(KeyFrame *curr_kf, KeyFrame *prev_kf)
             keep[i] = true;
         }
     }
+
+    // aici mai trebuie de lucrat
     for (int i = 0; i < 30; i++) {
-        if (keep[i]) continue;
-        for (auto mp : histogram[i]) {
-            Map::remove_map_point_from_keyframe(curr_kf, mp);
+        if (!keep[i]) continue;
+        for (int idx : histogram[i]) {
+            std::pair<MapPoint*, Feature*> it = current_correlations[idx];
+            MapPoint *mp = it.first;
+            Feature *f = it.second;
+            if (!Map::check_new_map_point_better(f, mp)) continue; 
+            Map::add_map_point_to_keyframe(curr, f, mp);
         }
     }
 }
@@ -82,9 +89,11 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
     // aici era inainte 3.2 dar nu e corect este 0.08 -> stereo baseline in meters 
     const bool bForward  = kf_camer_center_prev_coordinates(2) >  0.08;
     const bool bBackward = -kf_camer_center_prev_coordinates(2) > 0.08;
-    for (Feature f : prev_kf->features) {
-        MapPoint *mp = f.get_map_point();
-        if (mp == nullptr) continue;
+    std::vector<std::pair<MapPoint*, Feature*>> current_correlations;
+    current_correlations.reserve(prev_kf->mp_correlations.size());
+
+    for (std::pair<MapPoint*, Feature*> it : prev_kf->mp_correlations) {
+        MapPoint *mp = it.first;
         point_camera_coordinates = kf->mat_camera_world * mp->wcoord;
         if (point_camera_coordinates(2) <= 1e-1) continue;
         double d = point_camera_coordinates(2);
@@ -132,10 +141,9 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
             }
         }
         if (best_dist > 100) continue;
-        if (!Map::check_new_map_point_better(&kf->features[best_idx], mp)) continue;
-        Map::add_map_point_to_keyframe(kf, &kf->features[best_idx], mp);
+        current_correlations.push_back({mp, &kf->features[best_idx]});
     }
-    this->checkOrientation(kf, prev_kf);
+    this->checkOrientation(current_correlations, kf, prev_kf);
 }
 
 void OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref)
@@ -145,6 +153,10 @@ void OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref)
     DBoW2::FeatureVector::const_iterator f1end = ref->features_vec.end();
     DBoW2::FeatureVector::const_iterator f2it = curr->features_vec.begin();
     DBoW2::FeatureVector::const_iterator f2end = curr->features_vec.end();
+
+    std::vector<std::pair<MapPoint*, Feature*>> current_correlations;
+    current_correlations.reserve(ref->mp_correlations.size());
+
     while (f1it != f1end && f2it != f2end)
     {
         if (f1it->first == f2it->first)
@@ -177,8 +189,7 @@ void OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref)
                 }
                 if (bestDist1 > DES_DIST) continue;
                 if (bestDist1 > 0.7 * bestDist2) continue;
-                if (!Map::check_new_map_point_better(&curr->features[bestIdx], mp_ref)) continue;
-                Map::add_map_point_to_keyframe(curr, &curr->features[bestIdx], mp_ref); 
+                current_correlations.push_back({mp_ref, &curr->features[bestIdx]}); 
             }
             f1it++;
             f2it++;
@@ -192,7 +203,8 @@ void OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref)
             f2it = curr->features_vec.lower_bound(f1it->first);
         }
     }
-    this->checkOrientation(curr, ref);
+    std::cout << current_correlations.size() << " atatea puncte gasite initial\n";
+    this->checkOrientation(current_correlations, curr, ref);
 }
 
 std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *ref1, KeyFrame *ref2, Eigen::Matrix3d fundamental_matrix) {

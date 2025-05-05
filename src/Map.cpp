@@ -394,7 +394,9 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
     Eigen::Vector3d camera_to_map_view_ray;
     Eigen::Vector4d point_camera_coordinates;
     double u, v, d;
-    std::cout << local_map_points.size() << " atatea map points gasite acum\n";
+    // std::cout << local_map_points.size() << " atatea map points gasite acum\n";
+    int still_in_frustum = 0;
+    int descriptor_feature_test = 0;
     for (MapPoint *mp : local_map_points)
     {
         if (kf->check_map_point_in_keyframe(mp))
@@ -420,6 +422,7 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
         if (dot_product < 0.5)
             continue;
         mp->increase_how_many_times_seen();
+        still_in_frustum++;
 
         float radius = dot_product >= 0.998 ? 2.5 : 4;
         radius *= window;
@@ -465,10 +468,13 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
             continue;
         if (lowest_level == second_lowest_level && lowest_dist > 0.8 * second_lowest_dist)
             continue;
+        descriptor_feature_test++;
         if (!Map::check_new_map_point_better(&kf->features[lowest_idx], mp))
             continue;
         Map::add_map_point_to_keyframe(kf, &kf->features[lowest_idx], mp);
     }
+    // std::cout << still_in_frustum << " atatea puncte gasite in frustum\n";
+    // std::cout << descriptor_feature_test << " atatea puncte au trecut testul descriptorului\n";
 }
 
 bool Map::replace_map_point(MapPoint *old_mp, MapPoint *new_mp)
