@@ -2,22 +2,6 @@
 
 KeyFrame::KeyFrame() {};
 
-void KeyFrame::add_outlier_element(MapPoint *mp)
-{
-    this->outliers.insert(mp);
-}
-
-void KeyFrame::remove_outlier_element(MapPoint *mp)
-{
-    if (this->outliers.find(mp) == this->outliers.end()) return;
-    this->outliers.erase(mp);
-}
-
-bool KeyFrame::check_map_point_outlier(MapPoint *mp)
-{
-    return this->outliers.find(mp) != this->outliers.end(); 
-}
-
 
 std::vector<MapPoint*> KeyFrame::get_map_points() {
     std::vector<MapPoint*> mps;
@@ -111,7 +95,6 @@ KeyFrame::KeyFrame(KeyFrame* old_kf, std::vector<cv::KeyPoint> &keypoints,
     this->minY = old_kf->minY;
     this->maxY = old_kf->maxY;
     this->mp_correlations.reserve(this->features.size() * 1.3); 
-    this->outliers.reserve(this->features.size() * 1.3);
 }
 
 KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> distorsion, std::vector<cv::KeyPoint> &keypoints,
@@ -154,7 +137,6 @@ KeyFrame::KeyFrame(Sophus::SE3d Tcw, Eigen::Matrix3d K, std::vector<double> dist
         this->maxY = frame.rows;
     }
     this->mp_correlations.reserve(this->features.size() * 1.3);
-    this->outliers.reserve(this->features.size() * 1.3);
 }
 
 
@@ -265,7 +247,6 @@ bool KeyFrame::debug_keyframe_valid() {
         MapPoint *mp = it.first;
         Feature *f = it.second;
         if (f->get_map_point() != mp) return false;
-        if (this->outliers.find(mp) != this->outliers.end()) return false;
     }
     return true;
 }

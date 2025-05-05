@@ -122,22 +122,16 @@ void Tracker::RemoveOutliersCurrentFrame(double chi2Mono, double chi2Stereo) {
             error = Common::get_monocular_reprojection_error(this->current_kf, mp, f, chi2Mono); 
             if (error > chi2Mono) {
                 Map::remove_map_point_from_keyframe(this->current_kf, mp);
-                this->current_kf->add_outlier_element(mp);
             }
-            continue; 
         }
         if (!f->is_monocular) {
             error = Common::get_rgbd_reprojection_error(this->current_kf, mp, f, chi2Stereo);
             if (error > chi2Stereo) {
                 Map::remove_map_point_from_keyframe(this->current_kf, mp);  
-                this->current_kf->add_outlier_element(mp);
             }
-            continue;
         }
     }
 }
-
-
 
 void Tracker::TrackReferenceKeyFrame()
 {
@@ -151,11 +145,8 @@ void Tracker::TrackReferenceKeyFrame()
         std::cout << this->current_kf->mp_correlations.size() << " REFERENCE FRAME N A URMARIT SUFICIENTE MAP POINTS PENTRU OPTIMIZARE\n";
         exit(1);
     }
-    std::cout << " inainte de solver ceres\n";
     this->motionOnlyBA->solve_ceres(this->current_kf, false);
-    std::cout << " dupa de solver ceres\n";
     this->RemoveOutliersCurrentFrame(5.991, 7.815);
-    std::cout << "a functionat remove outliers\n";
     if (this->current_kf->mp_correlations.size() < 10)
     {
         std::cout << this->current_kf->mp_correlations.size() << " REFERENCE FRAME NU A URMARIT SUFICIENTE INLIERE MAP POINTS\n";

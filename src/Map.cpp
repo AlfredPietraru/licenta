@@ -178,7 +178,6 @@ bool Map::add_map_point_to_keyframe(KeyFrame *kf, Feature *f, MapPoint *mp)
         return false;
     }
 
-    kf->remove_outlier_element(mp);
     MapPoint *old_mp = f->get_map_point();
     if (old_mp != nullptr)
     {
@@ -398,7 +397,7 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
     std::cout << local_map_points.size() << " atatea map points gasite acum\n";
     for (MapPoint *mp : local_map_points)
     {
-        if (kf->check_map_point_in_keyframe(mp) || kf->check_map_point_outlier(mp))
+        if (kf->check_map_point_in_keyframe(mp))
             continue;
         point_camera_coordinates = kf->mat_camera_world * mp->wcoord;
         d = point_camera_coordinates(2);

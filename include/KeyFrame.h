@@ -32,8 +32,7 @@ public:
     const double POW_OCTAVE[8] = {1, 1.2, 1.44, 1.728, 2.0736, 2.48832, 2.985984, 3.5831808};
 
     std::vector<Feature> features;
-    std::unordered_map<MapPoint*, Feature*> mp_correlations; 
-    std::unordered_set<MapPoint*> outliers;
+    std::unordered_map<MapPoint*, Feature*> mp_correlations;
 
     const int GRID_HEIGHT = 48;
     const int GRID_WIDTH = 64;
@@ -62,10 +61,7 @@ public:
     std::vector<cv::KeyPoint> get_all_keypoints(); 
     std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave); 
     void set_reference_keyframe(KeyFrame *ref);
-    void add_outlier_element(MapPoint *mp);
-    void remove_outlier_element(MapPoint *mp);
     bool check_map_point_in_keyframe(MapPoint *mp);
-    bool check_map_point_outlier(MapPoint *mp);
     bool check_number_close_points();
     void compute_bow_representation();
     void set_keyframe_position(Sophus::SE3d Tcw_new);
