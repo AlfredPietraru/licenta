@@ -30,16 +30,18 @@ Tracker *tracker;
 int total_tracking_duration = 0;
 int total_local_mapping_duration = 0;
 
+void display_timing_information() {  
+    std::cout << tracker->reference_kf->reference_idx << " atatea keyframe-uri avute\n";
+    std::cout << total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n\n";
+
+    std::cout << tracker->orb_matching_time / 1000 << " orb feature matching time\n";
+    std::cout << tracker->motion_only_ba_time / 1000 << " motion only BA time\n";
+}
+
 void signalHandler(int signum) {
     std::cout << "Interrupt signal (" << signum << ") received.\n";
     reader->write_all_entries();
-    std::cout << tracker->reference_kf->reference_idx << " atatea keyframe-uri avute\n";
-    std::cout << total_tracking_duration / 1000 << " atat a durat tracking sa faaca\n";
-    std::cout << tracker->total_tracking_during_matching / 1000 << " tracking between feature matching\n";
-    std::cout << tracker->total_tracking_during_local_map / 1000 << " atat a durat doar local map matching\n";
-    std::cout << total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n";
-    std::cout << tracker->motion_only_ba_time / 1000 << " motion only BA time\n";
-    std::cout << tracker->orb_matching_time / 1000 << " orb feature matching time\n";
+    display_timing_information();
     
     reader->outfile.close();
     exit(signum);
@@ -55,16 +57,6 @@ void signalHandler(int signum) {
 // try to use perspective npoint for matching
 // care varianta e cea mai buna
 // RGBD -> time of flight, structured light
-
-
-void display_timing_information() {  
-    std::cout << tracker->reference_kf->reference_idx << " atatea keyframe-uri avute\n";
-    std::cout << tracker->total_tracking_during_matching / 1000 << " tracking between feature matching\n";
-    std::cout << tracker->total_tracking_during_local_map / 1000 << " atat a durat doar local map matching\n";
-    std::cout << total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n"; 
-    std::cout << tracker->motion_only_ba_time / 1000 << " motion only BA time\n";
-    std::cout << tracker->orb_matching_time / 1000 << " orb feature matching time\n";
-}
 
 int main()
 {
