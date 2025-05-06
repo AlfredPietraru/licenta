@@ -85,6 +85,7 @@ bool is_coordinate_valid_for_keyframe(KeyFrame *kf, Feature *f, Eigen::Vector4d 
 
 int LocalMapping::compute_map_points(KeyFrame *kf)
 { 
+    const Eigen::Matrix4d mat_local_world_camera = kf->Tcw.inverse().matrix();
     std::unordered_set<KeyFrame*> keyframes = mapp->get_local_keyframes(kf);
     bool isStereo1 = false;
     bool isStereo2 = false;
@@ -95,6 +96,7 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
             std::cout << "ESTE EXACT ACELASI FRAME NU E VOIE\n";
             exit(1);
         }
+        const Eigen::Matrix4d mat_local_world_camera_neighbour = neighbour_kf->Tcw.inverse().matrix();
         Eigen::Matrix3d fundamental_mat =  this->compute_fundamental_matrix(kf, neighbour_kf);
         std::vector<std::pair<int, int>> vMatchedIndices = OrbMatcher::search_for_triangulation(kf, neighbour_kf, fundamental_mat);
         for (std::pair<int, int> correspondence : vMatchedIndices) {
@@ -152,11 +154,15 @@ int LocalMapping::compute_map_points(KeyFrame *kf)
             }
             else if(isStereo1 && cosParallaxStereo1<cosParallaxStereo2)
             {
-                coordinates = kf->fromImageToWorld(f1->idx);
+                double new_x = (f1->kp.pt.x - kf->K(0, 2)) * f1->depth / kf->K(0, 0);
+                double new_y = (f1->kp.pt.y - kf->K(1, 2)) * f1->depth / kf->K(1, 1);
+                coordinates = mat_local_world_camera * Eigen::Vector4d(new_x, new_y, f1->depth, 1);
             }
             else if(isStereo2 && cosParallaxStereo2<cosParallaxStereo1)
             {
-                coordinates = neighbour_kf->fromImageToWorld(f2->idx);
+                double new_x = (f2->kp.pt.x - neighbour_kf->K(0, 2)) * f2->depth / neighbour_kf->K(0, 0);
+                double new_y = (f2->kp.pt.y - neighbour_kf->K(1, 2)) * f2->depth / neighbour_kf->K(1, 1);
+                coordinates = mat_local_world_camera_neighbour * Eigen::Vector4d(new_x, new_y, f2->depth, 1);
             }
             else continue; 
             

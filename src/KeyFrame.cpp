@@ -14,7 +14,6 @@ std::vector<MapPoint*> KeyFrame::get_map_points() {
 void KeyFrame::set_keyframe_position(Sophus::SE3d Tcw_new) {
     this->Tcw = Tcw_new;
     this->mat_camera_world = Tcw_new.matrix(); 
-    this->mat_world_camera = Tcw_new.inverse().matrix();
     this->camera_center_world = -this->Tcw.rotationMatrix().transpose() * this->Tcw.translation();
     Eigen::Quaterniond q =  this->Tcw.unit_quaternion();
     Eigen::Vector3d t = this->Tcw.translation();
@@ -164,15 +163,6 @@ Sophus::SE3d KeyFrame::compute_pose() {
         quaternion.coeffs() *= -1;
     }
     return Sophus::SE3d(quaternion, Eigen::Vector3d(this->pose_vector[4], this->pose_vector[5], this->pose_vector[6]));
-}
-
-
-Eigen::Vector4d KeyFrame::fromImageToWorld(int kp_idx)
-{
-    Feature f = this->features[kp_idx];
-    double new_x = (f.kp.pt.x - this->K(0, 2)) * f.depth / this->K(0, 0);
-    double new_y = (f.kp.pt.y - this->K(1, 2)) * f.depth / this->K(1, 1);
-    return this->mat_world_camera * Eigen::Vector4d(new_x, new_y, f.depth, 1);
 }
 
 int KeyFrame::get_map_points_seen_from_multiple_frames(int nr_frames) {

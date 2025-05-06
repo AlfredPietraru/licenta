@@ -23,8 +23,25 @@ typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType
 
 class MotionOnlyBA
 {
-public:     
-    MotionOnlyBA() {};
+public:
+
+    const float chi2Mono[4]={5.991, 5.991, 5.991, 5.991};
+    const float chi2Stereo[4]={7.815, 7.815, 7.815, 7.815};
+
+    MotionOnlyBA() {
+        ceres::Solver::Options options;
+        options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
+        options.function_tolerance = 1e-7;
+        options.gradient_tolerance = 1e-7;
+        options.parameter_tolerance = 1e-7;
+
+        options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
+        options.check_gradients = false;
+        options.minimizer_progress_to_stdout = false;
+        options.max_num_iterations = 10;
+    };
+
+    ceres::Solver::Options options;
     void solve_ceres(KeyFrame *frame, bool display);
     void RemoveOutliersCurrentFrame(KeyFrame *kf, double chi2Mono, double chi2Stereo);
 };

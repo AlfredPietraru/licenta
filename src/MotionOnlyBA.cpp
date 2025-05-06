@@ -87,23 +87,22 @@ void MotionOnlyBA::solve_ceres(KeyFrame *kf, bool display)
 {
     if (kf->mp_correlations.size() < 3)
         return ;
-    
-    const float chi2Mono[4]={5.991, 5.991, 5.991, 5.991};
-    const float chi2Stereo[4]={7.815, 7.815, 7.815, 7.815};
 
     for (int i = 0; i < 1; i++)
     {
         ceres::Problem problem;
-        ceres::Solver::Options options;
-        options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
-        options.function_tolerance = 1e-7;
-        options.gradient_tolerance = 1e-7;
-        options.parameter_tolerance = 1e-7;
-
-        options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
         options.check_gradients = false;
         options.minimizer_progress_to_stdout = display;
-        options.max_num_iterations = 10;
+        // ceres::Solver::Options options;
+        // options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
+        // options.function_tolerance = 1e-7;
+        // options.gradient_tolerance = 1e-7;
+        // options.parameter_tolerance = 1e-7;
+
+        // options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
+        // options.check_gradients = false;
+        // options.minimizer_progress_to_stdout = display;
+        // options.max_num_iterations = 10;
         
         ceres::LossFunction *loss_function_mono = new ceres::HuberLoss(sqrt(chi2Mono[i]));
         ceres::LossFunction *loss_function_stereo = new ceres::HuberLoss(sqrt(chi2Stereo[i]));

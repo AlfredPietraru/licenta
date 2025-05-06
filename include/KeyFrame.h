@@ -43,7 +43,6 @@ public:
     double minX, maxX, minY, maxY;
 
     Eigen::Matrix4d mat_camera_world;
-    Eigen::Matrix4d mat_world_camera;
     Eigen::Vector3d camera_center_world;
     double pose_vector[7] = {1, 0, 0, 0, 0, 0, 0};
     
@@ -56,8 +55,7 @@ public:
 
     void create_grid_matrix();
     void create_feature_vector(std::vector<cv::KeyPoint> &keypoints, std::vector<cv::KeyPoint> &undistored_kps,
-            cv::Mat orb_descriptors, cv::Mat depth_matrix);           
-    Eigen::Vector4d fromImageToWorld(int kp_idx);
+            cv::Mat orb_descriptors, cv::Mat depth_matrix);
     Sophus::SE3d compute_pose();
     std::vector<cv::KeyPoint> get_all_keypoints(); 
     std::vector<int> get_vector_keypoints_after_reprojection(double u, double v, int window, int minOctave, int maxOctave); 

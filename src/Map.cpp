@@ -68,21 +68,26 @@ std::unordered_map<KeyFrame *, int> Map::get_keyframes_connected(KeyFrame *new_k
 std::vector<MapPoint *> Map::create_map_points_from_features(KeyFrame *kf)
 {
     std::vector<MapPoint *> out;
+    const Eigen::Matrix4d mat_local_world_camera = kf->Tcw.inverse().matrix();
     for (long unsigned int i = 0; i < kf->features.size(); i++)
     {
-        if (kf->features[i].get_map_point() != nullptr)
+        Feature *f = &kf->features[i];
+        if (f->get_map_point() != nullptr)
             continue;
 
-        if (kf->features[i].is_monocular || kf->features[i].depth >= 3.2)
+        if (f->is_monocular || f->depth >= 3.2)
             continue;
-        Eigen::Vector4d wcoord = kf->fromImageToWorld(i);
-        MapPoint *mp = new MapPoint(kf, i, kf->features[i].kpu, kf->camera_center_world, wcoord, kf->features[i].descriptor);
+        
+        double new_x = (f->kp.pt.x - kf->K(0, 2)) * f->depth / kf->K(0, 0);
+        double new_y = (f->kp.pt.y - kf->K(1, 2)) * f->depth / kf->K(1, 1);
+        Eigen::Vector4d wcoord = mat_local_world_camera * Eigen::Vector4d(new_x, new_y, f->depth, 1);
+        MapPoint *mp = new MapPoint(kf, i, f->kpu, kf->camera_center_world, wcoord, f->descriptor);
         out.push_back(mp);
         mp->increase_how_many_times_seen();
-        if (!check_new_map_point_better(&kf->features[i], mp))
+        if (!check_new_map_point_better(f, mp))
             continue;
 
-        bool was_addition_succesfull = add_map_point_to_keyframe(kf, &kf->features[i], mp);
+        bool was_addition_succesfull = add_map_point_to_keyframe(kf, f, mp);
         if (!was_addition_succesfull)
         {
             std::cout << "NU S-A PUTUT SA ADAUGE MAP POINT-ul\n";
@@ -100,6 +105,7 @@ std::vector<MapPoint *> Map::create_closest_map_points_from_features(KeyFrame *k
 {
     std::vector<MapPoint *> out;
     std::vector<Feature *> copy_feature;
+    const Eigen::Matrix4d mat_local_world_camera = kf->Tcw.inverse().matrix();
     for (long unsigned int i = 0; i < kf->features.size(); i++)
     {
         if (kf->features[i].is_monocular || kf->features[i].depth >= 3.2)
@@ -110,7 +116,10 @@ std::vector<MapPoint *> Map::create_closest_map_points_from_features(KeyFrame *k
     for (int i = 0; i < std::min((int)copy_feature.size(), 100); i++)
     {
         int idx = copy_feature[i]->idx;
-        Eigen::Vector4d wcoord = kf->fromImageToWorld(idx);
+        Feature *f = copy_feature[i];
+        double new_x = (f->kp.pt.x - kf->K(0, 2)) * f->depth / kf->K(0, 0);
+        double new_y = (f->kp.pt.y - kf->K(1, 2)) * f->depth / kf->K(1, 1);
+        Eigen::Vector4d wcoord = mat_local_world_camera * Eigen::Vector4d(new_x, new_y, f->depth, 1);
         MapPoint *mp = new MapPoint(kf, idx, kf->features[idx].kpu, kf->camera_center_world, wcoord, kf->features[idx].descriptor);
         out.push_back(mp);
         mp->increase_how_many_times_seen();
