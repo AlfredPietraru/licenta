@@ -20,7 +20,7 @@ class Map {
 public:
     std::vector<KeyFrame*> keyframes;
     std::unordered_map<KeyFrame*, std::unordered_map<KeyFrame*, int>> graph;
-    // std::unordered_set<MapPoint*> local_map;
+    std::unordered_set<MapPoint*> local_map_points;
     std::unordered_set<KeyFrame*> local_keyframes;
 
     Map() {
@@ -42,6 +42,7 @@ public:
     std::unordered_set<KeyFrame *> get_best_covisible_keyframes(KeyFrame *kf, int n);
     std::vector<MapPoint*> create_closest_map_points_from_features(KeyFrame *kf);
     bool update_graph_connections(KeyFrame *kf1, KeyFrame *kf2);
+    void update_local_map(KeyFrame *ref, std::unordered_set<KeyFrame *> &keyframes_already_found);
 
     bool debug_map_points();
     std::unordered_set<KeyFrame*> get_till_second_degree_keyframes(KeyFrame *kf);

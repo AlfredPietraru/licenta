@@ -366,6 +366,52 @@ bool Map::update_graph_connections(KeyFrame *kf1, KeyFrame *kf2)
     return true;
 }
 
+
+void Map::update_local_map(KeyFrame *ref, std::unordered_set<KeyFrame *> &keyframes_already_found) {
+    std::unordered_set<KeyFrame *> new_local_keyframes = this->get_till_second_degree_keyframes(ref);
+    new_local_keyframes.insert(keyframes_already_found.begin(), keyframes_already_found.end());
+    new_local_keyframes.insert(ref);
+
+    std::vector<KeyFrame*> to_delete_from_local_map;
+    std::vector<KeyFrame*> to_add_to_local_map;
+    for (KeyFrame *kf : local_keyframes) {
+        if (new_local_keyframes.find(kf) == new_local_keyframes.end()) {
+            to_delete_from_local_map.push_back(kf);
+        }
+    }
+
+    for (KeyFrame *kf : new_local_keyframes) {
+        if (local_keyframes.find(kf) == local_keyframes.end()) {
+            to_add_to_local_map.push_back(kf);
+        }
+    }
+
+    for (KeyFrame *kf : to_delete_from_local_map) {
+        local_keyframes.erase(kf);
+        std::vector<MapPoint*> mps = kf->get_map_points();
+        for (MapPoint *mp : mps) {
+            local_map_points.erase(mp);
+        }
+    }
+    
+    if (to_delete_from_local_map.empty() && to_add_to_local_map.empty()) return;
+    std::cout << to_delete_from_local_map.size() << " " << to_add_to_local_map.size() << "\n";
+    for (KeyFrame *kf : to_add_to_local_map) {
+        local_keyframes.insert(kf);
+        std::vector<MapPoint *> mps = kf->get_map_points();
+        local_map_points.insert(mps.begin(), mps.end());        
+    }
+    // local_map_points.clear();
+    // local_keyframes.clear();
+    // for (KeyFrame *local_map_kf : new_local_keyframes)
+    // {
+    //     local_keyframes.insert(local_map_kf);
+    //     std::vector<MapPoint *> mps = local_map_kf->get_map_points();
+    //     local_map_points.insert(mps.begin(), mps.end());
+    // }
+}
+
+
 void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFrame *> &keyframes_already_found)
 {
     if (ref == nullptr)
@@ -379,24 +425,15 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
         return;
     }
 
-    std::unordered_set<KeyFrame *> second_degree_key_frames = this->get_till_second_degree_keyframes(ref);
-    second_degree_key_frames.insert(keyframes_already_found.begin(), keyframes_already_found.end());
-    second_degree_key_frames.insert(ref);
-
-    std::unordered_set<MapPoint *> local_map_points;
-    for (KeyFrame *local_map_kf : second_degree_key_frames)
-    {
-        std::vector<MapPoint *> mps = local_map_kf->get_map_points();
-        local_map_points.insert(mps.begin(), mps.end());
-    }
+    this->update_local_map(ref, keyframes_already_found);
 
     int window = kf->current_idx > 2 ? 3 : 5;
     Eigen::Vector3d camera_to_map_view_ray;
     Eigen::Vector4d point_camera_coordinates;
     double u, v, d;
-    // std::cout << local_map_points.size() << " atatea map points gasite acum\n";
     int still_in_frustum = 0;
     int descriptor_feature_test = 0;
+    std::vector<MapPoint*> to_delete;
     for (MapPoint *mp : local_map_points)
     {
         if (kf->check_map_point_in_keyframe(mp))
@@ -473,8 +510,6 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
             continue;
         Map::add_map_point_to_keyframe(kf, &kf->features[lowest_idx], mp);
     }
-    // std::cout << still_in_frustum << " atatea puncte gasite in frustum\n";
-    // std::cout << descriptor_feature_test << " atatea puncte au trecut testul descriptorului\n";
 }
 
 bool Map::replace_map_point(MapPoint *old_mp, MapPoint *new_mp)

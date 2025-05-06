@@ -141,7 +141,7 @@ void delete_outliers(std::unordered_set<MapPoint*>& local_map_points, double chi
             to_delete.push_back(mp);
         }
     }
-    std::cout << to_delete.size() << " ATATEA PUNCTE AU FOST GASITE DE STERS\n";
+    // std::cout << to_delete.size() << " ATATEA PUNCTE AU FOST GASITE DE STERS\n";
     for (MapPoint *mp : to_delete) {
         local_map_points.erase(mp);
     }

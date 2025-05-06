@@ -59,7 +59,7 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
     }
     for (MapPoint *mp : to_del) this->delete_map_point(mp);
     for (MapPoint *mp : too_old_to_keep_looking) this->recently_added.erase(mp);
-    // std::cout << to_del.size() << " " << " atatea puncte care vor fi sterse\n";
+    std::cout << to_del.size() << " " << " ATATEA PUNCTE AU FOST STERSE LA CULLING\n";
 }
 
 bool is_coordinate_valid_for_keyframe(KeyFrame *kf, Feature *f, Eigen::Vector4d coordinates,  bool isStereo) {
@@ -248,6 +248,7 @@ void LocalMapping::delete_map_point(MapPoint *mp) {
             continue;
         }
     }
+    if (mapp->local_map_points.find(mp) != mapp->local_map_points.end()) mapp->local_map_points.erase(mp);
     if (this->recently_added.find(mp) != this->recently_added.end()) this->recently_added.erase(mp);
     delete mp;
 }
