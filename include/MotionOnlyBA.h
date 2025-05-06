@@ -26,6 +26,7 @@ class MotionOnlyBA
 public:     
     MotionOnlyBA() {};
     void solve_ceres(KeyFrame *frame, bool display);
+    void RemoveOutliersCurrentFrame(KeyFrame *kf, double chi2Mono, double chi2Stereo);
 };
 
 #endif

@@ -5,6 +5,7 @@ void LocalMapping::local_map(KeyFrame *kf) {
     // cam shady bucata asta
     std::vector<MapPoint*> new_map_points_added = mapp->add_new_keyframe(kf);
     this->recently_added.insert(new_map_points_added.begin(), new_map_points_added.end());
+    if (mapp->keyframes.size() == 1) return;
     this->map_points_culling(kf);
     this->compute_map_points(kf);
     this->search_in_neighbours(kf);

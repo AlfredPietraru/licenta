@@ -1,5 +1,6 @@
 #include "../include/Tracker.h"
 
+
 void compute_difference_between_positions(const Sophus::SE3d &estimated, const Sophus::SE3d &ground_truth, bool print_now)
 {
     if (!print_now)
@@ -112,41 +113,26 @@ bool Tracker::Is_KeyFrame_needed()
     return (c1 || c2) && c3;
 }
 
-void Tracker::RemoveOutliersCurrentFrame(double chi2Mono, double chi2Stereo) {
-    double error;
-    std::vector<std::pair<MapPoint*, Feature*>> copy_mp_correlations(this->current_kf->mp_correlations.begin(), this->current_kf->mp_correlations.end());
-    for (std::pair<MapPoint*, Feature*> it : copy_mp_correlations) {
-        MapPoint *mp = it.first;
-        Feature *f = it.second;
-        if (f->is_monocular) {
-            error = Common::get_monocular_reprojection_error(this->current_kf, mp, f, chi2Mono); 
-            if (error > chi2Mono) {
-                Map::remove_map_point_from_keyframe(this->current_kf, mp);
-            }
-        }
-        if (!f->is_monocular) {
-            error = Common::get_rgbd_reprojection_error(this->current_kf, mp, f, chi2Stereo);
-            if (error > chi2Stereo) {
-                Map::remove_map_point_from_keyframe(this->current_kf, mp);  
-            }
-        }
-    }
-}
-
 void Tracker::TrackReferenceKeyFrame()
 {
     if (this->prev_kf != nullptr)
     {
         this->current_kf->set_keyframe_position(this->velocity * this->prev_kf->Tcw);
     }
+    auto start = high_resolution_clock::now();
     matcher->match_frame_reference_frame(this->current_kf, this->reference_kf);
+    auto end = high_resolution_clock::now();
+    this->orb_matching_time += duration_cast<milliseconds>(end - start).count();
+
     if (this->current_kf->mp_correlations.size() < 15)
     {
         std::cout << this->current_kf->mp_correlations.size() << " REFERENCE FRAME N A URMARIT SUFICIENTE MAP POINTS PENTRU OPTIMIZARE\n";
         exit(1);
     }
+    start = high_resolution_clock::now();
     this->motionOnlyBA->solve_ceres(this->current_kf, false);
-    this->RemoveOutliersCurrentFrame(5.991, 7.815);
+    end = high_resolution_clock::now();
+    this->motion_only_ba_time += duration_cast<milliseconds>(end - start).count();
     if (this->current_kf->mp_correlations.size() < 10)
     {
         std::cout << this->current_kf->mp_correlations.size() << " REFERENCE FRAME NU A URMARIT SUFICIENTE INLIERE MAP POINTS\n";
@@ -158,7 +144,10 @@ void Tracker::TrackConsecutiveFrames()
 {
     int window = 15;
     this->current_kf->set_keyframe_position(this->velocity * this->prev_kf->Tcw);
+    auto start = high_resolution_clock::now();
     matcher->match_consecutive_frames(this->current_kf, this->prev_kf, window);
+    auto end = high_resolution_clock::now();
+    this->orb_matching_time += duration_cast<milliseconds>(end - start).count();
     if (this->current_kf->mp_correlations.size() < 20)
     {
         matcher->match_consecutive_frames(this->current_kf, this->prev_kf, 2 * window);
@@ -168,8 +157,10 @@ void Tracker::TrackConsecutiveFrames()
             return;
         }
     }
+    start = high_resolution_clock::now();
     this->motionOnlyBA->solve_ceres(this->current_kf, false);
-    this->RemoveOutliersCurrentFrame(5.991, 7.815);
+    end = high_resolution_clock::now();
+    this->motion_only_ba_time += duration_cast<milliseconds>(end - start).count();
     if (this->current_kf->mp_correlations.size() < 10)
     {
         std::cout << " \nURMARIREA INTRE FRAME-URI NU A FUNCTIONAT DUPA OPTIMIZARE\n";
@@ -198,15 +189,19 @@ KeyFrame *Tracker::FindReferenceKeyFrame()
 void Tracker::TrackLocalMap(Map *mapp)
 {
     KeyFrame *current_ref_kf = this->FindReferenceKeyFrame();
-
+    auto start = high_resolution_clock::now();
     mapp->track_local_map(this->current_kf, current_ref_kf, this->local_keyframes);
+    auto end = high_resolution_clock::now();
+    this->orb_matching_time += duration_cast<milliseconds>(end - start).count();
     if (this->current_kf->mp_correlations.size() < 30)
     {
         std::cout << " \nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
         return;
     }
+    start = high_resolution_clock::now();
     this->motionOnlyBA->solve_ceres(this->current_kf, false);
-    this->RemoveOutliersCurrentFrame(5.991, 7.815);
+    end = high_resolution_clock::now();
+    this->motion_only_ba_time += duration_cast<milliseconds>(end - start).count();
     int minim_number_points_necessary = mapp->keyframes.size() <= 2 ? 30 : 50;
     if ((int)this->current_kf->mp_correlations.size() < minim_number_points_necessary)
     {

@@ -395,20 +395,16 @@ void Map::update_local_map(KeyFrame *ref, std::unordered_set<KeyFrame *> &keyfra
     }
     
     if (to_delete_from_local_map.empty() && to_add_to_local_map.empty()) return;
-    std::cout << to_delete_from_local_map.size() << " " << to_add_to_local_map.size() << "\n";
+    // std::cout << to_delete_from_local_map.size() << " " << to_add_to_local_map.size() << "\n";
+    // int nr_obs = this->keyframes.size() < 2 ? -1 : 2;
     for (KeyFrame *kf : to_add_to_local_map) {
         local_keyframes.insert(kf);
         std::vector<MapPoint *> mps = kf->get_map_points();
-        local_map_points.insert(mps.begin(), mps.end());        
+        for (MapPoint *mp : mps) {
+            // if ((int)mp->keyframes.size() < nr_obs) continue;
+            local_map_points.insert(mp);        
+        }
     }
-    // local_map_points.clear();
-    // local_keyframes.clear();
-    // for (KeyFrame *local_map_kf : new_local_keyframes)
-    // {
-    //     local_keyframes.insert(local_map_kf);
-    //     std::vector<MapPoint *> mps = local_map_kf->get_map_points();
-    //     local_map_points.insert(mps.begin(), mps.end());
-    // }
 }
 
 
@@ -434,6 +430,7 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
     int still_in_frustum = 0;
     int descriptor_feature_test = 0;
     std::vector<MapPoint*> to_delete;
+    // std::cout << local_map_points.size() << " dimensiune local map \n";
     for (MapPoint *mp : local_map_points)
     {
         if (kf->check_map_point_in_keyframe(mp))
@@ -443,9 +440,9 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
         if (d <= 1e-1)
             continue;
         u = kf->K(0, 0) * point_camera_coordinates(0) / d + kf->K(0, 2);
-        v = kf->K(1, 1) * point_camera_coordinates(1) / d + kf->K(1, 2);
         if (u < kf->minX || u > kf->maxX - 1)
             continue;
+        v = kf->K(1, 1) * point_camera_coordinates(1) / d + kf->K(1, 2);
         if (v < kf->minY || v > kf->maxY - 1)
             continue;
 

@@ -24,7 +24,7 @@ public:
         if (this->is_monocular)
             return true;
 
-        T disp_pred = T(kf->K(0, 0)) * 0.08 * inv_d;
+        T disp_pred = T(kf->K(0, 0)) * kf->BASELINE * inv_d;
         T disp_meas = T(f->kpu.pt.x) - T(f->right_coordinate);      
         residuals[2] = (disp_pred - disp_meas) / kf->POW_OCTAVE[f->kpu.octave];
         return true;
@@ -59,6 +59,29 @@ Sophus::SE3d compute_pose(KeyFrame *kf, double *pose) {
     return Sophus::SE3d(quaternion, Eigen::Vector3d(pose[4], pose[5], pose[6]));
 }
 
+void MotionOnlyBA::RemoveOutliersCurrentFrame(KeyFrame *kf, double chi2Mono, double chi2Stereo) {
+    double error;
+    // int out = 0
+    std::vector<std::pair<MapPoint*, Feature*>> copy_mp_correlations(kf->mp_correlations.begin(), kf->mp_correlations.end());
+    for (std::pair<MapPoint*, Feature*> it : copy_mp_correlations) {
+        MapPoint *mp = it.first;
+        Feature *f = it.second;
+        if (f->is_monocular) {
+            error = Common::get_monocular_reprojection_error(kf, mp, f, chi2Mono); 
+            if (error > chi2Mono) {
+                Map::remove_map_point_from_keyframe(kf, mp);
+                // out += 1;
+            }
+        }
+        if (!f->is_monocular) {
+            error = Common::get_rgbd_reprojection_error(kf, mp, f, chi2Stereo);
+            if (error > chi2Stereo) {
+                Map::remove_map_point_from_keyframe(kf, mp);
+                // out += 1;  
+            }
+        }
+    }
+}
 
 void MotionOnlyBA::solve_ceres(KeyFrame *kf, bool display)
 {
@@ -67,8 +90,8 @@ void MotionOnlyBA::solve_ceres(KeyFrame *kf, bool display)
     
     const float chi2Mono[4]={5.991, 5.991, 5.991, 5.991};
     const float chi2Stereo[4]={7.815, 7.815, 7.815, 7.815};
-    double error;
-    for (int i = 0; i < 4; i++)
+
+    for (int i = 0; i < 2; i++)
     {
         ceres::Problem problem;
         ceres::Solver::Options options;
@@ -91,16 +114,12 @@ void MotionOnlyBA::solve_ceres(KeyFrame *kf, bool display)
             MapPoint *mp = it.first;
             Feature *f = it.second;
             if (f->is_monocular) {
-                error = Common::get_monocular_reprojection_error(kf, mp, f, chi2Mono[i]);
-                if (error > chi2Mono[i]) continue;
                 ceres::CostFunction *cost_function;
                 cost_function = BundleError::Create_Monocular(kf, mp, f);
                 problem.AddResidualBlock(cost_function, loss_function_mono, kf->pose_vector);   
                 continue; 
             }
             if (!f->is_monocular) {
-                error = Common::get_rgbd_reprojection_error(kf, mp, f, chi2Stereo[i]);
-                if (error > chi2Stereo[i]) continue;
                 ceres::CostFunction *cost_function;
                 cost_function = BundleError::Create_Stereo(kf, mp, f);    
                 problem.AddResidualBlock(cost_function, loss_function_stereo, kf->pose_vector);
@@ -113,5 +132,7 @@ void MotionOnlyBA::solve_ceres(KeyFrame *kf, bool display)
             std::cout << summary.FullReport() << "\n";
         }
         kf->set_keyframe_position(kf->compute_pose()); 
+        this->RemoveOutliersCurrentFrame(kf, chi2Mono[i], chi2Stereo[i]);
+        if (kf->mp_correlations.size() < 3) return;
     }
 }

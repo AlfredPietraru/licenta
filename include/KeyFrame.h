@@ -30,6 +30,7 @@ public:
     int reference_idx;
     int isKeyFrame = false;
     const double POW_OCTAVE[8] = {1, 1.2, 1.44, 1.728, 2.0736, 2.48832, 2.985984, 3.5831808};
+    // const double INVERSE_POW_OCTAVE[8] = {1, }
 
     std::vector<Feature> features;
     std::unordered_map<MapPoint*, Feature*> mp_correlations;

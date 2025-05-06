@@ -56,6 +56,9 @@ public:
 
     int total_tracking_during_matching = 0;
     int total_tracking_during_local_map = 0;
+
+    int motion_only_ba_time = 0;
+    int orb_matching_time = 0;
     
     bool is_first_keyframe = true;
     KeyFrame* FindReferenceKeyFrame();
@@ -63,7 +66,6 @@ public:
     void TrackConsecutiveFrames();
     void TrackLocalMap(Map *mapp);
     bool Is_KeyFrame_needed();
-    void RemoveOutliersCurrentFrame(double chi2Mono, double chi2Stereo);
     // auxiliary functions
     void get_current_key_frame(Mat frame, Mat depth);
     void tracking_was_lost();

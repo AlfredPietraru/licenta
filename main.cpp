@@ -29,6 +29,7 @@ TumDatasetReader *reader;
 Tracker *tracker;
 int total_tracking_duration = 0;
 int total_local_mapping_duration = 0;
+
 void signalHandler(int signum) {
     std::cout << "Interrupt signal (" << signum << ") received.\n";
     reader->write_all_entries();
@@ -37,6 +38,9 @@ void signalHandler(int signum) {
     std::cout << tracker->total_tracking_during_matching / 1000 << " tracking between feature matching\n";
     std::cout << tracker->total_tracking_during_local_map / 1000 << " atat a durat doar local map matching\n";
     std::cout << total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n";
+    std::cout << tracker->motion_only_ba_time / 1000 << " motion only BA time\n";
+    std::cout << tracker->orb_matching_time / 1000 << " orb feature matching time\n";
+    
     reader->outfile.close();
     exit(signum);
 }
@@ -58,6 +62,8 @@ void display_timing_information() {
     std::cout << tracker->total_tracking_during_matching / 1000 << " tracking between feature matching\n";
     std::cout << tracker->total_tracking_during_local_map / 1000 << " atat a durat doar local map matching\n";
     std::cout << total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n"; 
+    std::cout << tracker->motion_only_ba_time / 1000 << " motion only BA time\n";
+    std::cout << tracker->orb_matching_time / 1000 << " orb feature matching time\n";
 }
 
 int main()

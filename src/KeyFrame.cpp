@@ -48,7 +48,7 @@ bool KeyFrame::check_number_close_points()
         if (f.get_map_point() == nullptr) close_points_untracked++;
         if (f.get_map_point() != nullptr) close_points_tracked++;
     }
-    return (close_points_tracked < 150) && (close_points_untracked > 70);
+    return (close_points_tracked < 100) && (close_points_untracked > 70);
 }
 
 void KeyFrame::create_feature_vector(std::vector<cv::KeyPoint> &keypoints, std::vector<cv::KeyPoint> &undistored_kps,

@@ -203,7 +203,6 @@ void OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref)
             f2it = curr->features_vec.lower_bound(f1it->first);
         }
     }
-    std::cout << current_correlations.size() << " atatea puncte gasite initial\n";
     this->checkOrientation(current_correlations, curr, ref);
 }
 
