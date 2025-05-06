@@ -25,8 +25,8 @@ public:
         T inv_d = T(1) / camera_coordinates[2]; 
         T x = T(kf->K(0, 0)) * camera_coordinates[0] * inv_d + T(kf->K(0, 2));
         T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
-        residuals[0] = (x - T(f->kpu.pt.x)) / kf->POW_OCTAVE[f->kpu.octave];
-        residuals[1] = (y - T(f->kpu.pt.y)) / kf->POW_OCTAVE[f->kpu.octave];
+        residuals[0] = (x - T(f->kpu.pt.x)) * kf->INVERSE_POW_OCTAVE[f->kpu.octave];
+        residuals[1] = (y - T(f->kpu.pt.y)) * kf->INVERSE_POW_OCTAVE[f->kpu.octave];
         return true;
     }
 
@@ -57,9 +57,9 @@ public:
         T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
         T disp_pred = T(kf->K(0, 0)) * kf->BASELINE * inv_d;
         T disp_meas = T(f->kpu.pt.x) - T(f->right_coordinate);
-        residuals[0] = (x - T(f->kpu.pt.x)) / kf->POW_OCTAVE[f->kpu.octave];
-        residuals[1] = (y - T(f->kpu.pt.y)) / kf->POW_OCTAVE[f->kpu.octave];
-        residuals[2] = (disp_pred - disp_meas) / kf->POW_OCTAVE[f->kpu.octave];
+        residuals[0] = (x - T(f->kpu.pt.x)) * kf->INVERSE_POW_OCTAVE[f->kpu.octave];
+        residuals[1] = (y - T(f->kpu.pt.y)) * kf->INVERSE_POW_OCTAVE[f->kpu.octave];
+        residuals[2] = (disp_pred - disp_meas) * kf->INVERSE_POW_OCTAVE[f->kpu.octave];
         return true;
     }
 
@@ -94,8 +94,8 @@ public:
         T inv_d = T(1) / camera_coordinates[2];
         T x = T(kf->K(0, 0)) * camera_coordinates[0] * inv_d + T(kf->K(0, 2));
         T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
-        residuals[0] = (x - T(f->kpu.pt.x)) / kf->POW_OCTAVE[f->kpu.octave];
-        residuals[1] = (y - T(f->kpu.pt.y)) / kf->POW_OCTAVE[f->kpu.octave];
+        residuals[0] = (x - T(f->kpu.pt.x)) * kf->INVERSE_POW_OCTAVE[f->kpu.octave];
+        residuals[1] = (y - T(f->kpu.pt.y)) * kf->INVERSE_POW_OCTAVE[f->kpu.octave];
         return true;
     }
 
@@ -132,10 +132,10 @@ public:
         T x = T(kf->K(0, 0)) * camera_coordinates[0] * inv_d + T(kf->K(0, 2));
         T y = T(kf->K(1, 1)) * camera_coordinates[1] * inv_d + T(kf->K(1, 2));
         T disp_pred = T(kf->K(0, 0)) * kf->BASELINE * inv_d;
-        T disp_meas = T(f->kpu.pt.x) - T(f->right_coordinate);      
-        residuals[0] = (x - T(f->kpu.pt.x)) / kf->POW_OCTAVE[f->kpu.octave];
-        residuals[1] = (y - T(f->kpu.pt.y)) / kf->POW_OCTAVE[f->kpu.octave];
-        residuals[2] = (disp_pred - disp_meas) / kf->POW_OCTAVE[f->kpu.octave];
+        T disp_meas = T(f->kpu.pt.x) - T(f->right_coordinate);
+        residuals[0] = (x - T(f->kpu.pt.x)) * kf->INVERSE_POW_OCTAVE[f->kpu.octave];
+        residuals[1] = (y - T(f->kpu.pt.y)) * kf->INVERSE_POW_OCTAVE[f->kpu.octave];
+        residuals[2] = (disp_pred - disp_meas) * kf->INVERSE_POW_OCTAVE[f->kpu.octave];
         return true;
     }
 

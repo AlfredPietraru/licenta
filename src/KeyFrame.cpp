@@ -2,7 +2,6 @@
 
 KeyFrame::KeyFrame() {};
 
-
 std::vector<MapPoint*> KeyFrame::get_map_points() {
     std::vector<MapPoint*> mps;
     for (std::pair<MapPoint*, Feature*> it : this->mp_correlations) {
