@@ -103,7 +103,10 @@ TumDatasetReader::TumDatasetReader(Config cfg, Map *mapp) {
         this->groundtruth_poses.push_back(map_rgb_pose[pair_names.first].pose);
     }
     this->outfile << "# timestamp tx ty tz qx qy qz qw\n";
-    slam_to_tum_R <<  -1,  0,  0, 0, -1, 0, 0, 0,  1;
+    // initial_pose = Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(-0.6271, -1.3434, 1.6606));
+    // 0.6583 0.6112 -0.2938 -0.3266
+    rotation_pose = Sophus::SE3d(Eigen::Quaterniond(-0.3266, 0.6583, 0.6112, 0.2938), Eigen::Vector3d(0, 0, 0));
+    translation_pose = Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(-0.6271, -1.3434, 1.6606));
 }   
 
 Sophus::SE3d TumDatasetReader::get_next_groundtruth_pose() {
@@ -148,6 +151,13 @@ void TumDatasetReader::store_entry(KeyFrame *current_kf) {
 void TumDatasetReader::write_entry(Sophus::SE3d pose, int index) {
     std::string path = this->rgb_path[index];
     std::string file_name = extract_timestamp(path);
+    // if (index == 0) {
+    //     std::cout << pose.matrix() << "\n";
+    // } 
+    pose = translation_pose * rotation_pose * pose;
+    // if (index == 0) {
+    //     std::cout << pose.matrix() << "\n";
+    // } 
     Eigen::Matrix3d R_tum = pose.rotationMatrix();
     Eigen::Quaterniond q_tum(R_tum);
     Eigen::Vector3d t_tum = pose.translation();
@@ -160,6 +170,7 @@ void TumDatasetReader::write_entry(Sophus::SE3d pose, int index) {
 
 void TumDatasetReader::write_all_entries() {
     std::cout << "AICI INCEPE SCRIEREA IN FISIER\n";
+    // std::cout << this->initial_pose.matrix() << "\n";
     for (int i = 0; i <  (int)this->frame_poses.size(); i++) {
         FramePoseEntry framePoseEntry = this->frame_poses[i]; 
         Sophus::SE3d lastKeyFramePose = this->mapp->keyframes[framePoseEntry.last_keyframe_idx]->Tcw;

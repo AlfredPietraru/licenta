@@ -43,7 +43,8 @@ public:
     std::ofstream outfile;
     std::vector<Sophus::SE3d> groundtruth_poses;
     std::vector<FramePoseEntry> frame_poses;
-    Eigen::Matrix3d slam_to_tum_R;
+    Sophus::SE3d translation_pose;
+    Sophus::SE3d rotation_pose;
     int idx = 0;
     Config cfg;
     Map *mapp;
