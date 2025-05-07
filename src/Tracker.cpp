@@ -130,7 +130,7 @@ void Tracker::TrackReferenceKeyFrame()
         exit(1);
     }
     start = high_resolution_clock::now();
-    this->motionOnlyBA->solve_ceres(this->current_kf, false);
+    this->motionOnlyBA->solve_ceres(this->current_kf, this->prev_kf, false);
     end = high_resolution_clock::now();
     this->motion_only_ba_time += duration_cast<milliseconds>(end - start).count();
     if (this->current_kf->mp_correlations.size() < 10)
@@ -158,7 +158,7 @@ void Tracker::TrackConsecutiveFrames()
         }
     }
     start = high_resolution_clock::now();
-    this->motionOnlyBA->solve_ceres(this->current_kf, false);
+    this->motionOnlyBA->solve_ceres(this->current_kf, this->prev_kf, false);
     end = high_resolution_clock::now();
     this->motion_only_ba_time += duration_cast<milliseconds>(end - start).count();
     if (this->current_kf->mp_correlations.size() < 10)
@@ -199,7 +199,7 @@ void Tracker::TrackLocalMap(Map *mapp)
         return;
     }
     start = high_resolution_clock::now();
-    this->motionOnlyBA->solve_ceres(this->current_kf, false);
+    this->motionOnlyBA->solve_ceres(this->current_kf, this->prev_kf, false);
     end = high_resolution_clock::now();
     this->motion_only_ba_time += duration_cast<milliseconds>(end - start).count();
     int minim_number_points_necessary = mapp->keyframes.size() <= 2 ? 30 : 50;

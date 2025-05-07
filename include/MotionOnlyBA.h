@@ -42,7 +42,7 @@ public:
     };
 
     ceres::Solver::Options options;
-    void solve_ceres(KeyFrame *frame, bool display);
+    void solve_ceres(KeyFrame *frame, KeyFrame *prev_kf, bool display);
     void RemoveOutliersCurrentFrame(KeyFrame *kf, double chi2Mono, double chi2Stereo);
 };
 

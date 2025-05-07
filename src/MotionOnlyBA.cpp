@@ -49,6 +49,31 @@ private:
     bool is_monocular;
 };
 
+
+class MotionChangeError {
+    public:
+    MotionChangeError(KeyFrame *prev_kf, double weight) : prev_kf(prev_kf), weight(weight) {}
+
+    template <typename T>
+    bool operator()(const T *const pose, T *residuals) const
+    {
+        residuals[0] = (prev_kf->pose_vector[4] - pose[4]) * weight;
+        residuals[1] = (prev_kf->pose_vector[5] - pose[5]) * weight;
+        residuals[2] = (prev_kf->pose_vector[6] - pose[6]) * weight;
+        return true;
+    }
+
+    static ceres::CostFunction *Create(KeyFrame *prev_kf, double weight)
+    {
+        return (new ceres::AutoDiffCostFunction<MotionChangeError, 3, 7>(
+            new MotionChangeError(prev_kf, weight)));
+    }
+
+    private:
+    KeyFrame *prev_kf;
+    double weight;
+};
+
 Sophus::SE3d compute_pose(KeyFrame *kf, double *pose) {
     Eigen::Quaterniond quaternion(pose[0], pose[1], pose[2], pose[3]);
     Eigen::Quaterniond old_quaternion = kf->Tcw.unit_quaternion();
@@ -83,7 +108,7 @@ void MotionOnlyBA::RemoveOutliersCurrentFrame(KeyFrame *kf, double chi2Mono, dou
     }
 }
 
-void MotionOnlyBA::solve_ceres(KeyFrame *kf, bool display)
+void MotionOnlyBA::solve_ceres(KeyFrame *kf, KeyFrame *prev_kf, bool display)
 {
     if (kf->mp_correlations.size() < 3)
         return ;
@@ -92,23 +117,18 @@ void MotionOnlyBA::solve_ceres(KeyFrame *kf, bool display)
     {
         ceres::Problem problem;
         options.check_gradients = false;
-        options.minimizer_progress_to_stdout = display;
-        // ceres::Solver::Options options;
-        // options.linear_solver_type = ceres::LinearSolverType::DENSE_QR;
-        // options.function_tolerance = 1e-7;
-        // options.gradient_tolerance = 1e-7;
-        // options.parameter_tolerance = 1e-7;
-
-        // options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-        // options.check_gradients = false;
-        // options.minimizer_progress_to_stdout = display;
-        // options.max_num_iterations = 10;
-        
+        options.minimizer_progress_to_stdout = display;        
         ceres::LossFunction *loss_function_mono = new ceres::HuberLoss(sqrt(chi2Mono[i]));
         ceres::LossFunction *loss_function_stereo = new ceres::HuberLoss(sqrt(chi2Stereo[i]));
 
         problem.AddParameterBlock(kf->pose_vector, 7);
         problem.SetManifold(kf->pose_vector, new SE3Manifold());
+        if (prev_kf != nullptr) {
+            ceres::CostFunction *cost_function;
+            cost_function = MotionChangeError::Create(prev_kf, 10);
+            problem.AddResidualBlock(cost_function, nullptr, kf->pose_vector);
+        }
+
         for (std::pair<MapPoint*, Feature*> it : kf->mp_correlations) {
             MapPoint *mp = it.first;
             Feature *f = it.second;

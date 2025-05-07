@@ -16,7 +16,7 @@ double Common::get_rgbd_reprojection_error(KeyFrame *kf, MapPoint *mp, Feature* 
     double disp_meas = kpu.pt.x - feature->right_coordinate;      
     residuals[2] = (disp_pred - disp_meas) * kf->INVERSE_POW_OCTAVE[kpu.octave];
     double a = sqrt(residuals[0] * residuals[0] + residuals[1] * residuals[1] + residuals[2] * residuals[2]);
-    if (a <= sqrt(chi2)) return pow(a, 2) / 2;
+    if (a <= sqrt(chi2)) return a * a / 2;
     return sqrt(chi2) * a - chi2 / 2;
 }
 
@@ -31,6 +31,6 @@ double Common::get_monocular_reprojection_error(KeyFrame *kf, MapPoint *mp, Feat
     residuals[0] = (x - kpu.pt.x) * kf->INVERSE_POW_OCTAVE[kpu.octave];
     residuals[1] = (y - kpu.pt.y) * kf->INVERSE_POW_OCTAVE[kpu.octave];
     double a = sqrt(residuals[0] * residuals[0] + residuals[1] * residuals[1]);
-    if (a <= sqrt(chi2)) return pow(a, 2) / 2;
+    if (a <= sqrt(chi2)) return a * a / 2;
     return sqrt(chi2) * a - chi2 / 2;
 }
