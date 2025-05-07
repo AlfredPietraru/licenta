@@ -105,8 +105,8 @@ TumDatasetReader::TumDatasetReader(Config cfg, Map *mapp) {
     this->outfile << "# timestamp tx ty tz qx qy qz qw\n";
     // initial_pose = Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(-0.6271, -1.3434, 1.6606));
     // 0.6583 0.6112 -0.2938 -0.3266
-    rotation_pose = Sophus::SE3d(Eigen::Quaterniond(-0.3266, 0.6583, 0.6112, 0.2938), Eigen::Vector3d(0, 0, 0));
-    translation_pose = Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(-0.6271, -1.3434, 1.6606));
+    rotation_pose = Sophus::SE3d(Eigen::Quaterniond(-0.3266, 0.6583, 0.6112, -0.2938), Eigen::Vector3d(0, 0, 0));
+    translation_pose = Sophus::SE3d(Eigen::Quaterniond(-0.3266, 0.6583, 0.6112, -0.2938), Eigen::Vector3d(1.3434, 0.6271, 1.6606));
 }   
 
 Sophus::SE3d TumDatasetReader::get_next_groundtruth_pose() {
@@ -154,17 +154,15 @@ void TumDatasetReader::write_entry(Sophus::SE3d pose, int index) {
     // if (index == 0) {
     //     std::cout << pose.matrix() << "\n";
     // } 
-    pose = translation_pose * rotation_pose * pose;
+    pose = translation_pose * pose.inverse();
     // if (index == 0) {
     //     std::cout << pose.matrix() << "\n";
     // } 
     Eigen::Matrix3d R_tum = pose.rotationMatrix();
     Eigen::Quaterniond q_tum(R_tum);
     Eigen::Vector3d t_tum = pose.translation();
-    this->outfile << file_name << " "
-              << -t_tum.y() << " " << -t_tum.x() << " " << t_tum.z() << " "
-              << -q_tum.x() << " " << q_tum.y() << " " << q_tum.z() << " " << q_tum.w()
-              << std::endl;
+    this->outfile << file_name << " " << t_tum.x() << " " << t_tum.y() << " " << t_tum.z() << " "
+              << q_tum.x() << " " << q_tum.y() << " " << q_tum.z() << " " << q_tum.w() << std::endl;
 }
 
 
@@ -175,7 +173,7 @@ void TumDatasetReader::write_all_entries() {
         FramePoseEntry framePoseEntry = this->frame_poses[i]; 
         Sophus::SE3d lastKeyFramePose = this->mapp->keyframes[framePoseEntry.last_keyframe_idx]->Tcw;
         Sophus::SE3d currentFramePose = framePoseEntry.pose * lastKeyFramePose;
-        write_entry(currentFramePose, i);
+        write_entry(currentFramePose, i + 3);
     }
     std::cout << "AICI SE TERMINA SCRIEREA IN FISIER\n";
 }
