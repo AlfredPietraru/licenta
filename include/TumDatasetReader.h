@@ -59,7 +59,4 @@ public:
     bool should_end();
 };
 
-
-
-
 #endif

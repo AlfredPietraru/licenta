@@ -83,14 +83,14 @@ TumDatasetReader::TumDatasetReader(Config cfg, Map *mapp) {
     this->mapp = mapp;
     std::string path_to_write = "../rgbd_dataset_freiburg1_xyz/estimated.txt";
     this->outfile = std::ofstream(path_to_write);
-    std::string rgb_path = "../rgbd_dataset_freiburg1_xyz/rgb";
-    std::string depth_path = "../rgbd_dataset_freiburg1_xyz/depth";
+    std::string rgb_paths_location = "../rgbd_dataset_freiburg1_xyz/rgb";
+    std::string depth_path_location = "../rgbd_dataset_freiburg1_xyz/depth";
     std::unordered_map<std::string, std::string> map_rgb_file_name_path;
     std::unordered_map<std::string, std::string> map_depth_file_name_path;
-    for (std::filesystem::__cxx11::directory_entry entry : fs::directory_iterator(rgb_path)) {
+    for (std::filesystem::__cxx11::directory_entry entry : fs::directory_iterator(rgb_paths_location)) {
         map_rgb_file_name_path.insert({extract_timestamp(entry.path()), entry.path()});
     }
-    for (std::filesystem::__cxx11::directory_entry entry : fs::directory_iterator(depth_path)) {
+    for (std::filesystem::__cxx11::directory_entry entry : fs::directory_iterator(depth_path_location)) {
         map_depth_file_name_path.insert({extract_timestamp(entry.path()), entry.path()});
     }
     std::vector<std::pair<std::string, std::string>> map_rgb_depth = get_mapping_between_rgb_depth("../rgbd_dataset_freiburg1_xyz/maping_rgb_depth.txt");
@@ -103,9 +103,6 @@ TumDatasetReader::TumDatasetReader(Config cfg, Map *mapp) {
         this->groundtruth_poses.push_back(map_rgb_pose[pair_names.first].pose);
     }
     this->outfile << "# timestamp tx ty tz qx qy qz qw\n";
-    // initial_pose = Sophus::SE3d(Eigen::Quaterniond::Identity(), Eigen::Vector3d(-0.6271, -1.3434, 1.6606));
-    // 0.6583 0.6112 -0.2938 -0.3266
-    rotation_pose = Sophus::SE3d(Eigen::Quaterniond(-0.3266, 0.6583, 0.6112, -0.2938), Eigen::Vector3d(0, 0, 0));
     translation_pose = Sophus::SE3d(Eigen::Quaterniond(-0.3266, 0.6583, 0.6112, -0.2938), Eigen::Vector3d(1.3434, 0.6271, 1.6606));
 }   
 
@@ -115,9 +112,8 @@ Sophus::SE3d TumDatasetReader::get_next_groundtruth_pose() {
 }
 
 bool TumDatasetReader::should_end() {
-    return this-> idx == 790;
+    return this-> idx == (int)this->rgb_path.size();
 }
-
 
 cv::Mat TumDatasetReader::get_next_frame() {
     std::cout << idx << " " << this->rgb_path[idx] << " ";
@@ -126,7 +122,6 @@ cv::Mat TumDatasetReader::get_next_frame() {
     cv::cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
     return gray;
 }
-
 
 cv::Mat TumDatasetReader::get_next_depth() {
     std::cout << this->depth_path[idx] << "\n";
@@ -138,7 +133,6 @@ void TumDatasetReader::increase_idx() {
     this->idx++;
 }
 
-
 void TumDatasetReader::store_entry(KeyFrame *current_kf) {
     if (current_kf->isKeyFrame) return;
     FramePoseEntry framePoseEntry;
@@ -147,17 +141,10 @@ void TumDatasetReader::store_entry(KeyFrame *current_kf) {
     this->frame_poses.push_back(framePoseEntry);
 }
 
-
 void TumDatasetReader::write_entry(Sophus::SE3d pose, int index) {
     std::string path = this->rgb_path[index];
     std::string file_name = extract_timestamp(path);
-    // if (index == 0) {
-    //     std::cout << pose.matrix() << "\n";
-    // } 
-    pose = translation_pose * pose.inverse();
-    // if (index == 0) {
-    //     std::cout << pose.matrix() << "\n";
-    // } 
+    pose = translation_pose * pose.inverse(); 
     Eigen::Matrix3d R_tum = pose.rotationMatrix();
     Eigen::Quaterniond q_tum(R_tum);
     Eigen::Vector3d t_tum = pose.translation();
@@ -165,15 +152,13 @@ void TumDatasetReader::write_entry(Sophus::SE3d pose, int index) {
               << q_tum.x() << " " << q_tum.y() << " " << q_tum.z() << " " << q_tum.w() << std::endl;
 }
 
-
 void TumDatasetReader::write_all_entries() {
     std::cout << "AICI INCEPE SCRIEREA IN FISIER\n";
-    // std::cout << this->initial_pose.matrix() << "\n";
     for (int i = 0; i <  (int)this->frame_poses.size(); i++) {
         FramePoseEntry framePoseEntry = this->frame_poses[i]; 
         Sophus::SE3d lastKeyFramePose = this->mapp->keyframes[framePoseEntry.last_keyframe_idx]->Tcw;
         Sophus::SE3d currentFramePose = framePoseEntry.pose * lastKeyFramePose;
-        write_entry(currentFramePose, i + 3);
+        write_entry(currentFramePose, i);
     }
     std::cout << "AICI SE TERMINA SCRIEREA IN FISIER\n";
 }
