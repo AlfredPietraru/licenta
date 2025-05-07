@@ -1,7 +1,5 @@
 #include "../include/OrbMatcher.h"
 
-
-const int DES_DIST = 50;
 int inline::OrbMatcher::ComputeHammingDistance(const cv::Mat &a, const cv::Mat &b)
 {
     const int *pa = a.ptr<int32_t>();
@@ -86,9 +84,8 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
     Eigen::Vector3d camera_to_map_view_ray;
     Eigen::Vector4d point_camera_coordinates;
     Eigen::Vector3d kf_camer_center_prev_coordinates = prev_kf->Tcw.rotationMatrix() * kf_camera_center + prev_kf->Tcw.translation();
-    // aici era inainte 3.2 dar nu e corect este 0.08 -> stereo baseline in meters 
-    const bool bForward  = kf_camer_center_prev_coordinates(2) >  0.08;
-    const bool bBackward = -kf_camer_center_prev_coordinates(2) > 0.08;
+    const bool bForward  = kf_camer_center_prev_coordinates(2) >  kf->BASELINE;
+    const bool bBackward = -kf_camer_center_prev_coordinates(2) > kf->BASELINE;
     std::vector<std::pair<MapPoint*, Feature*>> current_correlations;
     current_correlations.reserve(prev_kf->mp_correlations.size());
 
@@ -130,7 +127,7 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
             int cur_hamm_dist = ComputeHammingDistance(mp->orb_descriptor, kf->features[idx].descriptor);
             if (!kf->features[idx].is_monocular)
             {
-                double fake_rgbd = u - kf->K(0, 0) * 0.08 / d;
+                double fake_rgbd = u - kf->K(0, 0) * kf->BASELINE / d;
                 float er = fabs(fake_rgbd - kf->features[idx].right_coordinate);
                 if (er > scale_of_search) continue;
             }
@@ -140,7 +137,7 @@ void OrbMatcher::match_consecutive_frames(KeyFrame *kf, KeyFrame *prev_kf, int w
                 best_idx = idx;
             }
         }
-        if (best_dist > 100) continue;
+        if (best_dist > this->DES_DIST_HIGH) continue;
         current_correlations.push_back({mp, &kf->features[best_idx]});
     }
     this->checkOrientation(current_correlations, kf, prev_kf);
@@ -187,8 +184,8 @@ void OrbMatcher::match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref)
                         bestDist2 = dist;
                     }
                 }
-                if (bestDist1 > DES_DIST) continue;
-                if (bestDist1 > 0.7 * bestDist2) continue;
+                if (bestDist1 > this->DES_DIST_LOW) continue;
+                if (bestDist1 > this->match_reference_frame_orb_descriptor_ratio * bestDist2) continue;
                 current_correlations.push_back({mp_ref, &curr->features[bestIdx]}); 
             }
             f1it++;
@@ -252,7 +249,7 @@ std::vector<std::pair<int, int>> OrbMatcher::search_for_triangulation(KeyFrame *
                     {
                         const float distex = ex - kpu2.pt.x;
                         const float distey = ey - kpu2.pt.y;
-                        if(distex*distex+distey*distey < 100 * pow(1.2, kpu2.octave)) continue;
+                        if(distex*distex+distey*distey < 100 * ref1->POW_OCTAVE[kpu2.octave]) continue;
                     } 
                    
                     if(CheckDistEpipolarLine(kpu1, kpu2, fundamental_matrix))
@@ -318,7 +315,6 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
     const float &cy = pKF->K(1, 2);
 
     int nFused=0;
-    // std::unordered_set<MapPoint*> copy_map_points(source_kf->map_points.begin(), source_kf->map_points.end());
     int out = 0;
     for(MapPoint *source_mp : source_kf->get_map_points())
     {
@@ -336,7 +332,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
 
         if (u < pKF->minX || u > pKF->maxX - 1) continue;
         if (v < pKF->minY || v > pKF->maxY - 1) continue;
-        const float ur = u - fx * 0.08 * invz;
+        const float ur = u - fx * pKF->BASELINE * invz;
 
         Eigen::Vector3d camera_to_map_view_ray = (source_mp->wcoord_3d - pKF->camera_center_world);
         double distance = camera_to_map_view_ray.norm();
@@ -349,7 +345,7 @@ int OrbMatcher::Fuse(KeyFrame *pKF, KeyFrame *source_kf, const float th)
         int nPredictedLevel = source_mp->predict_image_scale(distance);
         const float radius = th * pKF->POW_OCTAVE[nPredictedLevel];
 
-        const std::vector<int>  vIndices = pKF->get_vector_keypoints_after_reprojection(u, v, radius, -1, 9); 
+        const std::vector<int>  vIndices = pKF->get_vector_keypoints_after_reprojection(u, v, radius, -1, 8); 
 
         if(vIndices.empty()) continue;
 

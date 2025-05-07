@@ -19,17 +19,16 @@
 
 class OrbMatcher {
 public:
-    int minim_points_found;
-    int window;
-    double ratio_key_frame_match;
-    double ratio_track_local_map;
     int orb_descriptor_value;
+    double match_reference_frame_orb_descriptor_ratio;
+    int DES_DIST_LOW;
+    int DES_DIST_HIGH;
+
     OrbMatcher(Orb_Matcher orb_matcher_config) {
-        this->minim_points_found = orb_matcher_config.minim_points_found;
-        this->window = orb_matcher_config.window;
         this->orb_descriptor_value = orb_matcher_config.orb_descriptor_value;
-        this->ratio_key_frame_match = orb_matcher_config.ratio_key_frame_match;
-        this->ratio_track_local_map = orb_matcher_config.ratio_track_local_map;
+        this->match_reference_frame_orb_descriptor_ratio = orb_matcher_config.match_reference_frame_orb_descriptor_ratio;
+        this->DES_DIST_HIGH = orb_matcher_config.des_dist_high;
+        this->DES_DIST_LOW = orb_matcher_config.des_dist_low;
     }
     
     void match_frame_reference_frame(KeyFrame *curr, KeyFrame *ref);

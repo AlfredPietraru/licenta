@@ -1,9 +1,11 @@
 Matcher:
+  des_dist_low: 50
+  des_dist_high: 100
   orb_descriptor_value: 100
-  window: 7
-  minim_points_found: 20
+  match_reference_frame_orb_descriptor_ratio: 0.70
   ratio_key_frame_match: 0.70
   ratio_track_local_map: 0.80
+
 
 Camera:
   K: 
@@ -11,13 +13,3 @@ Camera:
     - [0.0, 516.469215, 255.313989]
     - [0.0, 0.0, 1.0]
   distortion: [0.2624,	-0.9531, -0.0054, 0.0026, 1.1633]
-
-
-# RANSAC for PnP
-PnP:
-  reprojection_window: 4
-  ransac_iterations: 50
-  confidence: 0.99
-
-
-

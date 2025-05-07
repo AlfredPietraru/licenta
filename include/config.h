@@ -10,22 +10,15 @@
 
 struct Orb_Matcher {
   int orb_descriptor_value;
-  int window;
-  int minim_points_found;
-  double ratio_key_frame_match;
+  int des_dist_low;
+  int des_dist_high; 
   double ratio_track_local_map;
-};
-
-struct Pnp_Ransac_Config {
-    int reprojection_window;
-    int ransac_iterations;
-    float confidence;
+  double match_reference_frame_orb_descriptor_ratio;
 };
 
 struct Config {
   cv::Mat K;
   std::vector<double> distortion;
-  Pnp_Ransac_Config pnp_ransac_config;
   Orb_Matcher orb_matcher; 
 };
 

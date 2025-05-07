@@ -15,17 +15,12 @@ Config loadConfig(const std::string &filename) {
     for (int i = 0; i < 5; i++) {
         cfg.distortion.push_back(distortion_yaml[i].as<float>());
     }
-    
-    cfg.orb_matcher.orb_descriptor_value = config["Matcher"]["orb_descriptor_value"].as<int>();
-    cfg.orb_matcher.window = config["Matcher"]["window"].as<int>();
-    cfg.orb_matcher.minim_points_found = config["Matcher"]["minim_points_found"].as<int>();
-    cfg.orb_matcher.ratio_key_frame_match = config["Matcher"]["ratio_key_frame_match"].as<double>();
-    cfg.orb_matcher.ratio_track_local_map = config["Matcher"]["ratio_track_local_map"].as<double>();
-
-    cfg.pnp_ransac_config.reprojection_window = config["PnP"]["reprojection_window"].as<int>();
-    cfg.pnp_ransac_config.ransac_iterations = config["PnP"]["ransac_iterations"].as<int>();
-    cfg.pnp_ransac_config.confidence = config["PnP"]["confidence"].as<double>();
-    
-
+    Orb_Matcher orb_matcher_cfg;
+    orb_matcher_cfg.orb_descriptor_value = config["Matcher"]["orb_descriptor_value"].as<int>();
+    orb_matcher_cfg.des_dist_high = config["Matcher"]["des_dist_high"].as<int>();
+    orb_matcher_cfg.des_dist_low = config["Matcher"]["des_dist_low"].as<int>();
+    orb_matcher_cfg.ratio_track_local_map = config["Matcher"]["ratio_track_local_map"].as<double>();
+    orb_matcher_cfg.match_reference_frame_orb_descriptor_ratio = config["Matcher"]["match_reference_frame_orb_descriptor_ratio"].as<double>();
+    cfg.orb_matcher = orb_matcher_cfg;
     return cfg;
 }
