@@ -72,13 +72,13 @@ int main()
     } else {
         std::cout << "Fisierul a fost incarcat cu succes\n";
     }
+
     Config cfg = loadConfig("../config.yaml");
-    Orb_Matcher orb_matcher_cfg = load_orb_matcher_config("../config.yaml");
     
     Map *mapp = new Map();
     reader = new TumDatasetReader(cfg, mapp); 
     LocalMapping *local_mapper = new LocalMapping(mapp);
-    tracker = new Tracker(mapp, cfg, voc, orb_matcher_cfg);
+    tracker = new Tracker(mapp, cfg, voc);
 
     auto t1 = high_resolution_clock::now();
     while(!reader->should_end()) {

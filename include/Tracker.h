@@ -35,7 +35,7 @@ using namespace cv;
 class Tracker {
 public:
     KeyFrame* tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose);
-    Tracker(Map *mapp, Config cfg, ORBVocabulary* voc, Orb_Matcher orb_matcher_config);
+    Tracker(Map *mapp, Config cfg, ORBVocabulary* voc);
     KeyFrame *current_kf = nullptr;
     KeyFrame* prev_kf = nullptr;
     KeyFrame *reference_kf = nullptr;

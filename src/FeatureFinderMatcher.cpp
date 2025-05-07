@@ -7,14 +7,14 @@ FeatureMatcherFinder::FeatureMatcherFinder(int rows, int cols, Config cfg) {
     this->window = 40;
     this->K = cfg.K;
     this->mDistCoef = cfg.distortion;
-    this->orb = cv::ORB::create(cfg.num_features, 1.2F, 8, cfg.edge_threshold, 0, 2, cv::ORB::HARRIS_SCORE, cfg.patch_size, cfg.fast_threshold);
-    this->orb_edge_threshold = cfg.edge_threshold;
-    this->fast_step = cfg.fast_step;
-    this->orb_iterations = cfg.orb_iterations;
-    this->minim_keypoints = cfg.min_keypoints_cell;
-    this->fast_lower_limit = cfg.fast_lower_limit;
-    this->fast_higher_limit = cfg.fast_higher_limit;
-    this->fast_threshold = cfg.fast_threshold;
+    // this->orb = cv::ORB::create(cfg.num_features, 1.2F, 8, cfg.edge_threshold, 0, 2, cv::ORB::HARRIS_SCORE, cfg.patch_size, cfg.fast_threshold);
+    // this->orb_edge_threshold = cfg.edge_threshold;
+    // this->fast_step = cfg.fast_step;
+    // this->orb_iterations = cfg.orb_iterations;
+    // this->minim_keypoints = cfg.min_keypoints_cell;
+    // this->fast_lower_limit = cfg.fast_lower_limit;
+    // this->fast_higher_limit = cfg.fast_higher_limit;
+    // this->fast_threshold = cfg.fast_threshold;
     this->fast_features_cell = std::vector<int>(this->nr_cells_collumn * this->nr_cells_row, this->fast_threshold);
     this->matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
 }

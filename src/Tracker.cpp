@@ -73,14 +73,14 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth)
     this->current_kf = new KeyFrame(this->prev_kf, keypoints, undistorted_kps, descriptors, depth);
 }
 
-Tracker::Tracker(Map *mapp, Config cfg, ORBVocabulary *voc, Orb_Matcher orb_matcher_config) : mapp(mapp), voc(voc)
+Tracker::Tracker(Map *mapp, Config cfg, ORBVocabulary *voc) : mapp(mapp), voc(voc)
 {
     this->K = cfg.K;
     cv::cv2eigen(cfg.K, this->K_eigen);
     this->mDistCoef = cfg.distortion;
     this->fmf = new FeatureMatcherFinder(480, 640, cfg);
     this->motionOnlyBA = new MotionOnlyBA();
-    this->matcher = new OrbMatcher(orb_matcher_config);
+    this->matcher = new OrbMatcher(cfg.orb_matcher);
     std::cout << "SFARSIT INITIALIZARE\n\n";
 }
 
