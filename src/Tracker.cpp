@@ -1,6 +1,17 @@
 #include "../include/Tracker.h"
 
 
+Tracker::Tracker(Map *mapp, Config cfg, ORBVocabulary *voc) : mapp(mapp), voc(voc)
+{
+    this->K = cfg.K;
+    cv::cv2eigen(cfg.K, this->K_eigen);
+    this->mDistCoef = cfg.distortion;
+    this->fmf = new FeatureMatcherFinder(480, 640, cfg);
+    this->motionOnlyBA = new MotionOnlyBA();
+    this->matcher = new OrbMatcher(cfg.orb_matcher);
+    std::cout << "SFARSIT INITIALIZARE\n\n";
+}
+
 void compute_difference_between_positions(const Sophus::SE3d &estimated, const Sophus::SE3d &ground_truth, bool print_now)
 {
     if (!print_now)
@@ -30,16 +41,7 @@ void compute_difference_between_positions(const Sophus::SE3d &estimated, const S
     std::cout << "Translation Difference: " << translation_diff << " meters\n\n";
 }
 
-void print_pose(Sophus::SE3d pose, std::string message)
-{
-    for (int i = 0; i < 7; i++)
-    {
-        std::cout << pose.data()[i] << " ";
-    }
-    std::cout << message << "\n";
-}
-
-void Tracker::get_current_key_frame(Mat frame, Mat depth)
+void Tracker::GetNextFrame(Mat frame, Mat depth)
 {
     std::vector<cv::KeyPoint> keypoints;
     std::vector<cv::KeyPoint> undistorted_kps;
@@ -73,18 +75,7 @@ void Tracker::get_current_key_frame(Mat frame, Mat depth)
     this->current_kf = new KeyFrame(this->prev_kf, keypoints, undistorted_kps, descriptors, depth);
 }
 
-Tracker::Tracker(Map *mapp, Config cfg, ORBVocabulary *voc) : mapp(mapp), voc(voc)
-{
-    this->K = cfg.K;
-    cv::cv2eigen(cfg.K, this->K_eigen);
-    this->mDistCoef = cfg.distortion;
-    this->fmf = new FeatureMatcherFinder(480, 640, cfg);
-    this->motionOnlyBA = new MotionOnlyBA();
-    this->matcher = new OrbMatcher(cfg.orb_matcher);
-    std::cout << "SFARSIT INITIALIZARE\n\n";
-}
-
-void Tracker::tracking_was_lost()
+void Tracker::TrackingWasLost()
 {
     std::cout << "TRACKING WAS LOSTT<< \n\n\n";
     std::cout << this->current_kf->current_idx << "\n";
@@ -124,19 +115,19 @@ void Tracker::TrackReferenceKeyFrame()
     auto end = high_resolution_clock::now();
     this->orb_matching_time += duration_cast<milliseconds>(end - start).count();
 
-    if (this->current_kf->mp_correlations.size() < 15)
+    if ((int)this->current_kf->mp_correlations.size() < NR_MAP_POINTS_TRACKED_BETWEEN_FRAMES)
     {
         std::cout << this->current_kf->mp_correlations.size() << " REFERENCE FRAME N A URMARIT SUFICIENTE MAP POINTS PENTRU OPTIMIZARE\n";
-        exit(1);
+        this->TrackingWasLost();
     }
     start = high_resolution_clock::now();
     this->motionOnlyBA->solve_ceres(this->current_kf, this->prev_kf, false);
     end = high_resolution_clock::now();
     this->motion_only_ba_time += duration_cast<milliseconds>(end - start).count();
-    if (this->current_kf->mp_correlations.size() < 10)
+    if ((int)this->current_kf->mp_correlations.size() < NR_MAP_POINTS_TRACKED_BETWEEN_FRAMES)
     {
         std::cout << this->current_kf->mp_correlations.size() << " REFERENCE FRAME NU A URMARIT SUFICIENTE INLIERE MAP POINTS\n";
-        return;
+        this->TrackingWasLost();
     }
 }
 
@@ -148,23 +139,23 @@ void Tracker::TrackConsecutiveFrames()
     matcher->match_consecutive_frames(this->current_kf, this->prev_kf, window);
     auto end = high_resolution_clock::now();
     this->orb_matching_time += duration_cast<milliseconds>(end - start).count();
-    if (this->current_kf->mp_correlations.size() < 20)
+    if ((int)this->current_kf->mp_correlations.size() < NR_MAP_POINTS_TRACKED_BETWEEN_FRAMES)
     {
         matcher->match_consecutive_frames(this->current_kf, this->prev_kf, 2 * window);
-        if (this->current_kf->mp_correlations.size() < 20)
+        if ((int)this->current_kf->mp_correlations.size() < NR_MAP_POINTS_TRACKED_BETWEEN_FRAMES)
         {
             std::cout << this->current_kf->mp_correlations.size() << "  URMARIREA INTRE FRAME-URI INAINTE DE OPTIMIZARE NU A FUNCTIONAT\n";
-            return;
+            this->TrackingWasLost();
         }
     }
     start = high_resolution_clock::now();
     this->motionOnlyBA->solve_ceres(this->current_kf, this->prev_kf, false);
     end = high_resolution_clock::now();
     this->motion_only_ba_time += duration_cast<milliseconds>(end - start).count();
-    if (this->current_kf->mp_correlations.size() < 10)
+    if ((int)this->current_kf->mp_correlations.size() < NR_MAP_POINTS_TRACKED_BETWEEN_FRAMES)
     {
         std::cout << " \nURMARIREA INTRE FRAME-URI NU A FUNCTIONAT DUPA OPTIMIZARE\n";
-        return;
+        this->TrackingWasLost();
     }
 }
 
@@ -193,7 +184,7 @@ void Tracker::TrackLocalMap(Map *mapp)
     mapp->track_local_map(this->current_kf, current_ref_kf, this->local_keyframes);
     auto end = high_resolution_clock::now();
     this->orb_matching_time += duration_cast<milliseconds>(end - start).count();
-    if (this->current_kf->mp_correlations.size() < 30)
+    if ((int)this->current_kf->mp_correlations.size() < NR_MAP_POINTS_TRACKED_MAP_LOW)
     {
         std::cout << " \nPRREA PUTINE PUNCTE PROIECTATE DE LOCAL MAP INAINTE DE OPTIMIZARE\n";
         return;
@@ -202,7 +193,7 @@ void Tracker::TrackLocalMap(Map *mapp)
     this->motionOnlyBA->solve_ceres(this->current_kf, this->prev_kf, false);
     end = high_resolution_clock::now();
     this->motion_only_ba_time += duration_cast<milliseconds>(end - start).count();
-    int minim_number_points_necessary = mapp->keyframes.size() <= 2 ? 30 : 50;
+    int minim_number_points_necessary = mapp->keyframes.size() <= 2 ? NR_MAP_POINTS_TRACKED_MAP_LOW : NR_MAP_POINTS_TRACKED_MAP_HIGH;
     if ((int)this->current_kf->mp_correlations.size() < minim_number_points_necessary)
     {
         std::cout << this->current_kf->mp_correlations.size() << " PREA PUTINE PUNCTE PROIECTATE CARE NU SUNT OUTLIERE DE CATRE LOCAL MAP\n";
@@ -213,10 +204,9 @@ void Tracker::TrackLocalMap(Map *mapp)
 KeyFrame *Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose)
 {
     auto start = high_resolution_clock::now();
-    this->get_current_key_frame(frame, depth);
-    if (this->is_first_keyframe)
+    this->GetNextFrame(frame, depth);
+    if (this->prev_kf == nullptr && this->current_kf != nullptr)
     {
-        this->is_first_keyframe = false;
         this->current_kf->isKeyFrame = true;
         this->reference_kf = this->current_kf;
         std::cout << "PRIMUL KEYFRAME VA FI ADAUGAT\n";

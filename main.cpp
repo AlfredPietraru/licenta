@@ -24,7 +24,6 @@ using std::chrono::milliseconds;
 // reprezentare grafica in spatiu 3d -> folosind pangolin
 // separare si abstractizare pentru a putea testa mai multe implementari ale diversilor algoritmi de matching intre frame - uri
 // finalizare functie keyframe culling in local mapping
-// setare pozitie initiala de plecare in tum rgbd reader
 // testare pe alt set de date
 // abstractizarea constante importante 
 
@@ -37,6 +36,7 @@ void display_timing_information() {
     std::cout << tracker->reference_kf->reference_idx << " atatea keyframe-uri avute\n";
     std::cout << total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n\n";
 
+    std::cout << total_tracking_duration / 1000 << " atat a durat tracking-ul in total\n";
     std::cout << tracker->orb_matching_time / 1000 << " orb feature matching time\n";
     std::cout << tracker->motion_only_ba_time / 1000 << " motion only BA time\n";
 }
@@ -98,10 +98,6 @@ int main()
         }
         reader->store_entry(kf);
         reader->increase_idx();
-        // if (reader->idx % 30 == 0) {
-        //     display_timing_information();
-        // }
-        // if (reader->idx == 120) break;
     }
 
     reader->write_all_entries();

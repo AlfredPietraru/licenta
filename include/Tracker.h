@@ -36,6 +36,8 @@ class Tracker {
 public:
     KeyFrame* tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose);
     Tracker(Map *mapp, Config cfg, ORBVocabulary* voc);
+
+    // state parameters of the tracking thread;
     KeyFrame *current_kf = nullptr;
     KeyFrame* prev_kf = nullptr;
     KeyFrame *reference_kf = nullptr;
@@ -45,8 +47,6 @@ public:
     vector<double> mDistCoef;
     Mat K; 
     Eigen::Matrix3d K_eigen;
-    int keyframes_from_last_global_relocalization = 0;
-    
     Map *mapp;
     ORBVocabulary* voc;
     MotionOnlyBA *motionOnlyBA;
@@ -54,21 +54,24 @@ public:
     OrbMatcher *matcher;
     MapDrawer *mapDrawer;
 
+    // tracking time
     int total_tracking_during_matching = 0;
     int total_tracking_during_local_map = 0;
-
     int motion_only_ba_time = 0;
     int orb_matching_time = 0;
+
+    // tracking constants:
+    const int NR_MAP_POINTS_TRACKED_BETWEEN_FRAMES = 20;
+    const int NR_MAP_POINTS_TRACKED_MAP_LOW = 30;
+    const int NR_MAP_POINTS_TRACKED_MAP_HIGH = 50;
     
-    bool is_first_keyframe = true;
     KeyFrame* FindReferenceKeyFrame();
     void TrackReferenceKeyFrame();
     void TrackConsecutiveFrames();
     void TrackLocalMap(Map *mapp);
     bool Is_KeyFrame_needed();
-    // auxiliary functions
-    void get_current_key_frame(Mat frame, Mat depth);
-    void tracking_was_lost();
+    void GetNextFrame(Mat frame, Mat depth);
+    void TrackingWasLost();
 };
 
 #endif

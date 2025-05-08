@@ -74,38 +74,29 @@ class MotionChangeError {
     double weight;
 };
 
-Sophus::SE3d compute_pose(KeyFrame *kf, double *pose) {
-    Eigen::Quaterniond quaternion(pose[0], pose[1], pose[2], pose[3]);
-    Eigen::Quaterniond old_quaternion = kf->Tcw.unit_quaternion();
-    if (old_quaternion.dot(quaternion) < 0)
-    {
-        quaternion.coeffs() *= -1;
-    }
-    return Sophus::SE3d(quaternion, Eigen::Vector3d(pose[4], pose[5], pose[6]));
-}
-
 void MotionOnlyBA::RemoveOutliersCurrentFrame(KeyFrame *kf, double chi2Mono, double chi2Stereo) {
     double error;
-    // int out = 0
-    std::vector<std::pair<MapPoint*, Feature*>> copy_mp_correlations(kf->mp_correlations.begin(), kf->mp_correlations.end());
-    for (std::pair<MapPoint*, Feature*> it : copy_mp_correlations) {
+    bool should_delete;
+    std::vector<MapPoint*> to_delete;
+    to_delete.reserve(kf->mp_correlations.size());
+    for (std::pair<MapPoint*, Feature*> it : kf->mp_correlations) {
         MapPoint *mp = it.first;
         Feature *f = it.second;
         if (f->is_monocular) {
-            error = Common::get_monocular_reprojection_error(kf, mp, f, chi2Mono); 
-            if (error > chi2Mono) {
-                Map::remove_map_point_from_keyframe(kf, mp);
-                // out += 1;
-            }
-        }
-        if (!f->is_monocular) {
+            error = Common::get_monocular_reprojection_error(kf, mp, f, chi2Mono);
+            should_delete = error > chi2Mono; 
+        } else {
             error = Common::get_rgbd_reprojection_error(kf, mp, f, chi2Stereo);
-            if (error > chi2Stereo) {
-                Map::remove_map_point_from_keyframe(kf, mp);
-                // out += 1;  
-            }
+            should_delete = error > chi2Stereo;
         }
+        if (!should_delete) continue;
+        to_delete.push_back(mp);
     }
+
+    for (MapPoint *mp : to_delete) {
+        Map::remove_map_point_from_keyframe(kf, mp);
+    }
+
 }
 
 void MotionOnlyBA::solve_ceres(KeyFrame *kf, KeyFrame *prev_kf, bool display)
