@@ -62,7 +62,7 @@ MapDrawer::MapDrawer(Map *pMap) : mapp(pMap)
 
 void MapDrawer::run(KeyFrame *kf, cv::Mat frame, Sophus::SE3d grountruth_pose)
 {
-    int wait_time = kf->current_idx < 225 ? 20 : 20;
+    int wait_time = kf->current_idx < 180 ? 30 : 30;
     kf->debug_keyframe(frame, wait_time);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -82,8 +82,26 @@ void MapDrawer::run(KeyFrame *kf, cv::Mat frame, Sophus::SE3d grountruth_pose)
     this->DrawKeyFrames();
     // this->DrawRegularFrames();
     this->DrawMapPoints();
-
+    this->DrawKeyFramesConnections();
     pangolin::FinishFrame();
+}
+
+
+
+void MapDrawer::DrawKeyFramesConnections() {
+    for (int i = 0; i < (int)mapp->keyframes.size(); i++) {
+        KeyFrame *kfi = mapp->keyframes[i];
+        KeyFrame *best_kf = mapp->spanning_tree[kfi];
+        if (best_kf == nullptr) continue;
+        Eigen::Vector3d pi = kfi->camera_center_world;
+        Eigen::Vector3d pj = best_kf->camera_center_world;
+        glColor3f(0.0f, 0.0f, 0.0f);
+        glLineWidth(mKeyFrameLineWidth);
+        glBegin(GL_LINES);
+        glVertex3f(pi.x(), pi.y(), pi.z());
+        glVertex3f(pj.x(), pj.y(), pj.z());
+        glEnd();
+    }
 }
 
 void MapDrawer::draw_frame_pose(Eigen::Vector3d p, double red, double green, double blue) {
@@ -93,14 +111,14 @@ void MapDrawer::draw_frame_pose(Eigen::Vector3d p, double red, double green, dou
     glColor3f(red, green, blue);
     glLineWidth(mKeyFrameLineWidth);
     glBegin(GL_LINES);
-    // glVertex3f(p.x(), p.y(), p.z());
-    // glVertex3f(p.x() + w, p.y() + h, p.z() + z);
-    // glVertex3f(p.x(), p.y(), p.z());
-    // glVertex3f(p.x() + w, p.y() - h, p.z() + z);
-    // glVertex3f(p.x(), p.y(), p.z());
-    // glVertex3f(p.x() - w, p.y() - h, p.z() + z);
-    // glVertex3f(p.x(), p.y(), p.z());
-    // glVertex3f(p.x() - w, p.y() + h, p.z() + z);
+    glVertex3f(p.x(), p.y(), p.z());
+    glVertex3f(p.x() + w, p.y() + h, p.z() + z);
+    glVertex3f(p.x(), p.y(), p.z());
+    glVertex3f(p.x() + w, p.y() - h, p.z() + z);
+    glVertex3f(p.x(), p.y(), p.z());
+    glVertex3f(p.x() - w, p.y() - h, p.z() + z);
+    glVertex3f(p.x(), p.y(), p.z());
+    glVertex3f(p.x() - w, p.y() + h, p.z() + z);
     glVertex3f(p.x() + w, p.y() + h, p.z() + z);
     glVertex3f(p.x() + w, p.y() - h, p.z() + z);
     glVertex3f(p.x() - w, p.y() + h, p.z() + z);

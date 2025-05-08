@@ -1,6 +1,13 @@
 #include "../include/LocalMapping.h"
 
 
+void LocalMapping::debug_graph() {
+    // for (auto it = mapp->graph.begin(); it != mapp->graph.begin(); it++) {
+    //     KeyFrame *kf = it->first;
+    //     std::unordered_map<KeyFrame*, int> umap = it->second; 
+    // }
+}
+
 void LocalMapping::local_map(KeyFrame *kf) {
     // cam shady bucata asta
     std::vector<MapPoint*> new_map_points_added = mapp->add_new_keyframe(kf);
@@ -40,10 +47,6 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
             bool first_two = (mp->keyframes[1]->reference_idx - mp->keyframes[0]->reference_idx) == 1;
             bool last_two = (mp->keyframes[2]->reference_idx - mp->keyframes[1]->reference_idx) == 1;
             bool last_equal_current_kf = mp->keyframes[2]->reference_idx == curr_kf->reference_idx; 
-            // for (int i = 0; i < (int)mp->keyframes.size(); i++) {
-            //     std::cout << mp->keyframes[i]->reference_idx << " "; 
-            // }
-            // std::cout << "\n";
 
             if (first_two && last_two && last_equal_current_kf) {
                 too_old_to_keep_looking.push_back(mp);
@@ -58,6 +61,7 @@ void LocalMapping::map_points_culling(KeyFrame *curr_kf) {
             continue;
         }
     }
+
     for (MapPoint *mp : to_del) this->delete_map_point(mp);
     for (MapPoint *mp : too_old_to_keep_looking) this->recently_added.erase(mp);
     std::cout << to_del.size() << " " << " ATATEA PUNCTE AU FOST STERSE LA CULLING\n";

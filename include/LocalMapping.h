@@ -15,6 +15,8 @@ public:
         this->bundleAdjustment = new BundleAdjustment();
     }
 
+
+    void debug_graph();
     void local_map(KeyFrame *kf);
     void map_points_culling(KeyFrame *curr_kf);
     void delete_map_point(MapPoint *mp);

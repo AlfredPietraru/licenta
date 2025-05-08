@@ -52,9 +52,11 @@ std::unordered_map<KeyFrame *, int> Map::get_keyframes_connected(KeyFrame *new_k
             }
         }
     }
+
     std::vector<KeyFrame *> to_remove;
     for (auto it = edges_new_keyframe.begin(); it != edges_new_keyframe.end(); it++)
     {
+        // std::cout << it->first->reference_idx << " " << it->second << "\n";
         if (it->second < limit)
             to_remove.push_back(it->first);
     }
@@ -63,6 +65,23 @@ std::unordered_map<KeyFrame *, int> Map::get_keyframes_connected(KeyFrame *new_k
         edges_new_keyframe.erase(kf);
     }
     return edges_new_keyframe;
+}
+
+bool Map::is_connection_there(KeyFrame *kf1, KeyFrame *kf2) {
+    if (kf1 == nullptr || kf2 == nullptr) {
+        std::cout << "UNUL DIN COMPONENTE ESTE NULL\n";
+        return false;
+    }  
+    if (graph.find(kf1) == graph.end()) {
+        std::cout << "PRIMUL KEYFRAME NU EXISTA\n";
+        return false;
+    }
+    if (graph.find(kf2) == graph.end()) {
+        std::cout << "AL DOILEA KEYFRAME NU EXISTA\n";
+        return false;
+    }
+    if (graph[kf1].find(kf2) == graph[kf1].end()) return false;
+    return true;
 }
 
 std::vector<MapPoint *> Map::create_map_points_from_features(KeyFrame *kf)
@@ -141,6 +160,7 @@ std::vector<MapPoint *> Map::add_new_keyframe(KeyFrame *new_kf)
     new_kf->reference_idx += 1;
     this->keyframes.push_back(new_kf);
     this->graph[new_kf] = std::unordered_map<KeyFrame *, int>();
+    this->spanning_tree[new_kf] = nullptr;
     new_kf->compute_bow_representation();
     if (this->keyframes.size() == 1)
     {
@@ -163,6 +183,15 @@ std::vector<MapPoint *> Map::add_new_keyframe(KeyFrame *new_kf)
         this->graph[it->first][new_kf] = it->second;
         this->graph[new_kf][it->first] = it->second;
     }
+    int maxim_value = 0;
+    KeyFrame *best_kf = nullptr;
+    for (auto it = edges_new_keyframe.begin(); it != edges_new_keyframe.end(); it++) {
+        if (it->second > maxim_value) {
+            maxim_value = it->second;
+            best_kf = it->first;
+        }
+    }
+    this->spanning_tree[new_kf] = best_kf; 
     return points_added;
 }
 
