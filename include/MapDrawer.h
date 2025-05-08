@@ -28,22 +28,14 @@
 
 #include<mutex>
 
-class FrameSimulation {
-public:
-    FrameSimulation(Eigen::Vector3d camera_center) : camera_center(camera_center) {}
-    Eigen::Vector3d camera_center;
-};
 
 class MapDrawer
 {
 public:
     MapDrawer(Map* pMap);
-
-
     Map* mapp;
-    std::vector<FrameSimulation> regular_frames;
 
-    void run(KeyFrame *kf, bool is_keyframe);
+    void run(KeyFrame *kf, cv::Mat frame, Sophus::SE3d grountruth_pose);
     void DrawMapPoints();
     void DrawKeyFrames();
     void draw_frame_pose(Eigen::Vector3d p, double red, double green, double blue);
@@ -52,6 +44,10 @@ public:
 
 private:
 
+    int add = 0;
+    std::vector<Eigen::Vector3d> current_pose;
+    std::vector<Eigen::Vector3d> current_groundtruth;
+    Sophus::SE3d translation_pose;
     float mKeyFrameSize;
     float mKeyFrameLineWidth;
     float mGraphLineWidth;

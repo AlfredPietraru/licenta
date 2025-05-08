@@ -76,6 +76,7 @@ int main()
     Config cfg = loadConfig("../config.yaml");
     
     Map *mapp = new Map();
+    MapDrawer *drawer = new MapDrawer(mapp);
     reader = new TumDatasetReader(cfg, mapp); 
     LocalMapping *local_mapper = new LocalMapping(mapp);
     tracker = new Tracker(mapp, cfg, voc);
@@ -98,6 +99,7 @@ int main()
         }
         reader->store_entry(kf);
         reader->increase_idx();
+        drawer->run(kf, frame, groundtruth_pose); 
     }
 
     reader->write_all_entries();
