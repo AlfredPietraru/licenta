@@ -62,7 +62,7 @@ MapDrawer::MapDrawer(Map *pMap) : mapp(pMap)
 
 void MapDrawer::run(KeyFrame *kf, cv::Mat frame, Sophus::SE3d grountruth_pose)
 {
-    int wait_time = kf->current_idx < 180 ? 30 : 30;
+    int wait_time = kf->current_idx < 180 ? 0 : 30;
     kf->debug_keyframe(frame, wait_time);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -71,16 +71,13 @@ void MapDrawer::run(KeyFrame *kf, cv::Mat frame, Sophus::SE3d grountruth_pose)
     this->GetCurrentOpenGLCameraMatrix(Rwc, twc);
     s_cam.Follow(Twc);
     d_cam.Activate(s_cam);
-    if (!kf->isKeyFrame) {
-        current_pose.push_back(kf->camera_center_world);
-    }
-
     Sophus::SE3d relative_pose = translation_pose.inverse() * grountruth_pose;
     Eigen::Vector3d center_groundtruth = -relative_pose.rotationMatrix().transpose() * relative_pose.translation();
     center_groundtruth(2) = -center_groundtruth(2);
     this->current_groundtruth.push_back(center_groundtruth);
     this->DrawKeyFrames();
-    // this->DrawRegularFrames();
+    draw_frame_pose(kf->camera_center_world, 0.0f, 0.0f, 1.0f);
+    this->DrawRegularFrames();
     this->DrawMapPoints();
     this->DrawKeyFramesConnections();
     pangolin::FinishFrame();
@@ -137,12 +134,13 @@ void MapDrawer::DrawKeyFrames()
 }
 
 void MapDrawer::DrawRegularFrames() {
-    for (Eigen::Vector3d p : this->current_pose) {
-        draw_frame_pose(p, 0.0f, 0.3f, 1.0f);
-    }
-    for (Eigen::Vector3d p : this->current_groundtruth) {
-        draw_frame_pose(p, 0.0f, 0.3f, 0.5f);
-    }
+
+    // for (Eigen::Vector3d p : this->current_pose) {
+    //     draw_frame_pose(p, 0.0f, 0.3f, 1.0f);
+    // }
+    // for (Eigen::Vector3d p : this->current_groundtruth) {
+    //     draw_frame_pose(p, 0.0f, 0.3f, 0.5f);
+    // }
 }
 
 

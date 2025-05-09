@@ -20,12 +20,13 @@ using std::chrono::milliseconds;
 // evo_traj tum groundtruth.txt estimated.txt -p --plot_mode xyz
 
 // TODO:
-// optimizare map -> local map -> pentru a creste viteza de procesare 
 // reprezentare grafica in spatiu 3d -> folosind pangolin
 // separare si abstractizare pentru a putea testa mai multe implementari ale diversilor algoritmi de matching intre frame - uri
-// finalizare functie keyframe culling in local mapping
 // testare pe alt set de date
-// abstractizarea constante importante 
+// abstractizarea constante importante
+// display always last frame in drawer
+// shimbare feature matcher
+
 
 TumDatasetReader *reader;
 Tracker *tracker;

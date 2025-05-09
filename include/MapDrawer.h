@@ -46,7 +46,7 @@ public:
 private:
 
     int add = 0;
-    std::vector<Eigen::Vector3d> current_pose;
+    Eigen::Vector3d current_pose;
     std::vector<Eigen::Vector3d> current_groundtruth;
     Sophus::SE3d translation_pose;
     float mKeyFrameSize;
