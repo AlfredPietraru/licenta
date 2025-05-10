@@ -20,7 +20,6 @@ using std::chrono::milliseconds;
 // evo_traj tum groundtruth.txt estimated.txt -p --plot_mode xyz
 
 // TODO:
-// reprezentare grafica in spatiu 3d -> folosind pangolin
 // separare si abstractizare pentru a putea testa mai multe implementari ale diversilor algoritmi de matching intre frame - uri
 // testare pe alt set de date
 // abstractizarea constante importante
@@ -33,7 +32,6 @@ int total_local_mapping_duration = 0;
 void display_timing_information() {  
     std::cout << tracker->reference_kf->reference_idx << " atatea keyframe-uri avute\n";
     std::cout << total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n\n";
-
     std::cout << total_tracking_duration / 1000 << " atat a durat tracking-ul in total\n";
     std::cout << tracker->orb_matching_time / 1000 << " orb feature matching time\n";
     std::cout << tracker->motion_only_ba_time / 1000 << " motion only BA time\n";
@@ -48,13 +46,7 @@ void signalHandler(int signum) {
     exit(signum);
 }
 
-// documentatie + prezentare + complexitate + medie generala
-
-
-// functionat implementarea de pe git
-// de verificat printr-o scena 3d ->
 // de testat fiecare componenta cu mai multe metode -> FLANN, Brute Force,
-
 // try to use perspective npoint for matching
 // care varianta e cea mai buna
 // RGBD -> time of flight, structured light

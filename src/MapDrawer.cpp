@@ -37,6 +37,14 @@ MapDrawer::MapDrawer(Map *pMap) : mapp(pMap)
     float mViewpointZ = -0.6;
     float mViewpointF =  800;
 
+    const float &w = mKeyFrameSize;
+    const float h = w * 0.75;
+    const float z = w * 0.6;
+    this->_NW =  Eigen::Vector3d(-w, -h, z);
+    this->_SW =  Eigen::Vector3d(-w,  h, z);
+    this->_NE =  Eigen::Vector3d( w, -h, z);
+    this->_SE =  Eigen::Vector3d( w,  h, z);
+
     pangolin::CreateWindowAndBind("ORB-SLAM2: Map Viewer", 1024, 768);
     glEnable(GL_DEPTH_TEST);
     // 3D Mouse handler requires depth testing to be enabled
@@ -62,8 +70,7 @@ MapDrawer::MapDrawer(Map *pMap) : mapp(pMap)
 
 void MapDrawer::run(KeyFrame *kf, cv::Mat frame)
 {
-    int wait_time = kf->current_idx < 180 ? 30 : 30;
-    kf->debug_keyframe(frame, wait_time);
+    kf->debug_keyframe(frame, 20);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     Eigen::Matrix3d Rwc = kf->Tcw.inverse().rotationMatrix();
@@ -72,7 +79,7 @@ void MapDrawer::run(KeyFrame *kf, cv::Mat frame)
     s_cam.Follow(Twc);
     d_cam.Activate(s_cam);
     this->DrawKeyFrames();
-    draw_frame_pose(kf->camera_center_world, 0.0f, 0.0f, 1.0f);
+    draw_frame_pose(Rwc, kf->camera_center_world, 0.0f, 0.0f, 1.0f);
     this->DrawMapPoints(kf->isKeyFrame);
     this->DrawKeyFramesConnections();
     pangolin::FinishFrame();
@@ -96,36 +103,46 @@ void MapDrawer::DrawKeyFramesConnections() {
     }
 }
 
-void MapDrawer::draw_frame_pose(Eigen::Vector3d p, double red, double green, double blue) {
-    const float &w = mKeyFrameSize;
-    const float h = w * 0.75;
-    const float z = w * 0.6;
+void MapDrawer::draw_frame_pose(Eigen::Matrix3d Rcw, Eigen::Vector3d p, double red, double green, double blue) {
+    Eigen::Vector3d NW = Rcw * _NW;
+    Eigen::Vector3d SW = Rcw * _SW;
+    Eigen::Vector3d NE = Rcw * _NE;
+    Eigen::Vector3d SE = Rcw * _SE;
     glColor3f(red, green, blue);
     glLineWidth(mKeyFrameLineWidth);
     glBegin(GL_LINES);
     glVertex3f(p.x(), p.y(), p.z());
-    glVertex3f(p.x() + w, p.y() + h, p.z() + z);
+    glVertex3f(p.x() + SE.x(), p.y() + SE.y(), p.z() + SE.z());
+    
     glVertex3f(p.x(), p.y(), p.z());
-    glVertex3f(p.x() + w, p.y() - h, p.z() + z);
+    glVertex3f(p.x() + NE.x(), p.y() + NE.y(), p.z() + NE.z());
+    
     glVertex3f(p.x(), p.y(), p.z());
-    glVertex3f(p.x() - w, p.y() - h, p.z() + z);
+    glVertex3f(p.x() + NW.x(), p.y() + NW.y(), p.z() + NW.z());
+    
     glVertex3f(p.x(), p.y(), p.z());
-    glVertex3f(p.x() - w, p.y() + h, p.z() + z);
-    glVertex3f(p.x() + w, p.y() + h, p.z() + z);
-    glVertex3f(p.x() + w, p.y() - h, p.z() + z);
-    glVertex3f(p.x() - w, p.y() + h, p.z() + z);
-    glVertex3f(p.x() - w, p.y() - h, p.z() + z);
-    glVertex3f(p.x() - w, p.y() + h, p.z() + z);
-    glVertex3f(p.x() + w, p.y() + h, p.z() + z);
-    glVertex3f(p.x() - w, p.y() - h, p.z() + z);
-    glVertex3f(p.x() + w, p.y() - h, p.z() + z);
+    glVertex3f(p.x() + SW.x(), p.y() + SW.y(), p.z() + SW.z());
+
+    // left vertical line
+    glVertex3f(p.x() + NW.x(), p.y() + NW.y(), p.z() + NW.z());
+    glVertex3f(p.x() + SW.x(), p.y() + SW.y(), p.z() + SW.z());
+    //right vertical line
+    glVertex3f(p.x() + NE.x(), p.y() + NE.y(), p.z() + NE.z());
+    glVertex3f(p.x() + SE.x(), p.y() + SE.y(), p.z() + SE.z());
+    // low horizontal line
+    glVertex3f(p.x() + SW.x(), p.y() + SW.y(), p.z() + SW.z());
+    glVertex3f(p.x() + SE.x(), p.y() + SE.y(), p.z() + SE.z());
+    // high horizontal line 
+    glVertex3f(p.x() + NW.x(), p.y() + NW.y(), p.z() + NW.z());
+    glVertex3f(p.x() + NE.x(), p.y() + NE.y(), p.z() + NE.z());
+    
     glEnd();
 }
 
 void MapDrawer::DrawKeyFrames()
 {
     for (KeyFrame *kf : mapp->keyframes)
-        draw_frame_pose(kf->camera_center_world, 0.0f, 1.0f, 0.0f);
+        draw_frame_pose(kf->Tcw.rotationMatrix().transpose(), kf->camera_center_world, 0.0f, 1.0f, 0.0f);
 }
 
 void MapDrawer::GetCurrentOpenGLCameraMatrix(Eigen::Matrix3d Rwc, Eigen::Vector3d twc)

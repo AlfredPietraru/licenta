@@ -39,7 +39,7 @@ public:
     void run(KeyFrame *kf, cv::Mat frame);
     void DrawMapPoints(bool isKeyframe);
     void DrawKeyFrames();
-    void draw_frame_pose(Eigen::Vector3d p, double red, double green, double blue);
+    void draw_frame_pose(Eigen::Matrix3d Rcw, Eigen::Vector3d p, double red, double green, double blue);
     void DrawKeyFramesConnections();
     void GetCurrentOpenGLCameraMatrix(Eigen::Matrix3d Rwc, Eigen::Vector3d twc);
 
@@ -48,6 +48,10 @@ private:
     int add = 0;
     Eigen::Vector3d current_pose;
     std::vector<Eigen::Vector3d> current_groundtruth;
+    Eigen::Vector3d _NW;
+    Eigen::Vector3d _SW;
+    Eigen::Vector3d _NE;
+    Eigen::Vector3d _SE;
     Sophus::SE3d translation_pose;
     float mKeyFrameSize;
     float mKeyFrameLineWidth;
