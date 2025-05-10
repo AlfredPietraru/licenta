@@ -44,6 +44,9 @@ void compute_difference_between_positions(const Sophus::SE3d &estimated, const S
 
 Sophus::SE3d Tracker::GetVelocityNextFrame() {
     if (frames_seen < 2) return Sophus::SE3d(Eigen::Matrix4d::Identity());
+    // return Sophus::SE3d(Eigen::Matrix4d::Identity());
+    if (this->current_kf->current_idx - this->reference_kf->current_idx <= 2) 
+        return Sophus::SE3d(Eigen::Matrix4d::Identity());
     return this->prev_kf->Tcw * this->prev_prev_kf->Tcw.inverse();
 }
 
@@ -67,14 +70,13 @@ void Tracker::GetNextFrame(Mat frame, Mat depth)
             this->current_kf = new KeyFrame(this->prev_kf, keypoints, undistorted_kps, descriptors, depth);
             break;
         default: 
-            // if (!this->prev_prev_kf->isKeyFrame)
-            //     delete this->prev_prev_kf;
+            if (!this->prev_prev_kf->isKeyFrame)
+                delete this->prev_prev_kf;
             this->prev_prev_kf = this->prev_kf;
             this->prev_kf = this->current_kf;
             this->current_kf = new KeyFrame(this->prev_kf, keypoints, undistorted_kps, descriptors, depth);
             break;
     }
-
     this->velocity = GetVelocityNextFrame();
     frames_seen++;
 }

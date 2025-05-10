@@ -29,9 +29,6 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
         problem.AddParameterBlock(mp->wcoord_3d.data(), 3);
     }
 
-
-    // std::vector<ceres::ResidualBlockId> monocular_ids;
-    // std::vector<ceres::ResidualBlockId> stereo_ids;
     for (MapPoint *mp : local_map_points) {
         for (KeyFrame *kf : mp->keyframes) {
             Feature *f = kf->mp_correlations[mp];
@@ -40,29 +37,21 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
             if (is_local_keyframe && f->is_monocular) {
                 ceres::CostFunction *cost_function = BundleAjustmentVariableKeyFrameMonocular::CreateVariableMonocular(kf, f);
                 problem.AddResidualBlock(cost_function, loss_function_mono, kf->pose_vector, mp->wcoord_3d.data());
-                // auto id = problem.AddResidualBlock(cost_function, loss_function_mono, kf->pose_vector, mp->wcoord_3d.data());
-                // monocular_ids.push_back(id);
                 continue;
             }
             if (is_local_keyframe && !f->is_monocular) {
                 ceres::CostFunction *cost_function = BundleAjustmentVariableKeyFrameStereo::CreateVariableStereo(kf, f);
                 problem.AddResidualBlock(cost_function, loss_function_stereo, kf->pose_vector, mp->wcoord_3d.data());
-                // auto id = problem.AddResidualBlock(cost_function, loss_function_stereo, kf->pose_vector, mp->wcoord_3d.data());
-                // stereo_ids.push_back(id);
                 continue;
             }
             if (is_fixed_keyframe && f->is_monocular) {
                 ceres::CostFunction *cost_function = BundleAjustmentFixedKeyFrameMonocular::CreateFixedMonocular(kf, f);
                 problem.AddResidualBlock(cost_function, loss_function_mono, mp->wcoord_3d.data());
-                // auto id = problem.AddResidualBlock(cost_function, loss_function_mono, mp->wcoord_3d.data());
-                // monocular_ids.push_back(id);
                 continue;
             }
             if (is_fixed_keyframe && !f->is_monocular) {
                 ceres::CostFunction *cost_function = BundleAjustmentFixedKeyFrameStereo::CreateFixedStereo(kf, f);
                 problem.AddResidualBlock(cost_function, loss_function_stereo, mp->wcoord_3d.data());
-                // auto id = problem.AddResidualBlock(cost_function, loss_function_stereo, mp->wcoord_3d.data());
-                // stereo_ids.push_back(id);
                 continue;
             }
         }

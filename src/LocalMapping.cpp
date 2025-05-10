@@ -1,13 +1,5 @@
 #include "../include/LocalMapping.h"
 
-
-void LocalMapping::debug_graph() {
-    // for (auto it = mapp->graph.begin(); it != mapp->graph.begin(); it++) {
-    //     KeyFrame *kf = it->first;
-    //     std::unordered_map<KeyFrame*, int> umap = it->second; 
-    // }
-}
-
 void LocalMapping::local_map(KeyFrame *kf) {
     // cam shady bucata asta
     std::vector<MapPoint*> new_map_points_added = mapp->add_new_keyframe(kf);

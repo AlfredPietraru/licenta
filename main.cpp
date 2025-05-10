@@ -18,13 +18,10 @@ using std::chrono::duration;
 using std::chrono::seconds;
 using std::chrono::milliseconds;
 // evo_traj tum groundtruth.txt estimated.txt -p --plot_mode xyz
-
 // TODO:
-// separare si abstractizare pentru a putea testa mai multe implementari ale diversilor algoritmi de matching intre frame - uri
+// separare si abstractizare pentru a putea testa mai multe implementari ale diversilor algoritmi de matching intre frame - uri, de testat fiecare componenta cu mai multe metode -> FLANN, Brute Force, PnP
 // testare pe alt set de date
 // abstractizarea constante importante
-// de testat fiecare componenta cu mai multe metode -> FLANN, Brute Force,
-// try to use perspective npoint for matching
 
 TumDatasetReader *reader;
 Tracker *tracker;
