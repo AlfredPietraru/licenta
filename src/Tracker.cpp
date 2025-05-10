@@ -41,38 +41,42 @@ void compute_difference_between_positions(const Sophus::SE3d &estimated, const S
     std::cout << "Translation Difference: " << translation_diff << " meters\n\n";
 }
 
+
+Sophus::SE3d Tracker::GetVelocityNextFrame() {
+    if (frames_seen < 2) return Sophus::SE3d(Eigen::Matrix4d::Identity());
+    return this->prev_kf->Tcw * this->prev_prev_kf->Tcw.inverse();
+}
+
 void Tracker::GetNextFrame(Mat frame, Mat depth)
 {
     std::vector<cv::KeyPoint> keypoints;
     std::vector<cv::KeyPoint> undistorted_kps;
     cv::Mat descriptors;
     this->fmf->compute_keypoints_descriptors(frame, keypoints, undistorted_kps, descriptors);
-    // primul cadru
-    if (this->prev_kf == nullptr && this->current_kf == nullptr)
-    {
-        Sophus::SE3d pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
-        this->current_kf = new KeyFrame(pose, this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 0, frame, this->voc);
-        this->velocity = pose;
-        return;
-    }
-    // al doilea cadru
-    if (this->prev_kf == nullptr && this->current_kf != nullptr)
-    {
-        this->velocity = this->current_kf->Tcw;
-        this->prev_kf = this->current_kf;
-        this->current_kf = new KeyFrame(this->prev_kf, keypoints, undistorted_kps, descriptors, depth);
-        return;
+    switch (frames_seen) {
+        case 0:
+            this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 0, frame, this->voc);
+            break;
+        case 1:
+            this->prev_kf = this->current_kf;
+            this->current_kf = new KeyFrame(this->prev_kf, keypoints, undistorted_kps, descriptors, depth);
+            break;
+        case 2:
+            this->prev_prev_kf = this->prev_kf;
+            this->prev_kf = this->current_kf;
+            this->current_kf = new KeyFrame(this->prev_kf, keypoints, undistorted_kps, descriptors, depth);
+            break;
+        default: 
+            // if (!this->prev_prev_kf->isKeyFrame)
+            //     delete this->prev_prev_kf;
+            this->prev_prev_kf = this->prev_kf;
+            this->prev_kf = this->current_kf;
+            this->current_kf = new KeyFrame(this->prev_kf, keypoints, undistorted_kps, descriptors, depth);
+            break;
     }
 
-    // restul cadrelor
-    this->velocity = this->current_kf->Tcw * this->prev_kf->Tcw.inverse();
-    if (!this->prev_kf->isKeyFrame)
-    {
-        delete this->prev_kf;
-        this->prev_kf = nullptr;
-    }
-    this->prev_kf = this->current_kf;
-    this->current_kf = new KeyFrame(this->prev_kf, keypoints, undistorted_kps, descriptors, depth);
+    this->velocity = GetVelocityNextFrame();
+    frames_seen++;
 }
 
 void Tracker::TrackingWasLost()
@@ -106,10 +110,7 @@ bool Tracker::Is_KeyFrame_needed()
 
 void Tracker::TrackReferenceKeyFrame()
 {
-    if (this->prev_kf != nullptr)
-    {
-        this->current_kf->set_keyframe_position(this->velocity * this->prev_kf->Tcw);
-    }
+    this->current_kf->set_keyframe_position(this->velocity * this->prev_kf->Tcw);
     auto start = high_resolution_clock::now();
     matcher->match_frame_reference_frame(this->current_kf, this->reference_kf);
     auto end = high_resolution_clock::now();
@@ -205,7 +206,7 @@ KeyFrame *Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose
 {
     auto start = high_resolution_clock::now();
     this->GetNextFrame(frame, depth);
-    if (this->prev_kf == nullptr && this->current_kf != nullptr)
+    if (frames_seen == 1)
     {
         this->current_kf->isKeyFrame = true;
         this->reference_kf = this->current_kf;
@@ -215,8 +216,8 @@ KeyFrame *Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose
 
     if (this->current_kf->current_idx - this->reference_kf->current_idx <= 2)
     {
-        std::cout << "URMARIT CU AJUTORUL TRACK REFERENCE KEY FRAME\n";
         this->TrackReferenceKeyFrame();
+        std::cout << "URMARIT CU AJUTORUL TRACK REFERENCE KEY FRAME\n";
     }
     if (this->current_kf->current_idx - this->reference_kf->current_idx > 2)
     {

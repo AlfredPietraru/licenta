@@ -23,6 +23,8 @@ using std::chrono::milliseconds;
 // separare si abstractizare pentru a putea testa mai multe implementari ale diversilor algoritmi de matching intre frame - uri
 // testare pe alt set de date
 // abstractizarea constante importante
+// de testat fiecare componenta cu mai multe metode -> FLANN, Brute Force,
+// try to use perspective npoint for matching
 
 TumDatasetReader *reader;
 Tracker *tracker;
@@ -45,11 +47,6 @@ void signalHandler(int signum) {
     reader->outfile.close();
     exit(signum);
 }
-
-// de testat fiecare componenta cu mai multe metode -> FLANN, Brute Force,
-// try to use perspective npoint for matching
-// care varianta e cea mai buna
-// RGBD -> time of flight, structured light
 
 int main()
 {

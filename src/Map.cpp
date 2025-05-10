@@ -56,7 +56,6 @@ std::unordered_map<KeyFrame *, int> Map::get_keyframes_connected(KeyFrame *new_k
     std::vector<KeyFrame *> to_remove;
     for (auto it = edges_new_keyframe.begin(); it != edges_new_keyframe.end(); it++)
     {
-        // std::cout << it->first->reference_idx << " " << it->second << "\n";
         if (it->second < limit)
             to_remove.push_back(it->first);
     }
@@ -433,13 +432,10 @@ void Map::update_local_map(KeyFrame *ref, std::unordered_set<KeyFrame *> &keyfra
     }
     
     if (to_delete_from_local_map.empty() && to_add_to_local_map.empty()) return;
-    // std::cout << to_delete_from_local_map.size() << " " << to_add_to_local_map.size() << "\n";
-    // int nr_obs = this->keyframes.size() < 2 ? -1 : 2;
     for (KeyFrame *kf : to_add_to_local_map) {
         local_keyframes.insert(kf);
         std::vector<MapPoint *> mps = kf->get_map_points();
         for (MapPoint *mp : mps) {
-            // if ((int)mp->keyframes.size() < nr_obs) continue;
             local_map_points.insert(mp);        
         }
     }
@@ -468,7 +464,6 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
     int still_in_frustum = 0;
     int descriptor_feature_test = 0;
     std::vector<MapPoint*> to_delete;
-    // std::cout << local_map_points.size() << " dimensiune local map \n";
     for (MapPoint *mp : local_map_points)
     {
         if (kf->check_map_point_in_keyframe(mp))
@@ -545,6 +540,7 @@ void Map::track_local_map(KeyFrame *kf, KeyFrame *ref, std::unordered_set<KeyFra
             continue;
         Map::add_map_point_to_keyframe(kf, &kf->features[lowest_idx], mp);
     }
+    // std::cout << kf->mp_correlations.size() << " atatea puncte corelate in final\n";
 }
 
 bool Map::replace_map_point(MapPoint *old_mp, MapPoint *new_mp)

@@ -38,8 +38,10 @@ public:
     Tracker(Map *mapp, Config cfg, ORBVocabulary* voc);
 
     // state parameters of the tracking thread;
+    int frames_seen = 0;
     KeyFrame *current_kf = nullptr;
     KeyFrame* prev_kf = nullptr;
+    KeyFrame *prev_prev_kf = nullptr;
     KeyFrame *reference_kf = nullptr;
     std::unordered_set<KeyFrame*> local_keyframes;
     Sophus::SE3d velocity = Sophus::SE3d(Eigen::Matrix4d::Identity());
@@ -72,6 +74,7 @@ public:
     bool Is_KeyFrame_needed();
     void GetNextFrame(Mat frame, Mat depth);
     void TrackingWasLost();
+    Sophus::SE3d GetVelocityNextFrame();
 };
 
 #endif
