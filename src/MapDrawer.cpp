@@ -60,9 +60,9 @@ MapDrawer::MapDrawer(Map *pMap) : mapp(pMap)
     translation_pose = Sophus::SE3d(Eigen::Quaterniond(-0.3266, 0.6583, 0.6112, -0.2938), Eigen::Vector3d(1.3434, 0.6271, 1.6606));
 }
 
-void MapDrawer::run(KeyFrame *kf, cv::Mat frame, Sophus::SE3d grountruth_pose)
+void MapDrawer::run(KeyFrame *kf, cv::Mat frame)
 {
-    int wait_time = kf->current_idx < 180 ? 0 : 30;
+    int wait_time = kf->current_idx < 180 ? 30 : 30;
     kf->debug_keyframe(frame, wait_time);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -71,14 +71,9 @@ void MapDrawer::run(KeyFrame *kf, cv::Mat frame, Sophus::SE3d grountruth_pose)
     this->GetCurrentOpenGLCameraMatrix(Rwc, twc);
     s_cam.Follow(Twc);
     d_cam.Activate(s_cam);
-    Sophus::SE3d relative_pose = translation_pose.inverse() * grountruth_pose;
-    Eigen::Vector3d center_groundtruth = -relative_pose.rotationMatrix().transpose() * relative_pose.translation();
-    center_groundtruth(2) = -center_groundtruth(2);
-    this->current_groundtruth.push_back(center_groundtruth);
     this->DrawKeyFrames();
     draw_frame_pose(kf->camera_center_world, 0.0f, 0.0f, 1.0f);
-    this->DrawRegularFrames();
-    this->DrawMapPoints();
+    this->DrawMapPoints(kf->isKeyFrame);
     this->DrawKeyFramesConnections();
     pangolin::FinishFrame();
 }
@@ -133,17 +128,6 @@ void MapDrawer::DrawKeyFrames()
         draw_frame_pose(kf->camera_center_world, 0.0f, 1.0f, 0.0f);
 }
 
-void MapDrawer::DrawRegularFrames() {
-
-    // for (Eigen::Vector3d p : this->current_pose) {
-    //     draw_frame_pose(p, 0.0f, 0.3f, 1.0f);
-    // }
-    // for (Eigen::Vector3d p : this->current_groundtruth) {
-    //     draw_frame_pose(p, 0.0f, 0.3f, 0.5f);
-    // }
-}
-
-
 void MapDrawer::GetCurrentOpenGLCameraMatrix(Eigen::Matrix3d Rwc, Eigen::Vector3d twc)
 {
     Twc.m[0]  = Rwc(0, 0);
@@ -164,9 +148,12 @@ void MapDrawer::GetCurrentOpenGLCameraMatrix(Eigen::Matrix3d Rwc, Eigen::Vector3
     Twc.m[15] = 1.0;
 }
 
-void MapDrawer::DrawMapPoints()
+void MapDrawer::DrawMapPoints(bool isKeyframe)
 {
-    const std::unordered_set<MapPoint *> &all_map_points = mapp->get_all_map_points();
+    if (isKeyframe) {
+        all_map_points = mapp->get_all_map_points();
+    }
+
     glPointSize(mPointSize);
     glBegin(GL_POINTS);
     glColor3f(1.0, 0.0, 0.0);

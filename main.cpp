@@ -24,9 +24,6 @@ using std::chrono::milliseconds;
 // separare si abstractizare pentru a putea testa mai multe implementari ale diversilor algoritmi de matching intre frame - uri
 // testare pe alt set de date
 // abstractizarea constante importante
-// display always last frame in drawer
-// shimbare feature matcher
-
 
 TumDatasetReader *reader;
 Tracker *tracker;
@@ -100,7 +97,7 @@ int main()
         }
         reader->store_entry(kf);
         reader->increase_idx();
-        drawer->run(kf, frame, groundtruth_pose); 
+        drawer->run(kf, frame); 
     }
 
     reader->write_all_entries();

@@ -34,12 +34,12 @@ class MapDrawer
 public:
     MapDrawer(Map* pMap);
     Map* mapp;
-
-    void run(KeyFrame *kf, cv::Mat frame, Sophus::SE3d grountruth_pose);
-    void DrawMapPoints();
+    std::unordered_set<MapPoint *> all_map_points;
+    
+    void run(KeyFrame *kf, cv::Mat frame);
+    void DrawMapPoints(bool isKeyframe);
     void DrawKeyFrames();
     void draw_frame_pose(Eigen::Vector3d p, double red, double green, double blue);
-    void DrawRegularFrames();
     void DrawKeyFramesConnections();
     void GetCurrentOpenGLCameraMatrix(Eigen::Matrix3d Rwc, Eigen::Vector3d twc);
 
