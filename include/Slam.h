@@ -17,9 +17,10 @@ public:
     MapDrawer *drawer = nullptr;
     LocalMapping *local_mapper = nullptr;
 
+    int total_duration = 0;
     int total_tracking_duration = 0;
     int total_local_mapping_duration = 0;
-    
+
     void run_slam_systems();
     void display_timing_information();
 };

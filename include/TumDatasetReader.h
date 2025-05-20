@@ -15,7 +15,6 @@
 #include "opencv2/highgui/highgui.hpp"
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d.hpp>
-#include "config.h"
 #include "Map.h"
 #include <unordered_set>
 namespace fs = std::filesystem;
@@ -48,9 +47,9 @@ public:
     cv::dnn::Net net;
     cv::Size size = cv::Size(640, 480);
     int idx = 0;
-    Config cfg;
+    TumDatasetReader(Map *mapp, std::string path_to_write, std::string rgb_paths_location, std::string depth_path_location, 
+        std::string mapping_rgb_depth_filename, std::string mapping_rgb_groundtruth);
     Map *mapp;
-    TumDatasetReader(Config cfg, Map *mapp);
     cv::Mat get_next_frame();
     cv::Mat get_next_depth();
     cv::Mat get_next_depth_neural_network();

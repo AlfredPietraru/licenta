@@ -9,8 +9,6 @@ std::vector<Position_Entry> read_groundtruth_file(const std::string &file_path) 
     }
 
     std::string line;
-
-
     while (std::getline(file, line)) {
         // Skip comment lines
         if (line.empty() || line[0] == '#') {
@@ -78,13 +76,10 @@ std::unordered_map<std::string, Position_Entry> get_mapping_between_rgb_position
     return out_map;
 }
 
-TumDatasetReader::TumDatasetReader(Config cfg, Map *mapp) {
-    this->cfg = cfg;
+TumDatasetReader::TumDatasetReader(Map *mapp, std::string path_to_write, std::string rgb_paths_location, std::string depth_path_location, 
+std::string mapping_rgb_depth_filename, std::string mapping_rgb_groundtruth) {
     this->mapp = mapp;
-    std::string path_to_write = "../rgbd_dataset_freiburg1_xyz/estimated.txt";
     this->outfile = std::ofstream(path_to_write);
-    std::string rgb_paths_location = "../rgbd_dataset_freiburg1_xyz/rgb";
-    std::string depth_path_location = "../rgbd_dataset_freiburg1_xyz/depth";
     std::unordered_map<std::string, std::string> map_rgb_file_name_path;
     std::unordered_map<std::string, std::string> map_depth_file_name_path;
     for (std::filesystem::__cxx11::directory_entry entry : fs::directory_iterator(rgb_paths_location)) {
@@ -93,8 +88,8 @@ TumDatasetReader::TumDatasetReader(Config cfg, Map *mapp) {
     for (std::filesystem::__cxx11::directory_entry entry : fs::directory_iterator(depth_path_location)) {
         map_depth_file_name_path.insert({extract_timestamp(entry.path()), entry.path()});
     }
-    std::vector<std::pair<std::string, std::string>> map_rgb_depth = get_mapping_between_rgb_depth("../rgbd_dataset_freiburg1_xyz/maping_rgb_depth.txt");
-    std::unordered_map<std::string, Position_Entry> map_rgb_pose = get_mapping_between_rgb_position("../rgbd_dataset_freiburg1_xyz/maping_rgb_groundtruth.txt");
+    std::vector<std::pair<std::string, std::string>> map_rgb_depth = get_mapping_between_rgb_depth(mapping_rgb_depth_filename);
+    std::unordered_map<std::string, Position_Entry> map_rgb_pose = get_mapping_between_rgb_position(mapping_rgb_groundtruth);
     for (int i = 0; i < (int)map_rgb_depth.size(); i++) {
         std::pair<std::string, std::string> pair_names = map_rgb_depth[i];
         if (map_rgb_pose.find(pair_names.first) == map_rgb_pose.end()) continue;

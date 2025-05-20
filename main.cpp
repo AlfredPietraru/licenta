@@ -37,4 +37,5 @@ int main()
     std::signal(SIGINT, signalHandler);
     slam = new SLAM("../ORBvoc.txt", "../config.yaml");
     slam->run_slam_systems();
+    slam->display_timing_information();
 }

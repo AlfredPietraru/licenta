@@ -11,18 +11,25 @@ SLAM::SLAM(std::string voc_file, std::string config_file) {
     }
 
     Config cfg = loadConfig(config_file);
-
     this->mapp = new Map();
-    this->reader = new TumDatasetReader(cfg, mapp);
+    std::string path_to_write = "../rgbd_dataset_freiburg1_xyz/estimated.txt";
+    std::string rgb_paths_location = "../rgbd_dataset_freiburg1_xyz/rgb";
+    std::string depth_path_location = "../rgbd_dataset_freiburg1_xyz/depth";
+    std::string mapping_rgb_depth_filename = "../rgbd_dataset_freiburg1_xyz/maping_rgb_depth.txt";
+    std::string mapping_rgb_groundtruth = "../rgbd_dataset_freiburg1_xyz/maping_rgb_groundtruth.txt";
+    this->reader = new TumDatasetReader(mapp, path_to_write, rgb_paths_location, depth_path_location,
+         mapping_rgb_depth_filename, mapping_rgb_groundtruth);
     this->tracker = new Tracker(mapp, cfg, voc);
     this->drawer = new MapDrawer(mapp);
     this->local_mapper = new LocalMapping(mapp);
 }
 
-void SLAM::display_timing_information() {  
+void SLAM::display_timing_information() {
+    std::cout << "\n\n";  
+    std::cout << total_duration << " atat a durat in total algoritmul\n";
+    std::cout << total_tracking_duration / 1000 << " atat a durat tracking-ul in total\n";
+    std::cout << total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n\n";
     std::cout << tracker->reference_kf->reference_idx << " atatea keyframe-uri avute\n";
-    std::cout << this->total_local_mapping_duration / 1000 << " atat a durat doar local mapping\n\n";
-    std::cout << this->total_tracking_duration / 1000 << " atat a durat tracking-ul in total\n";
     std::cout << tracker->orb_matching_time / 1000 << " orb feature matching time\n";
     std::cout << tracker->motion_only_ba_time / 1000 << " motion only BA time\n";
 }
@@ -52,11 +59,10 @@ void SLAM::run_slam_systems() {
         }
         reader->store_entry(kf);
         reader->increase_idx();
-        drawer->run(kf, frame);
+        // drawer->run(kf, frame);
     }
 
-    reader->write_all_entries();
     auto t2 = high_resolution_clock::now();
-    std::cout << duration_cast<seconds>(t2 - t1).count() << "s aici atata a durat\n\n";
-    display_timing_information();
+    this->total_duration = duration_cast<seconds>(t2 - t1).count(); 
+    reader->write_all_entries();
 }
