@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999995 (TeX Live 2023/Debian) (preloaded format=xelatex 2025.5.19)  19 MAY 2025 11:25
+This is XeTeX, Version 3.141592653-2.6-0.999995 (TeX Live 2023/Debian) (preloaded format=xelatex 2025.5.19)  20 MAY 2025 12:32
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -374,31 +374,31 @@ File: l3backend-xetex.def 2024-01-04 L3 backend support: XeTeX
 (./licenta.aux)
 \openout1 = `licenta.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 159.
-LaTeX Font Info:    ... okay on input line 159.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 159.
-LaTeX Font Info:    ... okay on input line 159.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 159.
-LaTeX Font Info:    ... okay on input line 159.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 159.
-LaTeX Font Info:    ... okay on input line 159.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 159.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 133.
+LaTeX Font Info:    ... okay on input line 133.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 133.
+LaTeX Font Info:    ... okay on input line 133.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 133.
+LaTeX Font Info:    ... okay on input line 133.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 133.
+LaTeX Font Info:    ... okay on input line 133.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 133.
 LaTeX Font Info:    Trying to load font information for TS1+cmr on input line 1
-59.
+33.
  (/usr/share/texlive/texmf-dist/tex/latex/base/ts1cmr.fd
 File: ts1cmr.fd 2023/04/13 v2.5m Standard LaTeX font definitions
 )
-LaTeX Font Info:    ... okay on input line 159.
-LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 159.
-LaTeX Font Info:    ... okay on input line 159.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 159.
-LaTeX Font Info:    ... okay on input line 159.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 159.
-LaTeX Font Info:    ... okay on input line 159.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 159.
-LaTeX Font Info:    ... okay on input line 159.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 159.
-LaTeX Font Info:    ... okay on input line 159.
+LaTeX Font Info:    ... okay on input line 133.
+LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 133.
+LaTeX Font Info:    ... okay on input line 133.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 133.
+LaTeX Font Info:    ... okay on input line 133.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 133.
+LaTeX Font Info:    ... okay on input line 133.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 133.
+LaTeX Font Info:    ... okay on input line 133.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 133.
+LaTeX Font Info:    ... okay on input line 133.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: xetex
@@ -434,7 +434,7 @@ LaTeX Font Info:    ... okay on input line 159.
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-Package hyperref Info: Link coloring OFF on input line 159.
+Package hyperref Info: Link coloring OFF on input line 133.
 (./licenta.out) (./licenta.out)
 \@outlinefile=\write3
 \openout3 = `licenta.out'.
@@ -443,11 +443,11 @@ Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: subfig package v1.3 is loaded.
 Package caption Info: End \AtBeginDocument code.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <12> on input line 161.
+(Font)              <12> on input line 135.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <8> on input line 161.
+(Font)              <8> on input line 135.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <6> on input line 161.
+(Font)              <6> on input line 135.
  [1
 
 ] [1] (./licenta.toc)
@@ -456,14 +456,14 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 
  [1
 
-] [1] [1]
+] [1]
 Capitolul 1.
 [1
 
 ] [2]
 Capitolul 2.
 LaTeX Font Info:    Font shape `TU/lmss/m/it' in size <12> not available
-(Font)              Font shape `TU/lmss/m/sl' tried instead on input line 227.
+(Font)              Font shape `TU/lmss/m/sl' tried instead on input line 176.
 [3
 
 ]
@@ -477,15 +477,15 @@ Capitolul 4.
 ]
 Capitolul 5.
 
-Overfull \hbox (1.40941pt too wide) in paragraph at lines 322--323
+Overfull \hbox (1.40941pt too wide) in paragraph at lines 271--272
 []\TU/lmss/m/n/12 Descriere sumara a implementării, prezentarea unor secvențe n
 erelevante de cod, scheme,
  []
 
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <10.95> on input line 335.
+(Font)              <10.95> on input line 284.
 LaTeX Font Info:    Font shape `TU/lmss/bx/it' in size <10.95> not available
-(Font)              Font shape `TU/lmss/bx/sl' tried instead on input line 340.
+(Font)              Font shape `TU/lmss/bx/sl' tried instead on input line 289.
 
 [7
 
@@ -519,12 +519,12 @@ Package rerunfilecheck Info: File `licenta.out' has not changed.
 (rerunfilecheck)             Checksum: 8F9397EEF5E4CC82E7CAC04EF92CB091;2654.
  ) 
 Here is how much of TeX's memory you used:
- 12528 strings out of 474878
- 205006 string characters out of 5762516
- 1931627 words of memory out of 5000000
- 34419 multiletter control sequences out of 15000+600000
+ 12520 strings out of 474878
+ 204923 string characters out of 5762516
+ 1929627 words of memory out of 5000000
+ 34411 multiletter control sequences out of 15000+600000
  562193 words of font info for 63 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 72i,11n,117p,977b,448s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 72i,11n,117p,977b,456s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on licenta.pdf (21 pages).
+Output written on licenta.pdf (20 pages).

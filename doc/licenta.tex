@@ -43,14 +43,14 @@
 
 
 \newcommand{\HeaderLineSpace}{-0.25cm}
-\newcommand{\UniTextRO}{UNIVERSITATEA POLITEHNICA DIN BUCUREȘTI \\[\HeaderLineSpace] 
+\newcommand{\UniTextRO}{UNIVERSITATEA NATIONALA DE STIINTA SI TEHNOLOGIE POLITEHNICA BUCURESTI \\[\HeaderLineSpace] 
 FACULTATEA DE AUTOMATICĂ ȘI CALCULATOARE \\[\HeaderLineSpace]
 DEPARTAMENTUL DE CALCULATOARE\\}
 \newcommand{\DiplomaRO}{PROIECT DE DIPLOMA}
 \newcommand{\AdvisorRO}{Coordonator științific:}
 \newcommand{\BucRO}{BUCUREȘTI}
 
-\newcommand{\UniTextEN}{UNIVERSITY POLITEHNICA OF BUCHAREST \\[\HeaderLineSpace]
+\newcommand{\UniTextEN}{NATIONAL UNIVERSITY OF SCIENCE AND TECHNOLOGY POLITEHNICA BUCHAREST \\[\HeaderLineSpace]
 FACULTY OF AUTOMATIC CONTROL AND COMPUTERS \\[\HeaderLineSpace]
 COMPUTER SCIENCE AND ENGINEERING DEPARTMENT\\}
 \newcommand{\DiplomaEN}{DIPLOMA PROJECT}
@@ -84,12 +84,12 @@ COMPUTER SCIENCE AND ENGINEERING DEPARTMENT\\}
 \end{titlepage}
 }
 
-\newcommand{\frontPageRO}{\frontPage{\UniTextRO}{\DiplomaRO}{\ProjectTitleRO}{\ProjectSubtitleRO}{\AdvisorRO}{\BucRO}}
-\newcommand{\frontPageEN}{\frontPage{\UniTextEN}{\DiplomaEN}{\ProjectTitleEN}{\ProjectSubtitleEN}{\AdvisorEN}{\BucEN}}
+\newcommand{\frontPageRO}{\frontPage{\UniTextRO}{\DiplomaRO}{\ProjectTitleRO}{\BucRO}{\AdvisorRO}}
+\newcommand{\frontPageEN}{\frontPage{\UniTextEN}{\DiplomaEN}{\ProjectTitleEN}{\BucEN}{\AdvisorEN}}
 
-\linespread{1.15}
+\linespread{1.5}
 \setlength\parindent{0pt}
-\setlength\parskip{.28cm}
+\setlength\parskip{8pt}
 
 %% Abstract macro
 \newcommand{\AbstractPage}{
@@ -101,41 +101,20 @@ COMPUTER SCIENCE AND ENGINEERING DEPARTMENT\\}
 \end{titlepage}
 }
 
-%% Thank you macro
-\newcommand{\ThanksPage}{
-\begin{titlepage}
-{\noindent \large\textbf{MULȚUMIRI}}\\
-\Thanks{}
-\end{titlepage}
-}
-
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
 %%
 %%          End of template definitions
 %%   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-%%% Puteți elimina aceste linii din lucrare, servesc numai pentru template.
-\newcommand{\worktype}[1]{[\textit{#1}] }
-\newcommand{\dezvoltare}{\worktype{Dezvoltare de produs}}
-\newcommand{\cercetare}{\worktype{Cercetare}}
-\newcommand{\ambele}{\worktype{Ambele}}
-%%%
-
-
 %%
 %%   Campurile de mai jos trebuie modificate de autor. Modificati doar continutul, nu si numele fiecarei definitii
 %%
-\newcommand{\ProjectTitleRO}{Titlul proiectului de diplomă (ex: Șablon proiect de diplomă)}
-\newcommand{\ProjectSubtitleRO}{Subtitlu (ex: versiunea 2018)}
-\newcommand{\ProjectTitleEN}{Diploma Project Title  (eg: Diploma project template)}
-\newcommand{\ProjectSubtitleEN}{Subtitle (eg: 2018 version)}
-\newcommand{\Name}{Ioana Popescu}
-\newcommand{\Advisor}{Prof.\ dr.\ ing.\ Andrei Ionescu}
-\newcommand{\Year}{2018}
+\newcommand{\ProjectTitleRO}{Orientare in Spatiu folosind ORB-SLAM}
+\newcommand{\ProjectTitleEN}{Spatial Orientation using ORB-SLAM}
+\newcommand{\Name}{Alfred Andrei Pietraru}
+\newcommand{\Advisor}{Prof.\ dr.\ ing.\ Anca Morar}
+\newcommand{\Year}{2025}
 
 % Setări document
 \title{Proiect de diplomă}
@@ -151,11 +130,6 @@ Sinopsisul proiectului va fi redactat atât în română cât și în engleză. 
 \newcommand{\AbstractEN}{The abstract has an introductory role and should engulf both a brief description of the issue at hand, as well as an overview of the obtained results and conclusions. The abstract should be formulated such that even somebody that is unfamiliar with the projects’ domain can grasp the objectives of the thesis while, at the same time, retaining a specificity level offering a bird’s eye view of the project.
 The projects’ abstract will be elaborated in both Romanian and English. The recommended size for this section is limited to 200 words for each version. Together, both versions will fit in one page.}
 
-%%
-%%   Campurile aferente paginii de multumiri
-%%
-\newcommand{\Thanks}{(opțional) Aici puteți introduce o secțiunea specială de mulțumiri / acknowledgments. }
-
 \begin{document}
 
 \frontPageRO{}
@@ -168,37 +142,10 @@ The projects’ abstract will be elaborated in both Romanian and English. The re
 
 \AbstractPage{}
 
-% poate fi comentata sau stearsa
-\ThanksPage{}
-
 
 % Textul licentei incepe de aici 
 
-
-
 \chapter{Introducere}\pagestyle{fancy}
-% * <marios.choudary@gmail.com> 2018-02-28T11:38:18.106Z:
-% 
-% > INTRODUCERE
-% Am scos de aici referintele la font pentru a nu mai fi dependenti de Calibri. Personal, nici nu sunt sigur ca ajuta prea mult aceasta recomandare si mi se pare bun font-ul default din Latex (Computer Modern). Daca sunteti de-acord, va rog sa stergeti liniile comentate de mai jos, precum si cele referitoare la fontul Calibri din restul documentului.
-% 
-% ^.
-Parametrii de formatare recomandați pentru lucrare: 
-\begin{itemize}
- %\item Font recomandat: Calibri; Dimensiune font: 12; 
- \item Dimensiune font: 12; 
- \item Spațiere între linii: 1,5; Spațiere după paragraf: 8pt;
- \item Stil: Justified;
- \item Dimensiune pagină: A4; Margini: 2,54cm/ 2,54cm/ 2,54cm/ 2,54cm;
- %\item Heading1: Calibri, 14, bold, all caps;
- %\item Heading2: Calibri, 14, bold;
- %\item Heading3: Calibri, 12. 
- %\item Font pentru formule: Cambria Math, 12.
- \item Heading1: 14, bold, all caps;
- \item Heading2: 14, bold;
- \item Heading3: 12. 
- \item Font size pentru formule: 12.
-\end{itemize}
 În cadrul introducerii, este necesară abordarea următoarelor puncte care reprezintă de fapt familiarizarea cititorului (comisia, alți colegi sau experți în domeniu) cu tema proiectului, soluția propusa și cuprinsul/structura lucrării. Deși introducerea poate conține și unele elemente mai generale, se recomandă păstrarea unui limbaj tehnic, specific audienței care va citi lucrarea.
 
 Elementele pe care trebuie să le abordați în introducere sunt descrise în cadrul subcapitolelor de mai jos. 
