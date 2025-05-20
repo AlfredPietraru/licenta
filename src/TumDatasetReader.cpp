@@ -98,8 +98,6 @@ std::string mapping_rgb_depth_filename, std::string mapping_rgb_groundtruth) {
         this->groundtruth_poses.push_back(map_rgb_pose[pair_names.first].pose);
     }
     this->outfile << "# timestamp tx ty tz qx qy qz qw\n";
-    translation_pose = Sophus::SE3d(Eigen::Quaterniond(-0.3266, 0.6583, 0.6112, -0.2938), Eigen::Vector3d(1.3434, 0.6271, 1.6606));
-
     this->net = cv::dnn::readNetFromONNX("../fast_depth.onnx");
 }   
 
@@ -139,7 +137,7 @@ cv::Mat TumDatasetReader::get_next_depth_neural_network() {
     ch[2] = (ch[2] - 0.406) / 0.225;
     cv::Mat img;
     cv::merge(ch, img);
-    cv::Mat blob = cv::dnn::blobFromImage(img, 1.0, this->size, cv::Scalar(), false, false, CV_32F);
+    cv::Mat blob = cv::dnn::blobFromImage(img, 1.0, cv::Size(640, 480), cv::Scalar(), false, false, CV_32F);
     net.setInput(blob);
     cv::Mat output = net.forward();  
     int h = output.size[2];
@@ -165,7 +163,7 @@ void TumDatasetReader::store_entry(KeyFrame *current_kf) {
     this->frame_poses.push_back(framePoseEntry);
 }
 
-void TumDatasetReader::write_entry(Sophus::SE3d pose, int index) {
+void TumDatasetReader::write_entry(Sophus::SE3d &translation_pose, Sophus::SE3d &pose, int index) {
     std::string path = this->rgb_path[index];
     std::string file_name = extract_timestamp(path);
     pose = translation_pose * pose.inverse(); 
@@ -176,13 +174,13 @@ void TumDatasetReader::write_entry(Sophus::SE3d pose, int index) {
               << q_tum.x() << " " << q_tum.y() << " " << q_tum.z() << " " << q_tum.w() << std::endl;
 }
 
-void TumDatasetReader::write_all_entries() {
+void TumDatasetReader::write_all_entries(Sophus::SE3d translation_pose) {
     std::cout << "AICI INCEPE SCRIEREA IN FISIER\n";
     for (int i = 0; i <  (int)this->frame_poses.size(); i++) {
         FramePoseEntry framePoseEntry = this->frame_poses[i]; 
         Sophus::SE3d lastKeyFramePose = this->mapp->keyframes[framePoseEntry.last_keyframe_idx]->Tcw;
         Sophus::SE3d currentFramePose = framePoseEntry.pose * lastKeyFramePose;
-        write_entry(currentFramePose, i);
+        write_entry(translation_pose, currentFramePose, i);
     }
     std::cout << "AICI SE TERMINA SCRIEREA IN FISIER\n";
 }

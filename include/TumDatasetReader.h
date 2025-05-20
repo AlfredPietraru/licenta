@@ -42,10 +42,7 @@ public:
     std::ofstream outfile;
     std::vector<Sophus::SE3d> groundtruth_poses;
     std::vector<FramePoseEntry> frame_poses;
-    Sophus::SE3d translation_pose;
-    Sophus::SE3d rotation_pose;
     cv::dnn::Net net;
-    cv::Size size = cv::Size(640, 480);
     int idx = 0;
     TumDatasetReader(Map *mapp, std::string path_to_write, std::string rgb_paths_location, std::string depth_path_location, 
         std::string mapping_rgb_depth_filename, std::string mapping_rgb_groundtruth);
@@ -56,8 +53,8 @@ public:
     Sophus::SE3d get_next_groundtruth_pose();
     void increase_idx();
     void store_entry(KeyFrame *current_kf);
-    void write_entry(Sophus::SE3d pose, int index);
-    void write_all_entries();
+    void write_entry(Sophus::SE3d &translation_pose, Sophus::SE3d &pose, int index);
+    void write_all_entries(Sophus::SE3d translation_pose);
     bool should_end();
 };
 

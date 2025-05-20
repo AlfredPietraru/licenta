@@ -1,6 +1,6 @@
 #include "../include/Slam.h"
 
-SLAM::SLAM(std::string voc_file, std::string config_file) {
+SLAM::SLAM(std::string voc_file, std::string config_file, Tum_Dataset_Structure dt) {
     this->voc = new ORBVocabulary();
     bool bVocLoad = voc->loadFromTextFile(voc_file);
     if (!bVocLoad) {
@@ -10,15 +10,11 @@ SLAM::SLAM(std::string voc_file, std::string config_file) {
         std::cout << "Fisierul a fost incarcat cu succes\n";
     }
 
+    this->dt = dt;
     Config cfg = loadConfig(config_file);
     this->mapp = new Map();
-    std::string path_to_write = "../rgbd_dataset_freiburg1_xyz/estimated.txt";
-    std::string rgb_paths_location = "../rgbd_dataset_freiburg1_xyz/rgb";
-    std::string depth_path_location = "../rgbd_dataset_freiburg1_xyz/depth";
-    std::string mapping_rgb_depth_filename = "../rgbd_dataset_freiburg1_xyz/maping_rgb_depth.txt";
-    std::string mapping_rgb_groundtruth = "../rgbd_dataset_freiburg1_xyz/maping_rgb_groundtruth.txt";
-    this->reader = new TumDatasetReader(mapp, path_to_write, rgb_paths_location, depth_path_location,
-         mapping_rgb_depth_filename, mapping_rgb_groundtruth);
+    this->reader = new TumDatasetReader(mapp, dt.path_to_write, dt.rgb_paths_location, dt.depth_path_location,
+        dt.mapping_rgb_depth_filename, dt.mapping_rgb_groundtruth);
     this->tracker = new Tracker(mapp, cfg, voc);
     this->drawer = new MapDrawer(mapp);
     this->local_mapper = new LocalMapping(mapp);
@@ -59,10 +55,10 @@ void SLAM::run_slam_systems() {
         }
         reader->store_entry(kf);
         reader->increase_idx();
-        // drawer->run(kf, frame);
+        drawer->run(kf, frame);
     }
 
     auto t2 = high_resolution_clock::now();
     this->total_duration = duration_cast<seconds>(t2 - t1).count(); 
-    reader->write_all_entries();
+    reader->write_all_entries(this->dt.translation_pose);
 }
