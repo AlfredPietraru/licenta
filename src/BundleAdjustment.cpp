@@ -59,40 +59,6 @@ void execute_problem(std::unordered_set<KeyFrame*>& local_keyframes, std::unorde
     
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
-
-    // for (ceres::ResidualBlockId id : monocular_ids) {
-    //     ceres::Problem::EvaluateOptions eval_options;
-    //     eval_options.residual_blocks = {id};  // evaluate this specific block
-    //     std::vector<double> residuals;
-    //     double cost;
-    //     bool ok = problem.Evaluate(eval_options, &cost, &residuals, nullptr, nullptr);
-    //     if (!ok) {
-    //         std::cerr << "[ERROR] Failed to evaluate residual for monocular block\n";
-    //         continue;
-    //     }
-    //     double norm = residuals[0]*residuals[0] + residuals[1]*residuals[1];
-    //     if (fabs(norm) < 10) continue;
-    //     std::cout << "[MONO] Residual norm: " << norm << "   "
-    //               << "residual x: " << residuals[0] << ", y: " << residuals[1] << "\n";
-    // }
-
-    // for (ceres::ResidualBlockId id : stereo_ids) {
-    //     ceres::Problem::EvaluateOptions eval_options;
-    //     eval_options.residual_blocks = {id};
-    //     std::vector<double> residuals;
-    //     double cost;
-    //     bool ok = problem.Evaluate(eval_options, &cost, &residuals, nullptr, nullptr);
-    //     if (!ok) {
-    //         std::cerr << "[ERROR] Failed to evaluate residual for stereo block\n";
-    //         continue;
-    //     }
-    //     double norm = residuals[0]*residuals[0] + residuals[1]*residuals[1] + residuals[2]*residuals[2];
-    //     if (fabs(norm) < 10) continue;
-    //     std::cout << "[STEREO] Residual norm: " 
-    //               << norm << "   " 
-    //               << "residual cost: " << cost << "     "
-    //               << "residual x: " << residuals[0] << ", y: " << residuals[1] << ", disparity: " << residuals[2] << "\n";
-    // }
     if (to_output) {
         std::cout << summary.FullReport() << "\n";
     }
@@ -130,7 +96,7 @@ void delete_outliers(std::unordered_set<MapPoint*>& local_map_points, double chi
             to_delete.push_back(mp);
         }
     }
-    // std::cout << to_delete.size() << " ATATEA PUNCTE AU FOST GASITE DE STERS\n";
+    
     for (MapPoint *mp : to_delete) {
         local_map_points.erase(mp);
     }

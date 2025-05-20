@@ -45,12 +45,15 @@ public:
     std::vector<FramePoseEntry> frame_poses;
     Sophus::SE3d translation_pose;
     Sophus::SE3d rotation_pose;
+    cv::dnn::Net net;
+    cv::Size size = cv::Size(640, 480);
     int idx = 0;
     Config cfg;
     Map *mapp;
     TumDatasetReader(Config cfg, Map *mapp);
     cv::Mat get_next_frame();
     cv::Mat get_next_depth();
+    cv::Mat get_next_depth_neural_network();
     Sophus::SE3d get_next_groundtruth_pose();
     void increase_idx();
     void store_entry(KeyFrame *current_kf);

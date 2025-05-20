@@ -61,14 +61,23 @@ int main()
     
     Map *mapp = new Map();
     MapDrawer *drawer = new MapDrawer(mapp);
-    reader = new TumDatasetReader(cfg, mapp); 
+    reader = new TumDatasetReader(cfg, mapp);
+    std::cout << "reader-ul a fost incarcat cu succes\n"; 
     LocalMapping *local_mapper = new LocalMapping(mapp);
     tracker = new Tracker(mapp, cfg, voc);
 
     auto t1 = high_resolution_clock::now();
     while(!reader->should_end()) {
         cv::Mat frame = reader->get_next_frame(); 
-        cv::Mat depth = reader->get_next_depth();   
+        cv::Mat depth = reader->get_next_depth();
+        cv::Mat neural_network_depth = reader->get_next_depth_neural_network();
+        cv::imshow("frame", frame);
+        cv::imshow("depth", depth);
+        cv::imshow("neural_network_depth", neural_network_depth);
+        std::cout << depth.row(479) << "\n\n";
+        std::cout << neural_network_depth.row(479) << "\n\n";
+        cv::waitKey(0);   
+
         Sophus::SE3d groundtruth_pose = reader->get_next_groundtruth_pose();
         
         auto start = high_resolution_clock::now();
@@ -83,7 +92,7 @@ int main()
         }
         reader->store_entry(kf);
         reader->increase_idx();
-        drawer->run(kf, frame); 
+        drawer->run(kf, frame);
     }
 
     reader->write_all_entries();
@@ -91,49 +100,3 @@ int main()
     std::cout << duration_cast<seconds>(t2 - t1).count() << "s aici atata a durat\n\n";  
     display_timing_information();
 }
-
-
-// int read_img() {
-//     cv::VideoCapture cap = cv::VideoCapture("../video.mp4");
-//     cv::dnn::Net net = cv::dnn::readNetFromONNX("../fast_depth.onnx");
-//     cv::Mat K = cv::Mat::eye(cv::Size(3, 3), CV_32F);
-//     cv::Size size = cv::Size(224, 224);
-//     K.at<float>(0, 0) = 1436.71;
-//     K.at<float>(1, 1) = 1436.71;
-//     K.at<float>(0, 2) = 757.49;
-//     K.at<float>(1, 2) = 1017.88;
-//     // std::cout << K << "\n";
-
-//     cv::Mat frame, distorted_frame, resized, normalized_frame;
-//     cap.read(distorted_frame);
-//     std::cout << distorted_frame.size() << "\n";
-//     vector<double> distorsions = {2.04832995e-01, -8.63937346e-01, -9.53701444e-04, -1.13478117e-03, 1.60886073e+00};
-//     cv::undistort(distorted_frame, frame, K, distorsions);
-//     cv::resize(frame, resized, size);
-//     cv::normalize(resized, normalized_frame, 0, 255, cv::NORM_MINMAX);
-//     Mat blob = cv::dnn::blobFromImage(normalized_frame, 1, size, cv::Scalar(), true, false);
-//     net.setInput(blob);
-//     Mat depth = net.forward().reshape(1, 224);
-//     depth *= 10;
-//     K.at<float>(0, 0) = 1436.71 * (size.height / (double)distorted_frame.size().height);
-//     K.at<float>(1, 1) = 1436.71 * (size.width / (double)distorted_frame.size().width);
-//     K.at<float>(0, 2) = 757.49 * (size.height / (double)distorted_frame.size().height);
-//     K.at<float>(1, 2) = 1017.88 * (size.width / (double)distorted_frame.size().width);
-//     std::cout << K << "\n";
-//     Sophus::SE3d initial_pose = Sophus::SE3d(Eigen::Matrix4d::Identity());
-//     Tracker *tracker = new Tracker(K, initial_pose, 10);
-//     Map mapp = tracker->initialize(resized, depth);
-//     vector<KeyFrame*> keyframes_buffer;
-//     while(1) {
-//         cap.read(distorted_frame);
-//         cv::undistort(distorted_frame, frame, K, distorsions);
-//         cv::resize(frame, resized, size);
-//         cv::normalize(resized, normalized_frame, 0, 255, cv::NORM_MINMAX);
-//         blob = cv::dnn::blobFromImage(normalized_frame, 1, size, cv::Scalar(), true, false);
-//         net.setInput(blob);
-//         depth = net.forward().reshape(1, 224);
-//         depth *= 10;
-//         tracker->tracking(resized, depth, mapp, keyframes_buffer);
-//     }
-//     return 0;
-// }

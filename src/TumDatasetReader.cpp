@@ -104,6 +104,8 @@ TumDatasetReader::TumDatasetReader(Config cfg, Map *mapp) {
     }
     this->outfile << "# timestamp tx ty tz qx qy qz qw\n";
     translation_pose = Sophus::SE3d(Eigen::Quaterniond(-0.3266, 0.6583, 0.6112, -0.2938), Eigen::Vector3d(1.3434, 0.6271, 1.6606));
+
+    this->net = cv::dnn::readNetFromONNX("../fast_depth.onnx");
 }   
 
 Sophus::SE3d TumDatasetReader::get_next_groundtruth_pose() {
@@ -117,7 +119,8 @@ bool TumDatasetReader::should_end() {
 
 cv::Mat TumDatasetReader::get_next_frame() {
     std::cout << idx << " " << this->rgb_path[idx] << " ";
-    cv::Mat frame = cv::imread(this->rgb_path[idx], cv::IMREAD_COLOR_RGB);
+    cv::Mat frame = cv::imread(this->rgb_path[idx], cv::IMREAD_COLOR_BGR);
+    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
     cv::Mat gray;
     cv::cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
     return gray;
@@ -128,6 +131,32 @@ cv::Mat TumDatasetReader::get_next_depth() {
     cv::Mat depth = cv::imread(this->depth_path[idx], cv::IMREAD_UNCHANGED);
     return depth;
 }
+
+cv::Mat TumDatasetReader::get_next_depth_neural_network() {
+    cv::Mat normalized_frame;
+    cv::Mat frame = cv::imread(this->rgb_path[idx], cv::IMREAD_COLOR_BGR);
+    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+    cv::normalize(frame, normalized_frame, 0, 1, cv::NORM_MINMAX, CV_32F);
+    std::vector<cv::Mat> ch;
+    cv::split(normalized_frame, ch);
+    ch[0] = (ch[0] - 0.485) / 0.229; 
+    ch[1] = (ch[1] - 0.456) / 0.224;
+    ch[2] = (ch[2] - 0.406) / 0.225;
+    cv::Mat img;
+    cv::merge(ch, img);
+    cv::Mat blob = cv::dnn::blobFromImage(img, 1.0, this->size, cv::Scalar(), false, false, CV_32F);
+    net.setInput(blob);
+    cv::Mat output = net.forward();  
+    int h = output.size[2];
+    int w = output.size[3];
+    cv::Mat depth(h, w, CV_32F, output.ptr<float>());
+    depth *= 5000;
+    cv::Mat depth_copy;
+    depth.convertTo(depth_copy, CV_16U);
+    return depth_copy;
+}
+
+
 
 void TumDatasetReader::increase_idx() {
     this->idx++;

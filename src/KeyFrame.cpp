@@ -225,6 +225,7 @@ void KeyFrame::debug_keyframe(cv::Mat frame, int miliseconds)
     cv::drawKeypoints(frame, this->get_all_keypoints(), img2, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DEFAULT);
     cv::drawKeypoints(frame, keypoints, img3, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT);
     cv::imshow("Display window", img3);
+    cv::moveWindow("Display window", 1000, 100);  
     cv::waitKey(miliseconds);
 }
 
