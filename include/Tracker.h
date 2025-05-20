@@ -14,9 +14,9 @@
 #include <sophus/se3.hpp>
 #include "Map.h"
 #include "MotionOnlyBA.h"
-#include "FeatureFinderMatcher.h"
 #include "OrbMatcher.h"
 #include "config.h"
+#include "ORBextractor.h"
 #include "ORBVocabulary.h"
 #include "MapDrawer.h"
 #include "Common.h"
@@ -34,7 +34,7 @@ using namespace cv;
 
 class Tracker {
 public:
-    KeyFrame* tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose);
+    KeyFrame* tracking(Mat frame, Mat depth);
     Tracker(Map *mapp, Config cfg, ORBVocabulary* voc);
 
     // state parameters of the tracking thread;
@@ -52,8 +52,8 @@ public:
     Map *mapp;
     ORBVocabulary* voc;
     MotionOnlyBA *motionOnlyBA;
-    FeatureMatcherFinder *fmf;
     OrbMatcher *matcher;
+    ORBextractor* extractor = new ORBextractor(1000, 1.2, 8, 20, 7);
     MapDrawer *mapDrawer;
 
     // tracking time
@@ -67,6 +67,7 @@ public:
     const int NR_MAP_POINTS_TRACKED_MAP_LOW = 30;
     const int NR_MAP_POINTS_TRACKED_MAP_HIGH = 50;
     
+    void UndistortKeyPoints(std::vector<cv::KeyPoint>& kps, std::vector<cv::KeyPoint>& u_kps);
     KeyFrame* FindReferenceKeyFrame();
     void TrackReferenceKeyFrame();
     void TrackConsecutiveFrames();

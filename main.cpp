@@ -70,18 +70,16 @@ int main()
     while(!reader->should_end()) {
         cv::Mat frame = reader->get_next_frame(); 
         cv::Mat depth = reader->get_next_depth();
-        cv::Mat neural_network_depth = reader->get_next_depth_neural_network();
-        cv::imshow("frame", frame);
-        cv::imshow("depth", depth);
-        cv::imshow("neural_network_depth", neural_network_depth);
-        std::cout << depth.row(479) << "\n\n";
-        std::cout << neural_network_depth.row(479) << "\n\n";
-        cv::waitKey(0);   
+        // cv::Mat neural_network_depth = reader->get_next_depth_neural_network();
+        // cv::imshow("frame", frame);
+        // cv::imshow("depth", depth);
+        // cv::imshow("neural_network_depth", neural_network_depth);
+        // std::cout << depth.row(479) << "\n\n";
+        // std::cout << neural_network_depth.row(479) << "\n\n";
+        // cv::waitKey(0);   
 
-        Sophus::SE3d groundtruth_pose = reader->get_next_groundtruth_pose();
-        
         auto start = high_resolution_clock::now();
-        KeyFrame *kf = tracker->tracking(frame, depth, groundtruth_pose);
+        KeyFrame *kf = tracker->tracking(frame, depth);
         auto end = high_resolution_clock::now();
         total_tracking_duration += duration_cast<milliseconds>(end - start).count();
         if (kf->isKeyFrame) {

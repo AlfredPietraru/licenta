@@ -47,7 +47,6 @@ set(SOURCES
     main.cpp
     src/MotionOnlyBA.cpp
     src/Feature.cpp
-    src/FeatureFinderMatcher.cpp
     src/Map.cpp
     src/Tracker.cpp
     src/MapPoint.cpp
@@ -66,7 +65,6 @@ set(HEADERS
     "include/Common.h"
     "include/MotionOnlyBA.h"
     "include/Feature.h"
-    "include/FeatureFinderMatcher.h"
     "include/Map.h"
     "include/Tracker.h"
     "include/MapPoint.h"

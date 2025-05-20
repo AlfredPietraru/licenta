@@ -6,41 +6,10 @@ Tracker::Tracker(Map *mapp, Config cfg, ORBVocabulary *voc) : mapp(mapp), voc(vo
     this->K = cfg.K;
     cv::cv2eigen(cfg.K, this->K_eigen);
     this->mDistCoef = cfg.distortion;
-    this->fmf = new FeatureMatcherFinder(480, 640, cfg);
     this->motionOnlyBA = new MotionOnlyBA();
     this->matcher = new OrbMatcher(cfg.orb_matcher);
     std::cout << "SFARSIT INITIALIZARE\n\n";
 }
-
-void compute_difference_between_positions(const Sophus::SE3d &estimated, const Sophus::SE3d &ground_truth, bool print_now)
-{
-    if (!print_now)
-        return;
-    Sophus::SE3d relative = ground_truth.inverse() * estimated;
-    double APE = relative.log().norm();
-
-    Eigen::Vector3d angle_axis = relative.so3().log();
-    angle_axis = angle_axis * 180 / M_PI;
-
-    Eigen::Quaterniond q_rel = relative.unit_quaternion();
-
-    double total_angle_diff = 2.0 * std::acos(q_rel.w()) * 180.0 / M_PI;
-    if (total_angle_diff > 180.0)
-    {
-        total_angle_diff = 360.0 - total_angle_diff;
-    }
-
-    Eigen::Vector3d t_rel = relative.translation();
-    double translation_diff = t_rel.norm();
-
-    std::cout << "APE score: " << APE << "\n";
-    std::cout << "Rotation Difference (Total): " << total_angle_diff << " degrees\n";
-    std::cout << "Rotation Difference (X): " << angle_axis(0) << " degrees\n";
-    std::cout << "Rotation Difference (Y): " << angle_axis(1) << " degrees\n";
-    std::cout << "Rotation Difference (Z): " << angle_axis(2) << " degrees\n";
-    std::cout << "Translation Difference: " << translation_diff << " meters\n\n";
-}
-
 
 Sophus::SE3d Tracker::GetVelocityNextFrame() {
     if (frames_seen < 2) return Sophus::SE3d(Eigen::Matrix4d::Identity());
@@ -50,12 +19,40 @@ Sophus::SE3d Tracker::GetVelocityNextFrame() {
     return this->prev_kf->Tcw * this->prev_prev_kf->Tcw.inverse();
 }
 
+void Tracker::UndistortKeyPoints(std::vector<cv::KeyPoint>& kps, std::vector<cv::KeyPoint>& u_kps)
+{
+    if(mDistCoef[0]==0.0) {
+        std::copy(kps.begin(), kps.end(), std::back_inserter(u_kps));
+        return;
+    }
+    cv::Mat mat(kps.size(), 2, CV_32F);
+    for(long unsigned int i = 0; i < kps.size(); i++)
+    {
+        mat.at<float>(i,0)=kps[i].pt.x;
+        mat.at<float>(i,1)=kps[i].pt.y;
+    }
+
+    mat=mat.reshape(2);
+    cv::undistortPoints(mat, mat, this->K, mDistCoef,cv::Mat(),this->K);
+    mat=mat.reshape(1);
+    
+    for(long unsigned int i = 0; i < kps.size(); i++)
+    {
+        cv::KeyPoint kp = kps[i];
+        kp.pt.x=mat.at<float>(i,0);
+        kp.pt.y=mat.at<float>(i,1);
+        u_kps.push_back(kp);
+    }
+}
+
 void Tracker::GetNextFrame(Mat frame, Mat depth)
 {
     std::vector<cv::KeyPoint> keypoints;
     std::vector<cv::KeyPoint> undistorted_kps;
     cv::Mat descriptors;
-    this->fmf->compute_keypoints_descriptors(frame, keypoints, undistorted_kps, descriptors);
+    // this->fmf->compute_keypoints_descriptors(frame, keypoints, undistorted_kps, descriptors);
+    (*this->extractor)(frame, keypoints, descriptors);
+    this->UndistortKeyPoints(keypoints, undistorted_kps);
     switch (frames_seen) {
         case 0:
             this->current_kf = new KeyFrame(Sophus::SE3d(Eigen::Matrix4d::Identity()), this->K_eigen, this->mDistCoef, keypoints, undistorted_kps, descriptors, depth, 0, frame, this->voc);
@@ -204,7 +201,7 @@ void Tracker::TrackLocalMap(Map *mapp)
     }
 }
 
-KeyFrame *Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose)
+KeyFrame *Tracker::tracking(Mat frame, Mat depth)
 {
     auto start = high_resolution_clock::now();
     this->GetNextFrame(frame, depth);
@@ -237,8 +234,6 @@ KeyFrame *Tracker::tracking(Mat frame, Mat depth, Sophus::SE3d ground_truth_pose
     this->TrackLocalMap(mapp);
     end = high_resolution_clock::now();
     total_tracking_during_local_map += duration_cast<milliseconds>(end - start).count();
-
-    compute_difference_between_positions(this->current_kf->Tcw, ground_truth_pose, false);
     this->current_kf->isKeyFrame = this->Is_KeyFrame_needed();
 
     if (this->current_kf->isKeyFrame)
