@@ -12,8 +12,9 @@ Tracker::Tracker(Map *mapp, Config cfg, ORBVocabulary *voc) : mapp(mapp), voc(vo
 }
 
 Sophus::SE3d Tracker::GetVelocityNextFrame() {
-    if (frames_seen < 2) return Sophus::SE3d(Eigen::Matrix4d::Identity());
     // return Sophus::SE3d(Eigen::Matrix4d::Identity());
+    
+    if (frames_seen < 2) return Sophus::SE3d(Eigen::Matrix4d::Identity());
     if (this->current_kf->current_idx - this->reference_kf->current_idx <= 2) 
         return Sophus::SE3d(Eigen::Matrix4d::Identity());
     return this->prev_kf->Tcw * this->prev_prev_kf->Tcw.inverse();

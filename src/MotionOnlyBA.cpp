@@ -60,12 +60,22 @@ class MotionChangeError {
         residuals[0] = (prev_kf->pose_vector[4] - pose[4]) * weight;
         residuals[1] = (prev_kf->pose_vector[5] - pose[5]) * weight;
         residuals[2] = (prev_kf->pose_vector[6] - pose[6]) * weight;
+
+        T q_prev[4] = {T(prev_kf->pose_vector[0]), T(prev_kf->pose_vector[1]),
+            T(prev_kf->pose_vector[2]), T(prev_kf->pose_vector[3])};
+        const T* q_curr = pose;
+        T q_prev_conj[4] = { q_prev[0], -q_prev[1], -q_prev[2], -q_prev[3] };
+        T q_rel[4];
+        ceres::QuaternionProduct(q_prev_conj, q_curr, q_rel);
+        residuals[3] = T(2.0) * q_rel[1] * weight;
+        residuals[4] = T(2.0) * q_rel[2] * weight;
+        residuals[5] = T(2.0) * q_rel[3] * weight;
         return true;
     }
 
     static ceres::CostFunction *Create(KeyFrame *prev_kf, double weight)
     {
-        return (new ceres::AutoDiffCostFunction<MotionChangeError, 3, 7>(
+        return (new ceres::AutoDiffCostFunction<MotionChangeError, 6, 7>(
             new MotionChangeError(prev_kf, weight)));
     }
 
@@ -116,7 +126,7 @@ void MotionOnlyBA::solve_ceres(KeyFrame *kf, KeyFrame *prev_kf, bool display)
         problem.SetManifold(kf->pose_vector, new SE3Manifold());
         if (prev_kf != nullptr) {
             ceres::CostFunction *cost_function;
-            cost_function = MotionChangeError::Create(prev_kf, 10);
+            cost_function = MotionChangeError::Create(prev_kf, 100);
             problem.AddResidualBlock(cost_function, nullptr, kf->pose_vector);
         }
 
