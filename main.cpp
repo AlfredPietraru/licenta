@@ -44,7 +44,6 @@ int main()
     dt.mapping_rgb_groundtruth = "../rgbd_dataset_freiburg1_xyz/maping_rgb_groundtruth.txt";
     dt.translation_pose = Sophus::SE3d(Eigen::Quaterniond(-0.3266, 0.6583, 0.6112, -0.2938), Eigen::Vector3d(1.3434, 0.6271, 1.6606));
 
-
     // dt.path_to_write = "../rgbd_dataset_freiburg1_rpy/estimated.txt";
     // dt.rgb_paths_location = "../rgbd_dataset_freiburg1_rpy/rgb";
     // dt.depth_path_location = "../rgbd_dataset_freiburg1_rpy/depth";

@@ -139,7 +139,7 @@ cv::Mat TumDatasetReader::get_next_depth_neural_network() {
     cv::merge(ch, img);
     cv::Mat blob = cv::dnn::blobFromImage(img, 1.0, cv::Size(640, 480), cv::Scalar(), false, false, CV_32F);
     net.setInput(blob);
-    cv::Mat output = net.forward();  
+    cv::Mat output = net.forward();
     int h = output.size[2];
     int w = output.size[3];
     cv::Mat depth(h, w, CV_32F, output.ptr<float>());
