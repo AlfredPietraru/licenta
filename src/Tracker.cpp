@@ -51,7 +51,6 @@ void Tracker::GetNextFrame(Mat frame, Mat depth)
     std::vector<cv::KeyPoint> keypoints;
     std::vector<cv::KeyPoint> undistorted_kps;
     cv::Mat descriptors;
-    // this->fmf->compute_keypoints_descriptors(frame, keypoints, undistorted_kps, descriptors);
     (*this->extractor)(frame, keypoints, descriptors);
     this->UndistortKeyPoints(keypoints, undistorted_kps);
     switch (frames_seen) {

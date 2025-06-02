@@ -649,8 +649,9 @@ a unei matrici 3X3 de rotatie, iar ultimii 3 parametrii reprezentand un vector d
 Biblioteca implementeaza operatii care imi permit sa lucrez cu acesti vectori, care fac parte 
 dintr-un grup numit \(se(3)\) si garanteaza ca rezultatul obtinut este scalat corespunzator 
 pentru a face parte in continuare din aceeasi categorie. \\
-DBoW2 este necesar in mai multe etape ale algoritmului ORB-SLAM2. Acesta implementeaza metoda 
-bag of words. \\
+DBoW2 este o metoda de tip bag of words pentru compararea imaginilor intre ele. Acesta foloseste 
+feature-uri de tip FAST si descriptori de tip BIREF asemeni algoritmului ORB. 
+ \\
 Structura de fisiere este una simpla, in folderul radacina se regaseste fisierul de 
 CmakeLists.txt care va fi interpretat de utilitarul cmake pentru a genera automat Makefile-ul. 
 Acest Makefile va contine regulile de build si de clean pentru proiectul meu. Am fisierul de 
@@ -658,32 +659,73 @@ main.cpp unde vor fi initializate componentele si se va selecta pe care dintre c
 de date se va aplica algoritmul. Tot aici se regaseste si fisierul fast\_depth.onnx, in este 
 stocata arhitectura si parametrii antrenati ai retelei neurale FastDepth pentru estimarea 
 adancimii. In plus am fisiele de include unde se afla antetele claselor pe care le voi 
-implementa si fisierul de src unde se afla codul de C++ si logica programului. Separarea 
-aceasta a codului am observat ca este o practica des intalnita in proiectele de mari dimensiuni 
+implementa si fisierul de src unde se afla codul de C++ si logica programului. Am observat ca 
+separarea codului in acest fel este o practica des intalnita in proiectele de mari dimensiuni 
 si garanteaza flexibilitate in includirea dependintelor intre fisiere. Algoritmul ORB-SLAM2 \
-este unul complex, depinzand de o multitudine de parametrii care pot influenta acuratetea algoritmului.
+este unul complex, depinzand de o multitudine de parametrii care pot influenta acuratetea.
 Cei mai importanti sunt cei corelati cu camera. In fisierul config.yaml se regaseste matricea \(K\), 
 parametrii de distorsiune ai imaginii si alte constante pe care le-am considerat ca fiind niste
 hiperparametrii ai algoritmului, care vor trebui modificati in functie de mediul in care va rula
-ORB-SLAM2 pentru a garanta functionarea corecta. Un motiv pentru care mi-a fost dificil
-sa testez implementarea pe un video facut de mine a fost faptul ca nu aveam acces la valorile
-pozitiei in spatiu si a orientarii la fiecare cadru in parte, fiindu-mi imposibil sa verific 
-daca acuratetea algoritmului meu este corespunzatoare. In plus, aveam nevoie de parametrii 
-camerei. Daca valorile pentru matricea \(K\) sunt incorecte algoritmul va creea si sterge
-puncte haotic si va pierde orientarea dupa doar cateva cadre. 
+ORB-SLAM2 pentru a garanta functionarea corecta. \\
+In main.cpp se face citirea fisierului ORBvoc.txt, acesta contine datele pe care le va folosi
+clasa ORBVocabulary pentru a calcula vectorii de feature-uri pentru fiecare dintre cadrele cheie.
+Acesti vectori de feature-uri vor fi comparati intre ei pentru a determina daca pozele respective 
+provin din acelasi loc pentru a face corelatii intre cadre, relocalizari sau operatii de loop
+closure. Tot in main.cpp se va face selectia pentru unul din cele 2 seturi de date pe care le va
+folosi algoritmul in rularea lui. Aceste seturi de date contin de fapt cadrele dintr-un video 
+facut cu o camera RGBD Microsoft Kinetic impreuna cu matricile de adancime si pozitiile acestora
+in spatiu pentru fiecare cadru in parte. Aceste seturi de date sunt suficient de complexe pentru 
+a-mi permite evaluarea functionarii algoritmului de ORB-SLAM2. \\
+Clasa SLAM initializeaza componentele principale ale algoritmului si monitorizeaza durata 
+fiecarei operatii pentru debugging. \\       
+Clasa TumDatasetReader este responsabila de partea de achizitii de date, va citi fiecare 
+cadru in parte iar pentru matricea de adancime va avea 2 variante: ori va incarca in memorie 
+matricea de distante din setul de date pentru cadrul respectiv sau o va calcula folosind 
+reteaua neurala FastDepth. Imaginea va fi convertita din RGB in grayscale, pentru o 
+prelucrare mai rapida de catre ORB. Aceste 2 matrici vor fi transmise mai departe 
+catre Tracker. \\
+Clasa Tracker realizeaza urmarirea traiectoriei camerei cadru cu cadru. Tot ceea ce realizeaza 
+este ca pe baza pozitiei a doua cadre imediat anterioare, gaseste noua matrice de pozitie a
+cadrului curent. Pentru a face acest lucru indeplineste mai multe etape: In primul rand, estimeaza
+pozitia si orientarea cadrului curent. Algoritmul functioneaza folosind coordonate locale asa ca 
+primul si cel de-al doilea cadru vor avea asociate matricea identitate 4*4, acest lucru sugerand
+ca dispozitivul care inregistreaza mediul pleaca din originea sistemului de coordonate. Daca prima
+imagine va fi folosita doar pentru a initializa harta, cea de-a doua va trece prin intreg 
+pipeline-ul de optimizare al pozitiei, modificandu-si astfel estimarea initiala. De la al treilea
+cadru pana la finalul algoritmului, estimarea initiala a pozitiei va fi realizata exclusiv pe baza
+legii de miscare. Al doilea pas va fi utilizarea algoritmului ORB, implementat in clasa ORBextractor,
+pentru a extrage aproximativ 1000 de puncte cheie si descriptori din imagine.
 
 
 
+  
+
+
+
+
+
+
+
+
+\chapter{Evaluare}
 % In incercarea de a creste viteza de procesare De asemenea orice operatie de 
 % redimensionare a imaginii trebuie evitata, deoarece ar modifica parametrii matricei \(K\),
 % parametrii de distorsiune si ar scadea capacitatea de detectie a feature-urilor, zone puternic
 % texturate ar putea deveni mult prea mici pentru a fi luate in considerare de algoritmul ORB.
 
-
-
-
-
-
+Un motiv pentru care mi-a fost dificil
+sa testez implementarea pe un video facut de mine a fost faptul ca nu aveam acces la valorile
+pozitiei in spatiu si a orientarii la fiecare cadru in parte, fiindu-mi imposibil sa verific 
+daca acuratetea implementarii este corespunzatoare. Algoritmul are nevoie de matricea \(K\) a   
+camerei, daca valorile ei sunt incorecte algoritmul va creea MapPoint-uri noi pentru aproape
+fiecare cadru in parte si va pierde capacitatea de a urmari traseul in cateva secunde. 
+Am ales sa folosesc un set de date numit TUM RGBD Dataset, care contine videoclipuri filmate 
+cu o camera RGBD, Microsoft Kinetic, la 30 de cadre pe secunda, imaginile avand rezolutia Acesta include numeroase 
+subseturi de date care testeaza diferite lucruri pe care ar trebui sa le indeplineasca 
+ORB-SLAM2. De exemplu pentru a verifica ca estimarea translatiei cadru cu cadru este realizata 
+corect, folosesc rgbd\_dataset\_freiburg1\_xyz, in care miscarea este 
+facuta in linie dreapta, camera pastrandu-si aproximativ aceeasi orientare pe tot parcursul video-ului: cadrele de tip rgb, matricile de adancime, pozitia lor in spatiu 
+pentru fiecare cadru in parte, parametrii camerei si cei de distorsiune.     
 
 
 \end{document}
