@@ -668,8 +668,8 @@ parametrii de distorsiune ai imaginii si alte constante pe care le-am considerat
 hiperparametrii ai algoritmului, care vor trebui modificati in functie de mediul in care va rula
 ORB-SLAM2 pentru a garanta functionarea corecta. \\
 In main.cpp se face citirea fisierului ORBvoc.txt, acesta contine datele pe care le va folosi
-clasa ORBVocabulary pentru a calcula vectorii de feature-uri pentru fiecare dintre cadrele cheie.
-Acesti vectori de feature-uri vor fi comparati intre ei pentru a determina daca pozele respective 
+clasa ORBVocabulary pentru a calcula vectorii de KeyPoint-uri pentru fiecare dintre cadrele cheie.
+Acesti vectori de KeyPoint-uri vor fi comparati intre ei pentru a determina daca pozele respective 
 provin din acelasi loc pentru a face corelatii intre cadre, relocalizari sau operatii de loop
 closure. Tot in main.cpp se va face selectia pentru unul din cele 2 seturi de date pe care le va
 folosi algoritmul in rularea lui. Aceste seturi de date contin de fapt cadrele dintr-un video 
@@ -677,13 +677,104 @@ facut cu o camera RGBD Microsoft Kinetic impreuna cu matricile de adancime si po
 in spatiu pentru fiecare cadru in parte. Aceste seturi de date sunt suficient de complexe pentru 
 a-mi permite evaluarea functionarii algoritmului de ORB-SLAM2. \\
 Clasa SLAM initializeaza componentele principale ale algoritmului si monitorizeaza durata 
-fiecarei operatii pentru debugging. \\       
+fiecarei operatii pentru debugging. Implementarea se bazeaza pe compunerea de clase, fiecare 
+fiind responsabila cu realizarea unei anumite sarcini. Voi prezenta clasele folosite plecand 
+de la cele mai elementare catre cele mai complexe. \\       
 Clasa TumDatasetReader este responsabila de partea de achizitii de date, va citi fiecare 
 cadru in parte iar pentru matricea de adancime va avea 2 variante: ori va incarca in memorie 
 matricea de distante din setul de date pentru cadrul respectiv sau o va calcula folosind 
 reteaua neurala FastDepth. Imaginea va fi convertita din RGB in grayscale, pentru o 
 prelucrare mai rapida de catre ORB. Aceste 2 matrici vor fi transmise mai departe 
 catre Tracker. \\
+Clasa MapPoint este fundamentala pentru buna functionare a algoritmului ORB-SLAM2. Aceasta este 
+formata cu ajutorul unui KeyPoint si al unui KeyFrame asociat acestuia. In etapa anterioara, 
+am prezentat modul in care se face proiectia coordonatelor unui punct cheie in spatiu, acestea 
+devenind coordonatele globale ale MapPoint-ului pec are il creem. Punctului din spatiu 
+i se asociaza de asemenea descriptorul keyPoint-ului care l-a creat, pentru compararea ulterioara 
+cu alte KeyPoint-uri din alte imagini. Un MapPoint are nevoie de un vector de orientare, acesta 
+ajuta in verificarea proprietatii unui MapPoint de a fi sau nu vizibil dintr-un KeyFrame. Pentru a 
+calcula acest vector de orientare prima data se determina coordonatele globale ale centrului camerei
+pentru cadru cheie care a creat KeyPoint-ul, acest lucru se realizeaza in felul urmator:
+\begin{equation}
+    \begin{bmatrix}
+        X_{c} \\
+        Y_{c} \\
+        Z_{c} \\
+        \end{bmatrix} = -R_{wc}^t * t_{wc}, \quad{}  
+        T_{wc} =     
+     \begin{bmatrix}
+            R_{wc} & t_{wc} \\
+            0 & 1
+        \end{bmatrix}
+\end{equation} 
+
+Normalizarea diferentei intre coordonatele globale ale centrului camerei si ale MapPoint-ului creeaza
+vectorul de orientare. Acesta poate fi modificat, daca se constata ca mai multe cadre observa acelasi
+punct. In situatia respectiva, vectorul de orientare final va fi media aritmetica a celorlalti vectori 
+de orientare individuali.
+
+Clasa Feature, aceasta componenta nu exista in implementarea oficiala a ORB-SLAM, dar am considerat 
+ca utilizarea acesteia ar simplifica codul. Extinde clasa KeyPoint fara a o mosteni explicit,
+are asociata distanta, extrasa din matricea de adancime, descriptorul
+si o valoare de tip boolean care setata pe true, inseamna ca punctul este monocular altfel inseamna
+ca este stereo. Aceasta clasificare se obtine prin compararea adancimii cu o valoare foarte apropiata
+de 0, de exemplu  $ 1e-1 $. Daca distantei este mai mica decat 0.1, consider ca valoarea estimata de 
+camera RGBD ori de reteaua neurala nu este corecta si ca punctul respectiv este monocular,
+altfel voi considera ca este un punct de tip stereo. Pentru fiecare KeyPoint extras, se va 
+crea un astfel de Feature, aceasta fiind clasa care va fi stocata direct in KeyFrame. Fiecare
+ Feature are setat pe null la initilializare o referinta la un obiect 
+de tip MapPoint. Pentru a garanta functionarea in real time a algoritmilor, asocierea (KeyPoint,
+ MapPoint) trebuie sa poata fi accesata in $ O(1) $. Vectorul de elemente
+de tip Feature, impreuna cu o structura de tip dictionar unde cheia va fi MapPoint si valoarea 
+un Feature, vor face acest lucru posibil. Singura problema este ca cele 2 structuri incearca sa 
+reprezinte aceleasi corelatii, in cazul vectorului am indicele unui Feature drept cheie si incerc
+sa accesez MapPoint-ul asociat, iar in cazul dictionarului, am referinta unui MapPoint si incerc sa
+obtin adresa Feature-ului. Ambele structuri trebuie sa contina aceleasi perechi, altfel 
+comportamentul algoritmului devine nedefinit. \\
+
+Clasa KeyFrame, aceasta contine mai multe elemente legate de cadrul curent. Pentru a mentine 
+functionarea sistemului in timp real, trebuie sa stocam in memorie rezultatele calculelor noastre.
+Din aceasta cauza, in aceasta clasa se vor regasi matricea de adancime, vectorul de Feature-uri,
+vectorul de feature-uri calculat de metoda bag-of-words implementata in DBOW2 si cadrul initial, 
+convertit in format grayscale ce va fi folosit ulterior pentru afisarea in timp real a performantelor
+algoritmului. In interiorul constructorului acestei clase sunt mai multe operatii realizate,
+majoritatea necesare pentru a creste eficienta accesarii datelor. De exemplu: vectorul de Feature-uri
+in medie contine 1000 de elemente care nu sunt sortate. In situatia in care proiectam un MapPoint in 
+plan ar trebui sa comparam coordonatele proiectiei cu pozitia fiecarui Feature in parte pentru a 
+stabili care este cel mai apropiat. O modalitate de a rezolva acest lucru este segmentarea suprafetei
+in \(K\) zone, in cazul meu am ales $ K = 100$, fiecare reprezentand o portiune din imaginea initiala,
+avand asociate referintele Feature-urilor care se gasesc pe suprafata respectiva. In acest fel,
+in functie de zona in care este proiectat MapPoint-ul, vom stii ce Feature are o posibilitate
+mare de a corespunde corect cu MapPoint-ul respectiv, reducand astfel numarul de comparatii. 
+Considerand ca toate valorile de tip Feature sunt dispuse in mod egal pe suprafata imagini atunci
+complexitatea devine, $ O(N / K) $ unde \(N\) reprezinta numarul de Feature-uri iar \(K\) reprezinta
+numarul de zone in care a fost impartita imaginea. Constructorul este responsabil de initializarea
+structurilor de tip Feature, partitionarea lor in functie de coordonatele in imagine, si de memorarea
+estimarii curente a pozitie camerei si a centrului camerei in coordonate globale. Tot in aceasta 
+clasa se regaseste structura de tip dictionar (MapPoint, Feature), care va fi adaptata pe tot 
+parcursul algoritmului. Alta metoda importanta este: $ get\_vector\_keypoints\_after\_reprojection $.
+Aceasta primeste ca date de intrare coordonatele proiectiei unui MapPoint, valoarea ferestrei 
+de proiectie, si octava minima si maxima. Octavele reprezinta nivelul la care a fost observat 
+un Keypoint in imagine si o estimare grosiera a distantei dintre camera si punctul din spatiu 
+observat. Acesta poate sa aiba valori inte 0 si 7 inclusiv si ne spune de cate ori 
+s-a facut resize la imagine pentru a surprinde o anumita trasatura in imagine. De exemplu: daca 
+un Keypoint are valoarea octavei 0, inseamna ca algoritmul a detectat-o din imaginea nemodificata.
+Daca ar fi 1, atunci dimensiunea imagini a fost redusa o singura data cu 0.8 din valoarea initiala 
+si asa mai departe. Feature-ul cu care este asociat MapPoint-ul trebuie sa aiba valori ale octavei
+apropiate intre ele. Daca aceasta situatie nu s-ar respecta, ar introduce erori de estimare 
+a distantei, ne asteptam ca Feature-uri care au corelatie puternica intre ele, sa faca parte 
+din aproximativ acelasi loc, daca estimarea distantei in spatiu ar avea o diferenta prea mare intre 
+cele 2 ar putea inseamna ca cele 2 puncte din spatiu sunt diferite, dar mediul are o structura 
+simetrica, de exemplu: o sala de clasa cu bancile aliniate una in fata celeilalte, algoritmul 
+ar putea observa 2 colturi ce apartin de 2 mese diferite, daca nu ar avea aceasta separare 
+pe baza octavei, urmatorul cadru care observa aceleasi mese ar putea sa asocieze eronat punctele 
+intre ele, afectand estimarea pozitiei. Fereastra de proiectie reprezinta cat de departe poate 
+sa fie Feature-ul de coordonatele punctului de proiectie pentru a fi considerat corect. In functie 
+de dimensiunea ferestrei aceasta poate intersecta 1, 2 sau 4 subsectiuni din cele 100 in care 
+este impartita imaginea. \\
+
+
+ 
 Clasa Tracker realizeaza urmarirea traiectoriei camerei cadru cu cadru. Tot ceea ce realizeaza 
 este ca pe baza pozitiei a doua cadre imediat anterioare, gaseste noua matrice de pozitie a
 cadrului curent. Pentru a face acest lucru indeplineste mai multe etape: In primul rand, estimeaza
@@ -694,7 +785,15 @@ imagine va fi folosita doar pentru a initializa harta, cea de-a doua va trece pr
 pipeline-ul de optimizare al pozitiei, modificandu-si astfel estimarea initiala. De la al treilea
 cadru pana la finalul algoritmului, estimarea initiala a pozitiei va fi realizata exclusiv pe baza
 legii de miscare. Al doilea pas va fi utilizarea algoritmului ORB, implementat in clasa ORBextractor,
-pentru a extrage aproximativ 1000 de puncte cheie si descriptori din imagine.
+pentru a extrage aproximativ 1000 de puncte cheie si descriptori din imagine. Ca parametrii cu 
+care sa lucrez: am ales sa folosesc 1000 de feature-uri, imaginea sa fie scalata la fiecare nivel 
+cu un factor de 1.2, sa existe maxim 8 nivele, si algoritmul FAST care face extragerea initiala de 
+feature-uri sa ia in considerare zona respectiva daca diferenta de intensitate intre pixeli este de la 
+20 in sus. Daca in schimb, zona este slab texturata atunci poate sa seteze aceasta diferenta la 7, pentru
+a garanta ca vor fi gasite feature-uri chiar si un cele mai dezavantajoase zone din imagine. Avand 
+aceste informatii putem crea un KeyFrame. Aceasta structura contine mai multe informatii printre care 
+se numara: estimarea curenta a pozitie, parametrii camerei, feature-urile, descriptorii, cadrul curent
+si matricea de adancime. In constructorul acestei clase voi imparti keypoint-urile obtine 
 
 
 
