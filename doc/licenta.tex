@@ -771,10 +771,114 @@ pe baza octavei, urmatorul cadru care observa aceleasi mese ar putea sa asocieze
 intre ele, afectand estimarea pozitiei. Fereastra de proiectie reprezinta cat de departe poate 
 sa fie Feature-ul de coordonatele punctului de proiectie pentru a fi considerat corect. In functie 
 de dimensiunea ferestrei aceasta poate intersecta 1, 2 sau 4 subsectiuni din cele 100 in care 
-este impartita imaginea. \\
+este impartita imaginea. Problema cea mai mare pe care am avut-o cu clasele KeyFrame si MapPoint
+era dependenta circulara. MapPoint-urile aveau nevoie de un KeyFrame si un Feature pentru a fi 
+create si trebuia sa mentina o lista a KeyFrame-urilor care observa MapPoint-ul respectiv.
+In cazul KeyFrame-ului, acesta trebuie sa pastreze referinte asupra tuturor MapPoint-urilor pe 
+care le observa. Pentru a rezolva aceasta problema am folosit o clasa aditionala care face 
+operatii cu cele 2 structuri si am folosit forward declaration.  \\  
+
+Clasa Map implementeaza harta pe care o foloseste algoritmul ORB-SLAM2. Aceasta este responsabila
+de stocarea corecta a KeyFrame-urilor, a MapPoint-urilor si rezolva problema dependentei circulare
+a celor 2 clase. Aici am implementate metodele de adaugare/stergere a unui MapPoint dintr-un KeyFrame.
+De asemenea, clasa de MapPoint continea referinte la toate KeyFrame-urile care o observa. Aceste 
+referinte sunt adaugate / sterse de catre 2 metode care se regasesc aici. Clasa Map creaza o 
+structura de tip graf ponderat neorientat, in care nodurile sunt reprezentate de KeyFrame-uri. 
+Arcele arata daca exista mai mult de 15 puncte comune intre 2 KeyFrame-uri iar ponderea lor este 
+determinata de numarul de MapPoint-uri comune. Tot aceasta clasa realizeaza operatii pe acest graf,
+adauga/sterge noduri si face interogari pentru a afla vecinii directi sau cei pe nivel 2. Am ales 
+sa implementez aceasta structura folosind $ std::unordered\_map $. Drept cheie va avea KeyFrame-ul 
+curent iar valoarea returnata de structura de tip dictionar va fi un alt $ std::unordered\_map $, 
+ce va contine toate celelalte KeyFrame-uri cu care este direct conectata dar si ponderea conexiunii.
+In acest fel accesarea vecinilor de ordinul 1 va fi o operatie ce se poate realiza in timp constant.
+Functia $ track\_local\_map $ este folosita de catre clasa Tracking. Aceasta primeste ca date 
+de intrare cadrul curent, ultimul cadru cheie salvat. Nu returneaza nimic, doar incearca 
+sa gaseasca cate un MapPoint pentru Feature-urile care inca nu au fost corelate cu un punct 
+din spatiu. Aceasta operatie este costisitoare si functioneza in felul urmator:
+\begin{enumerate}
+    \item sunt cautate toate KeyFrame-urile vecine de gradul 1 si 2 cu ultimul KeyFrame adaugat
+    \item din aceste KeyFrame-uri sunt extrase toate MapPoint-urile observate de catre ele 
+    \item toate MapPoint-urile sunt proiectate si sunt cautate potriviri pentru Feature-urile
+care inca nu au MapPoint-uri asociate.      
+\end{enumerate}
+Pentru a nu fi necesar sa calculam de fiecare data KeyFrame-urile vecine si totalitatea 
+harta locala de MapPoint-uri, le stochez ca variabile in interiorul clasei Map. Acestea vor 
+fi modificate in momentul in care un KeyFrame este adaugat in harta. Intr-un caz ideal, ar 
+trebui ca pentru fiecare Feature adaugat sa se gaseasca un MapPoint, dar acest lucru rareori 
+se intampla. In situatia in care s-au gasit mai putin de 30 de puncte din spatiu care s-au 
+proiectat corect in imagine, se considera ca a aparut o eroare de urmarire si se returneaza 
+o eroare care forteaza algoritmul sa inceapa o etapa de relocalizare. \\
+
+Clasa OrbMatcher este responsabila de realizarea urmarii feature-urilor asemanatoare intre 
+cadre consecutive. Inainte de a incepe prezentarea metode implementate, voi descrie
+pipeline-ul de procesare al unui punct din spatiu pentru a fi considerat observabil de 
+catre camera. Avem o instanta a obiectului MapPoint $ mp $, daca una dintre operatiile
+prezentate esuaeaza punctul respectiv este ignorat de catre KeyFrame-ul curent.
+\begin{enumerate}
+    \item Se proiecteaza coordonatele globale ale $ mp $ in planul imaginii folosind matricea 
+de estimare a pozitiei $ T_{cw} $ si matricea parametrilor camerei $ K $. Se verifica daca 
+coordonatele proiectiei sunt valide pentru imagine.     
+    \item Se calculeaza distanta $ d $ de la centrul camerei la $ mp $. In functie de valoarea 
+octavei stocata in acest MapPoint, se pot estima o limita minima si maxima pentru $ d $. 
+Daca valoarea obtinuta nu se incadreaza in acest interval se considera ca punctul este invalid.
+    \item Cu ajutorul geometriei analitice se obtine ecuatia dreptei care uneunghiului dintre 
+    aceasta dreapta si vectorul de directie al MapPoint-ului, daca valoarea este mai mica de 0.5.
+    Atunci se considera ca $ mp $ nu poate fi observat in cadrul curent.ste punctul 
+din spatiu si coordonatele centrului KeyFrame-ului. Se calculeaza cosinusul unghiului dintre 
+aceasta dreapta si vectorul de directie al MapPoint-ului, daca valoarea este mai mica de 0.5.
+Atunci se considera ca $ mp $ nu poate fi observat in cadrul curent.
+\end{enumerate} 
+Daca aceste 3 verificari au fost realizate cu succes se considera ca punctul poate fi observat
+de catre camera. Exista 2 functii responsabile de asocierile intre cadrele curente. Una este 
+$ match\_frame\_reference\_frame $ si cealalta este $ match\_consecutive\_frames $. Voi 
+incepe prin a o descrie pe prima, aceasta este folosita pentru a asocia Feature-uri intre 
+primele 3 cadre de fiecare data cand este adaugat un Keyframe nou sau la inceput, cand sistemul
+tocmai ce a fost initializat. Aici este o situatie in care se folosesc vectorii de trasaturi
+calculati de libraria DBOW2, acestea gasesc o asociere intre elementele de tip Feature intre
+cele 2 imagini.
+
+Clasa MotionOnlyBA implementeaza in Ceres algoritmul Motion Only Bundle Adjustment,
+primeste ca date de intrare KeyFrame-ul curent si returneaza matricea de pozitie optimizata.
+Libraria lucreaza cu o notiune din C++ numita functori. Acestea sunt clase/structuri pentru
+care s-a facut overload la operatorul $ () $. Clasa BundleError se afla din aceeasi categorie
+si implementeaza functia de eroare obtinuta din proiectarea unui MapPoint si asocierea 
+acestuia cu un Feature. Pentru a crea problema de optimizare, clasa ceres::Problem trebuie 
+sa stie care parametrii trebuie optimizati, in cazul acestui algoritm, singurul lucru care 
+va fi modificat este matricea de pozitie a KeyFrame-ului pe care o voi converti in forma 
+$ se(3) $, transformand-o intr-un vector de 7 elemente. Matricea de pozitie are asociata 
+matricea de rotatie $ R $ si un vector de translatie $ t $. Pentru $ t $ nu exista restrictii 
+de modificare, orice mod in care ar varia parametrii acestui vector, in continuare semnificatia
+lui de vector de translatie ar ramane nealterata, in aceasta situatie putem spune ca parametrii 
+sunt adaptati de catre libraria Ceres folosind $ EuclidianManifold $, mici modificari ale 
+parametrilor bazate pe calcularea derivatelor partiale ale acestora din functia de eroare 
+definita in BundleError. Situatia se schimba pentru matricea de rotatie $ R $, aceasta 
+trebuie sa faca parte din structura de tip grup numit $ SO(3) $, adica $ R * R^t = R^t * R = I $
+si trebuie sa reprezinte o rotatie reala pe cele 3 axe. Modificarea aleatorie a parametrilor ar 
+duce la o matrice invalida. Din aceasta cauza, modificarea rotatiei trebuie facuta cu un anumit unghi
+adica, sa se realizeze o inmultire de 2 matrici de rotatie valide. Acest lucru nu este implementat 
+folosind forma matriceala, dar este realizat pentru Quaternioni, din aceasta cauza fac conversia
+din matrice de pozitie in vector de 7 elemente, iar pentru primii 4 parametrii de rotatie, 
+optimizarea lor se realizeaza folosind $ QuaternionManifold $.  
+
+% ce este un manifold  
 
 
- 
+
+
+
+este exprimata ca un vector de 7 elemente deoarece
+simplifica procesul de optimizare pentru libraria Ceres, este mai rapid de procesat si 
+ocupa mai putin spatiu in memorie. Primii 4 parametrii alcatuiesc un Quaternion, vector ce
+abstractizeaza o matrice de rotatie iar ultimii 3 parametrii sunt vectorul de translatie. 
+Functia returneaza o valoarea de tip boolean, care semnifica doar daca s-a putut calcula 
+corect eroarea si fals daca s-a obtinut o eroare de tipul impartire la 0 sau utilizarea 
+unui vector de pozitie invalid. 
+
+
+
+
+
+
 Clasa Tracker realizeaza urmarirea traiectoriei camerei cadru cu cadru. Tot ceea ce realizeaza 
 este ca pe baza pozitiei a doua cadre imediat anterioare, gaseste noua matrice de pozitie a
 cadrului curent. Pentru a face acest lucru indeplineste mai multe etape: In primul rand, estimeaza

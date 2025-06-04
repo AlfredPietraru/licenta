@@ -24,9 +24,7 @@ public:
     std::unordered_set<MapPoint*> local_map_points;
     std::unordered_set<KeyFrame*> local_keyframes;
 
-    Map() {
-        // this->local_map.reserve(5000);
-    }
+    Map() {}
     std::unordered_set<KeyFrame*> get_local_keyframes(KeyFrame *kf);
     void track_local_map(KeyFrame *curr_kf, KeyFrame *ref, std::unordered_set<KeyFrame*>& keyframes_already_found);
     std::unordered_set<MapPoint*> get_all_map_points();
