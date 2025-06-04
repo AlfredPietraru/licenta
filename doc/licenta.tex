@@ -843,70 +843,143 @@ Libraria lucreaza cu o notiune din C++ numita functori. Acestea sunt clase/struc
 care s-a facut overload la operatorul $ () $. Clasa BundleError se afla din aceeasi categorie
 si implementeaza functia de eroare obtinuta din proiectarea unui MapPoint si asocierea 
 acestuia cu un Feature. Pentru a crea problema de optimizare, clasa ceres::Problem trebuie 
-sa stie care parametrii trebuie optimizati, in cazul acestui algoritm, singurul lucru care 
-va fi modificat este matricea de pozitie a KeyFrame-ului pe care o voi converti in forma 
-$ se(3) $, transformand-o intr-un vector de 7 elemente. Matricea de pozitie are asociata 
+sa stie care parametrii trebuie optimizati si functia de eroare pe care trebuie sa o minimizeze.
+In cazul acestui algoritm, singurul lucru care va fi modificat este matricea de pozitie a KeyFrame-ului
+pe care o voi converti in forma $ se(3) $, transformand-o intr-un vector de 7 elemente. Iar pentru 
+functia de eroare, nu voi scrie explicit ca este suma erorilor de proiectie, voi initializa pentru
+fiecare asociere de tip (Feature, MapPoint) cate un element al clasei BundleError. Algoritmul de 
+optimizare implementat de libraria ceres, va incerca in mod independent sa reduca valoarea erorii 
+pentru fiecare pereche in parte, modificand pe rand vectorul pozitiei. Exista un motiv pentru 
+care schimb modul in care este exprimata pozitia camerei, matricea de pozitie contine 2 componente:
 matricea de rotatie $ R $ si un vector de translatie $ t $. Pentru $ t $ nu exista restrictii 
-de modificare, orice mod in care ar varia parametrii acestui vector, in continuare semnificatia
-lui de vector de translatie ar ramane nealterata, in aceasta situatie putem spune ca parametrii 
-sunt adaptati de catre libraria Ceres folosind $ EuclidianManifold $, mici modificari ale 
-parametrilor bazate pe calcularea derivatelor partiale ale acestora din functia de eroare 
-definita in BundleError. Situatia se schimba pentru matricea de rotatie $ R $, aceasta 
-trebuie sa faca parte din structura de tip grup numit $ SO(3) $, adica $ R * R^t = R^t * R = I $
-si trebuie sa reprezinte o rotatie reala pe cele 3 axe. Modificarea aleatorie a parametrilor ar 
-duce la o matrice invalida. Din aceasta cauza, modificarea rotatiei trebuie facuta cu un anumit unghi
-adica, sa se realizeze o inmultire de 2 matrici de rotatie valide. Acest lucru nu este implementat 
-folosind forma matriceala, dar este realizat pentru Quaternioni, din aceasta cauza fac conversia
-din matrice de pozitie in vector de 7 elemente, iar pentru primii 4 parametrii de rotatie, 
-optimizarea lor se realizeaza folosind $ QuaternionManifold $.  
+de modificare atata timp cat aceasta nu aduce modificari mari intre pozitiile a doua cadre consecutive,
+orice mod in care ar varia parametrii acestui vector, in continuare semnificatia
+lui de vector de translatie ramane nealterata, in aceasta situatie putem spune ca parametrii 
+sunt alterati de catre libraria Ceres folosind $ EuclidianManifold $, mici modificari bazate pe
+calcularea derivatelor partiale ale acestora din functia de eroare definita in BundleError, asemanator 
+modului in care sunt modificati parametrii in retele neurale. Pentru matricea de rotatie $ R $ nu se 
+mai poate aplica aceeasi logica. Aceasta trebuie sa faca parte din structura de tip grup numit 
+$ SO(3) $, adica sa respecte egalitatea $ R * R^t = R^t * R = I $ si trebuie sa reprezinte o rotatie 
+reala pe cele 3 axe. Alterarea aleatorie a parametrilor ar duce la o matrice invalida. Din aceasta
+cauza, modificarea rotatiei trebuie facuta cu un anumit unghi
+iar acest lucru se poate realiza printr-o inmultire de 2 matrici de rotatie valide. Din pacate nu 
+exista implementare in forma matriceala pentru schimbarea unghiului de rotatie, dar este pentru
+Quaternioni. Din aceasta cauza fac conversia din matrice de pozitie in vector din 
+categoria $ se(3) $, iar pentru primii 4 parametrii asociati rotatiei, optimizarea lor se realizeaza
+folosind $ QuaternionManifold $. Aceasta abordare rezolva problema instabilitatii numerice si 
+garanteaza ca rezultatul operatiei de optimizare este un element valid in $ se(3) $, ce poate fi 
+ulterior convertit in forma matriceala. In functie de categoria din care face parte Feature-ul, 
+acesta este considerat monocular sau stereo. Functia de eroare implementata de clasa BundleError 
+este identica pentru ambele, cu exceptia ca pentru punctele stereo, este verificata si distanta 
+la care se afla punctul fata de valoarea la care a fost estimata de camera RGBD. Pentru a preveni
+instabilitatea cauzata de ppunctele de tip outlier, functia Huber descrisa in capitolul anterior este
+folosita in calcularea finala a erorii de proiectie. In implementara oficiala realizata de g2o, 
+agloritmul de optimizare este rulat de 4 ori, si dupa fiecare executie sunt eliminate punctele de tip 
+outlier. Experimental, am observat ca etapa de optimizare cadru cu cadru este cea mai costisitoare 
+operatie pe care o realizeaza algoritmul de ORB-SLAM2, executia acesteia de 4 ori, nu creste 
+semnificativ acuratea si reduce viteza de prelucrarea la aproximativ 5 cadre pe secunda, facandu-l 
+nepotrivit pentru un sistem in timp real. Am observat ca obtin rezultate foarte bune, ruland o singura
+data Motion Only Bundle Adjustment, urmat apoi de o etapa de eliminare a corelatiilor 
+(Feature, MapPoint) de tip outlier. Daca mai putin de 3 asocieri raman, se considera ca algoritmul
+a acumulat prea multe erori in urmarirea cadru cu cadru si trece intr-o stare de relocalizare.
 
-% ce este un manifold  
+Clasa Tracker realizeaza urmarirea traiectoriei cadru cu cadru. Aceasta integreaza 
+fiecare dintre componentele definite anterior, si este responsabila de captarea cadrului curent,
+transformarea acestuia in KeyFrame si luarea deciziei daca va fi salvat in Map pentru a completa 
+harta mediului inconjurator. Pasii urmatori se executa pentru fiecare cadru in parte:
+\begin{enumerate}
+    \item Se creeaza KeyFrame-ul curent.
+    \item Se estimeaza matricea de pozitie pe baza legii de miscare.
+    \item Se realizeaza asocierea intre Feature-urile (puncte 2D) din cadru curent si 
+MapPoint-urile observate de cadru anterior (puncte 3D)
+    \item Pe baza asocierilor respective realizate anterior, se optimiza matricea de pozitie
+a KeyFrame-ului curent, sunt eliminate asocierile de tip outlier
+    \item este proiectata harta locala pe cadrul curent, si se gasesc noi asocieri 
+(Feature, MapPoint), se executa din nou aceeasi operatie de optimizare Motion Only Bundle Adjustment
+    \item Este evaluat KeyFrame-ul curent, se verifica daca trebuie salvat in clasa Map. 
+\end{enumerate}
+Cadrul curent si matricea de adancime sunt citite de TumDatasetReade. In imaginea RGB 
+se foloseste ORB pentru a extrage un vector de KeyPoint-uri si un vector de descriptori. 
+Acestea sunt folosite pentru a initializa un obiect de tip KeyFrame. Pentru algoritmul ORB se 
+foloseste o versiune modificata implementata in clasa ORBextractor si este conceputa sa extraga 
+aproximativ 1000 de puncte cheie, acestea fiind distribuite cat mai egal pe suprafata imaginii. 
+Daca un numar foarte mare de keypoint-uri s-ar afla in aceeasi zona, acuratetea estimarii ar 
+avea de suferit, pixelii din zonele aflate mai aproape de imagine se misca cu o viteza mai mare 
+decat cei aflati in departare, daca am considera doar punctele dintr-o anumita in zona in realizarea
+estimarii, am obtinute variatii in miscare prea bruste / lente depenzind de locul unde s-au gasit 
+majoritatea punctelor.  Parametrii setati pentru algoritmul ORB sunt urmatorii: 1000 de feature-uri,
+factorul de scalare al imaginii este 1.2, exista maxim 8 nivele, si algoritmul FAST care face 
+extragerea initiala de KeyPoint-uri sa ia in considerare zona respectiva daca diferenta de intensitate
+intre pixeli este de la 20 in sus. Daca in schimb, zona este slab texturata atunci poate sa seteze
+aceasta diferenta la 7, pentru a garanta ca vor fi gasite feature-uri chiar si in cele mai 
+dezavantajoase zone din imagine. De-a lungul duratei de viata a algoritmului, clasa 
+Tracker pastreaza 4 referinte de tip KeyFrame: cadrul curent care este analizat, 2 cadre imediat 
+anterioare care vor fi folosite la estimarea pozitiei si ultimul cadru referinta care a fost creat.
+Cadrul referinta este ultimul KeyFrame adaugat in Map si indica aproximativ in ce 
+zona se afla camera si care MapPoint-uri ar trebui sa fie vizibile. Cadrele mai vechi care nu au 
+fost salvate in Map au fost sterse pentru a reduce cantitatea de memorie folosita. Pentru ultimul
+KeyFrame creat urmeaza etapa de estimare a pozitiei curente, aceasta se face pe baza legii 
+de miscare, iar valorile matricii vor fi calculate folosindu-ne de cele 2 cadre salvate in Tracker.
+Important aici de observat ca pentru primul cadru citit, pozitia acestuia este matricea identitate
+4*4, acest lucru sugerand ca dispozitivul care inregistreaza mediul considera ca primul KeyFrame
+este chiar originea sistemului de coordonate, iar toate matricile de pozitie viitoare sunt de fapt
+transformari relative fata de origine. Primul KeyFrame va fi salvat intotdeauna in clasa Map si 
+este utilizat pentru a initializa primele puncte de tip MapPoint: pentru toate Feature-urile de 
+tip stereo din imagine, se vor creea puncte in spatiu. Din cauza acestui mod de initializare, 
+ORB-SLAM2 este sensibil pana la aparitia urmatorului cadru cheie, estimarile facute de acesta 
+in prima etapa fiind predispuse la erori. Uneori algoritmul isi pierde orientarea cu totul, fiind
+necesara o etapa de relocalizarea, sau de reluare a executiei acestuia. ORB-SLAM3, implementeaza 
+o metoda mult mai robusta de initializare, generand mai multe harti locale in situatia in care
+urmarirea cadru cu cadru esueaza si le uneste intre ele in momentul in care recunoaste o zona pe 
+care a vizitat-o deja. Dupa ce a fost create KeyFrame-ul si a fost facuta estimarea initiala a 
+pozitiei, clasa OrbMatcher este folosita pentru a gasit corelatii intre Feature-uri si MapPoint-uri.
+Alegerea metodei care indeplineste acest lucru fiind determinata de numarul de KeyFrame-uri 
+create de la ultima relocalizare sau de la adaugarea unui nou cadru cheie in Map. Daca nu se 
+vor gasi minim 15 asocieri, se va considera ca algoritmul si-a pierdut orientarea, altfel, 
+asocierile respective vor fi utlizate de catre MotionOnlyBA pentru a realiza optimizarea pozitiei.
+Perechile de tip outlier vor fi eliminate si noua pozitie a KeyFrame-ului va fi returnata. Daca 
+vor ramane mai putin de 3 asocieri se va considera, din nou, ca algoritmul si-a pierdut orientarea.
+In final, se foloseste clasa Map pentru a proiecta toate punctele din harta locala pe cadrul curent
+iar asocierile gasite vor trece din nou printr-un proces de optimizare. Daca nu se gasesc minim
+50 de perechi (Feature, MapPoint) inseamna ca urmarirea cadrului curent a esuat. Altfel se 
+trece la etapa urmatoare si se va decide daca vom stoca in Map KeyFrame-ul curent. Acest lucru 
+se va intampla daca urmatoarele conditii vor avea loc simultan.    
+\begin{enumerate}
+    \item au trecut mai mult de 30 de cadre de la ultimul KeyFrame adaugat in Map
+    \item numarul de MapPoint-uri in cadrul curent este 25\% din numarul urmarit de cadrul de referinta
+    \item cadrul curent are cel putin 70 de Feature-uri de tip stereo, cu distanta dintre centrul
+camerei si punct este mai mica de 3.2 metri si urmareste cel putin 100 de MapPoint-uri
+\end{enumerate}
 
-
-
-
-
-este exprimata ca un vector de 7 elemente deoarece
-simplifica procesul de optimizare pentru libraria Ceres, este mai rapid de procesat si 
-ocupa mai putin spatiu in memorie. Primii 4 parametrii alcatuiesc un Quaternion, vector ce
-abstractizeaza o matrice de rotatie iar ultimii 3 parametrii sunt vectorul de translatie. 
-Functia returneaza o valoarea de tip boolean, care semnifica doar daca s-a putut calcula 
-corect eroarea si fals daca s-a obtinut o eroare de tipul impartire la 0 sau utilizarea 
-unui vector de pozitie invalid. 
-
-
-
-
-
-
-Clasa Tracker realizeaza urmarirea traiectoriei camerei cadru cu cadru. Tot ceea ce realizeaza 
-este ca pe baza pozitiei a doua cadre imediat anterioare, gaseste noua matrice de pozitie a
-cadrului curent. Pentru a face acest lucru indeplineste mai multe etape: In primul rand, estimeaza
-pozitia si orientarea cadrului curent. Algoritmul functioneaza folosind coordonate locale asa ca 
-primul si cel de-al doilea cadru vor avea asociate matricea identitate 4*4, acest lucru sugerand
-ca dispozitivul care inregistreaza mediul pleaca din originea sistemului de coordonate. Daca prima
-imagine va fi folosita doar pentru a initializa harta, cea de-a doua va trece prin intreg 
-pipeline-ul de optimizare al pozitiei, modificandu-si astfel estimarea initiala. De la al treilea
-cadru pana la finalul algoritmului, estimarea initiala a pozitiei va fi realizata exclusiv pe baza
-legii de miscare. Al doilea pas va fi utilizarea algoritmului ORB, implementat in clasa ORBextractor,
-pentru a extrage aproximativ 1000 de puncte cheie si descriptori din imagine. Ca parametrii cu 
-care sa lucrez: am ales sa folosesc 1000 de feature-uri, imaginea sa fie scalata la fiecare nivel 
-cu un factor de 1.2, sa existe maxim 8 nivele, si algoritmul FAST care face extragerea initiala de 
-feature-uri sa ia in considerare zona respectiva daca diferenta de intensitate intre pixeli este de la 
-20 in sus. Daca in schimb, zona este slab texturata atunci poate sa seteze aceasta diferenta la 7, pentru
-a garanta ca vor fi gasite feature-uri chiar si un cele mai dezavantajoase zone din imagine. Avand 
-aceste informatii putem crea un KeyFrame. Aceasta structura contine mai multe informatii printre care 
-se numara: estimarea curenta a pozitie, parametrii camerei, feature-urile, descriptorii, cadrul curent
-si matricea de adancime. In constructorul acestei clase voi imparti keypoint-urile obtine 
-
-
-
-  
-
-
-
-
-
+Clasa LocalMapping este responsabila de optimizarea clasei Map. Aceasta sterge/adauga KeyFrame 
+si MapPoint, iar la fiecare cadru cheie nou adaugat, realizeaza operatia de Local Bundle 
+Adjustment. Aceasta metoda optimizeaza matricile de pozitie si toate MapPoint-urile vecinilor 
+directi si cei de categoria a doua pentru KeyFrame-ul abia adaugat. In momentul in care 
+thread-ul de Tracking considera ca un nou cadru cheie trebuie de adaugat in harta, se executa
+metoda principala $ local\_map $, aceasta indeplineste urmatoarele operatii:
+\begin{enumerate}
+    \item Creeaza noi MapPoint-uri din primele 100 de Feature-uri de tip stereo, 
+sortate in ordine crescatoare dupa distanta la care se afla acestea de centrul camerei  
+    \item Adauga cadrul curent in graful de KeyFrame-uri stabilind vecinii directi ai
+acestuia 
+    \item Noile MapPoint-uri create sunt adaugate intr-o lista numita $ recently\_added $,
+pentru a iesi din aceasta lista, punctele trebuie sa treaca un test care dovedeste ca 
+nu sunt rezultatul unui Feature eronat detectat de catre algoritmul ORB, si ca pot fi 
+folosite cu incredere
+    \item Se executa operatia de $ culling $, punctele sunt verificate daca sunt valide iar
+daca nu, memoria lor este eliberata.
+    \item Se foloseste operatia de triangulare pentru a crea noi MapPoint-uri din 
+Feature-urile care se potriveau intre ele si faceau parte din cadre cheie diferite.
+    \item Se detecteaza entitatile de tip MapPoint care reprezinta acelasi punct
+din spatiu, iar una dintre referinte este stearsa pentru creste coorenta hartii si 
+a creste ponderea conexiunii dintre KeyFrame-urile adiacente    
+    \item Se executa operatia de KeyFrame culling, se verifica daca informatiile pe 
+care le detine un KeyFrame, adica totalitatea valorilor de tip MapPoint pe care le 
+detine, sunt observate si din alte cadre. Daca peste 90\% din punctele observate de un 
+anumit cadru sunt vizibile si din alte cadre, KeyFrame-ul analizat este considerat redundant
+si memoria lui este eliberata. Acest lucru garanteaza ca graful clasei Map, contine 
+doar cadre esentiale pentru reprezentarea norului de puncte. 
+\end{enumerate}
 
 
 
