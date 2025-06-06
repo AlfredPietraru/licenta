@@ -1001,7 +1001,69 @@ aveam celelalte componente finalizate, lucru care a ingreunat procesul de dezvol
 lucram cu valori numerice in terminal. Acum daca as reincepe implementarea, interfata grafica ar fi
 printre primele lucruri pe care le-as realiza. Datorita acestei clase am reusit sa gasesc erori in
 modul de constructieal grafului ponderat din clasa Map si al modului in care proiectam punctele 
-in spatiu.    
+in spatiu. 
+
+Pentru reteaua Neurala FastDepth pipeline-ul de antrenare a fost scris folosind libraria Pytorch
+iar pentru operatiile de preprocesare folosesc libraria Albumentations. Setul de date pe care 
+am facut antrenarea se numeste Nyu Depthv2 Dataset si l-am obtinut de pe Kaggle. Rezultatul 
+acestui pipeline trebuie sa fie un fisier de tip ONNX cu valorile parametrilor retelei FastDepth 
+in urma antrenarii pe setul de date. O problema pe care am observat-o la setul de date este ca 
+pentru datele de antrenare adancimile sunt exprimate ca fiind in intervalul $ [0, 255] $, pe cand in setul 
+de date de validare, acestea se afla intre $ [0, 10000] $ reprezentand valorile in milimetrii ale
+distantelor. O limitarea acestui set de date este ca nu poate detecta distante mai mari de 10 metri.
+Dar considerand ca algoritmul trebuie sa functioneze pentru incaperi de mici dimensiuni, consider ca 
+aceasta distanta maxima nu ar trebui sa reprezinte o problema. Pentru antrenare am ales sa urmez lucrarea
+stiintifica si am setat hiperparametrii:
+\begin{itemize}
+    \item Optimizatorul folosit a fost implementarea din Pytorch pentru Stochastic Gradient Descent, 
+torch.SGD, avand un learning rate de $ 1e-3 $, o valoare a momentumului de $ \beta=0.9 $ si
+$ weight\_decay=1e-4 $.
+    \item antrenarea s-a realizat pentru 50 de epoci iar durata antrenarii a fost adunat de aproximativ 
+6 ore jumatate. Statia pe care am antrenat era un Asus TUF Gaming A15, avand un procesor AMD Ryzen 7 cu o frecventa 
+de 4.2 GHz si placa video NVIDIA GeForce RTX 2060, cu o memorie de 6GB.
+    \item Imaginile in setul de date au o dimensiune de $ (3, 460, 640) $. Pentru a creste viteza de procesare
+am modificat dimensiunile la $ (3, 256, 320) $ si am aplicat o functie de normalizare de tip min\_max. Ambele 
+transformari sunt aplicate atat pe setul de date de antrenare cat si pe cel de test.
+    \item un batch de date are dimensiune de 8
+    \item In lucrarea FastDepth functia de pierdere folosita este L1Loss, aceasta fiind suma diferentelor dintre valoarea 
+reala si cea determinata de reteaua neurala in modul. In implementarea mea am ales sa folosesc o functie de pierdere 
+mai robusta conform acestei lucrari stiintifice (voi cita aici lucrarea) 
+\end{itemize}
+Acuratetea a fost verificata  prin compararea diferentei relative intre valorile obtinute prin inferenta si cele 
+reale cu un factor $ RELATIVE\_ERROR=0.15 $. Aceasta operatie a fost realizata pentru fiecare pixel in parte, iar
+acuratetea reprezinta procentul de pixeli cu o valoare care se incadreaza in limita impusa de RELATIVE\_ERROR.
+Pentru a preveni antrenarea pentru intervale lungi fara a obtine rezultate, am avut 2 metode pe care le-am implementat:
+o strategia de early stopping: in situatia in care valoarea acuratetii nu ar fi crescut pentru 5 epoci antrenarea 
+ar fi fost oprita si o strategie pentru modificarea learning rate-ului in timpul antrenarii. Daca acuratetea nu crestea 
+pentru 3 epoci valoarea parametrului sa fie redusa la 0.3 din valoarea initiala. In practica am observat ca reteaua 
+converge aproape monoton catre o valoare optima. Functia de pierdere primeste ca date de intrare matricea de adancime 
+obtinuta de catre reteau neurala si matricea cu valori reala din setul de date, denumita groundtruth, si returneaza o valoarea 
+numerica de tip double care exprima cat de departe se afla estimarea noastra de realitate. Ideea antrenarii unei retele 
+neurale este minimizarea acestei valori. Functia de eroare este alcatuita dintr-o combinatie liniara a 
+3 componente diferite: L1Loss, GradientEdgeLoss si Structural Similarity Loss, formula matematica este:
+\begin{equation}
+    loss = 0.6 \cdot L1Loss + 0.2 \cdot GradientEdgeLoss + StructuralSimilarityLoss 
+\end{equation}  
+Structural Similary Loss se asigura ca media si distributia standard pe care o urmeaza valorile estimate, se apropie
+de media si distributia standard a matricei groundtruth. In comparatie cu celelalte 2 componente ale functiei de 
+pierdere care sunt aplicate la nivel de pixel, aceasta abstractizeaza rezultatele ca fiind 2 distributii Normale 
+cu parametrii $ \mathcal{N}(\mu, \sigma^2) $ care trebuie sa se suprapuna.                     
+Principiul de functionare pentru GradientEdgeLoss este ca pixeli din regiuni apropiate trebuie sa aiba cam aceleasi 
+valori de estimare ale distantei si ca diferenta intre pixeli adiacenti pe axele x si y, ar trebui sa fie identica
+cu cea din imaginea groundtruth. Aceasta poate fi scrisa in felul urmator, unde $ N $ reprezinta numarul de pixeli din 
+imagine, iar derivata valorilor pixelilor in raport cu axa de coordonate reprezinta diferenta intre matricea imaginii
+initiale si aceeasi matrice avand un rand shiftat la dreapta  pentru axa X notata $ \frac{\partial I}{\partial x} $
+si un rand shiftat vertical pentru axa Y notata $ \frac{\partial I}{\partial y} $.  
+\begin{equation}
+    L_{\text{edges}} = \frac{1}{N} \sum_{i=1}^{N} \left( 
+    \left| \frac{\partial I_{\text{pred}}}{\partial x} - \frac{\partial I_{\text{true}}}{\partial x} \right| + 
+    \left| \frac{\partial I_{\text{pred}}}{\partial y} - \frac{\partial I_{\text{true}}}{\partial y} \right|
+    \right)
+\end{equation}
+    
+
+
+
 
 \chapter{Evaluare}
 % In incercarea de a creste viteza de procesare De asemenea orice operatie de 
