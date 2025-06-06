@@ -980,8 +980,28 @@ anumit cadru sunt vizibile si din alte cadre, KeyFrame-ul analizat este consider
 si memoria lui este eliberata. Acest lucru garanteaza ca graful clasei Map, contine 
 doar cadre esentiale pentru reprezentarea norului de puncte. 
 \end{enumerate}
+In etapa a 4-a se executa operatia de $ culling $, aceasta elimina punctele care nu sunt
+de incredere. Singurele puncte care nu vor trece prin aceasta etapa de verificare sunt
+cele generate de primul KeyFrame, tot primul KeyFrame nu poate fi sters deoarece 
+ar da peste cap sistemul de coordonate local sub care lucreaza ORB-SLAM2. Un punct 
+este considerat de incredere daca din momentul in care a fost creat, el a fost 
+observat in 3 cadre cheie consecutive si daca a fost observat in cel putin 25\% din 
+numarul total de cadre care au trecut de la creearea acestuia. Ambele conditii 
+trebuie sa fie respectate simultan in momentul in care se face verificarea punctului
+respectiv. Politica pe care o urmeaza familia de algoritmi ORB-SLAM este sa genereze 
+multe puncte, fara a impune restrictii, pe care apoi le va supune acestui test de 
+relevanta.
 
-
+Ultima clasa este cea de MapDrawer pe care o folosesc pentru a afisa norul de MapPoint-uri,
+cadrul curent analizat si pozitiile cadrelor cheie observate. Folosesc libraria Pangolin si 
+OpenGL pentru desenarea fiecarei structuri, camera urmareste cadrul curent. Interfata grafica 
+scade viteza de procesare a cadrelor dar este o modalitate eficienta de a intelege vizual ce 
+se petrece in algoritm. Implementarea pentru interfata grafica am realizat-o spre final, cand 
+aveam celelalte componente finalizate, lucru care a ingreunat procesul de dezvoltare deoarece 
+lucram cu valori numerice in terminal. Acum daca as reincepe implementarea, interfata grafica ar fi
+printre primele lucruri pe care le-as realiza. Datorita acestei clase am reusit sa gasesc erori in
+modul de constructieal grafului ponderat din clasa Map si al modului in care proiectam punctele 
+in spatiu.    
 
 \chapter{Evaluare}
 % In incercarea de a creste viteza de procesare De asemenea orice operatie de 
