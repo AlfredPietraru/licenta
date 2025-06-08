@@ -107,6 +107,108 @@ COMPUTER SCIENCE AND ENGINEERING DEPARTMENT\\}
 % \tableofcontents
 % \endgroup
 \AbstractPage{}
+\chapter{Introducere}
+SLAM, Simultanious Localization and Mapping reprezinta o clasa de algoritmi de planificare si control 
+al miscarii unui agent prin mediu pentru a construi un model al spatiului cat mai apropiat de realitate.
+In timpul functionarii sunt indeplinite 3 functii: agentul trebuie sa creeze o harta, sa isi 
+cunoasca la orice moment de timp pozitia in spatiu si sa fie capabil sa controleze modul in care se 
+deplaseaza. In literatura de specialitate exista 2 categorii mari pentru sistemele de tip SLAM, acestea 
+sunt active SLAM, in care robotul ia decizii online, alegand sa se deplaseze astfel incat sa maximizeze 
+acuratetea hartii pe care o creeaza pentru mediul inconjurator si SLAM pasiv, in care sistemul doar 
+observa mediul si creaza harta pe baza acestor observatii, acesta nu ia parte in procesul de planificare
+al traseului pe care il va parcurge agentul. 
+
+\chapter{Studiu de piata {-} variante Visual SLAM}
+Sistemul nostru nu are senzori si detine doar o camera de tip RGBD / sau RGB, are cel mult 2
+core-uri de CPU si nu poate folosi GPU-ul pentru a accelera viteza de procesare. Acesta trebuie sa 
+functioneze in timp real, sa poate procesa cel putin 10 {-} 15 cadre pe secunda, sa poata opera in
+intr-un mediu indoor de mici dimensiuni, ca de exemplu un apartament si static, elementele care alcatuiesc
+mediul nu isi modifica pozitia, sa poata fi integrat intr-un
+sistem embedded, sa fie capabil sa memoreze zonele din mediu prin care a trecut, sa construiasca o harta a
+mediului minimala, de exemplu printr-un nor de puncte cu o densitate scazuta, sa aiba capacitatea de 
+corectie a erorilor si sa poata fi folosit pentru o perioada indelungata. Consideram ca sistemul nu 
+are acces la coordonatele globale ale pozitiei sale si nu poate folosi tehnologii precum GPS-ul.
+Sistemul nostru trebuie sa faca parte din categoria de Visual SLAM si sa foloseasca o camera de tip 
+RGBD sau RGB combinata cu o retea neurala capabila sa fie folosita de CPU pentru sarcini de inferenta 
+si sa functioneze in timp real. Cei mai noi algoritmi de visual SLAM functioneaza acum folosind tehnici
+de deep learning. In continuare vor fi prezentate lucrarile care au reprezentat SOA, pana la inceputul 
+anului 2025, grupate in categorii in functie de modul in care sunt folosite tehnicile de deep learning.
+Am considerat potrivita impartirea pe 3 nivele a algoritmilor, in functie gradul de utilizare 
+al tehnicilor de deep learning pentru realizarea operatiile specifice sistemelor SLAM:\@
+\begin{enumerate}
+    \item Algoritmi care se bazeaza fundamental pe tehnici de deep learning pentru a functiona, 
+DPV-SLAM, ESLAM.\@
+    \item Algoritmi care sunt la granita dintre metodele clasice si cele deep learning, in care 
+doar anumite componente sunt imbunatatite cu ajutorul retelelor neurale: Light-SLAM, HFNet-SLAM.\@
+    \item Algoritmii clasici, care nu folosesc deloc retele neurale: ORB-SLAM3, SVO.\@ 
+\end{enumerate}   
+Deep Patch Visual SLAM (DPV-SLAM), este un sistem SLAM care foloseste deep neural networks.
+Acesta imparte operatiile care trebuie realizate in 2 categorii: frontend-ul care realizeaza 
+sarcina de visual odometry cu ajutorul unui sistem derivat din Deep Patch Visual Odometry (DPVO)
+si partea de backend alcatuita din 2 metode de loop closure: proximity loop closure si classical
+loop closure. Algoritmul are nevoie intre 5{-}6 GB de memorie pe GPU pentru a putea rula. 
+O alta problema o reprezinta proximity loop closure. Este o metoda rapida daca se foloseste un
+singur GPU, dar aceasta functioneaza cu ajutorul unei harti foarte dense de feature-uri obtinute
+cu ajutorul metodei de optical flow, fiind greu de adaptat la cerintele noastre. \\
+ESLAM sau Efficient Dense Visual SLAM using Neural Implicit Maps este un sistem de SLAM 
+monocameră RGB-D care folosește o combinație între o harta densa 3D, reprezentata de o retea 
+neurala implicita si un backend optimizat geometric pentru estimarea matricei de pozitie a camerei.
+Avantajele acestei implementari sunt ca produce o harta densa si detaliata si poate reconstrui 
+detalii chiar si in zone partial observate. Problema acestei implementari este ca necesita un 
+GPU si resurse mari de calcul si nu este potrivit pentru dispozitivele embedded. \\
+Light-SLAM este construit pornind de la aceeasi filozofie ca si ORB-SLAM2, partea de backend
+reprezentata de local mapping, adica optimizarea hartii create si loop closure, recunoasterea
+zonelor prin care a mai trecut algoritmul si inchiderea buclelor traiectoriei, acestea sunt 
+realizate folosind metode clasice. Extragerea de keypoint-uri, descriptori si sarcina de 
+matching intre descriptorii a doua imagini consecutive este realizata de 2 retele neurale.
+Acest sistem poate functiona in timp real daca se poate folosi un GPU, dar cea mai mare 
+problema o reprezinta faptul ca retele neurale nu sunt capabile sa gaseasca feature-uri cu
+acuratete suficient de buna in zone care nu seamana cu ceea ce a  intalnit in setul de date
+ de antrenare, astfel algoritmul nu are garantia ca va functiona in situatii critice.\\
+HFNet-SLAM este o metoda construita pe baza ORB-SLAM3 si folosindu-se de arhitectura HF-Net, 
+avand acelasi principiu pe baza caruia a fost facuta ca si Mobile\_Net, avand straturile de convolutie
+separate in depthwise convolution si pointwise convolution. In loc sa foloseasca 2 retele neurale 
+precum Light-SLAM, aceasta foloseste una singura, atat pentru extragere keypoint-urilor si a
+descriptorilor cat si pentru feature-urile globale, folosite in sarcinile de loop closure. 
+Pe langa problema retelei neurale care trebuie sa ruleze pe GPU si  a feature-urilor instabile 
+extrase din imagini pentru zone care nu au fost intalnite in setul de antrenare, algoritmul
+calculeaza pentru fiecare cadru in parte feature-urile sale globale lucru care adauga un 
+overhead computational deloc necesar, iar keypoint-urile nu sunt extrase avand o piramida de 
+nivele. Din aceasta cauza, acelasi keypoint observat in 2 cadre diferite, dar la dimensiuni 
+diferite nu va putea fi asociat observat corespunzator, facand sistemul instabil la deplasarea 
+in linie dreapta.  \\
+ORB-SLAM3 este continuare implementarii algoritmului ORB-SLAM2 pe care l-am ales eu.
+Acesta a aparut in 2021 si pana in acest moment este cea mai complexa si completa metoda de a
+estima traiectoria camerei si a reconstrui o harta de puncte a mediului inconjurator folosind 
+doar metode clasice. In comparatie cu precedesorul acestuia, implementarea de ORB-SLAM3 foloseste
+datele obtinute de la Inertial Measurement Unit (IMU) si optimizeaza rezultatele primite 
+folosind tehnica de Maximum a Posteriori Estimation (MAP). Algoritmul lucreaza de asemenea cu un 
+sistem in care sunt generate noi harti de fiecare data cand se pierde capacitatea de urmarire 
+cadru cu cadru, iar acestea sunt ulterior unite intre ele cand agentul ajunge intr-o zona pe 
+care o cunoaste deja. Am considerat ca un mediu de mici dimensiuni in interior nu ar avea 
+nevoie de un sistem atat de complex, iar utlizarea acestuia ar adauga un overhead nejustificat.\\
+SVO sau Semi-Direct Visual Odometry for Monocular and Multi-Camera Systems este un exemplu 
+de algoritm tip SLAM care foloseste doar 2 thread-uri: unul responsabil de 
+urmarirea cadru cu cadru si celalalt pentru optimizarea hartii. Acesta foloseste gradientii
+pixelilor in imagini pentru a crea feature-uri, nu doar contururile obiectelor. In cazul
+algoritmilor din familia ORB-SLAM care incearca sa optimizeze eroarea de proiectie a punctelor
+din spatiu, aici se folosesc metode directe, si trebuie minimizata eroarea fotometrica a 
+pixelilor aflati in apropierea contururilor obiectelor. Este printre cei mai rapizi algoritmi
+de SLAM, procesand peste 100 de cadre pe secunda pe un CPU, dar genereaza o harta cu mult 
+prea putine puncte care rareori poate fi refolosite, nu exista capacitate de relocalizare si 
+este dificil de extins.
+
+In ciuda faptului ca algoritmul ORB-SLAM2 a aparut in 2017, in continuare ramane
+un exemplu de sistem bine gandit, cu multe posibilitati de extindere si capacitate de a fi 
+adaptat la cerintele din zilele noastre. Indeplineste cu succes toate criteriile pe care sistemul
+dezvoltat ar trebui sa le auba: poate fi folosit in real time, implementarea procesand 15 cadre
+pe secunda, creaza harta mediului inconjurator are capacitate de relocalizare si corecteaza 
+erorile de estimare care apar in timp prin mecanismul de loop closure. Acesta poate rula exclusiv
+pe CPU, fiind potrivit atat pentru vehicule la sol, dar si pentru drone. Nu are nevoie de o 
+estimare a pozitiei globale, putand fi folosit in medii ostile in care nu exista acces la GPS 
+iar terenul este complet necunoscut.  
+
+
 \chapter{Solutie propusa}
 Solutia mea presupune implementarea algoritmului ORB-SLAM2. Acesta are 2 scopuri 
 fundamentale:
@@ -966,7 +1068,7 @@ lenta si preferabil de utilizat cand nu ne putem baza pe estimarea matricei de p
 Iar cealalta abordare o reprezinta clusterizarea un functie de coordonatele in imagine 
 ale Feature-ului. \\ 
 Functie $ match\_frame\_reference\_frame $ implementeaza prima metoda. Aceasta primeste ca 
-parametru 2 vectori de feature-uri calculati de libraria DBoW2, unul asociat cadrului curent, pentru     
+parametru 2 vectori de feature-uri cal3culati de libraria DBoW2, unul asociat cadrului curent, pentru     
 care estimam matricea de pozitie si unul asociat cadrului anterior, pentru care cunoastem deja matricea de pozitie
 si asocierile de tip (Feature, MapPoint). Elementele acestor vectori sunt de tip $ (int, vector<descriptori>) $.
 Daca 2 astfel de perechi au prima valoare egala intre ele, inseamna ca cei 2 vectori de descriptori fac parte din 
@@ -1096,8 +1198,8 @@ se va intampla daca urmatoarele conditii vor avea loc simultan.
 camerei si punct este mai mica de 3.2 metri si urmareste cel putin 100 de MapPoint-uri
 \end{enumerate}
 
-Clasa LocalMapping este responsabila de optimizarea clasei Map. Aceasta sterge/adauga KeyFrame 
-si MapPoint, iar la fiecare cadru cheie nou adaugat, realizeaza operatia de Local Bundle 
+Clasa LocalMapping este responsabila de optimizarea hartii algoritmului. Aceasta sterge/adauga KeyFrame-uri
+si MapPoint-uri, iar la fiecare cadru cheie nou, realizeaza operatia de Local Bundle 
 Adjustment. Aceasta metoda optimizeaza matricile de pozitie si toate MapPoint-urile vecinilor 
 directi si cei de categoria a doua pentru KeyFrame-ul abia adaugat. In momentul in care 
 thread-ul de Tracking considera ca un nou cadru cheie trebuie de adaugat in harta, se executa
@@ -1135,7 +1237,7 @@ numarul total de cadre care au trecut de la creearea acestuia. Ambele conditii
 trebuie sa fie respectate simultan in momentul in care se face verificarea punctului
 respectiv. Politica pe care o urmeaza familia de algoritmi ORB-SLAM este sa genereze 
 multe puncte, fara a impune restrictii, pe care apoi le va supune acestui test de 
-relevanta.
+relevanta. \\
 
 Ultima clasa este cea de MapDrawer pe care o folosesc pentru a afisa norul de MapPoint-uri,
 cadrul curent analizat si pozitiile cadrelor cheie observate. Folosesc libraria Pangolin si 
