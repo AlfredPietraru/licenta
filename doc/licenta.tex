@@ -751,10 +751,12 @@ calcularea distantei Hamming dintre descriptor si toate nodurile de pe un anumit
 si alegerea nodului cu distanta Hamming minima. Nodul frunza la care va ajunge va avea asociat
 un index, in cazul de fata cu valori de la 0 la un milion. La acelasi index va fi modificata
 valoarea din vectorul bag-of-words in valoarea greutatii descriptorului stocat in arbore.
-Apelul de biblioteca returneaza de asemenea un vector de feature-uri care creeaza o relatie
-de 1 la 1 intre un descriptor calculat in imagine si indexul unui descriptor aflat pe un 
-nod frunza al arborelui. Doua imagini pot fi comparate intre ele prin intermediul acestui 
-vector de feature-uri, lucru care va fi detaliat in descriera clasei OrbMatcher.cpp.  
+Apelul de biblioteca returneaza de asemenea un vector de feature-uri in care fiecare element
+este o pereche de forma $ (int, vector<descriptori>) $, primul element este indexul 
+clusterului de la nivelul 4 al arborelui DBOW2, iar cel de-al doilea element reprezinta un 
+vector de descriptori din imaginea curenta care se potrivesc in acelasi cluster, au distante 
+Hamming aproape de 0 intre ei. Doua imagini pot fi comparate intre ele prin intermediul acestui 
+vector de feature-uri, lucru care va fi detaliat in descriera clasei OrbMatcher.  
 In implementarea ORB-SLAM2, nu este practica creearea unui vector de tip bag of words 
 cu un milion de elemente, mai ales ca majoritatea valorilor sunt 0, asa ca o reducere 
 a dimensionalitatii vectorului ar creste viteza de calcul a sistemului. Din aceasta cauza,
@@ -777,6 +779,7 @@ Cei mai importanti sunt cei corelati cu camera. In fisierul config.yaml se regas
 parametrii de distorsiune ai imaginii si alte constante pe care le-am considerat ca fiind niste
 hiperparametrii ai algoritmului, care vor trebui modificati in functie de mediul in care va rula
 ORB-SLAM2 pentru a garanta functionarea corecta. \\
+
 In main.cpp se face citirea fisierului ORBvoc.txt, acesta contine datele pe care le va folosi
 clasa ORBVocabulary pentru a calcula vectorii de KeyPoint-uri pentru fiecare dintre cadrele cheie.
 Acesti vectori de KeyPoint-uri vor fi comparati intre ei pentru a determina daca pozele respective 
@@ -786,16 +789,30 @@ folosi algoritmul in rularea lui. Aceste seturi de date contin de fapt cadrele d
 facut cu o camera RGBD Microsoft Kinetic impreuna cu matricile de adancime si pozitiile acestora
 in spatiu pentru fiecare cadru in parte. Aceste seturi de date sunt suficient de complexe pentru 
 a-mi permite evaluarea functionarii algoritmului de ORB-SLAM2. \\
+
 Clasa SLAM initializeaza componentele principale ale algoritmului si monitorizeaza durata 
 fiecarei operatii pentru debugging. Implementarea se bazeaza pe compunerea de clase, fiecare 
 fiind responsabila cu realizarea unei anumite sarcini. Voi prezenta clasele folosite plecand 
-de la cele mai elementare catre cele mai complexe. \\       
-Clasa TumDatasetReader este responsabila de partea de achizitii de date, va citi fiecare 
-cadru in parte iar pentru matricea de adancime va avea 2 variante: ori va incarca in memorie 
-matricea de distante din setul de date pentru cadrul respectiv sau o va calcula folosind 
-reteaua neurala FastDepth. Imaginea va fi convertita din RGB in grayscale, pentru o 
-prelucrare mai rapida de catre ORB.\@ Aceste 2 matrici vor fi transmise mai departe 
-catre Tracker. \\
+de la cele mai elementare catre cele mai complexe. \\
+
+Clasa TumDatasetReader este responsabila de achizitia de date si de scrierea 
+in fisier a traiectoriei pe care o estimeaza algoritmul cadru cu cadru. Achizitia de date 
+presupune citirea din memorie a matricei RGB, convertirea acesteia in grayscale pentru 
+o procesare mai rapida de catre algoritmul ORB si de obtinerea hartii de adancime pentru 
+cadrul respectiv. Acest lucru poate fi realizat in 2 feluri: matricea de distante este citita
+din setul de date TUM RGBD si a fost inregistrata cu o camera RGBD tip Microsoft Kinetic,
+sau se foloseste reteaua neurala FastDepth prin care se estimeaza in timp real distanta pentru
+fiecare pixel din cadrul curent. Ambele structuri, matricea cadrului curent si harta de adancime
+vor fi transmise ca parametrii clasei Tracker. Tot TumDatasetReader stocheaza estimarile 
+pozitiilor camerei pentru fiecare cadru in parte. Cadrele cheie, cele salvate 
+in clasa Map, vor avea matricea de pozitie stocata nealterat in memorie, ele sunt deja relative 
+fata de primul cadru citit. Pentru celelalte cadre, matricea de pozitie salvata in clasa
+TumDatasetReader este relativa la un cadru cheie, de preferat ultimul cadru cheie creat pana
+la citirea imaginii curente. Motivul pentru care se realizeaza salvarea pozitiilor in acest 
+fel, este ca doar cadrele cheie sunt cele care isi pot modifica pozitia datorita operatiilor 
+de optimizare precum Bundle Adjustment asa ca doar acestea ar trebui sa aiba valoarea lor 
+salvata explicit. \\
+
 Clasa MapPoint este fundamentala pentru buna functionare a algoritmului ORB-SLAM2. Aceasta este 
 formata cu ajutorul unui KeyPoint si al unui KeyFrame asociat acestuia. In etapa anterioara, 
 am prezentat modul in care se face proiectia coordonatelor unui punct cheie in spatiu, acestea 
@@ -922,7 +939,7 @@ Clasa OrbMatcher este responsabila de realizarea urmarii feature-urilor asemanat
 cadre consecutive. Inainte de a incepe prezentarea metode implementate, voi descrie
 pipeline-ul de procesare al unui punct din spatiu pentru a fi considerat observabil de 
 catre camera. Avem o instanta a obiectului MapPoint $ mp $, daca una dintre operatiile
-prezentate esuaeaza punctul respectiv este ignorat de catre KeyFrame-ul curent.
+prezentate esuaeaza, punctul respectiv este ignorat de catre KeyFrame-ul curent.
 \begin{enumerate}
     \item Se proiecteaza coordonatele globale ale $ mp $ in planul imaginii folosind matricea 
 de estimare a pozitiei $ T_{cw} $ si matricea parametrilor camerei $ K $. Se verifica daca 
@@ -930,21 +947,40 @@ coordonatele proiectiei sunt valide pentru imagine.
     \item Se calculeaza distanta $ d $ de la centrul camerei la $ mp $. In functie de valoarea 
 octavei stocata in acest MapPoint, se pot estima o limita minima si maxima pentru $ d $. 
 Daca valoarea obtinuta nu se incadreaza in acest interval se considera ca punctul este invalid.
-    \item Cu ajutorul geometriei analitice se obtine ecuatia dreptei care uneunghiului dintre 
-    aceasta dreapta si vectorul de directie al MapPoint-ului, daca valoarea este mai mica de 0.5.
-    Atunci se considera ca $ mp $ nu poate fi observat in cadrul curent.ste punctul 
-din spatiu si coordonatele centrului KeyFrame-ului. Se calculeaza cosinusul unghiului dintre 
-aceasta dreapta si vectorul de directie al MapPoint-ului, daca valoarea este mai mica de 0.5.
-Atunci se considera ca $ mp $ nu poate fi observat in cadrul curent.
+    \item Cu ajutorul geometriei analitice se obtine ecuatia dreptei care uneste $ mp $ 
+si centrulul camerei. Aceasta dreapta si vectorul de directie al MapPoint-ului,
+trebuie sa creeze un unghi cu o valoare mai mare de 60 de grade pentru a fi considerat $ mp $
+observabil in cadrul curent.
 \end{enumerate} 
 Daca aceste 3 verificari au fost realizate cu succes se considera ca punctul poate fi observat
-de catre camera. Exista 2 functii responsabile de asocierile intre cadrele curente. Una este 
-$ match\_frame\_reference\_frame $ si cealalta este $ match\_consecutive\_frames $. Voi 
-incepe prin a o descrie pe prima, aceasta este folosita pentru a asocia Feature-uri intre 
-primele 3 cadre de fiecare data cand este adaugat un Keyframe nou sau la inceput, cand sistemul
-tocmai ce a fost initializat. Aici este o situatie in care se folosesc vectorii de trasaturi
-calculati de libraria DBOW2, acestea gasesc o asociere intre elementele de tip Feature intre
-cele 2 imagini.
+de catre camera. \\
+Exista 2 functii responsabile de asocierile intre cadrele curente, scopul acestora 
+este ca gaseasca corespondente intre Feature-urile din cadrul curent si MapPoint-urile 
+din spatiu. Pentru a se gasi perechea Feature $ f $ si MapPoint $ mp $, trebuie ca
+$ mp $ sa se proiecteze in vecinatatea $ f $ iar descriptorii asociati atat Feature-ului 
+cat si al MapPoint-ului sa aiba distanta Hamming sub un prag, setat in aceasta implementare la 50.     
+O metoda ar fi compararea tuturor Feature-urilor din spatiu, cu totalitatea MapPoint-urilor 
+observate de cadrul curent. Dar aceasta metoda ar fi ineficienta. O alta abordare ar fi separarea
+Feature-urilor in clustere in functie de distanta Hamming a descriptorilor, abordare stabila dar 
+lenta si preferabil de utilizat cand nu ne putem baza pe estimarea matricei de pozitie a cadrului anterior. 
+Iar cealalta abordare o reprezinta clusterizarea un functie de coordonatele in imagine 
+ale Feature-ului. \\ 
+Functie $ match\_frame\_reference\_frame $ implementeaza prima metoda. Aceasta primeste ca 
+parametru 2 vectori de feature-uri calculati de libraria DBoW2, unul asociat cadrului curent, pentru     
+care estimam matricea de pozitie si unul asociat cadrului anterior, pentru care cunoastem deja matricea de pozitie
+si asocierile de tip (Feature, MapPoint). Elementele acestor vectori sunt de tip $ (int, vector<descriptori>) $.
+Daca 2 astfel de perechi au prima valoare egala intre ele, inseamna ca cei 2 vectori de descriptori fac parte din 
+acelasi cluster, conform arborelui din libraria DBOW2. Fiecare descriptor are asociata o instanta a clasei 
+Feature. In cadrul anterior, instanta poate avea sau nu, un MapPoint corespondent. Daca exista acel
+MapPoint se poate proiecta in imagine, descriptorul intern al MapPoint-ului este comparat cu ceilalti 
+descriptori din acelasi cluster din cadrul curent si se aplica testul de proportionalitate Lowe pentru a
+garanta ca descriptorul cu distanta Hamming minima este cel mai bun.   
+Functia $ match\_consecutive\_frames $ este mai simpla si implementeaza a doua metoda. MapPoint-ul din 
+spatiu este proiectat in imagine, si toate Feature-urile dintr-o zona circulara de raza de variabila. 
+sunt considerati posibili candidati pentru a crea o asociere (Feature, MapPoint). Se calculeaza distanta 
+Hamming intre descriptorul MapPoint-ului si cel al Feature-ului. Iar descriptorul cu distanta minima si 
+mai mica decat un prag setat la 100 este considerat ca fiind cel mai potrivit. Feature-ul asociat acelui
+descriptor, va pastra o referinta a MapPoint-ului. \\
 
 Clasa MotionOnlyBA implementeaza in Ceres algoritmul Motion Only Bundle Adjustment,
 primeste ca date de intrare KeyFrame-ul curent si returneaza matricea de pozitie optimizata.
@@ -990,7 +1026,7 @@ semnificativ acuratea si reduce viteza de prelucrarea la aproximativ 5 cadre pe 
 nepotrivit pentru un sistem in timp real. Am observat ca obtin rezultate foarte bune, ruland o singura
 data Motion Only Bundle Adjustment, urmat apoi de o etapa de eliminare a corelatiilor 
 (Feature, MapPoint) de tip outlier. Daca mai putin de 3 asocieri raman, se considera ca algoritmul
-a acumulat prea multe erori in urmarirea cadru cu cadru si trece intr-o stare de relocalizare.
+a acumulat prea multe erori in urmarirea cadru cu cadru si trece intr-o stare de relocalizare. \\
 
 Clasa Tracker realizeaza urmarirea traiectoriei cadru cu cadru. Aceasta integreaza 
 fiecare dintre componentele definite anterior, si este responsabila de captarea cadrului curent,
@@ -1007,7 +1043,7 @@ a KeyFrame-ului curent, sunt eliminate asocierile de tip outlier
 (Feature, MapPoint), se executa din nou aceeasi operatie de optimizare Motion Only Bundle Adjustment
     \item Este evaluat KeyFrame-ul curent, se verifica daca trebuie salvat in clasa Map. 
 \end{enumerate}
-Cadrul curent si matricea de adancime sunt citite de TumDatasetReade. In imaginea RGB 
+Cadrul curent si matricea de adancime sunt citite de TumDatasetReader. In imaginea RGB 
 se foloseste ORB pentru a extrage un vector de KeyPoint-uri si un vector de descriptori. 
 Acestea sunt folosite pentru a initializa un obiect de tip KeyFrame. Pentru algoritmul ORB se 
 foloseste o versiune modificata implementata in clasa ORBextractor si este conceputa sa extraga 
