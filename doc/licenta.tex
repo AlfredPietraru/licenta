@@ -116,8 +116,8 @@ a camerei, reconstruind astfel traseul parcurs in timpul functionarii algoritmul
     \item sa creeze o harta locala a mediului inconjurator pentru a memora zonele
 prin care a mai trecut si pentru a imbunatatii estimarea traiectoriei  
 \end{itemize}
-Matricea de pozitie si orientare a camerei (pose matrix) are dimensiuni 4x4 si are 
-formatul prezentat mai jos, unde R reprezinta matricea de rotatie 3x3, iar t este
+Matricea de pozitie si orientare a camerei (pose matrix) are dimensiuni $ 4 \times 4 $ si are 
+formatul prezentat mai jos, unde R reprezinta matricea de rotatie $ 3 \times 3 $, iar t este
 vectorul coloana de dimensiune 3, reprezentand translatia fata de punctul de origine
 \( (0, 0, 0)\). Aceasta mai este denumita si matricea de conversie din sistemul de 
 coordonate global (world space) in sistemul de coordonate al camerei (camera space) si 
@@ -137,7 +137,7 @@ Algoritmul primeste ca date de intrare: sursa de la care va obtine imaginile de 
 RGB pe care va trebui sa le prelucreze, acestea pot sa provina atat de la un video,
 set de date consacrat sau chiar in timp real direct de la camera, parametrii de 
 distorsiune a imaginii si matricea parametrilor interni ai camerei, avand dimensiunea 
-3x3 si notata in mod traditional cu \(K\). Aceasta contine 4 constante importante: 
+$ 3 \times 3 $ si notata in mod traditional cu \(K\). Aceasta contine 4 constante importante: 
 distanta focala a camerei pe axa x si pe y \(f_x\), \(f_y\) si \(c_x\), \(c_y\) \
 reprezentand coordonatele centrului imaginii. Aceasta matrice trebuie modificata de 
 fiecare data cand este schimbata camera cu care se realizeaza filmarea, sau cand se 
@@ -172,41 +172,85 @@ extragerea datelor de la instrumente de masura precum giroscop sau accelerometru
 pentru a obtine informatii suplimentare cu privire la orientarea si distanta efectuata
 de catre camera care ar putea imbunatatii considerabil estimarea initiala a pozitiei.
 
-\section{Extragere Feature-uri folosind ORB} 
+\section{Extragere trasaturi} 
 Ca date de intrare aceasta componenta primeste doar imaginea de tip RGB, si extrage
-aproximativ 1000 de puncte cheie, denumite in engleza keypoints, care
-vor fi ulterior folosite pentru a gasi asocieri intre cadrele consecutive. 
-Daca algoritmul de extragere functioneaza corect iar traiectoria camerei este una
-stabila, fara schimbari bruste ale directiei de deplasare, feature-uri similare ar 
-trebui sa fie observate in ambele imagini. Asocierile dintre ele, ne pot da 
-informatii despre modul in care s-a deplasat camera intre cele 2 cadre.
-Folosesc termenul de feature-uri si keypoints ca sinonime deoarece se refera la acelasi
-concept. Un keypoint reprezinta o zona circulara de interes din imagine de dimensiuni
-reduse, dar cel mai adesea se lucreaza cu centrul acestei zone, fiind definit ca 
-un punct de coordonate (x, y). In implementarea mea, diametrul unui keypoint are 20
-de pixeli. In cazul algoritmului ORB, aceste zone se afla la frontiera obiectelor care 
-alcatuiesc imaginea. De exemplu, daca poza surprinde un televizor, algoritmul ORB va 
-gasi multe puncte cheie la marginea ecranului si foarte putine pe suprafata ecranului 
-deoarece nu exista variatii in intensitatea luminoasa. Pe de alta parte, o camera 
-complet mobilata ar fi o zona puternic texturata, iar un astfel de algoritm s-ar 
-descurca sa gaseasca suficiente feature-uri. Fiecare dintre aceste keypoint-uri, are 
-asociat un vector de valori numit descriptor, acesta este folosit pentru a compara gradul
-de similaritate intre 2 keypoint-uri gasite in imagini diferite.
-Algoritmul pe care il folosesc se numeste Oriented Fast and Rotated Brief (ORB).
-Acesta a fost creat in anul 2011 ca alternativa pentru alti algoritmi de extragere de
-feature-uri precum SIFT si SURF\. Motivul pentru care acesta a ajuns atat de popular 
+aproximativ 1000 de trasaturi si descriptori asociati acestora. Trasaturile sunt zone
+de interes in imagine care pot fi folosite pentru a detecta obiecte sau gasi asocieri 
+intre cadrele consecutive. Acestea mai sunt numite si keypoint-uri in literatura de 
+specialitate iar librarii precum OpenCV au structuri de date dedicate pentru acestea.
+O trasatura poate fi interpretata matematic ca o zona in care apare o schimbare 
+brusca a gradientului culorii. De cele mai multe ori, astfel de variatii se regasesc 
+in zonele de frontiera dintre obiecte, deoarce apare o diferenta
+de culoare si implicit una de intensitate luminoasa. Zonele slab texturate, cum ar 
+fi cerul sau peretii in interiorul unei cladiri nu au zone care sa poata fi usor de 
+comparat, deoarece zonele de pe suprafata respectiva arata similar si este greu de 
+estimat de unde a fost extras keypoint-ul respectiv. In schimb, o camera 
+complet mobilata ar fi o zona puternic texturata iar un algoritm de detectie de 
+keypoint-uri ar putea sa gaseasca usor 1000 de trasaturi pe care sa le foloseasca.
+Daca algoritmul nu reuseste sa gaseasca suficiente keypoint-uri pentru a face urmarirea
+intre cadre, de obicei minim 500, urmarirea cadru cu cadru nu poate continua. Din aceasta
+cauza algoritmul de ORB-SLAM2 da rezultate eronate in zonele slab texturate. Daca algoritmul
+de extragere functioneaza corect iar traiectoria camerei este una stabila, fara schimbari
+bruste ale directiei de deplasare, trasaturi similare ar trebui sa fie observate in ambele
+imagini. Asocierile dintre ele, ne pot da informatii despre modul in care s-a deplasat 
+camera intre cele 2 cadre. Problema este ca aceste keypoint-uri nu pot fi comparate direct
+intre ele din aceasta cauza ne folosim de descriptori. Acestia sunt vectori de diferite 
+dimensiuni care trebuie sa surprinda informatia esentiala observata in zona respectiva din
+imagine, in mod ideal descriptorii ar trebui sa ramana invariabili la operatiile de 
+redimensionare si rotatie aplicate pe keypoint-uri. 
+Algoritmului Oriented Fast and Rotated Brief (ORB) este folosit pentru extragerea de 
+keypoint-uri si descriptori. A fost creat in anul 2011 ca alternativa pentru alti algoritmi
+de extragere de feature-uri precum SIFT si SURF.\@ Motivul pentru care acesta a ajuns atat de popular 
 se datoreaza mai multor factori:
 \begin{itemize}
     \item Este mult mai rapid decat SIFT si SURF fiind mult mai potrivit pentru sisteme
-realtime si pentru dispozitive embedded.
+in timp real si pentru dispozitive embedded.
     \item la momentul realizarii lucrarii stiintifice despre ORB-SLAM2 atat SIFT cat 
 si SURF se aflau sub protectia drepturilor de autor, ORB nu avea vreo astfel de restrictie
-    \item ORB se descurca foarte bine a regasi aceleasi feature-uri in imagine
-indiferent de modul in care aceasta este redimensionata. Acest lucru este deosebit 
-de util in situatiile in care camera se deplaseaza in fata sau in spate, fiindca
-va vedea in continuare aceleasi feature-uri pe tot parcursul miscarii, permitandu-ne
-sa deducem directia de deplasare doar analizand mai multe cadre consecutive
+    \item ORB este invariant din punct de vedere al rotatiei   
+    \item Foloseste descriptori binari, care pot fi usor de comparat folosind distanta Hamming,
+    aceasta converteste in biti vectorul de elemente obtinute, 
 \end{itemize}
+Implementarea algoritmului ORB poate fi separata in 2 componente, calcularea KeyPoint-urilor si 
+cea a descriptorilor. Pasii pe care ii urmeaza algoritmul sunt urmatorii, care se repeta 
+de cate ori a fost setat ca imaginea initiala sa fie redimensionata:
+\begin{enumerate}
+    \item Calcularea keypoint-urilor folosind algoritmul FAST-9.
+    \item Selectarea celor mai potrivite keypoint-uri folosind Harris Corner Measure, Trasaturile
+sunt sortate in ordine descrescatoare si sunt selectate primele N cele mai potrivite
+    \item Pentru fiecare keypoint se calculeaza orientarea acestuia folosind intensitatea
+centroidului, dupa aceasta operatie avem toate informatiile necesare despre keypoint-uri.
+    \item Pentru calcularea descriptorilor vom face o operatie de smoothing pentru fiecare 
+zona de $ 31 \times 31 $ de pixeli, folosind un kernel cu o dimensiune de $ 5 \times 5 $.
+    \item se calculeaza descriptorii de tip steer BIREF, avand pozitia modificata dupa unghiul
+dat de orientare. Operatia de modificare a orientarii duce la o variatie redusa a valorilor 
+bitilor din descriptori si la o corelatie puternica intre acestia, facand descriptorii ineficienti
+    \item Se obtine rBRIEF o varianta optimizata a algoritmul steer BRIEF, prin alegerea bitilor
+despre care se stie ca au varianta mare si grad scazut de corelatie intre ei.
+\end{enumerate}   
+In cazul algoritmul FAST-9, 
+cifra 9 vine de la diametrul ferestrei circulare in care se face compararea intre valoarea 
+intensitatii pixelului si centru. Acest algoritm primeste ca parametru imaginea si pragul 
+pe care trebuie sa il depaseasca diferenta de intensitate intre pixeli pentru a fi considerat
+un keypoint. De cele mai multe ori, informatia data de keypoint-uri este redundanta, pentru
+a selecta un numar restrans de trasaturi, de preferat cele mai expresive, se foloseste Harris
+Corner Measure.  Pentru a calcula orientarea vom defini notiunea de centroid  $ C $ care este
+diferit de centrul zonei din imagine $ O $. Vectorul $ \vec{OC} $ va fi cel 
+care va da unghiul $ \theta $ al keypoint-ului pe care il vom obtine direct din urmatoarea 
+formula, unde $ I(x, y) $ reprezinta intensitatea luminoasa a pixelului cu coordonate $ (x, y) $.      
+\begin{equation}
+m_{pq} = \sum_{x, y} x^p y^q I(x, y), \quad{}
+\theta = \text{atan2}(m_{01}, m_{10})
+\end{equation}
+In etapele 5 si 6 se realizeaza calcularea descriptorilor: acestia vor avea forma binara si o 
+lungime finala de 256 de biti. Compararea lor se va realiza folosind distanta Hamming, cu cat 
+2 descriptori au o valoarea mai mica a acestei distante, cu atat mai similari sunt. Valorile 
+descriptorilor sunt asociate pe baza unui test binar in care este comparata intensitatea a 2 
+puncte din planul imaginii. Problema este ca descriptorii BRIEF sunt sensibili la schimbarile de
+rotatie, din aceasta cauza, prin rotirea coordonatelor pixelilor cu unghiul $ \theta $ al 
+orientarii se obtine steered BRIEF.\@ Pentru a obtine rBRIEF, au fost invatate in offline la
+creearea algoritmului ORB care teste de verificare a intensitatii au cea mai mare variatie, si
+primele 256 dintre acestea au fost alese pentru a alcatui descriptorul.       
 
 \section{Harta punctelor din spatiu}
 Unul dintre scopurile fundamentale ale algoritmului de ORB-SLAM2, pe langa cel 
@@ -236,7 +280,7 @@ in coordonatele globale si de parametrii interni ai camerei \(f_x\), \(f_y\)
 distanta focala, si \(c_x\), \(c_y\) coordonatele centrului imaginii.
 Vectorul coloana cu 3 dimensiuni reprezinta pozitia in spatiu a feature-ului gasit
 in cadrul curent pe care il analizam, astfel am creat primul MapPoint. Ca alternativa,
-pentru a nu lucra cu matrici de dimensiuni 4x4 putem folosi \(R_{wc}\) reprezentand
+pentru a nu lucra cu matrici de dimensiuni $ 4 \times 4 $ putem folosi \(R_{wc}\) reprezentand
 matricea de rotatie si \(t_{wc}\) vectorul de translatie.
 
 \begin{equation} 
@@ -509,16 +553,16 @@ E_{kj} = \left\| \mathbf{x}_{j} - K \cdot \left(\mathbf{R}_k \mathbf{X}_j + \mat
 \subsection{Reteaua Neurala FastDepth}
 Retele Neurale Artificiale sunt o tehnica des intalnita in Machine Learning pentru a rezolva 
 sarcini complexe pentru care nu exista solutii algoritmice clar definite sau implementarea acestora 
-este mult prea costisitoare. O definitie simplificata este ca retele neurale definesc o 
-functie nonliniara care gaseste o corespondenta intre un set multivariat de date de intrare \(x\)
-si un set multivariat de date de iesire \(y\) fara a le modifica $ f(x, \phi) = y $. Aceasta este
+este mult prea costisitoare. Retele neurale definesc o functie nonliniara care gaseste o 
+corespondenta intre un set multivariat de date de intrare \(x\) si un set multivariat de 
+date de iesire \(y\), modificand un set de parametrii $ \phi $, $ f(x, \phi) = y $. Aceasta este
 alcatuita dintr-un numar enorm de elemente de procesare care contin parametrii functiei $ \phi $,
 conectate intre ele intr-o structura de tip graf si dispuse pe straturi. Cele mai importante fiind: stratul de intrare
 si de iesire, unde se stabileste forma generala pe care trebuie o sa respecte datele care vor
 parcurge reteaua si modul in care va arata rezultatul obtinut. Celelalte nivele sunt denumite 
 straturi ascunse. Aceastea fac prelucrarea informatiei primite de la straturile anterioare 
 si o transmit mai departe. Spunem ca o retea neurala invata din datele primite, daca isi 
-modifica parametrii primiti $ \phi $ astfel incat sa reprezinte cu mai multa acuratete corespondenta
+modifica parametrii $ \phi $ astfel incat sa reprezinte cu mai multa acuratete corespondenta
 intre datele de intrare \(x\) si cele de iesire \(y\).
 FastDepth este o arhitectura de retea neurala folosita pentru estima adancimii in imagini. 
 Aceasta primeste o imagine de tip RGB al interiorului unei incaperi si returneaza o matrice
@@ -532,71 +576,104 @@ cum ar fi extragerea feature-urilor sau pentru estimarea adancimii in imagini ar
 pentru a creste eficienta algoritmului. Revenind la sarcina de estimare a adancimii, ORB-SLAM2
 foloseste o camera tip RGBD / Stereo care descrie cu foarte mare acuratete distanta pana intr-un
 anumit punct din spatiu, dar creeaza o matrice rara de valori, majoritatea avand valori de 0,
-sugerand incapacitatea de a estima distanta in zonele respective. O retea neurala are capacitatea 
-sa gaseasca o aproximare a distantei pentru absolut fiecare punct din imagine si are un 
-context suficient de bine format pentru a intelege care obiecte sunt mai apropiate si care se afla 
-mai departe. In acest fel, valorile estimate au sens: zone similare din imagini avand valori 
-ale distantei apropiate una de cealalta si atribuie o valoarea valida a adancimii pentru fiecare 
-pixel in parte. Un posibil dezavantaj al acestei arhitecturi este limitarea de 10m, fiind nepotrivit
+sugerand incapacitatea de a estima distanta in zonele respective. Un motiv pentru care retelele
+neurale sunt o alternativa buna este ca ele vor avea o estimare pentru fiecare pixel din imagine.
+In plus, reteaua FastDepth pare sa realizeze o pseudosegmentare a zonelor din imagine, reuseste
+sa identifice conturul obiectelor si atribuie valori ale distantei asemanatoare pentru pixelii
+ce apartin aceleasi entitati. \\
+Un posibil dezavantaj al acestei arhitecturi este limitarea de 10m, fiind nepotrivit
 de folosit afara, dar ideal pentru un spatiu inchis de mici dimensiuni. Cu toate acestea exista 2 
 probleme pentru care o retea neurala s-ar putea sa nu fie optiunea potrivita: valorile aproximate 
 au o acuratete mai slaba decat cele obtinute de camerele Stereo/RGBD iar viteza acestora de 
-procesare a cadrelor nu este suficient de mare pentru a functiona in timp real. Un motiv pentru 
-care am ales arhitectura FastDepth este ca rezolva in totalitatea problema vitezei procesand 
-aproximativ 130 de cadre pe secunda in plus consuma o cantitate redusa de memorie, totalitatea 
+procesare a cadrelor nu este suficient de mare pentru a functiona in timp real.
+Un motiv pentru care am ales arhitectura FastDepth este ca rezolva in totalitatea problema vitezei procesand 
+aproximativ 130 de cadre pe secunda.\@ De asemenea consuma o cantitate redusa de memorie, totalitatea 
 parametrilor folositi in antrenare ocupand pana in 40 de MB, fiind usor de integrat intr-un 
-dispozitiv embedded. Exista mai multe filozii cand vine vorba de modul in care ar trebui sa
+dispozitiv embedded. \\ Exista mai multe filozii cand vine vorba de modul in care ar trebui sa
 arate arhitectura unei astfel de retele neurale si operatiile pe care ar trebui sa le realizeze
-fiecare strat in parte. Prima astfel de abordare a fost feed forward neural network in care 
-elementele de procesare erau dispuse pe straturi, si fiecare strat primea input-ul de la stratul 
+fiecare strat in parte. Feed forward neural network a fost printre primele arhitecturi definite. 
+Elementele de procesare sunt dispuse pe straturi, si fiecare strat primeste input-ul de la stratul 
 precedent si transmitea output-ul la stratul imediat urmator. Informatia circula liniar, de la 
-intrarea in retea pana la finalul acesteia. Abordarea s-a dovedit foarte buna pentru situatiile 
-in care aveai nevoie de retele neurale de mici dimensiuni, cu un numar redus de straturi si 
-parametrii. Pentru retele cu zeci de straturi de intrare, abordarea de feed forward netwrork 
-nu era potrivita fiind foarte greu de antrenat corect o astfel de retea desi la nivel de principiu
-o retea cu dimensiuni mai mari ar trebui sa fie capabila sa generalizeze mai bine.    
+intrarea in retea pana la finalul acesteia. Abordarea s-a dovedit eficienta in situatiile 
+in care era nevoie de retele neurale de mici dimensiuni, cu un numar redus de straturi si 
+parametrii. In momentul in care crestea complexitatea, abordarea de feed forward neural network 
+devenea greu de antrenat si dadea rezultate mai slabe, chiar daca din punct de vedere teoretic o
+retea cu dimensiuni mai mari ar trebui sa fie capabila sa generalizeze mai bine.    
 Pentru a rezolva aceasta problema au aparut arhitecturile de tip residual network. Acestea au 
 aplicatii numeroase in clasificarea imaginilor, unde datele de intrare au dimensiuni mari
 si este nevoie de multe nivele pentru a extrage suficiente informatii pentru a realiza 
 clasificarea. Principiul de functionare este utilizarea unor straturi reziduale denumite si skip
-connections, in care rezultatul unui strat este salvat si transmis ca data de intrare la un alt 
-nivel mai in fata sau chiar readus in bucla in acelasi strat. Aceasta abordare pastreaza 
-din informatiile initiale ale datelor de intrare in straturile viitoare stabilizand antrenarea. 
-FastDepth foloseste aceasta tehnica, straturile finale primind ca date de intrare valorile
-calculate de straturi aflate la inceput, tocmai pentru a pastra informatia initiala a imaginii.
-Pe langa tipurile de arhitecturi propuse, s-au modificat si tipurile de straturi in retele neurale.
+connections, in care rezultatul unui strat este salvat si transmis ca data de intrare la un alt
+nivel decat la cel imediat urmator. Abordarea aceasta pastreaza din informatiile initiale ale 
+datelor de intrare in straturile viitoare stabilizand antrenarea. O alta arhitectura des 
+intalnita este cea de encoder-decoder folosita in numeroase aplicatii practice in ceea ce 
+priveste imaginile: sarcini de colorare a imaginilor gri, reconstructie a imaginilor care 
+contin parti lipsa si de generare de imagini: un exemplu fiind Variational Auto Encoder.
+FastDepth foloseste tehnica de skip connections, straturile finale primind ca date de intrare
+valorile calculate de straturile aflate la inceput, pentru a pastra informatia initiala a 
+imaginii si urmeaza o arhitectura encoder-decoder. Encoder-ul transforma datele de intrare
+intr-o forma mai compacta asemeni unei operatii de arhivare, iar partea de decoder dubleaza
+dimensiunea datelor pana cand le aduce la forma initiala si compune canalele printr-o operatie
+liniara pentru a forma matricea de adancime. \\
+Pe langa tipurile de arhitecturi propuse, exista mai multe categorii de straturi in retele neurale.
 Primele folosite erau cele fully connected, in care fiecare element de procesare era conectat 
 cu toate celelalte elemente de procesare din stratul urmator. Matematic, operatia poate fi vazuta 
-ca o inmultire de matrici, o operatie costisitoare si mai ales limitata, nu putea fi folosita 
-pentru a reprezinta functii nonliniare, scazand capacitatea de generalizare. De cele mai multe ori
-straturile liniare erau folosite impreuna cu functii de activare nonliniare precum ReLU dar in 
-continuare stratul avea prea multi parametrii care trebuiau antrenati. Din aceasta cauza au fost
-create straturile convolutionale, folosesc mai putini parametrii si sunt folosite in principal 
-pentru procesarea imaginilor. Principiul teoretic pe care se bazeaza este ca pixeli alaturati vor
-avea acelasi scop in imagine, de exemplu vor reprezentarea aceluiasi feature. In aceasta situatie,
-operatia de convolutie trebuie realizata pe o zona a imaginii, o filozofie diferita fata de 
-straturile complet conectate, in care valoarea fiecarui neuron este modificata individual.  
-Operatia de convolutie functioneaza in felul urmator, se stabileste un kernel, o matrice de 
-mici dimensiuni, in FastDepth folosindu-se kernel-uri de (3, 3), acestea vor stoca parametrii 
-pe care reteaua neurala ii va antrena pentru stratul convolutional. In formula matematica sunt
-notati \(w_{mn}\), \(h_{ij}\) reprezinta intensitatea pixelului dupa calculul formulei de convolutie, 
-iar \(x_{ij}\) este valoarea intensitatii pixelului de pe coloana i si linia j. Ceilalti 2 
-parametrii \(a\) reprezinta functia de activare folosita iar \(\beta\) reprezinta bias-ul care 
-poate fi modificat in procesul de antrenare al retelei neurale si cresc capacitatea de generalizare
-a functiei de convolutie. 
+ca o inmultire de matrici, o operatie costisitoare, iar utilizarea exclusiva a straturilor complet 
+conectate creea o retea neurala incapabila sa reprezinte functii nonliniare, scazand capacitatea de
+generalizare. De cele mai multe ori straturile liniare sunt folosite impreuna cu functii de
+activare nonliniare precum ReLU sau Sigmoid dar in continuare ramane problema numarului mare 
+de parametrii care trebuie antrenati. Din aceasta cauza au fost create straturile convolutionale
+care  folosesc mai putini parametrii si au aplicabilitate in procesarea imaginilor. Principiul
+teoretic pe care se bazeaza este ca pixelii alaturati in imagine au aceeasi semnificatie,
+reprezentand acelasi feature. Operatia de convolutie trebuie realizata pe o zona a imaginii iar
+modificarea parametrilor afecteaza output-ul generat de mai multi pixeli. Aceasta filozofie
+diferita fata de cea a straturilor complet conectate, in care valoarea fiecarui parametru este
+modificata individual. Pentru a realiza operatia de convolutie, se stabileste un kernel, o
+matrice de  mici dimensiuni, in FastDepth folosindu-se kernel-uri de (3, 3), acestea vor stoca
+parametrii pe care reteaua neurala ii va antrena pentru stratul convolutional \(w_{mn}\). In 
+formula \(h_{ij}\) reprezinta intensitatea pixelului dupa calculul operatiei de convolutie, 
+iar \(x_{ij}\) este valoarea intensitatii pixelului de pe coloana i si linia j.  
+Litera \(a\) reprezinta aici functia de activare folosita iar \(\beta\) este o valoare numerica
+denumita bias. Acesta poate fi modificat in procesul de antrenare al retelei neurale si creste
+capacitatea de generalizare a functiei de convolutie.  
 \begin{equation}
 h_{ij} = a \left[ \beta + \sum_{m=1}^{3} \sum_{n=1}^{3} \omega_{mn} x_{i+m-2, j+n-2} \right]
 \end{equation}
-Stratul de convolutie este prea costisitor pentru a fi folosit de mai multe ori pentru 
-a crea o arhitectura in timp real de mari dimensiuni. Presupunem ca avem  un vector
-de intrare pentru un strat de convolutie \(x\) cu dimensiunile \([d, h, w]\) unde \([h,w]\)
-reprezinta inaltimea si latimea vectorului, iar \(d\) reprezinta numarul de canale, pentru o 
-imagine de tip RGB, valoarea parametrului \(d\) este 3, fiind 3 canale de culoare pentru rosu, 
-verde si albastru. De asemenea presupunem ca avem un kernel de dimensiuni \([k, k, d, d_{out}]\),
-unde \(d_{out}\) este numarul de canale care rezulta in urma operatiei de convolutiei, atunci
-numarul total de operatii va fi: $ h \cdot w \cdot d \cdot d_{out} \cdot k \cdot k$. 
-Solutia pentru aceasta problema este data de utilizarea unei variante derivate a operatiei de 
-convolutie, numita Depthwise Convolution.
+Stratul de convolutie este in continuare prea costisitor pentru a fi folosit de suficient de 
+multe ori pentru a crea o arhitectura in timp real de mari dimensiuni. Presupunem ca avem 
+un vector de intrare pentru un strat de convolutie \(x\) cu dimensiunile \([d, h, w]\) unde
+\([h,w]\) reprezinta inaltimea si latimea vectorului, iar \(d\) reprezinta numarul de canale,
+pentru o imagine de tip RGB, valoarea parametrului \(d_{in}\) este 3, fiind 3 canale de culoare pentru
+rosu, verde si albastru. De asemenea presupunem ca avem un kernel de dimensiuni \([k, k, d_{in}, d_{out}]\),
+unde \(d_{out}\) este numarul de canale care rezulta in urma operatiei de convolutie, atunci
+numarul total de operatii va fi: $ h \cdot w \cdot d_{in} \cdot d_{out} \cdot k \cdot k$. Pentru 
+a rezolva aceasta problema a fost creat un strat numit Depthwise Separable Convolutions, 
+obtinut prin compunerea a 2 straturi de convolutie, unul numit depthwise convolution,
+iar celalalt pointwise convolution. Aceasta abordare creste viteza de procesare si imbunatateste
+acuratetea in sarcini de clasificare pentru seturi de date precum ImageNet ILSVRC2012. In cazul 
+depthwise convolution, fiecare canal al datelor de intrare este procesat de un singur kernel
+al stratulului de convolutie. Pointwise convolution uneste printr-o combinatie liniara 
+rezultatul procesarii fiecarui canal. Complexitatea temporala obtinuta astfel este de:
+$ h \cdot w \cdot d_{in} \cdot (k^2   + d_{out})$. \\ 
+FastDepth foloseste o arhitectura encoder-decoder. Partea de encoder este reprezentata de o alta 
+retea numita Mobile\_Net si ulterior Mobile\_Netv2 care reduce numarul de parametrii si creste 
+viteza de procesare fara a impacta acuratetea. Partea de decoder este alcatuit din 5 straturi de 
+tip depthwise convolution fiecare urmate de o interpolare liniara care dubleaza dimensiunea 
+rezultatului, ultimul strat fiind un pointwise convolution care uneste canalele obtinute  
+si returneaza matricea de adancime. Pentru Mobile\_Netv2 exista parametrii preantrenati in libraria 
+Pytorch pe setul de date ImageNet fiind un motiv in plus de a folosi aceasta arhitectura 
+in dezvoltarea FastDepth. Mobile\_Netv2 foloseste atat depthwise convolution cat 
+si pointwise convolution intr-un strat numit Inverted Residual, acesta fiind alcatuit din 
+urmatoarele componente unde $ t $ este factorul de multiplicare al numarului de canale,
+$ s $ este parametrul de stride, determina daca se micsoreaza numarul de canale, $ h, w, d $
+sunt dimensiunile matricei de intrare.   \\
+\textbf{DE INSERAT AICI IMAGINEA}
+
+% continuare detaliere mobileNet_v2
+% detaliere fastDEpth
+% adaugare poze
+
+
 
 \chapter{Detalii de implementare}
 Implementarea este realizata in C++17. Pentru management-ul librariilor si al codului folosesc
@@ -612,46 +689,79 @@ cu putinta, dar care sa poata fi compatibila cu toate librariile mentionate. C++
 erau compatibile cu Ceres, libraria fiind mult prea complexa pentru a intra si face modificari in
 codul sursa. C++20 nu era compatibil cu Sophus si cu Eigen, iar ambele librarii sunt fundamentale 
 deoarece implementeaza metode puternic optimizate de a lucra cu matrici iar API-ul lor era mai 
-simplu decat cel OpenCV. Singura optiune ramasa a fost C++17 care era incompatibila cu versiunea 
-de DBoW2, aceasta folosi o versiune mai veche a functiei throw pentru erori. Modificand 
-modul in care functiile returnau erorile, cu ajutorul metodei de biblioteca assert si a 
-codurilor de eroare, am eliminat complet necesitatea vreunei functii de throw si am putut 
-recompila intreg codul pe care l-am putut utiliza ca biblioteca in implementarea ORB-SLAM2.
-Fiecare din librariile utilizate indeplineste o anumita functionalitate bine definita. \\
-OpenCV este fundamental deoarece contine functii de biblioteca pentru o multitudine 
-de elemente: implementarea algoritmilor de extragere de feature-uri FAST, ORB, SIFT, SURF,
-procesare video, citirea unui video cadru cu cadru, procesarea de imagini: aplicarea de filtre,
-transformarea in grayscale, eliminarea distorsiunii cauzata de camera. Dar cele mai importante 
-sunt structurile pentru lucru cu matrici cv::Mat, si cea pentru stocarea unui feature: KeyPoint.
-Structura KeyPoint este deosebit de utila deoarce stoca numeroase informatii despre zona pe 
-care o reprezinta, orientarea acesteia, coordonatele centrului si nivelul la care a fost observat, 
-parametrii de care am avut nevoie in fiecare dintre componentele algoritmului. Pe langa aceste 
-lucruri OpenCV are un modul dedicat pentru citirea retelelor neurale scrise din fisierele care 
-urmeaza un format de tip ONNX, fiind o alternativa potrivita daca vreau sa aplic modelul, fara 
-a incerca sa modific in vreun fel parametrii acestuia. \\
-Ca librarie de optimizare am avut de ales intre Ceres si g2o. In implementarea oficiala g2o era 
-cel mai folosit, fiindca filozofia din spate este de a face optimizari pe graf. Se creeaza un 
-graf neorientat cu nodurile care trebuiesc optimizate si sunt conectate intre ele 
-prin intermediul functiei de optimizare care trebuie aplicata. API-ul de g2o permite activarea 
-si dezactivarea anumitor noduri, pentru a face implementarea mai robusta impotriva outlier-elor,
-pe cand Ceres nu permite acest lucru. O data create conditiile initiale acestea nu pot fi 
-dezactivate pana la finalizarea algoritmului. Cu toate acestea, Ceres are un API mai usor de 
-utilizat si prin rulari repetate am observat ca este cu putin mai rapid decat g2o. \\
-Folosesc libraria Eigen deoarece este mai simplu API-ul pentru calculul cu matrici decat 
-cel din OpenCV. Pentru a accesa elementele unei matrici in OpenCV se foloseste o referinta la 
+simplu decat cel OpenCV.\@ Singura optiune ramasa a fost C++17 care era incompatibila cu versiunea 
+de DBoW2, aceasta folosea o versiune mai veche a functiei throw pentru erori. Prin modificarea
+modului in care functiile returnau erorile, metoda de biblioteca assert si a 
+utilizarea codurilor de eroare, am eliminat complet cazurile de utilizare pentru directiva de throw
+si am putut recompila codul ca librarie. Voi incepe prin a descrie modul in care am utilizat 
+fiecare din bibliotecile prezentate: \\
+OpenCV este o librarie de computer vision. Contine implementari ale algoritmilor de extragere de
+trasaturi precum FAST, ORB, SIFT, SURF, API-uri pentru procesare video: citirea unui video cadru
+cu cadru, procesarea de imagini: aplicarea de filtre, transformarea in grayscale, eliminarea distorsiunii
+cauzata de camera dar cele mai importante sunt structurile ce abstractizeaza matricile si parametrii 
+prin care se indentifica trasaturile: cv::Mat si cv::KeyPoint. Structura KeyPoint este deosebit de
+importanta pentru implementarea algoritmului deoarce stocheaza numeroase informatii despre zona
+pe care o reprezinta: orientarea acesteia, coordonatele centrului si nivelul la care a fost observat, 
+parametrii de care am avut nevoie in fiecare etapa de procesare a cadrelor. Pe langa aceste 
+lucruri, OpenCV are un modul dedicat pentru citirea parametrilor retelelor neurale din fisierele care 
+urmeaza un format de tip ONNX, fiind o alternativa potrivita daca vreau sa utilizez un model doar 
+pentru sarcini de inferenta.  \\
+Ca librarie de optimizare am avut de ales intre Ceres si g2o. In implementarea oficiala 
+g2o era cel folosit. Motivul principal fiind ca permite abstractizarea parametrilor care 
+trebuie optimizati si a relatiilor dintre acestia sub forma unui graf neorientat. 
+API-ul de g2o permite activarea si dezactivarea anumitor noduri, pentru a face implementarea 
+mai robusta impotriva outlier-elor si a putea reintroduce noduri eliminate temporar in graful 
+de optimizare. Ceres din pacate nu permite acest lucru. O data create conditiile initiale acestea 
+pot fi dezactivate si nu mai este permisa reutilizarea lor iar la finalizarea algoritmului 
+memoria folosita de catre noduri este eliberata. Cu toate acestea, Ceres are un API mai
+usor de utilizat si prin rulari repetate am observat ca este cu putin mai rapid decat g2 \\
+Folosesc libraria Eigen deoarece este mai simplu API-ul de calcul cu matrici decat 
+cel din OpenCV.\@ Pentru a accesa elementele unei matrici in OpenCV se foloseste o referinta la 
 vectorul de date facand accesarea elementelor mult mai nesigura iar verificarea indicelui este 
-facuta la runtime. In cazul matricilor din Eigen, accesarea elementelor din matrice si operatiile
-pe matrici sunt verificate la compile time, prevenind astfel erorile inainte de a rula programul. \\
+facuta la runtime. In cazul matricilor din Eigen, accesarea elementelor si operatiile
+cu matrici sunt verificate la compile time, prevenind astfel erorile inainte de a rula programul. \\
 Sophus este o librarie care imi permite sa lucrez cu algebra de tip Lie. In loc de a vedea
-estimarile pozitiei ca pe niste matrici de 4x4, le pot vedea ca pe un vector alcatuit din 7 
+estimarile pozitiei ca pe niste matrici de $ 4 \times 4 $, le pot vedea ca pe un vector alcatuit din 7 
 elemente. Primii 4 parametrii alcatuind un quaternion, aceasta fiind o exprimare vectoriala 
-a unei matrici 3X3 de rotatie, iar ultimii 3 parametrii reprezentand un vector de translatie.
+a unei matrici $ 3 \times 3 $ de rotatie, iar ultimii 3 parametrii reprezentand un vector de translatie.
 Biblioteca implementeaza operatii care imi permit sa lucrez cu acesti vectori, care fac parte 
 dintr-un grup numit \(se(3)\) si garanteaza ca rezultatul obtinut este scalat corespunzator 
 pentru a face parte in continuare din aceeasi categorie. \\
-DBoW2 este o metoda de tip bag of words pentru compararea imaginilor intre ele. Acesta foloseste 
-feature-uri de tip FAST si descriptori de tip BIREF asemeni algoritmului ORB. 
- \\
+
+DBoW2 este o metoda de tip bag of words pentru compararea imaginilor intre ele. Este utilizat
+pentru operatii precum feature matching intre imagini consecutive, relocalizari si recunoastera
+zonelor prin care a trecut pentru a inchide buclele create de mai multe cadre cheie salvate
+in harta. Acesta este alcatuit dintr-o structura de tip arbore. Fiecare nivel fiind obtinut
+din realizarea unui algoritm de clusterizare a descriptorilor de tip ORB ca de exemplu 
+kmeans++, separarea tuturor descriptorilor in functie de centroizi si reluarea aceleasi
+operatii in fiecare dintre clusterele nou create. Nodurile de tip frunza sunt alcatuite 
+dintr-un singur descriptor. Construirea arborelui se realizeaza intr-o etapa offline, in cazul
+librariei DBoW2, setul de date folosit a fost Bovisa 2008{-}09{-}01. Au fost alese 10K imagini
+iar pentru fiecare cadru in parte extrase 1000 de descriptori ORB.\@ Acestea au fost folosite 
+pentru a crea un arbore de adancimea 6 iar numarul de clustere pe care le creeaza fiecare 
+iteratie a algoritmului kmeans++ este de 10. Pe ultimul strat exista un milion de frunze, si 
+tot aceeasi lungime o va avea si vectorul de feature-uri care va reprezenta o imagine. Fiecare
+descriptor va primi o valoare numerica numita greutate, invers proportionala cu frecventa pe 
+care o are acesta. Cu cat este mai rar un anumit descriptor,cu atat este mai util pentru a 
+diferenta o imagine de multe altele. Scopul principal al librariei este sa primeasca ca data
+de intrare descriptorii ORB ai unei imagini si sa calculeze vectorul sau bag-of-words.
+Vectorul bag-of-words este alcatuit in principal din valori de 0. Fiecare descriptor al 
+imaginii parcurge arborele de la radacina spre frunze, parcurgerea realizandu-se prin 
+calcularea distantei Hamming dintre descriptor si toate nodurile de pe un anumit nivel, 
+si alegerea nodului cu distanta Hamming minima. Nodul frunza la care va ajunge va avea asociat
+un index, in cazul de fata cu valori de la 0 la un milion. La acelasi index va fi modificata
+valoarea din vectorul bag-of-words in valoarea greutatii descriptorului stocat in arbore.
+Apelul de biblioteca returneaza de asemenea un vector de feature-uri care creeaza o relatie
+de 1 la 1 intre un descriptor calculat in imagine si indexul unui descriptor aflat pe un 
+nod frunza al arborelui. Doua imagini pot fi comparate intre ele prin intermediul acestui 
+vector de feature-uri, lucru care va fi detaliat in descriera clasei OrbMatcher.cpp.  
+In implementarea ORB-SLAM2, nu este practica creearea unui vector de tip bag of words 
+cu un milion de elemente, mai ales ca majoritatea valorilor sunt 0, asa ca o reducere 
+a dimensionalitatii vectorului ar creste viteza de calcul a sistemului. Din aceasta cauza,
+compararea descriptorilor se realizeaza doar pana la nivelul 4 in arbore, vectorul bow avand 
+doar 1000 de elemente, iar cel de feature-uri avand acelasi numar de elemente cu numarul de 
+descriptori. 
+
 Structura de fisiere este una simpla, in folderul radacina se regaseste fisierul de 
 CmakeLists.txt care va fi interpretat de utilitarul cmake pentru a genera automat Makefile-ul. 
 Acest Makefile va contine regulile de build si de clean pentru proiectul meu. Am fisierul de 
@@ -684,7 +794,7 @@ Clasa TumDatasetReader este responsabila de partea de achizitii de date, va citi
 cadru in parte iar pentru matricea de adancime va avea 2 variante: ori va incarca in memorie 
 matricea de distante din setul de date pentru cadrul respectiv sau o va calcula folosind 
 reteaua neurala FastDepth. Imaginea va fi convertita din RGB in grayscale, pentru o 
-prelucrare mai rapida de catre ORB. Aceste 2 matrici vor fi transmise mai departe 
+prelucrare mai rapida de catre ORB.\@ Aceste 2 matrici vor fi transmise mai departe 
 catre Tracker. \\
 Clasa MapPoint este fundamentala pentru buna functionare a algoritmului ORB-SLAM2. Aceasta este 
 formata cu ajutorul unui KeyPoint si al unui KeyFrame asociat acestuia. In etapa anterioara, 
@@ -707,7 +817,6 @@ pentru cadru cheie care a creat KeyPoint-ul, acest lucru se realizeaza in felul 
             0 & 1
         \end{bmatrix}
 \end{equation} 
-
 Normalizarea diferentei intre coordonatele globale ale centrului camerei si ale MapPoint-ului creeaza
 vectorul de orientare. Acesta poate fi modificat, daca se constata ca mai multe cadre observa acelasi
 punct. In situatia respectiva, vectorul de orientare final va fi media aritmetica a celorlalti vectori 
@@ -871,7 +980,7 @@ garanteaza ca rezultatul operatiei de optimizare este un element valid in $ se(3
 ulterior convertit in forma matriceala. In functie de categoria din care face parte Feature-ul, 
 acesta este considerat monocular sau stereo. Functia de eroare implementata de clasa BundleError 
 este identica pentru ambele, cu exceptia ca pentru punctele stereo, este verificata si distanta 
-la care se afla punctul fata de valoarea la care a fost estimata de camera RGBD. Pentru a preveni
+la care se afla punctul fata de valoarea la care a fost estimata de camera RGBD.\@ Pentru a preveni
 instabilitatea cauzata de ppunctele de tip outlier, functia Huber descrisa in capitolul anterior este
 folosita in calcularea finala a erorii de proiectie. In implementara oficiala realizata de g2o, 
 agloritmul de optimizare este rulat de 4 ori, si dupa fiecare executie sunt eliminate punctele de tip 
@@ -1020,7 +1129,7 @@ torch.SGD, avand un learning rate de $ 1e-3 $, o valoare a momentumului de $ \be
 $ weight\_decay=1e-4 $.
     \item antrenarea s-a realizat pentru 50 de epoci iar durata antrenarii a fost adunat de aproximativ 
 6 ore jumatate. Statia pe care am antrenat era un Asus TUF Gaming A15, avand un procesor AMD Ryzen 7 cu o frecventa 
-de 4.2 GHz si placa video NVIDIA GeForce RTX 2060, cu o memorie de 6GB.
+de 4.2 GHz si placa video NVIDIA GeForce RTX 2060, cu o memorie de 6GB.\@
     \item Imaginile in setul de date au o dimensiune de $ (3, 460, 640) $. Pentru a creste viteza de procesare
 am modificat dimensiunile la $ (3, 256, 320) $ si am aplicat o functie de normalizare de tip min\_max. Ambele 
 transformari sunt aplicate atat pe setul de date de antrenare cat si pe cel de test.
@@ -1031,7 +1140,7 @@ mai robusta conform acestei lucrari stiintifice (voi cita aici lucrarea)
 \end{itemize}
 Acuratetea a fost verificata  prin compararea diferentei relative intre valorile obtinute prin inferenta si cele 
 reale cu un factor $ RELATIVE\_ERROR=0.15 $. Aceasta operatie a fost realizata pentru fiecare pixel in parte, iar
-acuratetea reprezinta procentul de pixeli cu o valoare care se incadreaza in limita impusa de RELATIVE\_ERROR.
+acuratetea reprezinta procentul de pixeli cu o valoare care se incadreaza in limita impusa de RELATIVE\_ERROR.\@
 Pentru a preveni antrenarea pentru intervale lungi fara a obtine rezultate, am avut 2 metode pe care le-am implementat:
 o strategia de early stopping: in situatia in care valoarea acuratetii nu ar fi crescut pentru 5 epoci antrenarea 
 ar fi fost oprita si o strategie pentru modificarea learning rate-ului in timpul antrenarii. Daca acuratetea nu crestea 
