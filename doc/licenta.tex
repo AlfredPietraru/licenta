@@ -118,7 +118,52 @@ observa mediul si creaza harta pe baza acestor observatii, acesta nu ia parte in
 al traseului pe care il va parcurge agentul.
 
 \chapter{Cerinte si Motivatie}
-motivatie 
+\section{Motivatie}
+Filmele, cartile si jocurile pe calculator ne prezinta un viitor al omenirii in care
+roboti inteligenti indeplinesc sarcinile plictisitoare din viata de zi cu zi, sau cele 
+care ar putea pune in pericol siguranta omului. Exista zeci de filme care descriu 
+acest fenomen complex de robot inteligent, capabil sa se adapteze la mediu si sa 
+interactioneze cu omul. Desi in momentul de fata suntem departe de a crea un framework 
+suficient de complex pentru un asemenea agent, consider ca suntem pe drumul cel bun. 
+Imi este greu sa imi imaginez un robot care sa poata simula compartamentul uman si sa 
+nu fie capabil sa se deplaseze si sa inteleaga mediul in care se afla. Pentru noi, 
+aceste lucruri sunt adanc inradacinate in modul in care functioneaza creierul, dar pentru
+un calculator, a fost nevoie de aproape 20 de ani de cercetare pentru a creea algoritmi 
+suficienti de complexi pentru a indeplini niste sarcini minimale de orientare cum ar 
+capacitatea de invatare a mediului si de pozitionare a agentului in spatiu, pe cand 
+noi realizam aceste lucruri intuitiv. Chiar si cu algoritmii de tip SLAM dezvoltati 
+pana in acest moment, exista numeroase aplicatii practice: 
+\begin{itemize}
+    \item pentru sarcini din viata de zi cu zi, cazul robotilor de curatenie sau a celor
+care transporta obiecte in interiorul unei cladiri 
+    \item in aplicatii medicale, ca de exemplu asistenta pentru persoanele nevazatoare
+    \item in aplicatii militare: cartografierea zonelor necunoscute: in interiorul
+cladirilor sau medii ostile in care nu exista suport pentru un sistem de coordonate
+global cum ar fi GPS  
+    \item in aplicatii industriale, inspectii asupra instalatiei sau depozitelor, 
+detectarea unor erori si raportarea zonei in care au fost observate    
+\end{itemize}
+Exista numeroase aplicatii pentru sistemele SLAM, doar toate pleaca de la prinicipiul 
+ca agentul trebuie sa creeze o harta a mediului si sa inteleaga care este pozitia acestuia.
+Pe masura ce aceste sisteme vor evolua si vor incepe sa utilizeze tehnologii din alte 
+domenii cum ar fi tehnici de machine learning vor creste si complexitatea sarcinilor pe 
+care le pot indeplini.   
+
+\section{Cerinte Functionale}
+Algoritmul ORB-SLAM trebuie sa primeasca un video realizat cu o camera de tip RGBD si sa 
+returneze un fisier text cu estimarea pozitiei pentru fiecare cadru in parte. De asemenea
+acesta va salva in alt fisier text harta mediului inconjurator, aceasta fiind alcatuita 
+dintr-un nor de puncte in spatiu si cadrele cheie asociate acestora. Algoritmul va avea 
+o interfata grafica minimala alcatuita din 2 ferestre. In prima va fi aratat folosind 
+culoarea albastra care este pozitia cadrului curent procesat. Totalitatea 
+cadrelor cheie observate vor fi reprezentate folosind verde, si cu rosu punctele din 
+spatiu, harta mediului inconjurator. In cea de-a doua fereastra va fi aratat fiecare 
+cadru in format alb negru, iar cu rosu vor fi marcate feature-urile detectate de 
+algoritmul ORB.\@ Cadrele cheie consecutive sunt conectate intre ele prin intermediul
+unei drepte de culoare neagra, acestea fiind folosite impreuna pentru a recompune 
+traseul realizat de camera in video.             
+
+
 cerinte functionale: returneaza harta mediului creata, estimarea pozitiei la fiecare 
 momennt de timp, arata grafic ceea ce se petrece   
 cerinte non-functionale: viteza, capacitate de corectare erori, optimizare harta, capacitate
