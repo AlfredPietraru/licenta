@@ -291,6 +291,7 @@ sistem in care sunt generate noi harti de fiecare data cand se pierde capacitate
 cadru cu cadru, iar acestea sunt ulterior unite intre ele cand agentul ajunge intr-o zona pe 
 care o cunoaste deja. Am considerat ca un mediu de mici dimensiuni in interior nu ar avea 
 nevoie de un sistem atat de complex, iar utlizarea acestuia ar adauga un overhead nejustificat.\\
+
 SVO sau Semi-Direct Visual Odometry for Monocular and Multi-Camera Systems este un exemplu 
 de algoritm tip SLAM care foloseste doar 2 thread-uri: unul responsabil de 
 urmarirea cadru cu cadru si celalalt pentru optimizarea hartii. Acesta foloseste gradientii
@@ -881,6 +882,7 @@ sunt dimensiunile matricei de intrare.   \\
 
 
 \chapter{Detalii de implementare}
+\section{Limbaje de programare si librarii folosite}
 Implementarea este realizata in C++17. Pentru management-ul librariilor si al codului folosesc
 CMake 3.28.3. Acesta imi permite sa grupez in foldere codul scris de mine si face operatia de 
 link-are automat cu binarele librariilor pe care le folosesc. Alte tehnologii pe care le 
@@ -932,7 +934,6 @@ a unei matrici $ 3 \times 3 $ de rotatie, iar ultimii 3 parametrii reprezentand 
 Biblioteca implementeaza operatii care imi permit sa lucrez cu acesti vectori, care fac parte 
 dintr-un grup numit \(se(3)\) si garanteaza ca rezultatul obtinut este scalat corespunzator 
 pentru a face parte in continuare din aceeasi categorie. \\
-
 DBoW2 este o metoda de tip bag of words pentru compararea imaginilor intre ele. Este utilizat
 pentru operatii precum feature matching intre imagini consecutive, relocalizari si recunoastera
 zonelor prin care a trecut pentru a inchide buclele create de mai multe cadre cheie salvate
@@ -969,6 +970,7 @@ compararea descriptorilor se realizeaza doar pana la nivelul 4 in arbore, vector
 doar 1000 de elemente, iar cel de feature-uri avand acelasi numar de elemente cu numarul de 
 descriptori. 
 
+\section{Mediu de lucru si principalele clase}
 Structura de fisiere este una simpla, in folderul radacina se regaseste fisierul de 
 CmakeLists.txt care va fi interpretat de utilitarul cmake pentru a genera automat Makefile-ul. 
 Acest Makefile va contine regulile de build si de clean pentru proiectul meu. Am fisierul de 
@@ -994,7 +996,6 @@ folosi algoritmul in rularea lui. Aceste seturi de date contin de fapt cadrele d
 facut cu o camera RGBD Microsoft Kinetic impreuna cu matricile de adancime si pozitiile acestora
 in spatiu pentru fiecare cadru in parte. Aceste seturi de date sunt suficient de complexe pentru 
 a-mi permite evaluarea functionarii algoritmului de ORB-SLAM2. \\
-
 Clasa SLAM initializeaza componentele principale ale algoritmului si monitorizeaza durata 
 fiecarei operatii pentru debugging. Implementarea se bazeaza pe compunerea de clase, fiecare 
 fiind responsabila cu realizarea unei anumite sarcini. Voi prezenta clasele folosite plecand 
@@ -1351,7 +1352,9 @@ aveam celelalte componente finalizate, lucru care a ingreunat procesul de dezvol
 lucram cu valori numerice in terminal. Acum daca as reincepe implementarea, interfata grafica ar fi
 printre primele lucruri pe care le-as realiza. Datorita acestei clase am reusit sa gasesc erori in
 modul de constructieal grafului ponderat din clasa Map si al modului in care proiectam punctele 
-in spatiu. 
+in spatiu.
+
+\section{Pipeline antrenare FastDepth}
 
 Pentru reteaua Neurala FastDepth pipeline-ul de antrenare a fost scris folosind libraria Pytorch
 iar pentru operatiile de preprocesare folosesc libraria Albumentations. Setul de date pe care 
