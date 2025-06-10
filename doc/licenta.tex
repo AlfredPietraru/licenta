@@ -149,7 +149,7 @@ Pe masura ce aceste sisteme vor evolua si vor incepe sa utilizeze tehnologii din
 domenii cum ar fi tehnici de machine learning vor creste si complexitatea sarcinilor pe 
 care le pot indeplini.   
 
-\section{Cerinte Functionale}
+\section{Cerinte Functionale si Nonfunctionale}
 Algoritmul ORB-SLAM trebuie sa primeasca un video realizat cu o camera de tip RGBD si sa 
 returneze un fisier text cu estimarea pozitiei pentru fiecare cadru in parte. De asemenea
 acesta va salva in alt fisier text harta mediului inconjurator, aceasta fiind alcatuita 
@@ -161,13 +161,22 @@ spatiu, harta mediului inconjurator. In cea de-a doua fereastra va fi aratat fie
 cadru in format alb negru, iar cu rosu vor fi marcate feature-urile detectate de 
 algoritmul ORB.\@ Cadrele cheie consecutive sunt conectate intre ele prin intermediul
 unei drepte de culoare neagra, acestea fiind folosite impreuna pentru a recompune 
-traseul realizat de camera in video.             
-
-
-cerinte functionale: returneaza harta mediului creata, estimarea pozitiei la fiecare 
-momennt de timp, arata grafic ceea ce se petrece   
-cerinte non-functionale: viteza, capacitate de corectare erori, optimizare harta, capacitate
-de relocalizare  
+traseul realizat de camera in video. 
+\begin{figure}[htbp] 
+  \centering
+  \includegraphics[width=1.0\textwidth]{./images/interfata_grafica.png}
+  \caption{Interfata grafica, stanga reprezentarea hartii, dreapta extragere feature-uri cu ORB}
+  \label{fig:exemplu_imagine}
+\end{figure}            
+Ca cerinte nonfunctionale, algoritmul trebuie sa functioneze in timp real, sa 
+proceseze intre 10{-}15 cadre pe secunda si sa poata fi folosit in sistemele embedded 
+fara interfata grafica. De asemenea, sistemul trebuie sa fie rezistent la erorile 
+de estimare cadru cu cadru: sa le corecteze pe tot parcursul algoritmului, sa 
+optimizeze atat harta cat si traseul realizat si sa aiba capacitatea de relocalizare.
+Daca urmarirea cadru cu cadru esueaza, sa fie capabil sa estimeze unde se afla si 
+sa continue maparea zonei si estimarea valorii traiectorie. Algoritmul trebuie sa 
+aiba o implementare modulara, usor de testat de extins, sa utilizeze principii de 
+programare orientata pe obiecte si sa fie scris intr-un limbaj rapid precum C++.
 
 \chapter{Studiu de piata {-} variante Visual SLAM}
 Sistemul nostru nu are senzori si detine doar o camera de tip RGBD / sau RGB, are cel mult 2
