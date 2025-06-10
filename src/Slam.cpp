@@ -34,8 +34,8 @@ void SLAM::run_slam_systems() {
     auto t1 = high_resolution_clock::now();
     while(!reader->should_end()) {
         cv::Mat frame = reader->get_next_frame(); 
-        cv::Mat depth = reader->get_next_depth();
-        // cv::Mat neural_network_depth = reader->get_next_depth_neural_network();
+        // cv::Mat depth = reader->get_next_depth();
+        cv::Mat depth = reader->get_next_depth_neural_network();
         // cv::imshow("frame", frame);
         // cv::imshow("depth", depth);
         // cv::imshow("neural_network_depth", neural_network_depth);

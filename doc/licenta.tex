@@ -65,21 +65,21 @@ COMPUTER SCIENCE AND ENGINEERING DEPARTMENT\\}
 {\Large #1}  % header (university, faculty, department)
 \vspace{50pt}
 \vspace{105pt}
-{\Huge #2}\\                           % diploma project text
+{\Huge #2}\\  % diploma project text
 \vspace{40pt}
 {\Large #3}\\ \vspace{0pt}  % project title
-{\Large #4}\\                          % project subtitle
+{\Large #4}\\     % project subtitle
 \vspace{40pt}
-{\LARGE Alfred Andrei Pietraru}\\                   % student name
+{\LARGE Alfred Andrei Pietraru}\\   % student name
 \end{center}
 \vspace{60pt}
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}p{6cm}r}
 &{\large\textbf{#5}}\vspace{10pt}\\      % scientific advisor
-&{\large Prof.\ dr.\ ing.\ Anca Morar}                                    % advisor name
+&{\large Prof.\ dr.\ ing.\ Anca Morar}   % advisor name
 \end{tabular*}
 \vspace{20pt}
 \begin{center}
-{\large\textbf{#6}}\\                                % bucharest
+{\large\textbf{#6}}\\    % bucharest
 \vspace{0pt}
 {\normalsize 2025}
 \end{center}
@@ -93,7 +93,6 @@ COMPUTER SCIENCE AND ENGINEERING DEPARTMENT\\}
 \setlength\parindent{0pt}
 \setlength\parskip{8pt}
 \include{1_abstract}
-% \include{4_solutie_propusa}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
 %%
 %%          End of template definitions
@@ -116,7 +115,14 @@ deplaseaza. In literatura de specialitate exista 2 categorii mari pentru sisteme
 sunt active SLAM, in care robotul ia decizii online, alegand sa se deplaseze astfel incat sa maximizeze 
 acuratetea hartii pe care o creeaza pentru mediul inconjurator si SLAM pasiv, in care sistemul doar 
 observa mediul si creaza harta pe baza acestor observatii, acesta nu ia parte in procesul de planificare
-al traseului pe care il va parcurge agentul. 
+al traseului pe care il va parcurge agentul.
+
+\chapter{Cerinte si Motivatie}
+motivatie 
+cerinte functionale: returneaza harta mediului creata, estimarea pozitiei la fiecare 
+momennt de timp, arata grafic ceea ce se petrece   
+cerinte non-functionale: viteza, capacitate de corectare erori, optimizare harta, capacitate
+de relocalizare  
 
 \chapter{Studiu de piata {-} variante Visual SLAM}
 Sistemul nostru nu are senzori si detine doar o camera de tip RGBD / sau RGB, are cel mult 2
@@ -776,7 +782,6 @@ sunt dimensiunile matricei de intrare.   \\
 % adaugare poze
 
 
-
 \chapter{Detalii de implementare}
 Implementarea este realizata in C++17. Pentru management-ul librariilor si al codului folosesc
 CMake 3.28.3. Acesta imi permite sa grupez in foldere codul scris de mine si face operatia de 
@@ -1307,30 +1312,119 @@ si un rand shiftat vertical pentru axa Y notata $ \frac{\partial I}{\partial y} 
     \left| \frac{\partial I_{\text{pred}}}{\partial y} - \frac{\partial I_{\text{true}}}{\partial y} \right|
     \right)
 \end{equation}
-    
-
-
-
 
 \chapter{Evaluare}
-% In incercarea de a creste viteza de procesare De asemenea orice operatie de 
-% redimensionare a imaginii trebuie evitata, deoarece ar modifica parametrii matricei \(K\),
-% parametrii de distorsiune si ar scadea capacitatea de detectie a feature-urilor, zone puternic
-% texturate ar putea deveni mult prea mici pentru a fi luate in considerare de algoritmul ORB.
+\section{Setul de date TUM RGBD Dataset}
+Setul de date utilizat pentru a realiza evaluarea se numeste TUM RGBD Dataset. 
+Acesta contine numeroase subseturi, fiecare verificand un aspect diferit al implementarii, 
+ajutand la creearea unui imagini de ansamblu cu privire la robustetea algoritmului in functie 
+de mediu in care se lucreaza si de traiectori pe care o urmeaza. Cele 2 subseturi pe 
+care le-am considerat potrivite pentru implementarea sunt:
+\begin{itemize}
+    \item Subsetul rgbd\_dataset\_freiburg1\_xyz contine cadrele unui video de 35 de secunde, in care
+traiectoria este in principal alcatuita din translatii, exista foarte putine rotatii fiind
+ideal pentru a verifica daca estimarea pozitiei in spatiu este corect realizata.    
+    \item  Subsetul rgbd\_dataset\_freiburg1\_rpy are 27 de secunde si contine 
+foarte putine translatii. Exista in schimb numeroase schimbari bruste de rotatie care reduc
+acuratetea imaginii captate, testand la maxim capacitatea algoritmului ORB de a extrage 
+feature-uri. Sistemul isi schimba orientarea pe toate cele 3 axe, fiind unul dintre cele
+mai dificile subseturi de date pe care se poate face antrenarea. Algoritmul 
+ORB-SLAM2 este sensibil la operatiile de rotatie, mai ales atunci cand camera isi schimba 
+orientarea catre o zona necunoscuta. Pentru a crea harta zonei respective sunt generate 
+numeroase KeyFrame-uri si MapPoint-uri, pe care algoritmul trebuie sa le filtreze in clasa
+de LocalMapping, lucru care creste complexitatea temporala si spatiala si scade acuratetea
+sistemului.  
+\end{itemize}   
+Videourile sunt realizate 
+cu ajutorul unei camere RGBD Microsoft Kinetic, avand frecventa de 30 de cadre pe secunda, 
+setul de date contine imaginile de tip RGB, hartile de adancime pentru fiecare cadru in parte,
+vectorii de pozitie in forma $ se(3) $, primii 3 parametrii fiind pozitia in spatiu 
+$ (tx, ty, tz) $ iar urmatorii 4 parametrii sunt asociati matricei de rotatie, scrisa sub
+forma de Quaternion, $ (qw, qx, qy, qz) $ si timestamp-urile asociate momentului in care 
+au fost inregistrate fiecare din valorile din setul de date. Cu ajutorul acestor timestammp-uri
+putem crea asocieri de tip (imagine RGB, matrice de adancime, pozitie) pe care le putem 
+transmite algoritmul ORB-SLAM2. Pozitia este considerata ca fiind valoarea ideala, groundtruth,
+si va fi comparata cu rezultatele obtinute.Clasa TumDatasetReader este responsabila de citirea
+datelor si stocarea matricilor de pozitie obtinute pentru fiecare cadru. Dupa parcurgerea 
+intregului set de date, valorile estimate sunt salvate intr-un fisier de tip text unde vor 
+fi comparate cu cele reale.
+\section{Metrici utilizate}
+Algoritmul ORB-SLAM2 scrie intr-un fisier estimarile matricilor de pozitie pentru fiecare 
+cadru in parte. Pentru a realiza comparatia cu datele de tip groundtruth din setul de 
+date, folosesc un pachet din python numit $ evo $, acesta este capabil sa creeze un grafic
+al traiectoriei, permitand astfel o reprezentare vizuala a rezultatelor si o separare a 
+acestora in functie de ceea ce vreau sa evaluez: viteza, translatia sau orientarea. De
+exemplu, figura de mai jos reprezinta variatia translatie pe fiecare dintre cele 3 axe. 
+Cu albastru este valoarea de tip groundtruth iar cu galben este estimarea realizata de 
+implementarea mea pentru algoritmul ORB-SLAM.\@ Rezultatele sunt obtinute pentru subsetul 
+de date rgbd\_dataset\_freiburg1\_xyz, acesta fiind special conceput pentru a testa 
+corectitudinea estimarii translatiei intre cadre.
 
-Un motiv pentru care mi-a fost dificil
-sa testez implementarea pe un video facut de mine a fost faptul ca nu aveam acces la valorile
-pozitiei in spatiu si a orientarii la fiecare cadru in parte, fiindu-mi imposibil sa verific 
-daca acuratetea implementarii este corespunzatoare. Algoritmul are nevoie de matricea \(K\) a   
-camerei, daca valorile ei sunt incorecte algoritmul va creea MapPoint-uri noi pentru aproape
-fiecare cadru in parte si va pierde capacitatea de a urmari traseul in cateva secunde. 
-Am ales sa folosesc un set de date numit TUM RGBD Dataset, care contine videoclipuri filmate 
-cu o camera RGBD, Microsoft Kinetic, la 30 de cadre pe secunda, imaginile avand rezolutia Acesta include numeroase 
-subseturi de date care testeaza diferite lucruri pe care ar trebui sa le indeplineasca 
-ORB-SLAM2. De exemplu pentru a verifica ca estimarea translatiei cadru cu cadru este realizata 
-corect, folosesc rgbd\_dataset\_freiburg1\_xyz, in care miscarea este 
-facuta in linie dreapta, camera pastrandu-si aproximativ aceeasi orientare pe tot parcursul video-ului: cadrele de tip rgb, matricile de adancime, pozitia lor in spatiu 
-pentru fiecare cadru in parte, parametrii camerei si cei de distorsiune.     
+\begin{figure}[htbp] 
+  \centering
+  \includegraphics[width=1.0\textwidth]{./images/variate_translatie.png}
+  \caption{Graficul translatiei pe fiecare din cele 3 axe, groundtruth si estimare ORB-SLAM2}
+  \label{fig:exemplu_imagine}
+\end{figure}
+Consider ca o reprezentare grafica in care traiectoria groundtruth se suprapune exact cu
+ceeea ce a obtinut estimarea ORB-SLAM2 poate fi considerat o metrica pe baza careia sa 
+punem considera ca rezultatele obtinute sunt satisfacatoare, daca este nevoie de exactitate 
+se poate folosi: APE (Absolute Pose Error) pentru a evalua acuratetea traiectoriilor estimate
+de un algoritm SLAM sau VIO, comparându-le cu traiectoria de referință (ground truth). Ea
+măsoară distanța euclidiană dintre pozițiile estimate și cele reale, la fiecare moment de timp.
+In general valorile scorurilor APE obtinute pentru ambele seturi de date sunt pana in 0.05,
+sugerand ca acuratetea este buna. Alte metrici pe care le folosesc pentru implementarea 
+mea a algoritmului ORB-SLAM2 este numarul de secunde necesar pentru parcurgerea setului de 
+date sau numarul de cadre pe secunda. Numarul de KeyFrame-uri create, in momentul in care 
+sistemul nu mai poate realiza urmarirea cadru cu cadru, acesta insereaza un nou KeyFrame,
+cu cat sunt mai putine KeyFrame-uri noi adaugate, se poate considera ca traiectoria este 
+usor de interpretat si ca sistemul este stabil. O alta metrica este legata de numarul 
+de relocalizari pe care a trebuit sa le faca algoritmul pentru a parcurge setul de date.
+Relocalizarea apare in situatia in care urmarirea cadru cu cadru esueaza, si este cautat 
+KeyFrame-ul care seamana cel mai bine cu cadrul curent folosind vectorul de feature-uri 
+calculat de metoda bag-of-words. Ideal, numarul necesar de relocalizari ar trebui sa fie 0.\\
+In cazul rularii implementarii mele pe setul de date rgbd\_dataset\_freiburg1\_xyz acesta 
+dureaza in medie 67 de secude, functionand la aproximativ 15 cadre pe secunda, in medie 
+este nevoie intre 5{-}7 Keyframe-uri noi pentru parcurgerea setului de date. Logica 
+de relocalizare nu este deloc folosita, algoritmul fiind capabil sa realizeze urmarirea
+cadru cu cadru.
+Pe setul de date rgbd\_dataset\_freiburg1\_rpy a durat 73 de secunde, videoul avand 
+27 de secunde, reprezinta aproximativ 10{-}11 cadre pe secunde. Acest lucru se datoreaza 
+numeroaselor operatii de optimizare a hartii pe care trebuie sa le faca algoritmul deoarece 
+in medie sunt adaugate intre 17{-}19 KeyFrame-uri pentru a parcurge intreg setul de date.
+In continuare, numarul de relocalizari este 0. Mai jos, am atasat graficul care compara 
+estimarea orientarii pentru fiecare cadru, estimarile fiind descompuse dupa cele 3 dimensiuni
+ale rotatiei. Graficul realizat de algoritmul ORB-SLAM2 pare sa fie shiftat in timp fata 
+de cel real, dar sa aiba aproximativ aceeasi forma cu cel al valorilor de tip groundtruth.
+Consider ca problema poate sa porneasca de la modul in care sunt atasate timestamp-urile 
+pentru fiecare cadru in parte, lucru care nu are legatura directa cu modul in care este
+realizata implementarea, ci cu modul in care setul de date creeaza perechile (imagine RGB, 
+vector pozitie, matrice de adancime).      
+\begin{figure}[htbp] 
+  \centering
+  \includegraphics[width=1.0\textwidth]{./images/rpy_variatie_orientare.png}
+  \caption{Graficul orientarii pentru setul de date rgbd\_dataset\_freiburg1\_rpy}
+  \label{fig:exemplu_imagine}
+\end{figure}
+Am incercat utilizarea retelei neurale FastDepth pentru a estima adancimea in loc de a
+folosi matricea de distante a setului de date TUM RGBD, voi lua doar imaginea si vectorul 
+de pozitie simuland astfel o situatie in care sistemul ar avea doar o camera RGB.
+Problema cu aceasta implementare este ca reteaua neurala nu este suficient de exacta iar 
+estimarile distantelor intre cadre consecutive in continuare variaza mult. Pentru 
+subsetul de date rgbd\_dataset\_freiburg1\_xyz implementarea intra in etapa de relocalizare
+in medie dupa primele 50{-}60 de cadre procesate. Sistemul este mult prea instabil pentru
+a realiza in mod corect urmarirea cadru cu cadru. \\
 
+In etapele intiale ale dezvoltarii algoritmului am incercat utilizarea unui video realizat 
+folosind camera telefonului pentru testarea implementarii. Au fost 3 probleme pe care le-am 
+intalnit: nu puteam determina parametrii corecti ai camerei telefonului. Aveam nevoie 
+de distanta focala, de coordonatele centrului imaginii si de parametrii de distorsiune.
+A doua problema o reprezenta lipsa unei matrici de adancime pentru fiecare cadru inregistrat
+in parte iar cea de-a treia, era lipsa un vector de pozitie pentru fiecare imagine. Chiar 
+si in situatia in care obtineam parametrii camerei telefonului folosind algoritmi implementati
+in OpenCV pentru a-i determina, in continuare nu puteam fi sigur daca estimarile realizate 
+de mine sunt cele corecte. Din cauza acestor multe probleme, am ajuns la concluzia ca un set 
+de date ar fi o varianta mai potrivita.
+\chapter{Concluzii}
 
 \end{document}
