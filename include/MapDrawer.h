@@ -41,6 +41,7 @@ public:
     void DrawKeyFrames();
     void draw_frame_pose(Eigen::Matrix3d Rcw, Eigen::Vector3d p, double red, double green, double blue);
     void DrawKeyFramesConnections();
+    void DrawConsecutiveFramesConnections();
     void GetCurrentOpenGLCameraMatrix(Eigen::Matrix3d Rwc, Eigen::Vector3d twc);
 
 private:

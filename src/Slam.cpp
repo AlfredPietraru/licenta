@@ -34,8 +34,8 @@ void SLAM::run_slam_systems() {
     auto t1 = high_resolution_clock::now();
     while(!reader->should_end()) {
         cv::Mat frame = reader->get_next_frame(); 
-        // cv::Mat depth = reader->get_next_depth();
-        cv::Mat depth = reader->get_next_depth_neural_network();
+        cv::Mat depth = reader->get_next_depth();
+        // cv::Mat depth = reader->get_next_depth_neural_network();
         // cv::imshow("frame", frame);
         // cv::imshow("depth", depth);
         // cv::imshow("neural_network_depth", neural_network_depth);
@@ -52,6 +52,10 @@ void SLAM::run_slam_systems() {
             local_mapper->local_map(kf);
             auto end = high_resolution_clock::now();
             total_local_mapping_duration += duration_cast<milliseconds>(end - start).count();
+        }
+        if (reader->idx == 500) {
+            cv::imshow("iei", depth);
+            cv::waitKey(0);
         }
         reader->store_entry(kf);
         reader->increase_idx();

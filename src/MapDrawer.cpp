@@ -68,6 +68,23 @@ MapDrawer::MapDrawer(Map *pMap) : mapp(pMap)
     translation_pose = Sophus::SE3d(Eigen::Quaterniond(-0.3266, 0.6583, 0.6112, -0.2938), Eigen::Vector3d(1.3434, 0.6271, 1.6606));
 }
 
+
+void MapDrawer::DrawConsecutiveFramesConnections() {
+    if (mapp->keyframes.size() == 1) return;
+    for (int i = 0; i < (int)mapp->keyframes.size() - 1; i++) {
+        KeyFrame *kf_current = mapp->keyframes[i];
+        KeyFrame *kf_next = mapp->keyframes[i + 1];
+        Eigen::Vector3d pi = kf_current->camera_center_world;
+        Eigen::Vector3d pj = kf_next->camera_center_world;
+        glColor3f(0.0f, 0.0f, 0.0f);
+        glLineWidth(mKeyFrameLineWidth);
+        glBegin(GL_LINES);
+        glVertex3f(pi.x(), pi.y(), pi.z());
+        glVertex3f(pj.x(), pj.y(), pj.z());
+        glEnd();
+    }
+}
+
 void MapDrawer::run(KeyFrame *kf, cv::Mat frame)
 {
     kf->debug_keyframe(frame, 20);
@@ -81,7 +98,8 @@ void MapDrawer::run(KeyFrame *kf, cv::Mat frame)
     this->DrawKeyFrames();
     draw_frame_pose(Rwc, kf->camera_center_world, 0.0f, 0.0f, 1.0f);
     this->DrawMapPoints(kf->isKeyFrame);
-    this->DrawKeyFramesConnections();
+    this->DrawConsecutiveFramesConnections();
+    // this->DrawKeyFramesConnections();
     pangolin::FinishFrame();
 }
 
