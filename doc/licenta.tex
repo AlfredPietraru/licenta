@@ -107,15 +107,59 @@ COMPUTER SCIENCE AND ENGINEERING DEPARTMENT\\}
 % \endgroup
 \AbstractPage{}
 \chapter{Introducere}
-SLAM, Simultanious Localization and Mapping reprezinta o clasa de algoritmi de planificare si control 
-al miscarii unui agent prin mediu pentru a construi un model al spatiului cat mai apropiat de realitate.
-In timpul functionarii sunt indeplinite 3 functii: agentul trebuie sa creeze o harta, sa isi 
-cunoasca la orice moment de timp pozitia in spatiu si sa fie capabil sa controleze modul in care se 
-deplaseaza. In literatura de specialitate exista 2 categorii mari pentru sistemele de tip SLAM, acestea 
-sunt active SLAM, in care robotul ia decizii online, alegand sa se deplaseze astfel incat sa maximizeze 
-acuratetea hartii pe care o creeaza pentru mediul inconjurator si SLAM pasiv, in care sistemul doar 
-observa mediul si creaza harta pe baza acestor observatii, acesta nu ia parte in procesul de planificare
-al traseului pe care il va parcurge agentul.
+\section{Context}
+SLAM, Simultanious Localization and Mapping reprezinta o clasa de algoritmi de planificare 
+si control al miscarii unui agent prin mediu pentru a construi un model al spatiului cat
+mai apropiat de realitate. Acestea au castigat atentia publicului in ultimii ani, lucru care
+a condus la dezvoltarea a numeroase variante, fiecare adaptat pentru mediul si tipul de
+senzori folositi. O atentia deosebita a fost acordata sistemelor de tip Visual SLAM din mai
+multe motive: camerele video sunt unul dintre cele mai comune tipuri de senzori, exista o 
+multitudine de tehnici de Computer Vision pentru procesarea imaginilor iar logica pe baza 
+carora functioneaza aceste sisteme este una intuitiva, fiind asemanatoare cu modul in care 
+creierul uman interpreteaza mediul inconjurator. Astazi, cei mai populari algoritmi 
+de tip Visual SLAM imbina domenii precum Machine Learning, Computer Vision, robotica si 
+matematica pentru a creea sisteme robuste, capabile sa indeplineasca o varietate de sarcini.    
+\section{Problema}
+Creati un sistem capabil sa exploreze un mediu indoor necunoscut. Acesta trebuie sa creeze 
+o harta a locului, sa reconstruiasca traseul estimand la orice moment de timp pozitia 
+sa, sa fie tolerant la erori si sa poata opera pentru perioade indelungate de timp.    
+\section{Obiective}
+Obiectivele principale ale lucrarii sunt:
+\begin{itemize}
+    \item studierea, configurarea si implementarea unui sistem de tip ORB-SLAM2
+    \item testarea performantelor folosind seturi de date consacrate, utilzarea unui video
+    realizat de mine pentru etapa de evaluare  
+    \item testarea unei implementari in care o camera tip RGBD sa fie inlocuita cu o camera
+    monoculara traditionala si o retea neurala, alegerea unei arhitecturi potrivite si 
+    compararea celor 2 metode
+    \item prezentarea unor directii de imbunatatire si a problemelor intalnite in etapa de 
+    dezvoltare 
+\end{itemize}
+
+\section{Solutia propusa}
+Lucrarea propune implementarea algoritmului ORB-SLAM2 adaptat pentru camerele de tip RGBD
+si testarea acestuia pe setul de date TUM RGBD.\@ Se vor analiza aspecte precum acuratetea 
+traiectoriei si indeplinirea conditiilor de functionare in timp real. De asemenea, se va 
+incerca inlocuirea matricei de adancime utilizata de camera RGBD, cu o harta de distante 
+calculata de catre reteaua neurala FastDepth.  
+
+\section{Rezultatele obtinute}
+Rezultatele au aratat ca implementarea algoritmului ORB-SLAM2 folosind o camera tip RGBD 
+da rezultate bune in medii indoor si ca poate functiona in timp real cu viteze de aproximativ
+10{-}15 cadre pe secunda. Utilizarea unei retele neurale pentru estimarea distantei nu a 
+functionat, algoritmul fiind capabil sa functioneze pentru mai mult de 50 de cadre.  
+
+\section{Structura lucrarii}
+Lucrarea este structurată în mai multe capitole: introducerea oferă contextul lucrării,
+definește problema abordată, obiectivele și soluția propusă. Capitolul 2, descrie 
+cerintele functionale si nonfunctionale dar si motivatia implementarii acestui algoritm.
+Capitolul 3 realizeaza un studiu de piata asupra metodelor curente, separandu-le in 3
+categorii in functie de gradul de utilizare al tehnicilor de Machine Learning. Capitolul 
+4 descrie la nivel conceptual solutia propusa: algoritmii folositi si etapele algoritmului.
+Capitolul 5 detaliaza etapa modul in care este realizata evaluarea si rezultatele obtinute.
+Iar ultimul capitol prezinta cateva impresii personale despre acest proiect: lucruri pe 
+care le-as fi imbunatatit, problemele intalnite si niste directii viitoare in dezvoltarea
+algoritmului. 
 
 \chapter{Cerinte si Motivatie}
 \section{Motivatie}
@@ -1479,6 +1523,53 @@ si in situatia in care obtineam parametrii camerei telefonului folosind algoritm
 in OpenCV pentru a-i determina, in continuare nu puteam fi sigur daca estimarile realizate 
 de mine sunt cele corecte. Din cauza acestor multe probleme, am ajuns la concluzia ca un set 
 de date ar fi o varianta mai potrivita.
-\chapter{Concluzii}
 
+\chapter{Concluzii}
+O problema pe care am avut-o in testarea algoritmului a fost ca nu am putut face 
+functionala implementarea initiala a ORB-SLAM2, exista conflicte intre versiunile de
+biblioteci Eigen si g2o. Versiunea de Eigen folosita la momentul respectiv nu mai 
+exista acum in repo-ul oficial si eu nu am reusit sa o accesez pentru a testa.\\ 
+Libraria Ceres este usor de folosit pentru problemele de optimizare non-liniare, 
+consider ca cel mai mare plus pe care il aduce lucrarea mea este ca am cea mai 
+completa implementare a algoritmului Bundle Adjustment in aceasta librarie la 
+care se adauga o logica de filtrare a punctelor de tip outlier si are caz 
+separat de folosire atat pentru punctele monoculare cat si pentru cele stereo.   
+In plus am adus optimizari la codul oficial pentru ORB-SLAM2: implementarea lor 
+nu elibereaza absolut deloc memoria pentru MapPoint-urile si KeyFrame-urile 
+considerate invalide, eu am rezolvat aceasta problema, extinzand durata pentru 
+care poate rula algoritmul si facandu-l potrivit pentru sistemele embedded.
+De asemenea, in implementarea oficiala nu este folosita nicio structura de tip
+dictionar, clasele principale folosite au parametrii de stare care isi modifica
+valoarea la fiecare cadru, functiile avand efecte laterale care genereaza erori 
+greu de urmarit si corectat. In total am scris 4030 de linii de cod in C++ si 
+am modificat codul pentru numeroase functii, facandu-l mai usor de inteles si 
+mentinut. ORB-SLAM2 indeplineste 3 functii: urmarirea cadru cu cadru, corectarea 
+erorilor, si inchiderea buclelor. Etapa de inchidere a buclelor nu am reusit sa o 
+implementez din cauza apropierii termenului de predare, cu toate acestea, algoritmul
+obtine in continuare rezultate bune pentru subseturile de date alese. \\
+In ciuda faptului ca utilizarea unei retele neurale pentru a inlocui o camera 
+RGBD nu a functionat asa cum am crezut initial, algoritmul devine instabil si 
+isi pierde complet orientarea dupa primele 50 de cadre, consider ca o retea 
+neurala precum FastDepth poate fi folosita in estimarea adancimii pentru 
+punctele pentru care o camera dedicata de tip RGBD nu poate gasi o valoare.
+Practic, o directie viitoare ar fi utilizarea unui sistem care combina cele 2 
+abordari. Separarea straturilor convolutionale in depthwise si pointwise s-a dovedit
+a fi o tehnica buna pentru a creste viteza arhitecturii astfel incat sa poata fi
+folosita in timp real. \\
+Un lucru pe care regret este ca nu am utilizat o interfata grafica inca de la 
+primele etape, pentru a detecta erorile in timpul dezvoltarii algoritmului. Desi scorul
+calculat de APE este o metrica buna pentru a vedea cat de bine se potrivesc 2 
+estimari ale pozitiei unui cadru, o simpla valoare numerica nu este suficient
+pentru a avea o privire generala asupra modului in care functioneaza implementarea. \\
+Ca directii viitoare, ma gandeam sa utilizez arhitecturi de retele neurale pentru
+sarcini bine delimitate, cum ar fi extragerea de feature-uri sau gasirea de corelatii
+de tip (Feature, MapPoint), adaugarea unui modul de object detection si a unui 
+algoritm de planificare de trasee, pentru a indeplini sarcini simple de gasire 
+a unor obiecte de mici dimensiuni. Pana acum algoritmul a folosit doar metode
+clasice, algoritmul ORB pentru extragere de feature-uri, Brute Force pentru 
+matching, bag-of-words pentru relocalizare. Acum, consider ca directia pe care ar
+trebui sa o urmeze aceasta clasa de algoritmi este una in care tehnici de Machine
+Learning sunt folosite pentru a creste viteza si poate acuratetea operatiilor. 
+Aceasta fiind si directia incurajata de lucrarile ce fac parte din state of the art
+pana la momentul curent.
 \end{document}
