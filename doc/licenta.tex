@@ -111,18 +111,22 @@ COMPUTER SCIENCE AND ENGINEERING DEPARTMENT\\}
 SLAM, Simultanious Localization and Mapping reprezinta o clasa de algoritmi de planificare 
 si control al miscarii unui agent prin mediu pentru a construi un model al spatiului cat
 mai apropiat de realitate. Acestea au castigat atentia publicului in ultimii ani, lucru care
-a condus la dezvoltarea a numeroase variante, fiecare adaptat pentru mediul si tipul de
+a condus la dezvoltarea numeroaselor variante care exista la momentul curent pe piata, 
+fiecare adaptat pentru mediul si tipul de
 senzori folositi. O atentia deosebita a fost acordata sistemelor de tip Visual SLAM din mai
 multe motive: camerele video sunt unul dintre cele mai comune tipuri de senzori, exista o 
-multitudine de tehnici de Computer Vision pentru procesarea imaginilor iar logica pe baza 
-carora functioneaza aceste sisteme este una intuitiva, fiind asemanatoare cu modul in care 
-creierul uman interpreteaza mediul inconjurator. Astazi, cei mai populari algoritmi 
-de tip Visual SLAM imbina domenii precum Machine Learning, Computer Vision, robotica si 
-matematica pentru a creea sisteme robuste, capabile sa indeplineasca o varietate de sarcini.    
+multitudine de tehnici de Computer Vision pentru procesarea imaginilor iar filozofia pe 
+care acesti algoritmi o urmeaza este asemanatoare cu modul in care creierul uman 
+interpreteaza mediul inconjurator: sunt alese un set de puncte din spatiu care vor fi 
+considerate referinte iar unghiul din care acestea sunt observate poate oferi informatii
+despre pozitia agentului in mediu. Astazi, cei mai populari algoritmi 
+de tip Visual SLAM imbina domenii precum Machine Learning, Computer Vision, Robotica si 
+Matematica pentru a creea sisteme robuste, capabile sa indeplineasca o varietate de sarcini.   
+
 \section{Problema}
-Creati un sistem capabil sa exploreze un mediu indoor necunoscut. Acesta trebuie sa creeze 
-o harta a locului, sa reconstruiasca traseul estimand la orice moment de timp pozitia 
-sa, sa fie tolerant la erori si sa poata opera pentru perioade indelungate de timp.    
+Creati un sistem capabil sa exploreze un mediu de interior necunoscut. Acesta trebuie sa
+creeze o harta a zonei parcurse, sa reconstruiasca traseul estimand pozitia camerei pentru 
+fiecare cadru citit, sa fie tolerant la erori si sa poata opera pentru perioade de timp indelungate.    
 \section{Obiective}
 Obiectivele principale ale lucrarii sunt:
 \begin{itemize}
@@ -130,10 +134,9 @@ Obiectivele principale ale lucrarii sunt:
     \item testarea performantelor folosind seturi de date consacrate, utilzarea unui video
     realizat de mine pentru etapa de evaluare  
     \item testarea unei implementari in care o camera tip RGBD sa fie inlocuita cu o camera
-    monoculara traditionala si o retea neurala, alegerea unei arhitecturi potrivite si 
-    compararea celor 2 metode
-    \item prezentarea unor directii de imbunatatire si a problemelor intalnite in etapa de 
-    dezvoltare 
+    monoculara traditionala si o retea neurala, aceasta sarcina presupunand alegerea unei
+    arhitecturi potrivite si compararea celor 2 metode
+    \item prezentarea problemelor intalnite in etapa de dezvoltare si a unor directii de imbunatatire  
 \end{itemize}
 
 \section{Solutia propusa}
@@ -147,94 +150,84 @@ calculata de catre reteaua neurala FastDepth.
 Rezultatele au aratat ca implementarea algoritmului ORB-SLAM2 folosind o camera tip RGBD 
 da rezultate bune in medii indoor si ca poate functiona in timp real cu viteze de aproximativ
 10{-}15 cadre pe secunda. Utilizarea unei retele neurale pentru estimarea distantei nu a 
-functionat, algoritmul fiind capabil sa functioneze pentru mai mult de 50 de cadre.  
+functionat, algoritmul fiind capabil sa functioneze pentru cel mult 50 de cadre.  
 
 \section{Structura lucrarii}
 Lucrarea este structurată în mai multe capitole: introducerea oferă contextul lucrării,
 definește problema abordată, obiectivele și soluția propusă. Capitolul 2, descrie 
-cerintele functionale si nonfunctionale dar si motivatia implementarii acestui algoritm.
+cerintele functionale, nonfunctionale si motivatia.
 Capitolul 3 realizeaza un studiu de piata asupra metodelor curente, separandu-le in 3
-categorii in functie de gradul de utilizare al tehnicilor de Machine Learning. Capitolul 
-4 descrie la nivel conceptual solutia propusa: algoritmii folositi si etapele algoritmului.
-Capitolul 5 detaliaza etapa modul in care este realizata evaluarea si rezultatele obtinute.
-Iar ultimul capitol prezinta cateva impresii personale despre acest proiect: lucruri pe 
-care le-as fi imbunatatit, problemele intalnite si niste directii viitoare in dezvoltarea
-algoritmului. 
+categorii. Capitolul 4 descrie la nivel conceptual solutia propusa: algoritmii folositi si componentele logice.
+Capitolul 5 detaliaza modul in care este realizata evaluarea si rezultatele obtinute.
+Ultimul capitol prezinta cateva impresii personale despre acest proiect: lucruri pe 
+care le-as fi imbunatatit, problemele intalnite si directiile viitoare. 
 
 \chapter{Cerinte si Motivatie}
 \section{Motivatie}
 Filmele, cartile si jocurile pe calculator ne prezinta un viitor al omenirii in care
-roboti inteligenti indeplinesc sarcinile plictisitoare din viata de zi cu zi, sau cele 
+roboti inteligenti indeplinesc sarcinile din viata de zi cu zi sau cele 
 care ar putea pune in pericol siguranta omului. Exista zeci de filme care descriu 
-acest fenomen complex de robot inteligent, capabil sa se adapteze la mediu si sa 
+acest modul in care ar arata un robot inteligent, capabil sa se adapteze la mediu si sa 
 interactioneze cu omul. Desi in momentul de fata suntem departe de a crea un framework 
-suficient de complex pentru un asemenea agent, consider ca suntem pe drumul cel bun. 
-Imi este greu sa imi imaginez un robot care sa poata simula compartamentul uman si sa 
-nu fie capabil sa se deplaseze si sa inteleaga mediul in care se afla. Pentru noi, 
+suficient de complex pentru un asemenea agent, consider ca algoritmii din categoria 
+Visual SLAM sunt un pas in directia corecta. Imi este greu sa imi imaginez un robot care
+sa poata simula compartamentul uman si sa nu fie capabil sa se deplaseze si sa inteleaga mediul in care se afla. Pentru noi, 
 aceste lucruri sunt adanc inradacinate in modul in care functioneaza creierul, dar pentru
 un calculator, a fost nevoie de aproape 20 de ani de cercetare pentru a creea algoritmi 
 suficienti de complexi pentru a indeplini niste sarcini minimale de orientare cum ar 
-capacitatea de invatare a mediului si de pozitionare a agentului in spatiu, pe cand 
-noi realizam aceste lucruri intuitiv. Chiar si cu algoritmii de tip SLAM dezvoltati 
-pana in acest moment, exista numeroase aplicatii practice: 
+capacitatea de invatare a mediului si de pozitionare a agentului in spatiu. Chiar si cu
+algoritmii de tip SLAM dezvoltati pana in acest moment, exista numeroase aplicatii 
+practice: 
 \begin{itemize}
-    \item pentru sarcini din viata de zi cu zi, cazul robotilor de curatenie sau a celor
-care transporta obiecte in interiorul unei cladiri 
+    \item realizarea sarcinilor din viata de zi cu zi: cazul robotilor de curatenie
+sau a celor care transporta obiecte in interiorul unei cladiri 
     \item in aplicatii medicale, ca de exemplu asistenta pentru persoanele nevazatoare
     \item in aplicatii militare: cartografierea zonelor necunoscute: in interiorul
-cladirilor sau medii ostile in care nu exista suport pentru un sistem de coordonate
-global cum ar fi GPS  
+cladirilor sau in medii ostile unde nu este acces la un sistem de coordonate globale
+cum ar fi pozitia data de un sistem GPS  
     \item in aplicatii industriale, inspectii asupra instalatiei sau depozitelor, 
 detectarea unor erori si raportarea zonei in care au fost observate    
 \end{itemize}
 Exista numeroase aplicatii pentru sistemele SLAM, doar toate pleaca de la prinicipiul 
 ca agentul trebuie sa creeze o harta a mediului si sa inteleaga care este pozitia acestuia.
-Pe masura ce aceste sisteme vor evolua si vor incepe sa utilizeze tehnologii din alte 
-domenii cum ar fi tehnici de machine learning vor creste si complexitatea sarcinilor pe 
+Pe masura ce aceste sisteme vor evolua va creste si complexitatea sarcinilor pe 
 care le pot indeplini.   
 
 \section{Cerinte Functionale si Nonfunctionale}
-Algoritmul ORB-SLAM trebuie sa primeasca un video realizat cu o camera de tip RGBD si sa 
-returneze un fisier text cu estimarea pozitiei pentru fiecare cadru in parte. De asemenea
-acesta va salva in alt fisier text harta mediului inconjurator, aceasta fiind alcatuita 
-dintr-un nor de puncte in spatiu si cadrele cheie asociate acestora. Algoritmul va avea 
-o interfata grafica minimala alcatuita din 2 ferestre. In prima va fi aratat folosind 
-culoarea albastra care este pozitia cadrului curent procesat. Totalitatea 
-cadrelor cheie observate vor fi reprezentate folosind verde, si cu rosu punctele din 
-spatiu, harta mediului inconjurator. In cea de-a doua fereastra va fi aratat fiecare 
-cadru in format alb negru, iar cu rosu vor fi marcate feature-urile detectate de 
-algoritmul ORB.\@ Cadrele cheie consecutive sunt conectate intre ele prin intermediul
-unei drepte de culoare neagra, acestea fiind folosite impreuna pentru a recompune 
-traseul realizat de camera in video. 
+Din punct de vedere al cerintelor functionale, algoritmul ORB-SLAM va primi 
+un video realizat cu o camera de tip RGBD si va return 2 fisiere text, unul va contine
+estimarea pozitiei pentru fiecare cadru in parte iar celalalt va avea salvata harta 
+mediului inconjurator, alcatuita dintr-un nor de puncte in spatiu si cadrele cheie
+asociate acestora. Algoritmul va avea o interfata grafica minimala alcatuita din 2 
+ferestre. Cea din stanga va contine o reprezentare pentru cadrul curent procesat, 
+acesta va avea culoarea albastru, celelalte cadre cheie salvate in harta vor avea 
+verde si cu rosu punctele din spatiu. Toate acstea vor alcatui impreuna harta mediului
+inconjurator. In fereastra din dreapta va fi afisat fiecare cadru in format alb negru,
+iar cu rosu vor fi marcate feature-urile detectate de algoritmul ORB.\@ Cadrele cheie 
+consecutive sunt conectate intre ele prin intermediul unei drepte de culoare neagra.
+Cadrele cheie si modul in care sunt unite intre ele vor recompune traseul realizat de camera in video. 
 \begin{figure}[htbp] 
   \centering
   \includegraphics[width=1.0\textwidth]{./images/interfata_grafica.png}
   \caption{Interfata grafica, stanga reprezentarea hartii, dreapta extragere feature-uri cu ORB}
   \label{fig:exemplu_imagine}
-\end{figure}            
-Ca cerinte nonfunctionale, algoritmul trebuie sa functioneze in timp real, sa 
-proceseze intre 10{-}15 cadre pe secunda si sa poata fi folosit in sistemele embedded 
-fara interfata grafica. De asemenea, sistemul trebuie sa fie rezistent la erorile 
-de estimare cadru cu cadru: sa le corecteze pe tot parcursul algoritmului, sa 
-optimizeze atat harta cat si traseul realizat si sa aiba capacitatea de relocalizare.
-Daca urmarirea cadru cu cadru esueaza, sa fie capabil sa estimeze unde se afla si 
-sa continue maparea zonei si estimarea valorii traiectorie. Algoritmul trebuie sa 
-aiba o implementare modulara, usor de testat de extins, sa utilizeze principii de 
-programare orientata pe obiecte si sa fie scris intr-un limbaj rapid precum C++.
+\end{figure}  \\         
+Ca cerinte nonfunctionale, algoritmul trebuie sa mearga in timp real, sa 
+proceseze intre 10{-}15 cadre pe secunda si sa poata fi folosit in sisteme embedded
+in care unitatea centrala de procesare are cel mult 2 core-uri si nu poate folosi GPU-ul.
+Sistemul trebuie sa fie
+rezistent la erorile de estimare pentru fiecare imagine primita, sa optimizeze atat
+harta cat si traseul realizat si sa aiba capacitatea de relocalizare in situatia in care
+urmarirea cadru cu cadru esueaza. Mediul in care poate sa opereze este unul static, de
+mici dimensiuni si nu poate accesa coordonatele globale ale pozitiei sale prin intermediul
+tehnologiilor precum GPS.\@
+% Algoritmul trebuie sa aiba o implementare modulara, usor de testat si de extins, sa 
+% utilizeze principii de programare orientata pe obiecte si sa fie scris intr-un limbaj 
+% de mare viteza precum C++.
 
-\chapter{Studiu de piata {-} variante Visual SLAM}
-Sistemul nostru nu are senzori si detine doar o camera de tip RGBD / sau RGB, are cel mult 2
-core-uri de CPU si nu poate folosi GPU-ul pentru a accelera viteza de procesare. Acesta trebuie sa 
-functioneze in timp real, sa poate procesa cel putin 10 {-} 15 cadre pe secunda, sa poata opera in
-intr-un mediu indoor de mici dimensiuni, ca de exemplu un apartament si static, elementele care alcatuiesc
-mediul nu isi modifica pozitia, sa poata fi integrat intr-un
-sistem embedded, sa fie capabil sa memoreze zonele din mediu prin care a trecut, sa construiasca o harta a
-mediului minimala, de exemplu printr-un nor de puncte cu o densitate scazuta, sa aiba capacitatea de 
-corectie a erorilor si sa poata fi folosit pentru o perioada indelungata. Consideram ca sistemul nu 
-are acces la coordonatele globale ale pozitiei sale si nu poate folosi tehnologii precum GPS-ul.
-Sistemul nostru trebuie sa faca parte din categoria de Visual SLAM si sa foloseasca o camera de tip 
-RGBD sau RGB combinata cu o retea neurala capabila sa fie folosita de CPU pentru sarcini de inferenta 
-si sa functioneze in timp real. Cei mai noi algoritmi de visual SLAM functioneaza acum folosind tehnici
+\chapter{Studiu de piata}
+\section{State of the art Visual SLAM}
+Cei mai noi algoritmi de visual SLAM functioneaza acum folosind tehnici
 de deep learning. In continuare vor fi prezentate lucrarile care au reprezentat SOA, pana la inceputul 
 anului 2025, grupate in categorii in functie de modul in care sunt folosite tehnicile de deep learning.
 Am considerat potrivita impartirea pe 3 nivele a algoritmilor, in functie gradul de utilizare 
@@ -251,15 +244,17 @@ Acesta imparte operatiile care trebuie realizate in 2 categorii: frontend-ul car
 sarcina de visual odometry cu ajutorul unui sistem derivat din Deep Patch Visual Odometry (DPVO)
 si partea de backend alcatuita din 2 metode de loop closure: proximity loop closure si classical
 loop closure. Algoritmul are nevoie intre 5{-}6 GB de memorie pe GPU pentru a putea rula. 
-O alta problema o reprezinta proximity loop closure. Este o metoda rapida daca se foloseste un
-singur GPU, dar aceasta functioneaza cu ajutorul unei harti foarte dense de feature-uri obtinute
-cu ajutorul metodei de optical flow, fiind greu de adaptat la cerintele noastre. \\
+O alta problema o reprezinta proximity loop closure. Aceasta functioneaza cu ajutorul unei harti
+foarte dense de feature-uri obtinute cu ajutorul metodei de optical flow fiind imposibil de folosit 
+in timp real fara a folosi GPU.\@ \\
+
 ESLAM sau Efficient Dense Visual SLAM using Neural Implicit Maps este un sistem de SLAM 
 monocameră RGB-D care folosește o combinație între o harta densa 3D, reprezentata de o retea 
 neurala implicita si un backend optimizat geometric pentru estimarea matricei de pozitie a camerei.
 Avantajele acestei implementari sunt ca produce o harta densa si detaliata si poate reconstrui 
 detalii chiar si in zone partial observate. Problema acestei implementari este ca necesita un 
 GPU si resurse mari de calcul si nu este potrivit pentru dispozitivele embedded. \\
+
 Light-SLAM este construit pornind de la aceeasi filozofie ca si ORB-SLAM2, partea de backend
 reprezentata de local mapping, adica optimizarea hartii create si loop closure, recunoasterea
 zonelor prin care a mai trecut algoritmul si inchiderea buclelor traiectoriei, acestea sunt 
@@ -269,53 +264,61 @@ Acest sistem poate functiona in timp real daca se poate folosi un GPU, dar cea m
 problema o reprezinta faptul ca retele neurale nu sunt capabile sa gaseasca feature-uri cu
 acuratete suficient de buna in zone care nu seamana cu ceea ce a  intalnit in setul de date
  de antrenare, astfel algoritmul nu are garantia ca va functiona in situatii critice.\\
+
 HFNet-SLAM este o metoda construita pe baza ORB-SLAM3 si folosindu-se de arhitectura HF-Net, 
-avand acelasi principiu pe baza caruia a fost facuta ca si Mobile\_Net, avand straturile de convolutie
-separate in depthwise convolution si pointwise convolution. In loc sa foloseasca 2 retele neurale 
+avand straturile de convolutie separate in depthwise convolution si pointwise convolution, 
+asemanator cu modul in care este gandit Mobile\_Net. In loc sa foloseasca 2 retele neurale 
 precum Light-SLAM, aceasta foloseste una singura, atat pentru extragere keypoint-urilor si a
 descriptorilor cat si pentru feature-urile globale, folosite in sarcinile de loop closure. 
-Pe langa problema retelei neurale care trebuie sa ruleze pe GPU si  a feature-urilor instabile 
+Pe langa problema retelei neurale care trebuie sa ruleze pe GPU si a feature-urilor instabile 
 extrase din imagini pentru zone care nu au fost intalnite in setul de antrenare, algoritmul
 calculeaza pentru fiecare cadru in parte feature-urile sale globale lucru care adauga un 
-overhead computational deloc necesar, iar keypoint-urile nu sunt extrase avand o piramida de 
-nivele. Din aceasta cauza, acelasi keypoint observat in 2 cadre diferite, dar la dimensiuni 
-diferite nu va putea fi asociat observat corespunzator, facand sistemul instabil la deplasarea 
-in linie dreapta.  \\
+overhead computational inutil. De asemenea reteaua neurala nu extrage keypoint-urile
+pe mai multe nivele, obtinandu-se prea putine puncte pentru a mentine sistemul stabil 
+in mediile slab texturate. \\
+
 ORB-SLAM3 este continuare implementarii algoritmului ORB-SLAM2 pe care l-am ales eu.
 Acesta a aparut in 2021 si pana in acest moment este cea mai complexa si completa metoda de a
 estima traiectoria camerei si a reconstrui o harta de puncte a mediului inconjurator folosind 
 doar metode clasice. In comparatie cu precedesorul acestuia, implementarea de ORB-SLAM3 foloseste
 datele obtinute de la Inertial Measurement Unit (IMU) si optimizeaza rezultatele primite 
-folosind tehnica de Maximum a Posteriori Estimation (MAP). Algoritmul lucreaza de asemenea cu un 
-sistem in care sunt generate noi harti de fiecare data cand se pierde capacitatea de urmarire 
-cadru cu cadru, iar acestea sunt ulterior unite intre ele cand agentul ajunge intr-o zona pe 
-care o cunoaste deja. Am considerat ca un mediu de mici dimensiuni in interior nu ar avea 
-nevoie de un sistem atat de complex, iar utlizarea acestuia ar adauga un overhead nejustificat.\\
+folosind tehnica de Maximum a Posteriori Estimation (MAP). In comparatie cu predecesorul 
+sau, versiunea curenta algoritmului lucreaza cu multiple harti locale, respectiv noruri
+de puncte in spatiu. In momentul in care ORB-SLAM3 pierde orientarea si trebuie sa execute 
+o relocalizare, sistemul genereaza o noua harta pentru a mentine fluida procesarea cadru 
+cu cadru. In situatia in care tracker-ul recunoaste zona in care a ajuns, incearca sa uneasca 
+hartile intre ele pentru a reconstrui intreg mediul. Am considerat ca zona pe care o parcurge 
+agentul nostru este de  de mici dimensiuni si nu ar avea nevoie de un sistem atat de 
+complex de interconectare al hartilor generate iar utlizarea acestuia ar adauga un overhead
+nejustificat. In plus, nu avem acces la datele ce apartin componentei IMU.\@ \\
 
 SVO sau Semi-Direct Visual Odometry for Monocular and Multi-Camera Systems este un exemplu 
 de algoritm tip SLAM care foloseste doar 2 thread-uri: unul responsabil de 
 urmarirea cadru cu cadru si celalalt pentru optimizarea hartii. Acesta foloseste gradientii
 pixelilor in imagini pentru a crea feature-uri, nu doar contururile obiectelor. In cazul
 algoritmilor din familia ORB-SLAM care incearca sa optimizeze eroarea de proiectie a punctelor
-din spatiu, aici se folosesc metode directe, si trebuie minimizata eroarea fotometrica a 
+din spatiu, aici se folosesc metode directe si trebuie minimizata eroarea fotometrica a 
 pixelilor aflati in apropierea contururilor obiectelor. Este printre cei mai rapizi algoritmi
 de SLAM, procesand peste 100 de cadre pe secunda pe un CPU, dar genereaza o harta cu mult 
 prea putine puncte care rareori poate fi refolosite, nu exista capacitate de relocalizare si 
-este dificil de extins.
+este dificil de extins. Fiind poate a doua cea mai buna optiune dupa ORB-SLAM2.\\
 
 In ciuda faptului ca algoritmul ORB-SLAM2 a aparut in 2017, in continuare ramane
 un exemplu de sistem bine gandit, cu multe posibilitati de extindere si capacitate de a fi 
-adaptat la cerintele din zilele noastre. Indeplineste cu succes toate criteriile pe care sistemul
-dezvoltat ar trebui sa le auba: poate fi folosit in real time, implementarea procesand 15 cadre
-pe secunda, creaza harta mediului inconjurator are capacitate de relocalizare si corecteaza 
-erorile de estimare care apar in timp prin mecanismul de loop closure. Acesta poate rula exclusiv
-pe CPU, fiind potrivit atat pentru vehicule la sol, dar si pentru drone. Nu are nevoie de o 
-estimare a pozitiei globale, putand fi folosit in medii ostile in care nu exista acces la GPS 
-iar terenul este complet necunoscut.  
+adaptat la cerintele din zilele noastre. Indeplineste cu succes toate cerintele functionale 
+si nonfunctionale pe care sistemul ar trebui sa le aiba: poate fi folosit in real time,
+implementarea procesand aproximativ 15 cadre pe secunda, creaza o harta mediului inconjurator
+pe care o poate optimiza, are capacitate de relocalizare si corecteaza erorile de estimare
+care apar in timp prin mecanismul de loop closure. Acesta poate rula exclusiv pe CPU, fiind
+potrivit atat pentru vehicule la sol, dar si pentru drone. Nu are nevoie de o estimare a pozitiei
+globale, putand fi folosit in medii ostile unde terenul este complet necunoscut.  
+
+\section{State of the art Retea Neurala}
+% de adaugat mai multe arhitecturi de retea neurala, de ales care este cel mai potrivit
 
 
 \chapter{Solutie propusa}
-Solutia mea presupune implementarea algoritmului ORB-SLAM2. Acesta are 2 scopuri 
+Solutia mea propune implementarea algoritmului ORB-SLAM2. Acesta are 2 scopuri 
 fundamentale:
 \begin{itemize}
     \item sa estimeze pentru fiecare cadru in parte matricea de pozitie si orientare
@@ -335,8 +338,13 @@ in sens opus.
 \begin{equation}
 T_{cw} = 
 \begin{bmatrix}
-R \hspace{0.5cm} t \\
-0 \hspace{0.5cm} 1
+R & t \\
+0 & 1
+\end{bmatrix}, \quad{}
+T_{wc} = 
+\begin{bmatrix}
+R & -R^{t}t \\
+0 & 1
 \end{bmatrix}
 \end{equation}
 
@@ -367,7 +375,7 @@ care respecta acelasi format pentru a verifica corectitudinea algoritmului.
 Diagrama UML prezinta interactiunea dintre 
 principale componente descrise din punct de vedere functional, dar si flow-ul natural
 al algoritmului. In continuare voi detalia logica fiecarei componente din punct de 
-vedere al algoritmilor folositi, ale valorilor de intrare si de iesire ale acestora. 
+vedere al algoritmilor folositi, ale valorilor de intrare si de iesire asociate acestora. 
 
 \section{Achizitia datelor}
 Scopul acestei componente este sa citeasca imaginea de tip RGB de la camera,          
@@ -379,7 +387,7 @@ extragerea datelor de la instrumente de masura precum giroscop sau accelerometru
 pentru a obtine informatii suplimentare cu privire la orientarea si distanta efectuata
 de catre camera care ar putea imbunatatii considerabil estimarea initiala a pozitiei.
 
-\section{Extragere trasaturi} 
+\section{Extragerea trasaturilor} 
 Ca date de intrare aceasta componenta primeste doar imaginea de tip RGB, si extrage
 aproximativ 1000 de trasaturi si descriptori asociati acestora. Trasaturile sunt zone
 de interes in imagine care pot fi folosite pentru a detecta obiecte sau gasi asocieri 
@@ -390,8 +398,8 @@ brusca a gradientului culorii. De cele mai multe ori, astfel de variatii se rega
 in zonele de frontiera dintre obiecte, deoarce apare o diferenta
 de culoare si implicit una de intensitate luminoasa. Zonele slab texturate, cum ar 
 fi cerul sau peretii in interiorul unei cladiri nu au zone care sa poata fi usor de 
-comparat, deoarece zonele de pe suprafata respectiva arata similar si este greu de 
-estimat de unde a fost extras keypoint-ul respectiv. In schimb, o camera 
+comparat: aproape toti pixelii de pe suprafata respectiva arata similar si
+este greu de estimat de unde a fost extras keypoint-ul respectiv. In schimb, o camera 
 complet mobilata ar fi o zona puternic texturata iar un algoritm de detectie de 
 keypoint-uri ar putea sa gaseasca usor 1000 de trasaturi pe care sa le foloseasca.
 Daca algoritmul nu reuseste sa gaseasca suficiente keypoint-uri pentru a face urmarirea
@@ -401,7 +409,7 @@ de extragere functioneaza corect iar traiectoria camerei este una stabila, fara 
 bruste ale directiei de deplasare, trasaturi similare ar trebui sa fie observate in ambele
 imagini. Asocierile dintre ele, ne pot da informatii despre modul in care s-a deplasat 
 camera intre cele 2 cadre. Problema este ca aceste keypoint-uri nu pot fi comparate direct
-intre ele din aceasta cauza ne folosim de descriptori. Acestia sunt vectori de diferite 
+intre ele, din aceasta cauza ne folosim de descriptori. Acestia sunt vectori de diferite 
 dimensiuni care trebuie sa surprinda informatia esentiala observata in zona respectiva din
 imagine, in mod ideal descriptorii ar trebui sa ramana invariabili la operatiile de 
 redimensionare si rotatie aplicate pe keypoint-uri. 
@@ -412,24 +420,26 @@ se datoreaza mai multor factori:
 \begin{itemize}
     \item Este mult mai rapid decat SIFT si SURF fiind mult mai potrivit pentru sisteme
 in timp real si pentru dispozitive embedded.
-    \item la momentul realizarii lucrarii stiintifice despre ORB-SLAM2 atat SIFT cat 
-si SURF se aflau sub protectia drepturilor de autor, ORB nu avea vreo astfel de restrictie
+    \item la momentul realizarii lucrarii stiintifice ORB-SLAM2 atat SIFT cat 
+si SURF se aflau sub protectia drepturilor de autor, ORB nu avea o astfel de restrictie
     \item ORB este invariant din punct de vedere al rotatiei   
     \item Foloseste descriptori binari, care pot fi usor de comparat folosind distanta Hamming,
     aceasta converteste in biti vectorul de elemente obtinute, 
 \end{itemize}
-Implementarea algoritmului ORB poate fi separata in 2 componente, calcularea KeyPoint-urilor si 
-cea a descriptorilor. Pasii pe care ii urmeaza algoritmul sunt urmatorii, care se repeta 
-de cate ori a fost setat ca imaginea initiala sa fie redimensionata:
+Implementarea algoritmului ORB poate fi separata in 2 componente, calcularea keypoint-urilor si 
+cea a descriptorilor. Pasii pe care ii urmeaza algoritmul sunt realizati intr-un for loop.
+ORB extrage feature-uri la diferite dimensiuni ale imaginii, pentru a crea trasaturi mai
+robuste la modificarea distantei. Numarul de executii al buclei for, este acelasi cu numarul de 
+resize-uri pe care trebuie sa le aplice algoritmul. 
 \begin{enumerate}
     \item Calcularea keypoint-urilor folosind algoritmul FAST-9.
     \item Selectarea celor mai potrivite keypoint-uri folosind Harris Corner Measure, Trasaturile
 sunt sortate in ordine descrescatoare si sunt selectate primele N cele mai potrivite
     \item Pentru fiecare keypoint se calculeaza orientarea acestuia folosind intensitatea
 centroidului, dupa aceasta operatie avem toate informatiile necesare despre keypoint-uri.
-    \item Pentru calcularea descriptorilor vom face o operatie de smoothing pentru fiecare 
-zona de $ 31 \times 31 $ de pixeli, folosind un kernel cu o dimensiune de $ 5 \times 5 $.
-    \item se calculeaza descriptorii de tip steer BIREF, avand pozitia modificata dupa unghiul
+    \item Inainte de a calcula descriptorii se aplica o operatie de smoothing Gaussian pentru fiecare 
+zona selectata de un keypoint avand  $ 31 \times 31 $ de pixeli, folosind un kernel cu o dimensiune de $ 5 \times 5 $.
+    \item se calculeaza descriptorii de tip steer BRIEF, avand valorile modificate dupa unghiul
 dat de orientare. Operatia de modificare a orientarii duce la o variatie redusa a valorilor 
 bitilor din descriptori si la o corelatie puternica intre acestia, facand descriptorii ineficienti
     \item Se obtine rBRIEF o varianta optimizata a algoritmul steer BRIEF, prin alegerea bitilor
@@ -442,7 +452,7 @@ pe care trebuie sa il depaseasca diferenta de intensitate intre pixeli pentru a 
 un keypoint. De cele mai multe ori, informatia data de keypoint-uri este redundanta, pentru
 a selecta un numar restrans de trasaturi, de preferat cele mai expresive, se foloseste Harris
 Corner Measure.  Pentru a calcula orientarea vom defini notiunea de centroid  $ C $ care este
-diferit de centrul zonei din imagine $ O $. Vectorul $ \vec{OC} $ va fi cel 
+diferit de centrul zonei determinata de keypoint $ O $. Vectorul $ \vec{OC} $ va fi cel 
 care va da unghiul $ \theta $ al keypoint-ului pe care il vom obtine direct din urmatoarea 
 formula, unde $ I(x, y) $ reprezinta intensitatea luminoasa a pixelului cu coordonate $ (x, y) $.      
 \begin{equation}
@@ -450,14 +460,14 @@ m_{pq} = \sum_{x, y} x^p y^q I(x, y), \quad{}
 \theta = \text{atan2}(m_{01}, m_{10})
 \end{equation}
 In etapele 5 si 6 se realizeaza calcularea descriptorilor: acestia vor avea forma binara si o 
-lungime finala de 256 de biti. Compararea lor se va realiza folosind distanta Hamming, cu cat 
+lungime finala de 256 de biti. Compararea lor se va realiza folosind distanta Hamming. Cu cat 
 2 descriptori au o valoarea mai mica a acestei distante, cu atat mai similari sunt. Valorile 
 descriptorilor sunt asociate pe baza unui test binar in care este comparata intensitatea a 2 
 puncte din planul imaginii. Problema este ca descriptorii BRIEF sunt sensibili la schimbarile de
 rotatie, din aceasta cauza, prin rotirea coordonatelor pixelilor cu unghiul $ \theta $ al 
-orientarii se obtine steered BRIEF.\@ Pentru a obtine rBRIEF, au fost invatate in offline la
-creearea algoritmului ORB care teste de verificare a intensitatii au cea mai mare variatie, si
-primele 256 dintre acestea au fost alese pentru a alcatui descriptorul.       
+orientarii se obtine steered BRIEF.\@ Pentru a obtine rBRIEF, au fost invatate in offline prin
+aplicarea unui algoritm de tip Greedy, care teste de verificare a intensitatii au cea mai mare 
+variatie, si primele 256 dintre acestea au fost alese pentru a alcatui descriptorul.       
 
 \section{Harta punctelor din spatiu}
 Unul dintre scopurile fundamentale ale algoritmului de ORB-SLAM2, pe langa cel 
@@ -476,17 +486,17 @@ indiferent de modul in care ne-am roti in jurul mesei, aceleasi feature-uri
 ar trebui sa fie observate de fiecare data, mai mult de atat, considerand ca mediul 
 este static, acestea sunt mereu asociate cu acelasi punct din spatiu, devenind astfel 
 o referinta pe baza careia putem estima modul in care s-ar deplasa camera. 
-In literatura de specialitate aceste puncte din spatiu sunt  denumite MapPoint-uri 
+In literatura de specialitate, aceste puncte din spatiu sunt  denumite MapPoint-uri 
 iar functionalitatea corecta a algoritmului depinde strict de 
 modul in care aceste MapPoint-uri sunt observate cadru cu cadru. Un astfel de punct 
 in spatiu este creat dintr-un keypoint, dar nu vom avea nevoie de toate punctele din 
 regiunea respectiva si vom considera ca centrul este punctul cel mai semnificativ,  
 avand coordonate \(x\) si \(y\), si distanta fata de camera fiind estimata ca fiind 
-\(d\). Mai mult ne vom folosi de matricea transformarii din coordonatele camerei
+\(d\). Ne vom folosi de matricea transformarii din coordonatele camerei
 in coordonatele globale si de parametrii interni ai camerei \(f_x\), \(f_y\) 
 distanta focala, si \(c_x\), \(c_y\) coordonatele centrului imaginii.
 Vectorul coloana cu 3 dimensiuni reprezinta pozitia in spatiu a feature-ului gasit
-in cadrul curent pe care il analizam, astfel am creat primul MapPoint. Ca alternativa,
+in cadrul curent, astfel am creat primul MapPoint. Ca alternativa,
 pentru a nu lucra cu matrici de dimensiuni $ 4 \times 4 $ putem folosi \(R_{wc}\) reprezentand
 matricea de rotatie si \(t_{wc}\) vectorul de translatie.
 
@@ -539,19 +549,19 @@ matching, dar cel folosit in implementarea curenta este Brute Force Feature Matc
 optimizat. Acest algoritm primeste ca date de intrare 2 seturi de feature-uri si 
 incearca sa gaseasca asocieri intre ele. Asocierele sunt facute cu ajutorul descriptorilor,
 se calculeaza distanta Hamming iar daca valoarea obtinuta este minima, perechea 
-respectiva de feature-uri se considera ca a fost corect asociata, pentru ORB-SLAM2 
-acest lucru reprezinta ca am gasit exact acelasi punct din spatiu, in 2 imagini diferite.
+respectiva de feature-uri se considera ca a fost corect asociata. Pentru ORB-SLAM2 
+o potrivire intre 2 keypoint-uri arata ca ele se refera la exact acelasi punct din spatiu,
+observat din 2 imagini diferite.
 Daca \(N\) este numarul de feature-uri din primul set, \(M\) numarul de feature-uri din 
-al doilea set si \(D\) fiind dimensiunea descriptorului, in cazul nostru fiind 32, complexitatea
-algoritmului devine \(O(N * M * D)\). Facand-ul un algoritm destul de costisitor de folosit
-pentru un sistem in timp real, mai mult de atat, este predispus la erori, compararea 
+al doilea set si \(D\),dimensiunea descriptorului, in cazul nostru ORB este 32, complexitatea
+algoritmului devine \(O(N * M * D)\). Destul de costisitor de folosit
+pentru un sistem in timp real, mai mult de atat este predispus la erori, compararea 
 feature-urilor nu tine cont de locatia acestora in imagine, obtinandu-se astfel asocieri
 care matematic par corecte, dar ele nu au sens din punct de vedere logic. Pentru a rezolva
-aceasta problema si a reduce complexitatea temporala se stabileste o fereastra patrata de 
-lungime prestabilita in jurul punctului de proiectie unde se pot cauta feature-uri.
-In final se obtin asocierile intre feature-uri, sunt cautate MapPoint-urile 
-corespunzatoare feature-urilor din cadrele anterioare si altfel se obtin asocierele 
-(feature, MapPoint) de care are nevoie algoritmul.      
+aceasta problema si a reduce complexitatea temporala se stabileste o fereastra circulara de 
+dimensiune prestabilita in jurul punctului de proiectie unde se pot cauta feature-uri.
+O data ce 2 keypoint-uri au fost considerate ca facand referinta la acelasi punct din spatiu,
+cadrului curent ii este asociat un nou MapPoint. 
 
 \section{Optimizare Estimare Pozitie Initiala}
 Aceasta componenta primeste ca data de intrare estimarea pozitiei curente a camerei
@@ -597,7 +607,7 @@ cat si pentru a schimba din sistemul de coordonate global in cel al camerei.
 In sistemul de coordonate global, un punct se afla la exact aceeasi valoare indiferent 
 de pozitia camerei care il priveste, in sistemul de coordonate al camerei, pozitia unui 
 MapPoint o sa difere de fiecare data.
-In etapa a doua MapPoint-ul respectiv este in sistemul de referinta al camerei, 
+In etapa a doua MapPoint-ul este in sistemul de referinta al camerei, 
 coordonatele fiind reprezentate prin vectorul coloana \(X_{camera}\). Vom considera 
 a 3-a valoare a acestui vector \(Z_c\). Aceasta reprezinta distanta dintre planul camerei
 si punctul pe care il analizam. \(Z_c\) ne spune daca punctul respectiv poate fi observat
@@ -605,8 +615,8 @@ in imagine. Daca valoarea \(Z_c\) este mai mica sau egala cu 0, inseamna ca punc
 se proiecteaza in spatele camerei, facandu-l invalid. In situatia in care \(Z_c\) este 
 mai mare decat 0, vom realiza conversia in coordonatele omogene ale imaginii cu ajutorul
 urmatoarei formule, \(u\) fiind asociat axei x si \(v\) fiind asociat axei y. Daca 
-valorile \(u\) si \(\v\) au valori mai mari ca 0, si mai mici decat dimensiunea imaginii.
-Vectorul coloana \([u, v, 1]\) este rezultatul cautat. 
+valorile \(u\) si \( v \) au valori mai mari ca 0 si mai mici decat dimensiunea imaginii,
+vectorul coloana \([u, v, 1]\) este rezultatul cautat. 
 
 \begin{equation}
     \begin{bmatrix}
@@ -640,15 +650,16 @@ Forma generala a functiei de cost este suma erorilor de proiectie pentru toate p
     \mathbf{R}_{cw}, \mathbf{t_{cw}} = \min_{\mathbf{R}_{cw}, t_{cw}} \sum_{i=1}^{N} \rho\left( \left\| \mathbf{x}_i - K \cdot \left( \mathbf{R}_{cw} \cdot \mathbf{X}_i + \mathbf{t_{cw}} \right) \right\|^2 \right)
 \end{equation}
 
-In aceasta formula, \(x_i\) reprezinta coordonatele omogene feature-ului in coordonatele imagininii,
+In aceasta formula, \(x_i\) reprezinta coordonatele omogene feature-ului in sistemul de 
+coordonatele al imaginii
 iar \(X_i\) reprezinta coordonatele globale ale MapPoint-ului pentru care calculam eroarea
 de proiectie. Simbolul $ \rho(\cdot) $ reprezinta functia Huber pentru scalarea valorilor de eroare.
 Daca o asociere intre un feature si un MapPoint nu este potrivita, diferenta dintre centrul feature-ului
 si proiectia MapPoint-ului este mai mare decat un prag prestabilit. Aceasta diferenta, lasata nemodificata,
 ar destabiliza algoritmul. Iar o astfel de problema este usor de observat, daca modificarea matricei
 de pozitie duce la variatii enorme a orientarii sau a translatiei intre 2 cadre consecutive, 
-atunci cel mai probabil asocierile intre feature-uri si MapPoint-uri aveau valori eronate, 
-termenul de \(outlier\) fiind folosit in aceasta situatie. Functia Huber Loss reduce 
+atunci cel mai probabil asocierile intre feature-uri si MapPoint-uri aveau valori eronate. 
+Termenul de \(outlier\) este folosit pentru a descrie o pereche incorecta. Functia de pierdere Huber reduce 
 valoarea acestor outlier-ere permitandu-le in acelasi timp sa faca parte din algoritmul de 
 optimizare. In acest fel algoritmul devine mai robust si capabil ajunga la o valoare optima 
 in mai putine iteratii. Mai jos este prezentata formula matematica a functiei Huber Loss, 
@@ -669,10 +680,10 @@ elimina pentru a nu influenta in mod negativ functionalitatea algoritmului.
 \section{Crearea unui cadru cheie}
 Aceasta componenta primeste ca date de intrare absolut toate informatiile procesate de 
 pana acum pentru cadrul curent: imaginea de tip rgb, matricea de adancime, punctele cheie,
-descriptorii, asocierile (feature, MapPoint) si estimarea matricii pozitiei curente a camerei.
-Toate aceste data impreuna vor alcatui un cadru cheie care va fi salvat in memorie, pentru 
-termen scurt sau lung. Exista 2 motive principale pentru care dorim sa facem aceasta operatie
-In primul rand ne ajuta sa estimam pozitia urmatorului cadru bazandu-ne pe legea inertiei. 
+descriptorii, asocierile (feature, MapPoint) si matricea estimarii pozitiei. 
+Toate acestea impreuna vor alcatui un cadru cheie care va fi salvat in memorie.
+Salvarea pozitiilor cadrelor anterioare ne poate ajuta in 2 feluri. Putem folosi doar 2 
+cadre anterioare pentru a estima pozitia celui care urmeaza bazandu-ne pe legea inertiei. 
 Consider ca o data inceputa deplasarea camerei intr-o anumita directie, este foarte 
 probabil ca aceea miscare sa fie mentinuta si la urmatorul cadru. Fie \(T_{cw}\) matricea de 
 pozitie pentru cadrul la care vrem sa estimam deplasarea, iar \(T_{cw1}, T_{cw2} \) matricile 
@@ -682,20 +693,21 @@ de pozitie a celor 2 cadre imediat predecesoare. Formula de estimare a pozitiei 
 \mathbf{T_{cw}} = \mathbf{T_{cw1}} \cdot \left( \mathbf{T_{cw2}}^{-1} \cdot \mathbf{T_{cw1}} \right)
 \end{equation} 
 
-Al doilea motiv pentru care avem nevoie de cadre cheie este recreearea mediului. Incercam sa salvam
-numarul minim de cadre necesare pentru a reproduce harta de MapPoint-uri a mediului inconjurator.
-Un cadru cheie nou (KeyFrame) aduce cu sine MapPoint-uri noi, extrase din feature-urile gasite in 
-imaginea respectiva. Functionarea corecta a urmarii cadru cu cadru, este determinata de numarul de 
+Al doilea motiv pentru care avem nevoie de cadre cheie este recreearea mediului si a traseului parcus.
+Incercam sa salvam numarul minim de cadre necesare pentru a reproduce harta de MapPoint-uri a mediului
+inconjurator. Un cadru cheie nou (KeyFrame) aduce cu sine MapPoint-uri noi, extrase din feature-urile
+gasite in imaginea respectiva. Functionarea corecta a urmarii cadru cu cadru, este determinata de numarul de 
 MapPoint-uri gasite in imaginea curenta in comparatie cu un cadru de referinta. In momentul 
 in care numarul de puncte cheie gasite in imaginea curenta scade sub un anumit prag, stim ca este
-necesar un nou cadru cheie care: sa stabilizeze urmarirea, sa introduca noi puncte cheie, si sa 
+necesar un nou cadru cheie care: sa stabilizeze urmarirea, sa introduca noi MapPoint-uri, si sa 
 ajute la optimizarea intregii harti a mediului. 
 
 \subsection{Optimizare harta locala}
 Harta locala este alcatuita din KeyFrame-uri si MapPoint-uri, avand intre ele o relatie de many-to-many.
 Se considera ca un KeyFrame si un MapPoint sunt conectate intre ele daca un MapPoint dat poate sa 
-fie observat dintr-un KeyFrame. Matematic se traduce ca proiectia punctului respectiv pe imaginea
-stocata in KeyFrame poate fi asociat cu un feature valid. Avem acelasi exemplu cu masa dintr-o incapere. 
+fie observat dintr-un anumit KeyFrame. Din punct de vedere matematic, "a fi observat"  inseamna ca proiectia
+unui punct pe imagine are o pozitie valida in sistemul de coordonate al KeyFrame-ului respectiv. 
+Avem acelasi exemplu cu masa dintr-o incapere. 
 Mai multe cadre consecutive observa acelasi colt al piesei de mobilier. Acel feature are
 asociat un MapPoint, ceeea ce inseamna ca MapPoint-ul respectiv este observat din mai multe 
 KeyFrame-uri. Cu cat mai multe Keyframe-uri observa acelasi MapPoint, cu atat mai stabil este 
@@ -717,6 +729,7 @@ Pentru a salva Keyframe-ul curent in harta trebuie sa se petreaca in ordine urma
     pozitiile punctelor din spatiu dar si matricea de pozitie a cadrelor cheie
 \end{enumerate} 
  
+
 Bundle Adjustment este similar cu Motion Only Bundle Adjustment. In continuare vorbim de un
 algoritm iterativ care incearca sa minimizeze o functie de cost, folosind metoda scaderii 
 gradientului. Diferenta in aceasta situatie este ca Bundle Adjustment se aplica pe mai mult 
