@@ -1,0 +1,33 @@
+\babel@toc {romanian}{}\relax 
+\contentsline {chapter}{\numberline {1}Introducere}{1}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Context}{1}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Problema}{1}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Obiective}{1}{section.1.3}%
+\contentsline {section}{\numberline {1.4}Solutia propusa}{2}{section.1.4}%
+\contentsline {section}{\numberline {1.5}Rezultatele obtinute}{2}{section.1.5}%
+\contentsline {section}{\numberline {1.6}Structura lucrarii}{2}{section.1.6}%
+\contentsline {chapter}{\numberline {2}Cerinte si Motivatie}{3}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Motivatie}{3}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Cerinte Functionale si Nonfunctionale}{4}{section.2.2}%
+\contentsline {chapter}{\numberline {3}Studiu de piata}{5}{chapter.3}%
+\contentsline {section}{\numberline {3.1}State of the art Visual SLAM}{5}{section.3.1}%
+\contentsline {chapter}{\numberline {4}Solutie propusa}{8}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Achizitia datelor}{9}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Extragerea trasaturilor}{9}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Harta punctelor din spatiu}{12}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Asociere puncte din spatiu cu feature-uri ORB}{13}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Optimizare Estimare Pozitie Initiala}{14}{section.4.5}%
+\contentsline {subsection}{\numberline {4.5.1}Proiectarea MapPoint in planul imaginii}{14}{subsection.4.5.1}%
+\contentsline {subsection}{\numberline {4.5.2}Motion Only Bundle Adjustment}{15}{subsection.4.5.2}%
+\contentsline {section}{\numberline {4.6}Crearea unui cadru cheie}{16}{section.4.6}%
+\contentsline {subsection}{\numberline {4.6.1}Optimizare harta locala}{17}{subsection.4.6.1}%
+\contentsline {subsection}{\numberline {4.6.2}Reteaua Neurala FastDepth}{19}{subsection.4.6.2}%
+\contentsline {chapter}{\numberline {5}Detalii de implementare}{23}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Limbaje de programare si librarii folosite}{23}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Mediu de lucru si principalele clase}{25}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Pipeline antrenare FastDepth}{37}{section.5.3}%
+\contentsline {chapter}{\numberline {6}Evaluare}{39}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Setul de date TUM RGBD Dataset}{39}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Metrici utilizate}{40}{section.6.2}%
+\contentsline {chapter}{\numberline {7}Concluzii}{43}{chapter.7}%
+\contentsline {chapter}{\numberline {8}Referinte}{45}{chapter.8}%
