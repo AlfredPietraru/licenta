@@ -5,7 +5,7 @@ MAIN = licenta
 
 # Compiler
 LATEX = xelatex
-BIBTEX = bibtex
+BIBTEX = biber
 
 # Files to clean
 AUXFILES = *.aux *.log *.toc *.out *.bbl *.blg *.lof *.lot *.fls *.fdb_latexmk *.synctex.gz
@@ -16,7 +16,7 @@ all: $(MAIN).pdf
 # PDF build rule
 $(MAIN).pdf: $(MAIN).tex
 	$(LATEX) $(MAIN)
-	$(BIBTEX) $(MAIN) || true   # In case you use bibliography
+	$(BIBTEX) $(MAIN)
 	$(LATEX) $(MAIN)
 	$(LATEX) $(MAIN)
 

@@ -30,4 +30,3 @@
 \contentsline {section}{\numberline {6.1}Setul de date TUM RGBD Dataset}{39}{section.6.1}%
 \contentsline {section}{\numberline {6.2}Metrici utilizate}{40}{section.6.2}%
 \contentsline {chapter}{\numberline {7}Concluzii}{43}{chapter.7}%
-\contentsline {chapter}{\numberline {8}Referinte}{45}{chapter.8}%

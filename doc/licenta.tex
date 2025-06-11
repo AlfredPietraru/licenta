@@ -2,7 +2,6 @@
 \usepackage[utf8]{inputenc} 
 \usepackage[romanian]{babel}  
 \renewcommand\familydefault{\sfdefault} 
-
 \usepackage[margin=2.54cm]{geometry}	
 \usepackage{graphicx} 
 \usepackage{amsmath}
@@ -23,7 +22,7 @@
 \usepackage{booktabs} 
 \usepackage{url} 
 \usepackage[bookmarks,unicode,hidelinks]{hyperref}
-
+ 
 \usepackage{array} 
 \usepackage{paralist} 
 \usepackage{verbatim} 
@@ -37,6 +36,8 @@
 \renewcommand{\footrulewidth}{0pt}
 \lhead{}\chead{}\rhead{}
 \lfoot{}\cfoot{\thepage}\rfoot{}
+\usepackage[backend=biber, style=numeric, sorting=none]{biblatex}
+\addbibresource{bibliography.bib}
 
 
 \newcommand{\HeaderLineSpace}{-0.25cm}
@@ -46,7 +47,7 @@ DEPARTAMENTUL DE CALCULATOARE\\}
 \newcommand{\DiplomaRO}{PROIECT DE DIPLOMA}
 \newcommand{\AdvisorRO}{Coordonator științific:}
 \newcommand{\BucRO}{BUCUREȘTI}
-
+ 
 \newcommand{\UniTextEN}{NATIONAL UNIVERSITY OF SCIENCE AND TECHNOLOGY POLITEHNICA BUCHAREST \\[\HeaderLineSpace]
 FACULTY OF AUTOMATIC CONTROL AND COMPUTERS \\[\HeaderLineSpace]
 COMPUTER SCIENCE AND ENGINEERING DEPARTMENT\\}
@@ -122,8 +123,8 @@ fiecare cadru citit, sa fie tolerant la erori si sa poata opera pentru perioade 
 \section{Obiective}
 Obiectivele principale ale lucrarii sunt:
 \begin{itemize}
-    \item studierea, configurarea si implementarea unui sistem de tip ORB-SLAM2
-    \item testarea performantelor folosind seturi de date consacrate, utilzarea unui video
+    \item studierea, configurarea si implementarea unui sistem de tip ORB-SLAM2\cite{orbslam2} 
+    \item testarea performantelor folosind seturi de date consacrate, utilizarea unui video
     realizat de mine pentru etapa de evaluare  
     \item testarea unei implementari in care o camera tip RGBD sa fie inlocuita cu o camera
     monoculara traditionala si o retea neurala, aceasta sarcina presupunand alegerea unei
@@ -133,10 +134,10 @@ Obiectivele principale ale lucrarii sunt:
 
 \section{Solutia propusa}
 Lucrarea propune implementarea algoritmului ORB-SLAM2 adaptat pentru camerele de tip RGBD
-si testarea acestuia pe setul de date TUM RGBD.\@ Se vor analiza aspecte precum acuratetea 
+si testarea acestuia pe setul de date TUM RGBD\cite{tum}. Se vor analiza aspecte precum acuratetea 
 traiectoriei si indeplinirea conditiilor de functionare in timp real. De asemenea, se va 
-incerca inlocuirea matricei de adancime utilizata de camera RGBD, cu o harta de distante 
-calculata de catre reteaua neurala FastDepth.  
+incerca inlocuirea matricei de adancime creata de camera RGBD, cu o harta de distante 
+calculata de catre reteaua neurala FastDepth\cite{fastdepth}.  
 
 \section{Rezultatele obtinute}
 Rezultatele au aratat ca implementarea algoritmului ORB-SLAM2 folosind o camera tip RGBD 
@@ -157,19 +158,19 @@ care le-as fi imbunatatit, problemele intalnite si directiile viitoare.
 \chapter{Cerinte si Motivatie}
 \section{Motivatie}
 Filmele, cartile si jocurile pe calculator ne prezinta un viitor al omenirii in care
-roboti inteligenti indeplinesc sarcinile din viata de zi cu zi sau cele 
-care ar putea pune in pericol siguranta omului. Exista zeci de filme care descriu 
-acest modul in care ar arata un robot inteligent, capabil sa se adapteze la mediu si sa 
-interactioneze cu omul. Desi in momentul de fata suntem departe de a crea un framework 
-suficient de complex pentru un asemenea agent, consider ca algoritmii din categoria 
+roboti inteligenti indeplinesc sarcini complexe, sunt capabili sa discute cu noi si 
+sa se adapteze mediului inconjurator. Desi in momentul de fata suntem departe de a
+crea un framework suficient de complex pentru un asemenea agent, consider ca algoritmii din categoria 
 Visual SLAM sunt un pas in directia corecta. Imi este greu sa imi imaginez un robot care
-sa poata simula compartamentul uman si sa nu fie capabil sa se deplaseze si sa inteleaga mediul in care se afla. Pentru noi, 
+sa poata simula compartamentul uman si sa nu fie capabil sa se deplaseze si sa inteleaga mediul
+in care se afla. Pentru noi, 
 aceste lucruri sunt adanc inradacinate in modul in care functioneaza creierul, dar pentru
-un calculator, a fost nevoie de aproape 20 de ani de cercetare pentru a creea algoritmi 
+un calculator, a fost nevoie de aproape 30 de ani de cercetare pentru a creea algoritmi 
 suficienti de complexi pentru a indeplini niste sarcini minimale de orientare cum ar 
-capacitatea de invatare a mediului si de pozitionare a agentului in spatiu. Chiar si cu
-algoritmii de tip SLAM dezvoltati pana in acest moment, exista numeroase aplicatii 
-practice: 
+capacitatea de invatare a mediului si de pozitionare a agentului in spatiu. Prima
+data conceptul de SLAM a fost definit in anul 1995 in aceasta lucrare\cite{durrant1996slam}, 
+iar de atunci a avut parte de o dezvoltare continua. In ziua de astazi, aceasta categorie 
+de algoritmi au numeroase aplicatii practice: 
 \begin{itemize}
     \item realizarea sarcinilor din viata de zi cu zi: cazul robotilor de curatenie
 sau a celor care transporta obiecte in interiorul unei cladiri 
@@ -197,7 +198,7 @@ verde si cu rosu punctele din spatiu. Toate acstea vor alcatui impreuna harta me
 inconjurator. In fereastra din dreapta va fi afisat fiecare cadru in format alb negru,
 iar cu rosu vor fi marcate feature-urile detectate de algoritmul ORB.\@ Cadrele cheie 
 consecutive sunt conectate intre ele prin intermediul unei drepte de culoare neagra.
-Cadrele cheie si modul in care sunt unite intre ele vor recompune traseul realizat de camera in video. 
+Aceste segmente concatenate vor genera traseul realizat de camera in video. 
 \begin{figure}[htbp] 
   \centering
   \includegraphics[width=1.0\textwidth]{./images/interfata_grafica.png}
@@ -223,14 +224,14 @@ Am considerat potrivita impartirea pe 3 nivele a algoritmilor, in functie gradul
 al tehnicilor de deep learning pentru realizarea operatiile specifice sistemelor SLAM:\@
 \begin{enumerate}
     \item Algoritmi care se bazeaza fundamental pe tehnici de deep learning pentru a functiona, 
-DPV-SLAM, ESLAM.\@
+DPV-SLAM\cite{lipson2024deep}, ESLAM\cite{Wei2024RealTimeDV}.\@
     \item Algoritmi care sunt la granita dintre metodele clasice si cele deep learning, in care 
-doar anumite componente sunt imbunatatite cu ajutorul retelelor neurale: Light-SLAM, HFNet-SLAM.\@
-    \item Algoritmii clasici, care nu folosesc deloc retele neurale: ORB-SLAM3, SVO.\@ 
+doar anumite componente sunt imbunatatite cu ajutorul retelelor neurale: Light-SLAM\cite{Zhao2024LightSLAMAR}, HFNet-SLAM\cite{Liu2023HFNetSLAMAA}.\@
+    \item Algoritmii clasici, care nu folosesc deloc retele neurale: ORB-SLAM3\cite{9440682}, SVO\cite{Forster2014SVOFS}.\@ 
 \end{enumerate}   
 Deep Patch Visual SLAM (DPV-SLAM), este un sistem SLAM care foloseste deep neural networks.
 Acesta imparte operatiile care trebuie realizate in 2 categorii: frontend-ul care realizeaza 
-sarcina de visual odometry cu ajutorul unui sistem derivat din Deep Patch Visual Odometry (DPVO)
+sarcina de visual odometry cu ajutorul unui sistem derivat din Deep Patch Visual Odometry (DPVO)\cite{Teed2022DeepPV}
 si partea de backend alcatuita din 2 metode de loop closure: proximity loop closure si classical
 loop closure. Algoritmul are nevoie intre 5{-}6 GB de memorie pe GPU pentru a putea rula. 
 O alta problema o reprezinta proximity loop closure. Aceasta functioneaza cu ajutorul unei harti
@@ -1552,5 +1553,9 @@ trebui sa o urmeze aceasta clasa de algoritmi de tip SLAM este una in care
 tehnici de Machine Learning sunt folosite pentru a creste viteza si poate 
 acuratetea operatiilor. Aceasta fiind si directia incurajata de lucrarile ce 
 fac parte din state of the art pana la momentul curent.
-\chapter{Referinte}
+
+\printbibliography
+ 
+
+
 \end{document}
