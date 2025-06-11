@@ -15,9 +15,9 @@
 \contentsline {section}{\numberline {4.1}Achiziția datelor}{11}{section.4.1}%
 \contentsline {section}{\numberline {4.2}Extragerea trăsăturilor}{12}{section.4.2}%
 \contentsline {section}{\numberline {4.3}Harta punctelor din spatiu}{14}{section.4.3}%
-\contentsline {section}{\numberline {4.4}Asociere puncte din spatiu cu feature-uri ORB}{15}{section.4.4}%
-\contentsline {section}{\numberline {4.5}Optimizare Estimare Pozitie Initiala}{16}{section.4.5}%
-\contentsline {subsection}{\numberline {4.5.1}Proiectarea MapPoint in planul imaginii}{17}{subsection.4.5.1}%
+\contentsline {section}{\numberline {4.4}Asociere puncte din spațiu cu feature-uri ORB}{15}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Optimizarea Estimării Poziției Inițiale}{16}{section.4.5}%
+\contentsline {subsection}{\numberline {4.5.1}Proiectarea unui MapPoint în planul imaginii}{17}{subsection.4.5.1}%
 \contentsline {subsection}{\numberline {4.5.2}Motion Only Bundle Adjustment}{18}{subsection.4.5.2}%
 \contentsline {section}{\numberline {4.6}Crearea unui cadru cheie}{19}{section.4.6}%
 \contentsline {subsection}{\numberline {4.6.1}Optimizare harta locala}{19}{subsection.4.6.1}%

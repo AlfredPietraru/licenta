@@ -466,35 +466,36 @@ aplicarea unui algoritm de tip Greedy, care teste de verificare a intensității
 varianță, și primele 256 dintre acestea au fost alese pentru a alcătui descriptorul.       
 
 \section{Harta punctelor din spatiu}
-Unul dintre scopurile fundamentale ale algoritmului de ORB-SLAM2, pe langa cel 
-de estimare al traseului camerei este cel de creare a hartii locale a mediului
-inconjurator. Problema este ca, in comparatie cu versiuni mai avansate ale
-acestui algoritm, special modificate pentru o reconstructie cat mai fidela a mediului,
-algoritmul nostru trebuie sa functioneze pentru un sistem embedded care nu are 
-capacitate de procesare suficient de mare, fiind nevoit astfel sa simuleze mediul 
-printr-un nor de puncte cu o densitate redusa (sparse). Cele 2 sarcini sunt 
-dependente una de cealalta, fiecare element din norul de puncte actioneaza ca
-o referinta, o caracteristica a mediului care ar trebui sa fie observata de fiecare 
-data cand punctul se afla in frustum-ul camerei. De exemplu: presupunem ca avem
-o imagine in care este observata in totalitate o masa in interiorul unei incaperi. 
-ORB va identifica aproape instantaneu feature-urile (colturile mesei) si teoretic,
-indiferent de modul in care ne-am roti in jurul mesei, aceleasi feature-uri
-ar trebui sa fie observate de fiecare data, mai mult de atat, considerand ca mediul 
-este static, acestea sunt mereu asociate cu acelasi punct din spatiu, devenind astfel 
-o referinta pe baza careia putem estima modul in care s-ar deplasa camera. 
-In literatura de specialitate, aceste puncte din spatiu sunt  denumite MapPoint-uri 
-iar functionalitatea corecta a algoritmului depinde strict de 
-modul in care aceste MapPoint-uri sunt observate cadru cu cadru. Un astfel de punct 
-in spatiu este creat dintr-un keypoint, dar nu vom avea nevoie de toate punctele din 
-regiunea respectiva si vom considera ca centrul este punctul cel mai semnificativ,  
-avand coordonate \(x\) si \(y\), si distanta fata de camera fiind estimata ca fiind 
-\(d\). Ne vom folosi de matricea transformarii din coordonatele camerei
-in coordonatele globale si de parametrii interni ai camerei \(f_x\), \(f_y\) 
-distanta focala, si \(c_x\), \(c_y\) coordonatele centrului imaginii.
-Vectorul coloana cu 3 dimensiuni reprezinta pozitia in spatiu a feature-ului gasit
-in cadrul curent, astfel am creat primul MapPoint. Ca alternativa,
-pentru a nu lucra cu matrici de dimensiuni $ 4 \times 4 $ putem folosi \(R_{wc}\) reprezentand
-matricea de rotatie si \(t_{wc}\) vectorul de translatie.
+Unul dintre scopurile fundamentale ale algoritmului de ORB-SLAM2, pe lângă cel 
+de estimare a traiectoriei camerei, este cel de creare a hărții mediului
+înconjurător. În comparație cu versiuni mai avansate ale
+acestui algoritm, special modificate pentru o reconstrucție cât mai fidelă a mediului,
+implementarea trebuie să funcționeze pentru un sistem embedded care are  
+capacitate de procesare minimala. Din această cauză, harta creată 
+de către algoritm trebuie să simuleze mediul printr-un nor de puncte cu o
+densitate redusă (sparse), pentru a putea fi ușor de interogat și optimizat. 
+Cele 2 sarcini ale algoritmului de tip SLAM sunt interdependente, fiecare 
+element din norul de puncte actionează ca o referință, o caracteristică a mediului care
+ar trebui să fie observată de fiecare 
+dată când punctul se află în frustum-ul camerei. De exemplu: presupunem ca avem
+o imagine în care este observată în totalitate o masă în interiorul unei încăperi. 
+ORB va identifica aproape instantaneu feature-urile (colțurile mesei) și
+indiferent de modul în care camera s-ar roti în jurul piesei de mobilier, aceleași feature-uri
+ar trebui să fie observate de fiecare dată. Considerând că mediul 
+este static, feature-urile observate în fiecare cadru ar trebui să fie asociate cu aceleași puncte din spatiu, 
+devenind astfel o referință pe baza căreia putem estima modul în care s-a deplasat camera. 
+În literatura de specialitate, aceste puncte din spațiu sunt denumite MapPoint-uri, 
+iar funcționalitatea corectă a algoritmului depinde strict de 
+modul în care aceste entitați sunt observate cadru cu cadru. Un astfel de punct 
+este creat prin proiectarea în spațiu a unui keypoint. Considerăm 
+coordonatele în imagine ale centrului zonei cheie ca fiind  \(x\) și \(y\), pentru cele 
+2 axe și distanța față de cameră, extrasă din harta de adâncime, notată cu \(d\). Ne vom 
+folosi de matricea transformării din coordonatele camerei
+în coordonatele globale și de parametrii interni ai camerei \(f_x\), \(f_y\) 
+distanța focală, și \(c_x\), \(c_y\) coordonatele centrului imaginii.
+Vectorul coloană cu 3 dimensiuni reprezintă poziția în spațiu a MapPoint-ului creat.
+Ca alternativă, pentru a nu lucra cu matrici de dimensiuni $ 4 \times 4 $ putem folosi \(R_{wc}\) reprezentând
+matricea de rotație și \(t_{wc}\) vectorul de translație.
 
 \begin{equation} 
 \begin{bmatrix}
@@ -521,68 +522,68 @@ d \\
     \end{bmatrix} + t_{wc}
 \end{equation}
 
-In literatura de specialitate MapPoint-urile sunt considerate ca fiind 
-niste ancore (landmark) pozitionate dinamic de catre algoritm, acestea sunt asociate
-cu un anumit cadru cheie si ne vor ajuta in optimizarea matricei de pozitie dar si
-pentru sarcina de relocalizare si de memorare a zonelor cunoscute.
+În literatura de specialitate MapPoint-urile sunt considerate niște ancore (landmark),
+ poziționate dinamic de către algoritm. Acestea sunt asociate
+cu un anumit cadru cheie și ne vor ajuta în optimizarea matricei de poziție dar și
+pentru sarcina de relocalizare și de memorare a zonelor cunoscute.
 
-\section{Asociere puncte din spatiu cu feature-uri ORB}
-Ca date de intrare avem feature-urile si descriptorii extrasi din imagine, matricea
-de adancime si harta de MapPoint-uri. Scopul acestei componente este sa gaseasca 
-cat mai multe asocieri de 1:1 intre feature-uri si MapPoint-uri. Intr-un caz ideal
-fiecare feature gasit ar trebui sa aiba asociat un MapPoint, dar in realitate nu se 
-poate intampla acest lucru din 2 motive: 
-imperfectiuni ale algoritmului ORB de detectie ale feature-urilor: acesta nu garanteaza 
-ca acelasi feature va fi gasit de fiecare data pentru cadre consecutive si faptul ca 
-modelul isi schimba orientarea, facand ca MapPoint-urile aflate la limita campului 
-vizual al camerei sa nu mai poata fi observate. Un MapPoint este un feature 
-al unui cadru anterior, proiectat in spatiu. In final, aceasta componenta realizeaza 
-tot o comparare de feature-uri intre cadrul curent, si multiple cadre anterioare.
-Aceasta operatie de comparare se realizeaza prin intermediul distantei Hamming dintre
-descriptori, cu cat valoarea obtinuta este mai mica, cu atat cele 2 feature-uri sunt 
-mai asemanatoare. Exista mai multe tipuri de algoritmi folositi pentru feature 
-matching, dar cel folosit in implementarea curenta este Brute Force Feature Matching
-optimizat. Acest algoritm primeste ca date de intrare 2 seturi de feature-uri si 
-incearca sa gaseasca asocieri intre ele. Asocierele sunt facute cu ajutorul descriptorilor,
-se calculeaza distanta Hamming iar daca valoarea obtinuta este minima, perechea 
-respectiva de feature-uri se considera ca a fost corect asociata. Pentru ORB-SLAM2 
-o potrivire intre 2 keypoint-uri arata ca ele se refera la exact acelasi punct din spatiu,
-observat din 2 imagini diferite.
-Daca \(N\) este numarul de feature-uri din primul set, \(M\) numarul de feature-uri din 
-al doilea set si \(D\),dimensiunea descriptorului, in cazul nostru ORB este 32, complexitatea
+\section{Asociere puncte din spațiu cu feature-uri ORB}
+Ca date de intrare avem feature-urile și descriptorii extrași din imagine, matricea
+de adâncime și harta de MapPoint-uri. Scopul acestei componente este să gasească
+cât mai multe asocieri de 1:1 între feature-uri și MapPoint-uri. Într-un caz ideal,
+fiecare feature găsit ar trebui să aibă asociat un MapPoint. În pratică, această situație
+nu poate avea loc din 2 motive: imperfecțiuni ale algoritmului de detecție ale feature-urilor 
+și probleme cauzate de traiectorie. Algoritmul ORB nu garantează că pentru cadre 
+consecutive, vor fi observate mereu aceleași feature-uri. Iar în cazul deplasării,
+dacă agentul își schimbă constant direcția sau apar frecvent operații de rotație, algoritmul 
+nu poate observa punctele vechi din spațiu, fiind nevoit să creeze altele noi.\\
+Un MapPoint este un feature al unui cadru anterior, proiectat în spațiu. În final, 
+această componentă realizează tot o comparare de feature-uri între cadrul curent, 
+și multiple cadre anterioare folosind descriptorii asociati si calculand distanta Hamming.
+Cu cât valoarea acestei distanțe este mai mică, cu atât cele 2 feature-uri sunt 
+mai asemănătoare. Există mai multe tipuri de algoritmi folosiți pentru feature 
+matching. În implementarea curentă singurul utilizat este Brute Force Feature Matching
+optimizat. Acest algoritm primește ca date de intrare 2 seturi de feature-uri și 
+încearcă să găsească asocieri între ele. Asocierele sunt făcute cu ajutorul descriptorilor.
+Se calculează distanța Hamming iar dacă valoarea obtinută este minimă, perechea 
+respectivă de feature-uri a fost corect asociată. Pentru ORB-SLAM2 
+o potrivire între 2 keypoint-uri arată că ele fac referire la exact acelasi punct din spatiu,
+observat din cadre diferite.
+Daca \(N\) este numărul de feature-uri din primul set, \(M\) numărul de feature-uri din 
+al doilea set si \(D\), dimensiunea descriptorului, în cazul nostru 32, complexitatea
 algoritmului devine \(O(N * M * D)\). Destul de costisitor de folosit
-pentru un sistem in timp real, mai mult de atat este predispus la erori, compararea 
-feature-urilor nu tine cont de locatia acestora in imagine, obtinandu-se astfel asocieri
+pentru un sistem in timp real, mai mult de atât este predispus la erori, compararea 
+feature-urilor nu ține cont de locația acestora în imagine, obținându-se astfel asocieri
 care matematic par corecte, dar ele nu au sens din punct de vedere logic. Pentru a rezolva
-aceasta problema si a reduce complexitatea temporala se stabileste o fereastra circulara de 
-dimensiune prestabilita in jurul punctului de proiectie unde se pot cauta feature-uri.
-O data ce 2 keypoint-uri au fost considerate ca facand referinta la acelasi punct din spatiu,
+această problemă și a reduce complexitatea temporală, se stabilește o fereastră circulară de 
+dimensiune prestabilită în jurul punctului de proiecție, unde se pot căuta feature-uri.
+O dată ce 2 keypoint-uri au fost considerate ca făcând referintă la acelasi punct din spatiu,
 cadrului curent ii este asociat un nou MapPoint. 
 
-\section{Optimizare Estimare Pozitie Initiala}
-Aceasta componenta primeste ca data de intrare estimarea pozitiei curente a camerei
-\(T_{cw}\), si o asociere bijectiva intre feature-urile gasite in imagine si punctele 
-care exista la momentul respectiv in spatiu. Ca date de iesire vom avea doar matricea 
-pozitiei curente a camerei optimizata. Daca asocierile intre feature-uri si MapPoint-uri
-sunt perfecte, ar trebui ca proiectia punctului din spatiu pe imagine sa se suprapuna pe 
-centrul keypoint-ului. Rareori se petrece acest lucru in practica, iar distanta dintre
-proiectia unui MapPoint si coordonotale centrului feature-ului reprezinta eroarea de 
-asociere. Pentru a minimiza aceasta eroare, exista 2 optimizari care se pot face:
-prima este modificarea valorilor matricei de pozitiei, iar cea de-a doua este modificarea 
-coordonatelor din spatiu ale MapPoint-ului. Inainte de a prezenta algoritmul de optimizare
-folosit, voi arata modul in care se proiecteaza un MapPoint in plan.
-\subsection{Proiectarea MapPoint in planul imaginii}
-Aceasta operatie de proiectie poate fi vazuta ca aplicarea unui functii $ \pi(\cdot) $
-ce primeste ca date de intrare coordonatele globale ale punctului, iar ca rezultat va
-returna coordonatele omogene in planul imaginii. Aceasta transformare se petrece in 
+\section{Optimizarea Estimării Poziției Inițiale}
+Această componenta primește ca date de intrare estimarea poziției curente a camerei
+\(T_{cw}\) și o asociere bijectivă intre feature-urile găsite în imagine și punctele 
+care există la momentul respectiv în spațiu. Ca date de ieșire, vom avea doar matricea 
+\(T_{cw}\) optimizată. Dacă asocierile între feature-uri și MapPoint-uri
+sunt perfecte, ar trebui ca proiecția punctului din spatiu pe imagine să se suprapună pe 
+centrul keypoint-ului pentru fiecare pereche în parte. Rareori se petrece acest lucru în practică, iar distanța dintre
+proiecția unui MapPoint și coordonotale centrului feature-ului reprezintă eroarea de 
+asociere. Pentru a minimiza această eroare, există 2 optimizari care se pot face:
+prima este modificarea valorilor matricei de poziție, iar cea de-a doua este modificarea 
+coordonatelor MapPoint-ului. Înainte de a prezenta algoritmul de optimizare
+folosit, voi arăta modul în care se proiectează un MapPoint în plan.
+\subsection{Proiectarea unui MapPoint în planul imaginii}
+Această operație de proiecție poate fi vazută ca aplicarea unui funcții $ \pi(\cdot) $
+ce primește ca date de intrare coordonatele globale ale punctului, iar ca rezultat va
+returna coordonatele omogene în planul imaginii. Această transformare se petrece in 
 2 etape:
 \begin{enumerate}
-    \item conversia din sistemul de coordonate globale in sistemul de coordonate al camerei
-    \item conversia din sistemul de coordonate al camerei in sistemul de coordonate al imaginii
+    \item conversia din sistemul de coordonate globale în sistemul de coordonate al camerei
+    \item conversia din sistemul de coordonate al camerei în sistemul de coordonate al imaginii
 \end{enumerate}
-In prima etapa putem folosi coordonatele omogene, pentru a face conversia in mod direct.
-Alternativ, putem extrage din matricea de pozitie \(T_{cw}\) atat matricea de 
-rotatie \(R_{cw}\) cat si vectorul coloana de translatie \(t_{cw}\).
+În prima etapă putem folosi coordonatele omogene, pentru a face conversia în mod direct.
+Alternativ, putem extrage din matricea de pozitie \(T_{cw}\) atât matricea de 
+rotație \(R_{cw}\) cât și vectorul coloană de translatie \(t_{cw}\).
 
 \begin{equation}
 \mathbf{X}_{camera} = \mathbf{T}_{cw} \cdot 
@@ -598,21 +599,20 @@ rotatie \(R_{cw}\) cat si vectorul coloana de translatie \(t_{cw}\).
 \mathbf{X}_{camera} = \mathbf{R_{cw}} \cdot \mathbf{X_w} + \mathbf{t_{cw}}
 \end{equation}
 
-Matricea \(T_{cw}\) este utilizata atat pentru a descrie pozitia si orientarea in spatiu 
-cat si pentru a schimba din sistemul de coordonate global in cel al camerei.
-In sistemul de coordonate global, un punct se afla la exact aceeasi valoare indiferent 
-de pozitia camerei care il priveste, in sistemul de coordonate al camerei, pozitia unui 
-MapPoint o sa difere de fiecare data.
-In etapa a doua MapPoint-ul este in sistemul de referinta al camerei, 
+Matricea \(T_{cw}\) este utilizată atât pentru a descrie poziția și orientarea în spațiu 
+cât și pentru a schimba din sistemul de coordonate global în cel al camerei.
+În sistemul de coordonate global, un punct se află la exact aceeași poziție indiferent de 
+camera care îl privește. În sistemul de coordonate al camerei, poziția unui 
+MapPoint o să difere pentru fiecare cadru cheie în parte.
+În etapa a doua MapPoint-ul este în sistemul de referință al camerei, 
 coordonatele fiind reprezentate prin vectorul coloana \(X_{camera}\). Vom considera 
-a 3-a valoare a acestui vector \(Z_c\). Aceasta reprezinta distanta dintre planul camerei
-si punctul pe care il analizam. \(Z_c\) ne spune daca punctul respectiv poate fi observat
-in imagine. Daca valoarea \(Z_c\) este mai mica sau egala cu 0, inseamna ca punctul 
-se proiecteaza in spatele camerei, facandu-l invalid. In situatia in care \(Z_c\) este 
-mai mare decat 0, vom realiza conversia in coordonatele omogene ale imaginii cu ajutorul
-urmatoarei formule, \(u\) fiind asociat axei x si \(v\) fiind asociat axei y. Daca 
-valorile \(u\) si \( v \) au valori mai mari ca 0 si mai mici decat dimensiunea imaginii,
-vectorul coloana \([u, v, 1]\) este rezultatul cautat. 
+a 3-a valoare a acestui vector \(Z_c\). Aceasta reprezintă distanța dintre planul camerei
+și punctul pe care il analizăm. \(Z_c\) ne spune dacă un MapPoint poate fi observat
+în imagine. Dacă valoarea \(Z_c\) este mai mică sau egală cu 0, înseamnă că punctul 
+se proiectează în spatele camerei, făcându-l invalid. Altfel, vom realiza conversia
+în coordonatele omogene ale imaginii cu ajutorul următoarei formule, \(u\) fiind asociat
+axei x și \(v\) fiind asociat axei y. Dacă valorile \(u\) și \( v \) au valori mai mari ca 0
+și mai mici decât dimensiunea imaginii, vectorul coloană \([u, v, 1]\) este rezultatul căutat. 
 
 \begin{equation}
     \begin{bmatrix}
@@ -637,29 +637,27 @@ vectorul coloana \([u, v, 1]\) este rezultatul cautat.
 
 
 \subsection{Motion Only Bundle Adjustment}
-Algoritmul folosit in aceasta etapa se numeste Motion Only Bundle Adjustment\cite{bundleAdjustment}. Acesta 
-modifica doar matricea pozitiei curente a camerei. Coordonatele punctelor din spatiu sunt
-considerate ca fiind constante. Algoritmul este unul iterativ, minimizand o functie de cost.
-Forma generala a functiei de cost este suma erorilor de proiectie pentru toate perechile
-(feature, MapPoint). Iar formula generala este aceasta.
+Algoritmul folosit în această etapă se numește Motion Only Bundle Adjustment\cite{bundleAdjustment}. Acesta 
+modifică doar matricea poziției curente a camerei. Coordonatele punctelor din spațiu rămân nealterate. 
+Algoritmul este unul iterativ, minimizând o functie de cost. Forma generală pentru funcția de eroare este suma
+erorilor de proiecție pentru toate perechile (feature, MapPoint).
  \begin{equation}
     \mathbf{R}_{cw}, \mathbf{t_{cw}} = \min_{\mathbf{R}_{cw}, t_{cw}} \sum_{i=1}^{N} \rho\left( \left\| \mathbf{x}_i - K \cdot \left( \mathbf{R}_{cw} \cdot \mathbf{X}_i + \mathbf{t_{cw}} \right) \right\|^2 \right)
 \end{equation}
 
-In aceasta formula, \(x_i\) reprezinta coordonatele omogene feature-ului in sistemul de 
-coordonatele al imaginii
-iar \(X_i\) reprezinta coordonatele globale ale MapPoint-ului pentru care calculam eroarea
-de proiectie. Simbolul $ \rho(\cdot) $ reprezinta functia Huber\cite{huber1964} pentru scalarea valorilor de eroare.
-Daca o asociere intre un feature si un MapPoint nu este potrivita, diferenta dintre centrul feature-ului
-si proiectia MapPoint-ului este mai mare decat un prag prestabilit. Aceasta diferenta, lasata nemodificata,
-ar destabiliza algoritmul. Iar o astfel de problema este usor de observat, daca modificarea matricei
-de pozitie duce la variatii enorme a orientarii sau a translatiei intre 2 cadre consecutive, 
-atunci cel mai probabil asocierile intre feature-uri si MapPoint-uri aveau valori eronate. 
-Termenul de \(outlier\) este folosit pentru a descrie o pereche incorecta. Functia de pierdere Huber reduce 
-valoarea acestor outlier-ere permitandu-le in acelasi timp sa faca parte din algoritmul de 
-optimizare. In acest fel algoritmul devine mai robust si capabil ajunga la o valoare optima 
-in mai putine iteratii. Mai jos este prezentata formula matematica a functiei Huber Loss, 
-unde $ \delta $ reprezinta un numar real pozitiv, toleranta a erorii de proiectie. 
+În această formulă, \(x_i\) reprezintă poziția unui feature în sistemul de 
+coordonatele al imaginii iar \(X_i\) reprezintă coordonatele globale ale MapPoint-ului pentru care calculăm eroarea
+de proiecție. Simbolul $ \rho(\cdot) $ reprezintă funcția Huber\cite{huber1964} pentru scalarea valorilor de eroare.
+Dacă o asociere între un feature și un MapPoint este incorectă, diferența dintre centrul feature-ului
+și proiecția MapPoint-ului este mai mare decât un prag prestabilit. Această eroare, lăsată nemodificată,
+ar destabiliza algoritmul făcând ineficient procesul de optimizare. Parteea bună este că o astfel de problemă
+este ușor de observat. Dacă modificarea matricei de poziție duce la variații enorme a orientării sau a translației
+între 2 cadre consecutive, atunci cel mai probabil asocierile între feature-uri și MapPoint-uri aveau valori eronate. 
+Termenul de \(outlier\) este folosit pentru a descrie o pereche incorectă. Funcția de pierdere Huber reduce 
+valoarea acestor outlier-ere permițându-le în același timp să facă parte din algoritmul de 
+optimizare. În acest fel, Motion Only Bundle Adjustment devine mai robust și capabil ajungă la o valoare optimă 
+în mai puține iterații. Mai jos este prezentată formula matematică a funcției Huber Loss, 
+unde $ \delta $ reprezintă un număr real pozitiv, toleranța erorii de proiectie. 
 
 \begin{equation}
 \rho(s) =
@@ -669,34 +667,33 @@ unde $ \delta $ reprezinta un numar real pozitiv, toleranta a erorii de proiecti
 \end{cases}
 \end{equation}
 
-In urma executiei algoritmului obtinem matricea de pozitie optimizata, mai mult de atat,
-stim care dintre perechile (feature, MapPoint) au avut statutul de outlier si le putem 
-elimina pentru a nu influenta in mod negativ functionalitatea algoritmului.
+În urma execuției algoritmului obținem matricea de pozitie optimizată, mai mult de atât,
+știm care dintre perechile (feature, MapPoint) au avut statutul de outlier și le putem 
+elimina pentru a nu influența în mod negativ funcționalitatea algoritmului.
 
 \section{Crearea unui cadru cheie}
-Aceasta componenta primeste ca date de intrare absolut toate informatiile procesate de 
-pana acum pentru cadrul curent: imaginea de tip rgb, matricea de adancime, punctele cheie,
-descriptorii, asocierile (feature, MapPoint) si matricea estimarii pozitiei. 
-Toate acestea impreuna vor alcatui un cadru cheie care va fi salvat in memorie.
-Salvarea pozitiilor cadrelor anterioare ne poate ajuta in 2 feluri. Putem folosi doar 2 
-cadre anterioare pentru a estima pozitia celui care urmeaza bazandu-ne pe legea inertiei. 
-Consider ca o data inceputa deplasarea camerei intr-o anumita directie, este foarte 
-probabil ca aceea miscare sa fie mentinuta si la urmatorul cadru. Fie \(T_{cw}\) matricea de 
-pozitie pentru cadrul la care vrem sa estimam deplasarea, iar \(T_{cw1}, T_{cw2} \) matricile 
-de pozitie a celor 2 cadre imediat predecesoare. Formula de estimare a pozitiei curente este:
+Această componentă primește ca date de intrare absolut toate informațiile procesate de 
+până acum pentru cadrul curent: imaginea de tip rgb, matricea de adâncime, punctele cheie,
+descriptorii, asocierile (feature, MapPoint) și matricea estimării poziției. 
+Toate acestea împreuna vor alcătui un cadru cheie care va fi salvat în memorie.
+Salvarea pozițiilor cadrelor anterioare ne poate ajuta in 2 feluri: Putem folosi 2 
+cadre anterioare pentru a estima poziția celui care urmează bazându-ne pe legea inerției. 
+O dată începută deplasarea camerei într-o anumită directie, este foarte 
+probabil ca aceea miscare să fie menținută și la următorul cadru. Fie \(T_{cw}\) matricea de 
+poziție pentru cadrul la care vrem să estimăm deplasarea, iar \(T_{cw1}, T_{cw2} \) matricile 
+de poziție a celor 2 cadre imediat predecesoare. Formula de estimare a poziției curente este:
 
 \begin{equation}
 \mathbf{T_{cw}} = \mathbf{T_{cw1}} \cdot \left( \mathbf{T_{cw2}}^{-1} \cdot \mathbf{T_{cw1}} \right)
 \end{equation} 
 
-Al doilea motiv pentru care avem nevoie de cadre cheie este recreearea mediului si a traseului parcus.
-Incercam sa salvam numarul minim de cadre necesare pentru a reproduce harta de MapPoint-uri a mediului
-inconjurator. Un cadru cheie nou (KeyFrame) aduce cu sine MapPoint-uri noi, extrase din feature-urile
-gasite in imaginea respectiva. Functionarea corecta a urmarii cadru cu cadru, este determinata de numarul de 
-MapPoint-uri gasite in imaginea curenta in comparatie cu un cadru de referinta. In momentul 
-in care numarul de puncte cheie gasite in imaginea curenta scade sub un anumit prag, stim ca este
-necesar un nou cadru cheie care: sa stabilizeze urmarirea, sa introduca noi MapPoint-uri, si sa 
-ajute la optimizarea intregii harti a mediului. 
+Al doilea motiv pentru care avem nevoie de cadre cheie este recreearea mediului și a traseului parcus.
+Încercam să salvam numărul minim de cadre necesare pentru a reproduce harta de MapPoint-uri a mediului
+înconjurător. Un cadru cheie nou (KeyFrame) aduce cu sine MapPoint-uri noi, extrase din feature-urile
+găsite în imaginea respectivă. Funcționarea corectă a urmării cadru cu cadru, este determinată de numărul de 
+MapPoint-uri găsite în imaginea curentă în comparatie cu un cadru de referintă. În momentul 
+În care numărul de puncte cheie găsite în cadrul curent scade sub un anumit prag, știm că este
+necesară salvarea acestuia și creearea unor noi MapPoint-uri pentru a stabiliza urmărirea. 
 
 \subsection{Optimizare harta locala}
 Harta locala este alcatuita din KeyFrame-uri si MapPoint-uri. Pentru a optimiza
@@ -1566,7 +1563,4 @@ acuratetea operatiilor. Aceasta fiind si directia incurajata de lucrarile ce
 fac parte din state of the art pana la momentul curent.
 
 \printbibliography
- 
-
-
 \end{document}
