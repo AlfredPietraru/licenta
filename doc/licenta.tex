@@ -403,18 +403,18 @@ intre ele, din aceasta cauza ne folosim de descriptori. Acestia sunt vectori de 
 dimensiuni care trebuie sa surprinda informatia esentiala observata in zona respectiva din
 imagine, in mod ideal descriptorii ar trebui sa ramana invariabili la operatiile de 
 redimensionare si rotatie aplicate pe keypoint-uri. 
-Algoritmului Oriented Fast and Rotated Brief (ORB) este folosit pentru extragerea de 
+Algoritmului Oriented Fast and Rotated Brief (ORB)\cite{Rublee2011ORBAE} este folosit
+pentru extragerea de 
 keypoint-uri si descriptori. A fost creat in anul 2011 ca alternativa pentru alti algoritmi
-de extragere de feature-uri precum SIFT si SURF.\@ Motivul pentru care acesta a ajuns atat de popular 
-se datoreaza mai multor factori:
+de extragere de feature-uri precum SIFT\cite{sift} si SURF\cite{bay2006surf}.\@ Motivul pentru
+care acesta a ajuns atat de popular se datoreaza mai multor factori:
 \begin{itemize}
-    \item Este mult mai rapid decat SIFT si SURF fiind mult mai potrivit pentru sisteme
-in timp real si pentru dispozitive embedded.
+    \item Este mult mai rapid decat SIFT si SURF, fiind mult mai potrivit pentru sisteme
+in timp real si pentru dispozitive embedded\cite{comparisonsiftsurforb}.
     \item la momentul realizarii lucrarii stiintifice ORB-SLAM2 atat SIFT cat 
 si SURF se aflau sub protectia drepturilor de autor, ORB nu avea o astfel de restrictie
     \item ORB este invariant din punct de vedere al rotatiei   
-    \item Foloseste descriptori binari, care pot fi usor de comparat folosind distanta Hamming,
-    aceasta converteste in biti vectorul de elemente obtinute, 
+    \item Foloseste descriptori binari, care pot fi usor de comparat folosind distanta Hamming\cite{hamming1950}, 
 \end{itemize}
 Implementarea algoritmului ORB poate fi separata in 2 componente, calcularea keypoint-urilor si 
 cea a descriptorilor. Pasii pe care ii urmeaza algoritmul sunt realizati intr-un for loop.
@@ -422,14 +422,14 @@ ORB extrage feature-uri la diferite dimensiuni ale imaginii, pentru a crea trasa
 robuste la modificarea distantei. Numarul de executii al buclei for, este acelasi cu numarul de 
 resize-uri pe care trebuie sa le aplice algoritmul. 
 \begin{enumerate}
-    \item Calcularea keypoint-urilor folosind algoritmul FAST-9.
-    \item Selectarea celor mai potrivite keypoint-uri folosind Harris Corner Measure, Trasaturile
+    \item Calcularea keypoint-urilor folosind algoritmul FAST-9\cite{fast}.
+    \item Selectarea celor mai potrivite keypoint-uri folosind Harris Corner Measure\cite{Harris1988ACC}, Trasaturile
 sunt sortate in ordine descrescatoare si sunt selectate primele N cele mai potrivite
     \item Pentru fiecare keypoint se calculeaza orientarea acestuia folosind intensitatea
 centroidului, dupa aceasta operatie avem toate informatiile necesare despre keypoint-uri.
     \item Inainte de a calcula descriptorii se aplica o operatie de smoothing Gaussian pentru fiecare 
 zona selectata de un keypoint avand  $ 31 \times 31 $ de pixeli, folosind un kernel cu o dimensiune de $ 5 \times 5 $.
-    \item se calculeaza descriptorii de tip steer BRIEF, avand valorile modificate dupa unghiul
+    \item se calculeaza descriptorii de tip steer BRIEF\cite{brief}, avand valorile modificate dupa unghiul
 dat de orientare. Operatia de modificare a orientarii duce la o variatie redusa a valorilor 
 bitilor din descriptori si la o corelatie puternica intre acestia, facand descriptorii ineficienti
     \item Se obtine rBRIEF o varianta optimizata a algoritmul steer BRIEF, prin alegerea bitilor
@@ -631,7 +631,7 @@ vectorul coloana \([u, v, 1]\) este rezultatul cautat.
 
 
 \subsection{Motion Only Bundle Adjustment}
-Algoritmul folosit in aceasta etapa se numeste Motion Only Bundle Adjustment. Acesta 
+Algoritmul folosit in aceasta etapa se numeste Motion Only Bundle Adjustment\cite{bundleAdjustment}. Acesta 
 modifica doar matricea pozitiei curente a camerei. Coordonatele punctelor din spatiu sunt
 considerate ca fiind constante. Algoritmul este unul iterativ, minimizand o functie de cost.
 Forma generala a functiei de cost este suma erorilor de proiectie pentru toate perechile
@@ -643,7 +643,7 @@ Forma generala a functiei de cost este suma erorilor de proiectie pentru toate p
 In aceasta formula, \(x_i\) reprezinta coordonatele omogene feature-ului in sistemul de 
 coordonatele al imaginii
 iar \(X_i\) reprezinta coordonatele globale ale MapPoint-ului pentru care calculam eroarea
-de proiectie. Simbolul $ \rho(\cdot) $ reprezinta functia Huber pentru scalarea valorilor de eroare.
+de proiectie. Simbolul $ \rho(\cdot) $ reprezinta functia Huber\cite{huber1964} pentru scalarea valorilor de eroare.
 Daca o asociere intre un feature si un MapPoint nu este potrivita, diferenta dintre centrul feature-ului
 si proiectia MapPoint-ului este mai mare decat un prag prestabilit. Aceasta diferenta, lasata nemodificata,
 ar destabiliza algoritmul. Iar o astfel de problema este usor de observat, daca modificarea matricei
@@ -767,7 +767,7 @@ E_{kj} = \left\| \mathbf{x}_{j} - K \cdot \left(\mathbf{R}_k \mathbf{X}_j + \mat
 \subsection{Reteaua Neurala FastDepth}
 Retele Neurale Artificiale sunt o tehnica des intalnita in Machine Learning pentru a rezolva 
 sarcini complexe pentru care nu exista solutii algoritmice clar definite sau implementarea acestora 
-este mult prea costisitoare. Retele neurale definesc o functie nonliniara care gaseste o 
+este mult prea costisitoare. Conform \cite{GURESEN2011426} si \cite{prince2023understanding} retele neurale definesc o functie nonliniara care gaseste o 
 corespondenta intre un set multivariat de date de intrare \(x\) si un set multivariat de 
 date de iesire \(y\), modificand un set de parametrii $ \phi $, $ f(x, \phi) = y $. Aceasta este
 alcatuita dintr-un numar enorm de elemente de procesare care contin parametrii functiei $ \phi $,
@@ -778,7 +778,7 @@ straturi ascunse. Aceastea fac prelucrarea informatiei primite de la straturile 
 si o transmit mai departe. Spunem ca o retea neurala invata din datele primite, daca isi 
 modifica parametrii $ \phi $ astfel incat sa reprezinte cu mai multa acuratete corespondenta
 intre datele de intrare \(x\) si cele de iesire \(y\).
-FastDepth este o arhitectura de retea neurala folosita pentru estima adancimii in imagini. 
+FastDepth\cite{fast} este o arhitectura de retea neurala folosita pentru estima adancimii in imagini. 
 Aceasta primeste o imagine de tip RGB al interiorului unei incaperi si returneaza o matrice
 cu valori in intervalul $0m - 10m$ estimand pentru fiecare pixel in parte distanta de la
 planul de proiectie al imaginii pana la punctul din spatiu surprins de fotografie. Scopul nostru
@@ -808,16 +808,16 @@ precedent si transmitea output-ul la stratul imediat urmator. Informatia circula
 intrarea in retea pana la finalul acesteia. Abordarea s-a dovedit eficienta in situatiile 
 in care era nevoie de retele neurale de mici dimensiuni, cu un numar redus de straturi si 
 parametrii. In momentul in care crestea complexitatea, abordarea de feed forward neural network 
-devenea greu de antrenat si dadea rezultate mai slabe. Pentru a rezolva aceasta problema 
-au aparut arhitecturile de tip residual network. Acestea au aplicatii in procesarea imaginilor,
+devenea greu de antrenat si dadea rezultate mai slabe\cite{GURESEN2011426}. Pentru a rezolva aceasta problema 
+au aparut arhitecturile de tip residual network. Acestea au aplicatii in procesarea imaginilor\cite{he2015deepresiduallearningimage},
 unde datele de intrare au dimensiuni mari si este nevoie de multe nivele pentru a extrage
 suficiente informatii. Principiul de functionare este utilizarea unor straturi reziduale 
 denumite si skip connections, in care rezultatul unui strat este salvat si transmis ca data de
 intrare la un alt nivel decat la cel imediat urmator. Abordarea aceasta pastreaza din informatiile initiale ale 
 datelor de intrare in straturile viitoare stabilizand antrenarea. O alta arhitectura des 
 intalnita este cea de encoder-decoder folosita in numeroase aplicatii practice in ceea ce 
-priveste imaginile: sarcini de colorare a imaginilor gri, reconstructie a imaginilor care 
-contin parti lipsa si de generare de imagini: un exemplu fiind Variational Auto Encoder. \\
+priveste imaginile: sarcini de colorare a imaginilor gri\cite{imageColorization}, reconstructie a imaginilor care 
+contin parti lipsa si de generare de imagini: un exemplu fiind Variational Auto Encoder\cite{Islam2023FastAE}. \\
 Pe langa tipurile de arhitecturi propuse, exista mai multe categorii de straturi in retele neurale.
 Primele folosite erau cele fully connected unde fiecare element de procesare era conectat 
 cu toate celelalte elemente de procesare din stratul urmator. Matematic, operatia poate fi vazuta 
@@ -836,7 +836,7 @@ convolutional. In formula \(h_{ij}\) reprezinta intensitatea pixelului dupa calc
 operatiei de convolutie, iar \(x_{ij}\) este valoarea intensitatii pixelului de pe coloana i si linia j.  
 Litera \(a\) reprezinta functia de activare folosita iar \(\beta\) este o valoare numerica
 denumita bias. Acesta poate fi modificat in timpul antrenarii si creste
-capacitatea de generalizare a functiei de convolutie.  
+capacitatea de generalizare a functiei de convolutie\cite{prince2023understanding}.  
 \begin{equation}
 h_{ij} = a \left[ \beta + \sum_{m=1}^{3} \sum_{n=1}^{3} \omega_{mn} x_{i+m-2, j+n-2} \right]
 \end{equation}
@@ -846,31 +846,36 @@ cu dimensiunile \([d_{in}, h, w]\) unde \(d_{in}\) este numarul de canale,  \(h 
 Kernelul folosit are dimensiunile \([k, k, d_{in}, d_{out}]\),
 unde \(d_{out}\) este numarul de canale rezultate in urma convolutiei.
 In total se vor executa $ h \cdot w \cdot d_{in} \cdot d_{out} \cdot k \cdot k$ operatii.
-Pentru  a rezolva aceasta problema a fost creat un strat numit Depthwise Separable Convolutions, 
+Pentru  a rezolva aceasta problema a fost creat un strat numit Depthwise Separable Convolutions\cite{sifre2014rigidmotionscatteringtextureclassification}, 
 obtinut prin compunerea a 2 straturi de convolutie, unul numit depthwise convolution,
 iar celalalt pointwise convolution. Aceasta abordare creste viteza de procesare si imbunatateste
 acuratetea in sarcini de clasificare pentru seturi de date precum ImageNet ILSVRC2012. In cazul 
 depthwise convolution, fiecare canal al datelor de intrare este procesat de un singur kernel
 al stratului de convolutie. Pointwise convolution uneste printr-o combinatie liniara 
 rezultatul procesarii fiecarui canal. Complexitatea temporala obtinuta astfel este de:
-$ h \cdot w \cdot d_{in} \cdot (k^2 + d_{out})$. \\ 
+$ h \cdot w \cdot d_{in} \cdot (k^2 + d_{out})$\cite{fast}. \\ 
 
 FastDepth foloseste tehnica de skip connections, straturile finale primind ca date de intrare
 valorile calculate de straturile aflate la inceput, si urmeaza o arhitectura encoder-decoder. 
 Encoder-ul transforma datele de intrare intr-o forma mai compacta asemeni unei operatii de arhivare.
-Aceasta este realizata folosind o alta retea neurala numita Mobile\_Net si ulterior Mobile\_Netv2 
+Aceasta este realizata folosind o alta retea neurala numita Mobile\_Net\cite{howard2017mobilenetsefficientconvolutionalneural} si 
+ulterior Mobile\_Netv2\cite{sandler2019mobilenetv2invertedresidualslinear} 
 care reduce numarul de parametrii si creste viteza de procesare fara a impacta acuratetea. 
 Partea de decoder este alcatuit din 5 straturi de tip depthwise convolution fiecare urmate de o 
 interpolare liniara care dubleaza dimensiunea rezultatului, ultimul strat fiind un 
 pointwise convolution care uneste canalele obtinute si returneaza matricea de adancime. Pentru
-Mobile\_Netv2 exista parametrii preantrenati in libraria Pytorch pe setul de date ImageNet
+Mobile\_Netv2 exista parametrii preantrenati in libraria Pytorch\cite{paszke2017automatic} pe setul de date ImageNet
 fiind un motiv in plus de a folosi aceasta arhitectura in dezvoltarea FastDepth. 
 Mobile\_Netv2 foloseste atat depthwise convolution cat si pointwise convolution intr-un
 strat numit Inverted Residual, acesta fiind alcatuit din urmatoarele componente unde $ t $ 
 este factorul de multiplicare al numarului de canale, $ s $ este parametrul de stride, determina 
-daca se micsoreaza numarul de canale, $ h, w, d $ sunt dimensiunile matricei de intrare. \\
-
-\textbf{DE INSERAT AICI IMAGINEA}
+daca se micsoreaza numarul de canale, $ h, w, d $ sunt dimensiunile matricei de intrare:
+\begin{figure}[htbp] 
+  \centering
+  \includegraphics[width=1.0\textwidth]{./images/bottleneck_residual_block.png}
+  \caption{Straturile unui bloc de tip Inverted Residual, preluat din\cite{sandler2019mobilenetv2invertedresidualslinear}}
+  \label{fig:bottleneck_residual_block}
+\end{figure}
 % continuare detaliere mobileNet_v2
 % adaugare poze
 
@@ -879,7 +884,7 @@ daca se micsoreaza numarul de canale, $ h, w, d $ sunt dimensiunile matricei de 
 \section{Limbaje de programare si librarii folosite}
 Implementarea este realizata in C++17. Pentru management-ul librariilor si al codului folosesc
 CMake 3.28.3. Acesta imi permite sa grupez in foldere codul scris de mine si face operatia de 
-linking automat cu binarele pachetelor folosite. Librariile principale sunt OpenCV 4.9.0, Ceres 2.2.0, Eigen 3.4.0, DBoW2 si ultima versiune de Sophus
+linking automat cu binarele pachetelor folosite. Librariile principale sunt OpenCV\cite{itseez2015opencv} 4.9.0, Ceres\cite{CeresSolver} 2.2.0, Eigen 3.4.0, DBoW2\cite{bagofwordslibrary} si ultima versiune de Sophus
 pana la data de ianuarie 2025. In comparatie cu alte librarii care inca mai trec 
 prin diverse update-uri, Sophus a intrat intr-o etapa de mentenanta, dezvoltarea efectiva a 
 acestuia fiind finalizata din iunie 2024. O prima problema pe care am intalnit-o a fost gasirea 
@@ -903,7 +908,7 @@ parametrii de care am avut nevoie in fiecare etapa de procesare a cadrelor. Pe l
 lucruri, OpenCV are un modul dedicat pentru citirea parametrilor retelelor neurale din fisierele care 
 urmeaza un format de tip ONNX, fiind o alternativa potrivita daca vreau sa utilizez un model doar 
 pentru sarcini de inferenta.  \\
-Ca librarie de optimizare am avut de ales intre Ceres si g2o. In implementarea oficiala 
+Ca librarie de optimizare am avut de ales intre Ceres si g2o\cite{g2oLibrary}. In implementarea oficiala 
 g2o era cel folosit. Motivul principal fiind ca permite abstractizarea parametrilor care 
 trebuie optimizati si a relatiilor dintre acestia sub forma unui graf neorientat. 
 API-ul de g2o permite activarea si dezactivarea anumitor noduri, pentru a face implementarea 
@@ -1337,7 +1342,7 @@ in spatiu.
 
 Pentru reteaua Neurala FastDepth pipeline-ul de antrenare a fost scris folosind libraria Pytorch
 iar pentru operatiile de preprocesare folosesc libraria Albumentations. Setul de date pe care 
-am facut antrenarea se numeste Nyu Depthv2 Dataset si l-am obtinut de pe Kaggle. Rezultatul 
+am facut antrenarea se numeste Nyu Depthv2 Dataset\cite{nyudataset} si l-am obtinut de pe Kaggle. Rezultatul 
 acestui pipeline trebuie sa fie un fisier de tip ONNX cu valorile parametrilor retelei FastDepth 
 in urma antrenarii pe setul de date. O problema pe care am observat-o la setul de date este ca 
 pentru imaginile de antrenament, adancimile sunt exprimate ca fiind in intervalul $ [0, 255] $, pe cand in setul 
@@ -1345,7 +1350,7 @@ de date de validare, acestea se afla intre $ [0, 10000] $ reprezentand valorile 
 distantelor. O limitarea acestui set de date este ca nu poate detecta distante mai mari de 10 metri.
 Dar considerand ca algoritmul trebuie sa functioneze pentru incaperi de mici dimensiuni, consider ca 
 aceasta distanta maxima nu ar trebui sa reprezinte o problema. Pentru antrenare am ales sa urmez lucrarea
-stiintifica si am setat hiperparametrii:
+stiintifica\cite{fastdepth} si am setat hiperparametrii:
 \begin{itemize}
     \item Optimizatorul folosit a fost implementarea din Pytorch pentru Stochastic Gradient Descent, 
 torch.SGD, avand un learning rate de $ 1e-3 $, o valoare a momentumului de $ \beta=0.9 $ si
@@ -1359,7 +1364,7 @@ transformari sunt aplicate atat pe setul de date de antrenare cat si pe cel de t
     \item un batch de date are dimensiune de 8
     \item In lucrarea FastDepth functia de pierdere folosita este L1Loss, aceasta fiind suma diferentelor dintre valoarea 
 reala si cea determinata de reteaua neurala in modul. In implementarea mea am ales sa folosesc o functie de pierdere 
-mai robusta conform acestei lucrari stiintifice. 
+mai robusta conform acestei lucrari stiintifice\cite{lossfunctionidea}. 
 \end{itemize}
 Acuratetea a fost verificata  prin compararea diferentei relative intre valorile obtinute prin inferenta si cele 
 reale cu un factor $ RELATIVE\_ERROR=0.15 $. Aceasta operatie a fost realizata pentru fiecare pixel in parte, iar
@@ -1372,7 +1377,7 @@ converge aproape monoton catre o valoare optima. Functia de pierdere primeste ca
 obtinuta de catre reteaua neurala si matricea cu valori reala din setul de date, denumita groundtruth, si returneaza o valoarea 
 numerica de tip double care exprima cat de departe se afla estimarea noastra de realitate. Ideea antrenarii unei retele 
 neurale este minimizarea acestei valori. Functia de eroare este alcatuita dintr-o combinatie liniara a 
-3 componente diferite: L1Loss, GradientEdgeLoss si Structural Similarity Loss, formula matematica este:
+3 componente diferite\cite{lossfunctionidea}: L1Loss, GradientEdgeLoss si Structural Similarity Loss, formula matematica este:
 \begin{equation}
     loss = 0.6 \cdot L1Loss + 0.2 \cdot GradientEdgeLoss + StructuralSimilarityLoss 
 \end{equation}  
@@ -1395,7 +1400,7 @@ si un rand shiftat vertical pentru axa Y notata $ \frac{\partial I}{\partial y} 
 
 \chapter{Evaluare}
 \section{Setul de date TUM RGBD Dataset}
-Setul de date utilizat pentru a realiza evaluarea se numeste TUM RGBD Dataset. 
+Setul de date utilizat pentru a realiza evaluarea se numeste TUM RGBD Dataset\cite{tum}. 
 Acesta contine numeroase subseturi, fiecare verificand un aspect diferit al implementarii, 
 ajutand la creearea unui imagini de ansamblu cu privire la robustetea algoritmului in functie 
 de mediu in care se lucreaza si de traiectoria pe care o urmeaza. Cele 2 subseturi pe 
