@@ -143,7 +143,7 @@ calculată de către rețeaua neurală FastDepth\cite{fastdepth}.
 Rezultatele au arătat că implementarea algoritmului ORB-SLAM2, folosind o cameră tip RGBD 
 prezintă rezultate bune în medii indoor și că poate funcționa în timp real cu viteze de aproximativ
 10{-}15 cadre pe secundă. Utilizarea unei rețele neurale pentru estimarea distanței nu a 
-avut rezultatele dorite, algoritmul fiind capabil să funcționeze pentru cel mult 50 de cadre.  
+avut rezultatele bune, algoritmul fiind capabil să funcționeze pentru maxim 50 de cadre.  
 
 \section{Structura lucrării}
 Lucrarea este structurată în mai multe capitole. Introducerea oferă contextul lucrării și definește problema abordată, obiectivele și soluția propusă. Capitolul 2 descrie 
@@ -200,8 +200,7 @@ Aceste segmente concatenate vor genera traseul realizat de camera în video.
 \begin{figure}[htbp] 
   \centering
   \includegraphics[width=1.0\textwidth]{./images/interfata_grafica.png}
-  \caption{Interfața grafică, stânga reprezentarea hărții, dreapta extragere feature-uri cu ORB}
-  \label{fig:exemplu_imagine}
+  \caption{Interfața grafică, stânga reprezentarea hărții, dreapta extragere feature-uri cu ORB}\label{fig:exemplu_imagine}
 \end{figure}  \\         
 Ca cerințe nonfuncționale, algoritmul trebuie să meargă în timp real, să 
 proceseze între 10{-}15 cadre pe secundă și să poată fi folosit în sisteme embedded
@@ -273,8 +272,7 @@ estima traiectoria camerei și de a reconstrui o hartă de puncte a mediului în
 doar metode clasice. În comparație cu precedesorul acestuia, implementarea de ORB-SLAM3 folosește
 datele obținute de la Inertial Measurement Unit (IMU) și optimizează rezultatele primite 
 folosind tehnica de Maximum a Posteriori Estimation (MAP). Față de versiunea anterioară a algoritmului, cea
-curentă lucrează
- cu multiple hărți locale, respectiv noruri
+curentă lucrează cu multiple hărți locale, respectiv noruri
 de puncte în spațiu. În momentul în care ORB-SLAM3 pierde orientarea și trebuie să execute 
 o relocalizare, sistemul generează o nouă hartă pentru a menține fluidă procesarea cadru 
 cu cadru. În situația în care tracker-ul recunoaște zona în care a ajuns, acesta încearcă să unească 
@@ -290,13 +288,12 @@ pixelilor în imagini pentru a crea feature-uri, nu doar contururile obiectelor.
 algoritmilor din familia ORB-SLAM care încearcă să optimizeze eroarea de proiecție a punctelor
 din spațiu, aici se folosesc metode directe și trebuie minimizată eroarea fotometrică a 
 pixelilor aflați în apropierea contururilor obiectelor. Este printre cei mai rapizi algoritmi
-de SLAM, procesând peste 100 de cadre pe secundă pe un CPU. Totuși, acesta generează o hartă densă, dar cu 
+de SLAM, procesând peste 100 de cadre pe secundă pe un CPU.\@ Totuși, acesta generează o hartă densă, dar cu 
 puncte de slabă calitate care nu pot fi refolosite, nu există capacitate de relocalizare și 
 este dificil de extins. Așadar, acesta ar putea fi considerat a doua cea mai bună opțiune după ORB-SLAM2.\\
 
 În ciuda faptului că algoritmul ORB-SLAM2 a aparut în 2017, acesta rămâne în continuare 
-un exemplu de sistem bine gândit, cu multe posibilități de extindere și capacitatea de a fi 
-adaptat la cerințele din zilele noastre. Îndeplinește cu succes toate cerințele funcționale 
+un etalon, cu multe posibilități de extindere. Îndeplinește cu succes toate cerințele funcționale 
 și nonfuncționale pe care sistemul ar trebui să le aibă: poate fi folosit în real time,
 implementarea procesând aproximativ 15 cadre pe secundă, creează o hartă a mediului înconjurător
 pe care o poate optimiza, are capacitate de relocalizare și corectează erorile de estimare
@@ -361,53 +358,52 @@ cronologică. Rezultatul poate fi comparat cu fișiere care conțin valorile rea
 care respectă același format pentru a verifica corectitudinea algoritmului.   
 Diagrama UML prezintă etapele principale ale algoritmului. O componentă 
 reprezintă o funcție care se va executa pentru fiecare cadru procesat.  
-În continuare, o să detaliez logica fiecărui bloc din punctul de vedere al algoritmilor folosiți și 
+În continuare, o să detaliez logica fiecărui bloc din punct de vedere al algoritmilor folosiți și 
 al valorilor de intrare și de ieșire asociate acestora.
 
 % AICI
 \begin{figure}[htbp] 
   \centering
   \includegraphics[width=1.0\textwidth]{./images/slam_uml.jpeg}
-  \caption{Diagrama UML de activități a întregului sistem}
-  \label{fig:aici}
+  \caption{Diagrama UML de activități a întregului sistem}\label{fig:slam_uml_fig}
 \end{figure}
  
 \section{Achiziția datelor}
 Scopul acestei componente este citirea imaginii de tip RGB, a matricei de adâncime 
 și estimarea poziției curente a camerei pe baza măsurătorilor anterioare. În viitor,
-o altă funcție a acestei componente ar putea fi extragerea datelor de la alți senzori 
-precum un giroscop sau accelerometru, pentru a obține informații suplimentare cu privire
+o altă funcționalitate a acestei componente ar putea fi extragerea datelor de la alți senzori 
+precum un giroscop sau un accelerometru, pentru a obține informații suplimentare cu privire
 la orientarea și distanța efectuată de către cameră. Acest lucru ar putea duce la o îmbunătățire
 considerabilă a estimării inițiale a poziției. Imaginile pot proveni de la cameră în timp real, 
 dintr-un video sau dintr-un set de date. Matricea de adâncime poate fi obținută de la o cameră 
 RGBD/Stereo sau prin utilizarea unei rețele neurale pentru estimarea distanțelor. 
 
 \section{Extragerea trăsăturilor} 
-Ca date de intrare această componentă primeste doar imaginea de tip RGB și extrage
+Ca date de intrare această componentă primește doar imaginea de tip RGB și extrage
 aproximativ 1000 de trăsături și descriptori asociați acestora. Trăsăturile sunt zone
-de interes în imagine care pot fi folosite pentru a detecta obiecte sau găsi asocieri 
+de interes în imagine care pot fi folosite pentru a detecta obiecte sau ăentru a găsi asocieri 
 între cadrele consecutive. Acestea sunt numite și keypoint-uri în literatura de 
-specialitate iar librării precum OpenCV au structuri de date dedicate pentru acestea.
+specialitate, iar librării precum OpenCV au structuri de date dedicate pentru acestea.
 O trăsătură poate fi interpretată matematic ca o zonă în care apare o schimbare 
 bruscă a gradientului culorii. De cele mai multe ori, astfel de variații se regăsesc 
 în zonele de frontieră dintre obiecte, deoarece apare o diferență
 de culoare și implicit una de intensitate luminoasă. Zonele slab texturate, cum ar 
 fi cerul sau pereții în interiorul unei clădiri au valori asemanatoare pentru
-toti pixeli de pe suprafata. Dacă s-ar folosi un keypoint dintr-o astfel de zonă, 
-ar fi dificil de spus cu exactitate de unde a fost extras. Acesta ar putea fi asociat 
+toti pixelii de pe suprafață. Dacă s-ar folosi un keypoint dintr-o astfel de zonă, 
+ar fi dificil de spus cu exactitate de unde a fost extras. Acesta ar putea fi asociat cu 
 mai multe coordonate în imagine. În schimb, o cameră 
-complet mobilată ar fi o zonă puternic texturată iar un algoritm de detectie de 
+complet mobilată ar fi o zonă puternic texturată, iar un algoritm de detecție de 
 keypoint-uri ar putea să gasească ușor 1000 de trăsături pe care să le folosească.
 Dacă algoritmul nu reușește să găsească suficiente keypoint-uri pentru a face urmărirea
-intre cadre, de obicei minim 500, operația ar eșua. Din această
+între cadre, de obicei minim 500, operația ar eșua. Din această
 cauză algoritmul de ORB-SLAM2 dă rezultate eronate în zonele slab texturate. Dacă algoritmul
-de extragere funcționează corect iar traiectoria camerei este una stabilă, fără schimbări
+de extragere funcționează corect, iar traiectoria camerei este una stabilă, fără schimbări
 bruște ale direcției de deplasare, trăsături similare ar trebui să fie observate în ambele
 imagini. Asocierile dintre ele, ne pot da informații despre modul în care s-a deplasat 
 camera între 2 cadre. Problema este că aceste keypoint-uri nu pot fi comparate direct
 între ele, din aceasta cauză ne folosim de descriptori. Aceștia sunt vectori de diferite 
 dimensiuni care trebuie să sintetizeze informația esențială observată în zona respectivă din
-imagine, în mod ideal descriptorii ar trebui să rămână invariabili la operațiile de 
+imagine. În mod ideal, descriptorii ar trebui să rămână invariabili la operațiile de 
 redimensionare și rotație aplicate pe keypoint-uri. 
 Algoritmului Oriented Fast and Rotated Brief (ORB)\cite{Rublee2011ORBAE} este folosit
 pentru extragerea de 
@@ -417,8 +413,8 @@ care acesta a ajuns atât de popular se datorează mai multor factori:
 \begin{itemize}
     \item Este mult mai rapid decat SIFT și SURF, fiind mult mai potrivit pentru sisteme
 în timp real și pentru dispozitive embedded\cite{comparisonsiftsurforb}.
-    \item La momentul realizării lucrării științifice ORB-SLAM2, atât SIFT cât 
-și SURF se aflau sub protectia drepturilor de autor pe când ORB nu avea o astfel de restrictie.
+    \item La momentul realizării lucrării științifice ORB-SLAM2, atât SIFT, cât 
+și SURF se aflau sub protectia drepturilor de autor pe când ORB nu avea o astfel de restricție.
     \item ORB este invariant din punct de vedere al rotației și are o toleranță bună la variația distanței.   
     \item Folosește descriptori binari, care pot fi ușor de comparat folosind distanța Hamming\cite{hamming1950}, 
 \end{itemize}
@@ -437,8 +433,8 @@ zonă selectată de un keypoint, aceasta având o dimensiune prestabilită de $ 
     \item Pentru fiecare keypoint se calculează un descriptor binar de tip BRIEF.\@ 
     \item Fiecare descriptor va fi transformat folosind o matrice de rotație, unghiul fiind dat de orientarea keypoint-ului corespondent.
     În acest fel se obțin descriptorii de tip steer BRIEF\cite{brief}.  
-    \item  Se obtine rBRIEF, rotated BRIEF, o variantă optimizată a steer BRIEF, prin alegerea bitilor
-despre care se știe ca au varianță mare și grad de corelație scăzut între ei.
+    \item  Se obtine rBRIEF, rotated BRIEF, o variantă optimizată a steer BRIEF, prin alegerea biților
+despre care se știe că au varianță mare și grad de corelație scăzut între ei.
 \end{enumerate}   
 
 În cazul algoritmul FAST-9, 
@@ -457,15 +453,15 @@ m_{pq} = \sum_{x, y} x^p y^q I(x, y), \quad{}
 \end{equation}
 În etapele 5 și 6 se realizează calcularea descriptorilor: aceștia vor avea formă binară și o 
 lungime finală de 256 de biti. Compararea lor se va realiza folosind distanța Hamming. Cu cât 
-2 descriptori au o valoarea mai mică a acestei distanțe, cu atat mai similari sunt. Valorile 
+2 descriptori au o valoarea mai mică a acestei distanțe, cu atât mai similari sunt. Valorile 
 fiecărui bit ai descriptorilor sunt asociate pe baza unui test binar în care este comparată intensitatea a 2 
 puncte din planul imaginii. Problema este că descriptorii BRIEF sunt sensibili la schimbările de
 rotație, din această cauză, prin rotirea coordonatelor pixelilor cu unghiul $ \theta $ al 
 orientării se obține steered BRIEF.\@ Pentru a obține rBRIEF, au fost învățate în offline prin
 aplicarea unui algoritm de tip Greedy, care teste de verificare a intensității au cea mai mare 
-varianță, și primele 256 dintre acestea au fost alese pentru a alcătui descriptorul.       
+varianță. Astfel, au fost alese primele 256 dintre acestea pentru a alcătui descriptorul.       
 
-\section{Harta punctelor din spatiu}
+\section{Harta punctelor din spațiu}
 Unul dintre scopurile fundamentale ale algoritmului de ORB-SLAM2, pe lângă cel 
 de estimare a traiectoriei camerei, este cel de creare a hărții mediului
 înconjurător. În comparație cu versiuni mai avansate ale
@@ -477,7 +473,7 @@ densitate redusă (sparse), pentru a putea fi ușor de interogat și optimizat.
 Cele 2 sarcini ale algoritmului de tip SLAM sunt interdependente, fiecare 
 element din norul de puncte actionează ca o referință, o caracteristică a mediului care
 ar trebui să fie observată de fiecare 
-dată când punctul se află în frustum-ul camerei. De exemplu: presupunem ca avem
+dată când punctul se află în frustum-ul camerei. De exemplu: presupunem că avem
 o imagine în care este observată în totalitate o masă în interiorul unei încăperi. 
 ORB va identifica aproape instantaneu feature-urile (colțurile mesei) și
 indiferent de modul în care camera s-ar roti în jurul piesei de mobilier, aceleași feature-uri
@@ -494,7 +490,7 @@ folosi de matricea transformării din coordonatele camerei
 în coordonatele globale și de parametrii interni ai camerei \(f_x\), \(f_y\) 
 distanța focală, și \(c_x\), \(c_y\) coordonatele centrului imaginii.
 Vectorul coloană cu 3 dimensiuni reprezintă poziția în spațiu a MapPoint-ului creat.
-Ca alternativă, pentru a nu lucra cu matrici de dimensiuni $ 4 \times 4 $ putem folosi \(R_{wc}\) reprezentând
+Ca alternativă, pentru a nu lucra cu matrici de dimensiuni $ 4 \times 4 $ putem folosi \(R_{wc}\), reprezentând
 matricea de rotație și \(t_{wc}\) vectorul de translație.
 
 \begin{equation} 
@@ -524,12 +520,12 @@ d \\
 
 În literatura de specialitate MapPoint-urile sunt considerate niște ancore (landmark),
  poziționate dinamic de către algoritm. Acestea sunt asociate
-cu un anumit cadru cheie și ne vor ajuta în optimizarea matricei de poziție dar și
+cu un anumit cadru cheie și ne vor ajuta în optimizarea matricei de poziție, dar și
 pentru sarcina de relocalizare și de memorare a zonelor cunoscute.
 
 \section{Asociere puncte din spațiu cu feature-uri ORB}
 Ca date de intrare avem feature-urile și descriptorii extrași din imagine, matricea
-de adâncime și harta de MapPoint-uri. Scopul acestei componente este să gasească
+de adâncime și harta de MapPoint-uri. Scopul acestei componente este să găsească
 cât mai multe asocieri de 1:1 între feature-uri și MapPoint-uri. Într-un caz ideal,
 fiecare feature găsit ar trebui să aibă asociat un MapPoint. În pratică, această situație
 nu poate avea loc din 2 motive: imperfecțiuni ale algoritmului de detecție ale feature-urilor 
@@ -539,30 +535,30 @@ dacă agentul își schimbă constant direcția sau apar frecvent operații de r
 nu poate observa punctele vechi din spațiu, fiind nevoit să creeze altele noi.\\
 Un MapPoint este un feature al unui cadru anterior, proiectat în spațiu. În final, 
 această componentă realizează tot o comparare de feature-uri între cadrul curent, 
-și multiple cadre anterioare folosind descriptorii asociati si calculand distanta Hamming.
+și multiple cadre anterioare folosind descriptorii asociați și calculând distanța Hamming.
 Cu cât valoarea acestei distanțe este mai mică, cu atât cele 2 feature-uri sunt 
 mai asemănătoare. Există mai multe tipuri de algoritmi folosiți pentru feature 
 matching. În implementarea curentă singurul utilizat este Brute Force Feature Matching
 optimizat. Acest algoritm primește ca date de intrare 2 seturi de feature-uri și 
-încearcă să găsească asocieri între ele. Asocierele sunt făcute cu ajutorul descriptorilor.
-Se calculează distanța Hamming iar dacă valoarea obtinută este minimă, perechea 
+încearcă să găsească asocieri între ele. Asocierile sunt făcute cu ajutorul descriptorilor.
+Se calculează distanța Hamming, iar dacă valoarea obținută este minimă, perechea 
 respectivă de feature-uri a fost corect asociată. Pentru ORB-SLAM2 
 o potrivire între 2 keypoint-uri arată că ele fac referire la exact acelasi punct din spatiu,
 observat din cadre diferite.
-Daca \(N\) este numărul de feature-uri din primul set, \(M\) numărul de feature-uri din 
-al doilea set si \(D\), dimensiunea descriptorului, în cazul nostru 32, complexitatea
+Dacă \(N\) este numărul de feature-uri din primul set, \(M\) numărul de feature-uri din 
+al doilea set și \(D\), dimensiunea descriptorului, în cazul nostru 32, atunci complexitatea
 algoritmului devine \(O(N * M * D)\). Destul de costisitor de folosit
-pentru un sistem in timp real, mai mult de atât este predispus la erori, compararea 
+pentru un sistem în timp real, mai mult de atât este predispus la erori, compararea 
 feature-urilor nu ține cont de locația acestora în imagine, obținându-se astfel asocieri
 care matematic par corecte, dar ele nu au sens din punct de vedere logic. Pentru a rezolva
 această problemă și a reduce complexitatea temporală, se stabilește o fereastră circulară de 
 dimensiune prestabilită în jurul punctului de proiecție, unde se pot căuta feature-uri.
-O dată ce 2 keypoint-uri au fost considerate ca făcând referintă la acelasi punct din spatiu,
-cadrului curent ii este asociat un nou MapPoint. 
+Odată ce 2 keypoint-uri au fost considerate ca făcând referință la același punct din spațiu,
+cadrului curent îi este asociat un nou MapPoint. 
 
 \section{Optimizarea Estimării Poziției Inițiale}
-Această componenta primește ca date de intrare estimarea poziției curente a camerei
-\(T_{cw}\) și o asociere bijectivă intre feature-urile găsite în imagine și punctele 
+Această componentă primește ca date de intrare estimarea poziției curente a camerei
+\(T_{cw}\) și o asociere bijectivă între feature-urile găsite în imagine și punctele 
 care există la momentul respectiv în spațiu. Ca date de ieșire, vom avea doar matricea 
 \(T_{cw}\) optimizată. Dacă asocierile între feature-uri și MapPoint-uri
 sunt perfecte, ar trebui ca proiecția punctului din spatiu pe imagine să se suprapună pe 
@@ -582,8 +578,8 @@ returna coordonatele omogene în planul imaginii. Această transformare se petre
     \item conversia din sistemul de coordonate al camerei în sistemul de coordonate al imaginii
 \end{enumerate}
 În prima etapă putem folosi coordonatele omogene, pentru a face conversia în mod direct.
-Alternativ, putem extrage din matricea de pozitie \(T_{cw}\) atât matricea de 
-rotație \(R_{cw}\) cât și vectorul coloană de translatie \(t_{cw}\).
+Alternativ, putem extrage din matricea de poziție \(T_{cw}\) atât matricea de 
+rotație \(R_{cw}\), cât și vectorul coloană de translație \(t_{cw}\).
 
 \begin{equation}
 \mathbf{X}_{camera} = \mathbf{T}_{cw} \cdot 
@@ -599,15 +595,15 @@ rotație \(R_{cw}\) cât și vectorul coloană de translatie \(t_{cw}\).
 \mathbf{X}_{camera} = \mathbf{R_{cw}} \cdot \mathbf{X_w} + \mathbf{t_{cw}}
 \end{equation}
 
-Matricea \(T_{cw}\) este utilizată atât pentru a descrie poziția și orientarea în spațiu 
+Matricea \(T_{cw}\) este utilizată atât pentru a descrie poziția și orientarea în spațiu, 
 cât și pentru a schimba din sistemul de coordonate global în cel al camerei.
 În sistemul de coordonate global, un punct se află la exact aceeași poziție indiferent de 
 camera care îl privește. În sistemul de coordonate al camerei, poziția unui 
 MapPoint o să difere pentru fiecare cadru cheie în parte.
-În etapa a doua MapPoint-ul este în sistemul de referință al camerei, 
-coordonatele fiind reprezentate prin vectorul coloana \(X_{camera}\). Vom considera 
+În etapa a doua, MapPoint-ul este în sistemul de referință al camerei, 
+coordonatele fiind reprezentate prin vectorul coloană \(X_{camera}\). Vom considera 
 a 3-a valoare a acestui vector \(Z_c\). Aceasta reprezintă distanța dintre planul camerei
-și punctul pe care il analizăm. \(Z_c\) ne spune dacă un MapPoint poate fi observat
+și punctul pe care îl analizăm \(Z_c\) ne spune dacă un MapPoint poate fi observat
 în imagine. Dacă valoarea \(Z_c\) este mai mică sau egală cu 0, înseamnă că punctul 
 se proiectează în spatele camerei, făcându-l invalid. Altfel, vom realiza conversia
 în coordonatele omogene ale imaginii cu ajutorul următoarei formule, \(u\) fiind asociat
@@ -646,18 +642,18 @@ erorilor de proiecție pentru toate perechile (feature, MapPoint).
 \end{equation}
 
 În această formulă, \(x_i\) reprezintă poziția unui feature în sistemul de 
-coordonatele al imaginii iar \(X_i\) reprezintă coordonatele globale ale MapPoint-ului pentru care calculăm eroarea
+coordonatele al imaginii, iar \(X_i\) reprezintă coordonatele globale ale MapPoint-ului pentru care calculăm eroarea
 de proiecție. Simbolul $ \rho(\cdot) $ reprezintă funcția Huber\cite{huber1964} pentru scalarea valorilor de eroare.
 Dacă o asociere între un feature și un MapPoint este incorectă, diferența dintre centrul feature-ului
 și proiecția MapPoint-ului este mai mare decât un prag prestabilit. Această eroare, lăsată nemodificată,
-ar destabiliza algoritmul făcând ineficient procesul de optimizare. Parteea bună este că o astfel de problemă
+ar destabiliza algoritmul făcând ineficient procesul de optimizare. Partea bună este că o astfel de problemă
 este ușor de observat. Dacă modificarea matricei de poziție duce la variații enorme a orientării sau a translației
 între 2 cadre consecutive, atunci cel mai probabil asocierile între feature-uri și MapPoint-uri aveau valori eronate. 
 Termenul de \(outlier\) este folosit pentru a descrie o pereche incorectă. Funcția de pierdere Huber reduce 
-valoarea acestor outlier-ere permițându-le în același timp să facă parte din algoritmul de 
+valoarea acestor outlier-ere, permițându-le în același timp să facă parte din algoritmul de 
 optimizare. În acest fel, Motion Only Bundle Adjustment devine mai robust și capabil ajungă la o valoare optimă 
 în mai puține iterații. Mai jos este prezentată formula matematică a funcției Huber Loss, 
-unde $ \delta $ reprezintă un număr real pozitiv, toleranța erorii de proiectie. 
+unde $ \delta $ reprezintă un număr real pozitiv, toleranța erorii de proiecție. 
 
 \begin{equation}
 \rho(s) =
@@ -667,7 +663,7 @@ unde $ \delta $ reprezintă un număr real pozitiv, toleranța erorii de proiect
 \end{cases}
 \end{equation}
 
-În urma execuției algoritmului obținem matricea de pozitie optimizată, mai mult de atât,
+În urma execuției algoritmului obținem matricea de pozitie optimizată. Mai mult decât atât,
 știm care dintre perechile (feature, MapPoint) au avut statutul de outlier și le putem 
 elimina pentru a nu influența în mod negativ funcționalitatea algoritmului.
 
@@ -675,8 +671,8 @@ elimina pentru a nu influența în mod negativ funcționalitatea algoritmului.
 Această componentă primește ca date de intrare absolut toate informațiile procesate de 
 până acum pentru cadrul curent: imaginea de tip rgb, matricea de adâncime, punctele cheie,
 descriptorii, asocierile (feature, MapPoint) și matricea estimării poziției. 
-Toate acestea împreuna vor alcătui un cadru cheie care va fi salvat în memorie.
-Salvarea pozițiilor cadrelor anterioare ne poate ajuta in 2 feluri: Putem folosi 2 
+Toate acestea vor alcătui împreună un cadru cheie care va fi salvat în memorie.
+Salvarea pozițiilor cadrelor anterioare ne poate ajuta în 2 feluri. Putem folosi 2 
 cadre anterioare pentru a estima poziția celui care urmează bazându-ne pe legea inerției. 
 O dată începută deplasarea camerei într-o anumită directie, este foarte 
 probabil ca aceea miscare să fie menținută și la următorul cadru. Fie \(T_{cw}\) matricea de 
@@ -688,77 +684,77 @@ de poziție a celor 2 cadre imediat predecesoare. Formula de estimare a poziție
 \end{equation} 
 
 Al doilea motiv pentru care avem nevoie de cadre cheie este recreearea mediului și a traseului parcus.
-Încercam să salvam numărul minim de cadre necesare pentru a reproduce harta de MapPoint-uri a mediului
+Încercam să salvăm numărul minim de cadre necesare pentru a reproduce harta de MapPoint-uri a mediului
 înconjurător. Un cadru cheie nou (KeyFrame) aduce cu sine MapPoint-uri noi, extrase din feature-urile
-găsite în imaginea respectivă. Funcționarea corectă a urmării cadru cu cadru, este determinată de numărul de 
+găsite în imaginea respectivă. Funcționarea corectă a urmăririi cadru cu cadru, este determinată de numărul de 
 MapPoint-uri găsite în imaginea curentă în comparatie cu un cadru de referintă. În momentul 
-În care numărul de puncte cheie găsite în cadrul curent scade sub un anumit prag, știm că este
+în care numărul de puncte cheie găsite în cadrul curent scade sub un anumit prag, știm că este
 necesară salvarea acestuia și creearea unor noi MapPoint-uri pentru a stabiliza urmărirea. 
 
-\subsection{Optimizare harta locala}
-Harta locala este alcatuita din KeyFrame-uri si MapPoint-uri. Pentru a optimiza
-harta trebuie sa adaugam noi puncte de tip MapPoint si noi KeyFrame-uri in ea.
-Pentru a valida conexiunile care deja exista. Modul in care sunt create si sterse 
-punctele urmeaza o abordare numita survival of the fittest. La fiecare nou KeyFrame 
-adaugat, sunt create in aproximativ 100 de noi MapPoint-uri si inserate in harta. Acestea
-vor fi supuse unui test care sa evalueze cat de usor sunt observate feature-urile pe care
-le reprezinta.  Din punct de vedere matematic, un MapPoint este observat de un KeyFrame
-daca proiectia acestuia in imagine este un vector valid in sistemul de coordonate 
-al KeyFrame-ului respectiv. Cu cat mai multe Keyframe-uri observa acelasi MapPoint,
-cu atat mai stabil este punctul respectiv din spatiu. Intr-un caz ideal, ar trebui ca
-orice MapPoint creat sa fie stabil. De cele mai multe ori nu se intampla acest lucru din
-cauza erorilor de feature matching. Astfel, doar cele mai evidente feature-uri raman 
-salvate in harta pana la finalul algoritmului. Scopul acestei componente este adaugarea 
-KeyFrame-urilor noi, eliminarea celor redundante si testarea stabilitatii tuturor MapPoint-urilor
-create. Pentru a salva Keyframe-ul curent in harta urmatoarele operatii trebuie urmate:
+\subsection{Optimizare hartă locală}
+Harta locală este alcătuită din KeyFrame-uri și MapPoint-uri. Pentru a optimiza
+harta trebuie să adăugam noi puncte de tip MapPoint și noi KeyFrame-uri în ea 
+pentru a valida conexiunile care deja exista. Modul în care sunt create și șterse 
+punctele urmează o abordare numită survival of the fittest. La fiecare nou KeyFrame 
+adăugat, sunt create aproximativ 100 de noi MapPoint-uri și sunt inserate în hartă. Acestea
+vor fi supuse unui test care o să evalueze cât de ușor sunt observate feature-urile pe care
+le reprezintă. Din punct de vedere matematic, un MapPoint este observat de un KeyFrame
+dacă proiecția acestuia în imagine este un vector valid în sistemul de coordonate 
+al KeyFrame-ului respectiv. Cu cât mai multe Keyframe-uri observă același MapPoint,
+cu atât mai stabil este punctul respectiv din spațiu. Într-un caz ideal, ar trebui ca
+orice MapPoint creat să fie stabil. De cele mai multe ori nu se întâmplă acest lucru din
+cauza erorilor de feature matching. Astfel, doar cele mai evidente feature-uri rămân 
+salvate în hartă până la finalul algoritmului. Scopul acestei componente este adăugarea 
+KeyFrame-urilor noi, eliminarea celor redundante și testarea stabilității tuturor MapPoint-urilor
+create. Pentru a salva Keyframe-ul curent în hartă, următoarele operații trebuie urmate:
 \begin{enumerate}
-    \item Folosind harta de adancime, sunt selectate cele mai apropiate \( N \) feature-uri 
-    care nu au un MapPoint asociat si au valoarea adancimii mai mare ca 0.
-    Coordonatele acestor feature-uri sunt proiectate in spatiu pentru a obtine noi MapPoint-uri.      
-    \item KeyFrame-ul curent este comparat cu alte cadre cheie, pentru a vedea cu cine imparte 
-    cele mai multe puncte comune. Keyframe-urile sunt stocate in harta intr-o structura de tip 
-    graf neorientat unde nodurile sunt cadrele cheie iar arcele sunt numarul de MapPoint-uri comune 
+    \item Folosind harta de adâncime, sunt selectate cele mai apropiate \( N \) feature-uri 
+    care nu au un MapPoint asociat și au valoarea adâncimii mai mare ca 0.
+    Coordonatele acestor feature-uri sunt proiectate în spaîiu pentru a obîine noi MapPoint-uri.      
+    \item KeyFrame-ul curent este comparat cu alte cadre cheie, pentru a vedea cu cine împarte 
+    cele mai multe puncte comune. Keyframe-urile sunt stocate în hartă într-o structură de tip 
+    graf neorientat unde nodurile sunt cadrele cheie, iar arcele sunt numărul de MapPoint-uri comune 
     dintre ele.
-    \item sunt eliminate punctele cheie redundante sau care au fost observate in prea putine 
-    cadre pentru a fi luate in considerare.
-    \item se executa un algoritm numit Local Bundle Adjustment in care KeyFrame-urile 
+    \item Sunt eliminate punctele cheie redundante sau care au fost observate în prea puține 
+    cadre pentru a fi luate în considerare.
+    \item Se execută un algoritm numit Local Bundle Adjustment în care KeyFrame-urile 
     care au cele mai multe puncte comune cu cadrul curent analizat vor avea matricea de
-    pozitie optimizata si coordonatele globale ale MapPoint-urilor asociate acestora.
+    poziție optimizată și coordonatele globale ale MapPoint-urilor asociate acestora.
 \end{enumerate} 
  
 
-Local Bundle Adjustment este similar cu Motion Only Bundle Adjustment. In continuare vorbim de un
-algoritm iterativ care incearca sa minimizeze o functie de cost, folosind metoda scaderii 
-gradientului. Diferenta este ca optimizarea se aplica pe mai mult de un cadru cheie: atat
-matricea poztiei si punctele din spatiu asociate (MapPoint-urile) vor fi optimizate.
+Local Bundle Adjustment este similar cu Motion Only Bundle Adjustment. În continuare, vorbim de un
+algoritm iterativ care încearca să minimizeze o funcție de cost, folosind metoda scăderii 
+gradientului. Diferența este că optimizarea se aplică pe mai mult de un cadru cheie: atât
+matricea pozției, cât și punctele din spațiu asociate (MapPoint-urile) vor fi optimizate.
 Avem urmatoarele etape:
 \begin{enumerate}
-    \item Se creeaza lista de cadre mobile. Plecand de la cadrul curent, se vor selecta
-    toti vecinii de gradul 1 si 2 din graful neorientat stocat in harta. Aceste Keyframe-uri
-    sunt considerate \(mobile\) deoarece matricea lor de pozitie se va modifica.  
-    \item Se creeaza lista de MapPoint-uri ale caror coordonate vor fi optimizate. Fiecare
-Keyframe din multimea cadrelor mobile observa un numar de puncte in spatiu, toate aceste
-puncte vor fi folosite de catre algoritmul de optimizare.
-    \item Se creeaza lista de cadre fixe pentru care matricea de pozitie nu se va 
-modifica. Pentru fiecare punct din lista de MapPoint-uri ce vor fi optimizate se va itera 
-prin lista de KeyFrame-uri care observa acel MapPoint. Daca un KeyFrame apartine multimii 
-de cadre mobile va fi ignorat, iar daca nu, va fi adaugat in lista de
-cadre fixe. Acestea sunt incluse in algoritm pentru a garanta ca modificarea coordonatelor
-unui MapPoint nu va strica asociera (feature, MapPoint) in cadrele care nu vor avea matricea
-de pozitie modificata. 
+    \item Se creează lista de cadre mobile. Plecând de la cadrul curent, se vor selecta
+    toți vecinii de gradul 1 și 2 din graful neorientat stocat în hartă. Aceste Keyframe-uri
+    sunt considerate \(mobile\), deoarece matricea lor de poziție se va modifica.  
+    \item Se creează lista de MapPoint-uri ale căror coordonate vor fi optimizate. Fiecare
+Keyframe din mulțimea cadrelor mobile observă un număr de puncte în spațiu și toate aceste
+puncte vor fi folosite de către algoritmul de optimizare.
+    \item Se creează lista de cadre fixe pentru care matricea de poziție nu se va 
+modifica. Pentru fiecare punct din lista de MapPoint-uri ce vor fi optimizate, se va itera 
+prin lista de KeyFrame-uri care observă acel MapPoint. Dacă un KeyFrame aparține mulțimii 
+de cadre mobile, acesta va fi ignorat, iar dacă nu, va fi adăugat în lista de
+cadre fixe. Acestea sunt incluse în algoritm pentru a garanta că modificarea coordonatelor
+unui MapPoint nu va strica asociera (feature, MapPoint) în cadrele care nu vor avea matricea
+de poziție modificată. 
 \end{enumerate}
 
-Lucrarea stiintifica care sta la baza ORB-SLAM2, implementeaza deja functia de 
-cost pe care algoritmul de Local Bundle Adjustment o foloseste. Pentru a intelege mai usor formula 
-matematica, aceasta trebuie privita de la dreapta la stanga. \(E_{kj}\) reprezinta eroarea
-de proiectie a unui MapPoint pe feature-ul asociat. Indicele \(k\) apartine KeyFrame-ului,
-\(j\) reprezinta ordinul perechii (feature, MapPoint) pentru care calculam eroarea. Simbolul 
-$ \rho(\cdot) $ este asociat functiei Huber, folosita pentru a ameliora efectele perechilor de tip 
-outlier. \(X_k\) este o notatie pentru multimea tuturor asocierilor (feature, MapPoint) pentru un 
-Keyframe \(k\). Suma erorilor tuturor perechilor este calculata pentru toate cadrele fixe si mobile.
-Parametrii care vor fi optimizati sunt: coordonatele MapPoint-urilor selectate de catre
-algoritm \(X_i\) cat si matricile de pozitie pentru cadrele mobile \( K_l \). Algoritmul 
-optimizeaza valorile pana cand ajunge la o valoare de minim sau pentru un numar de iteratii. 
+Lucrarea științifică care stă la baza ORB-SLAM2, implementează deja funcția de 
+cost pe care algoritmul de Local Bundle Adjustment o folosește. Pentru a înțelege mai ușor formula 
+matematică, aceasta trebuie privită de la dreapta la stânga. \(E_{kj}\) reprezintă eroarea
+de proiecție a unui MapPoint pe feature-ul asociat. Indicele \(k\) aparține KeyFrame-ului,
+\(j\) reprezintă ordinul perechii (feature, MapPoint) pentru care calculăm eroarea. Simbolul 
+$ \rho(\cdot) $ este asociat funcției Huber, folosită pentru a ameliora efectele perechilor de tip 
+outlier. \(X_k\) este o notație pentru mulțimea tuturor asocierilor (feature, MapPoint) pentru un 
+Keyframe \(k\). Suma erorilor tuturor perechilor este calculată pentru toate cadrele fixe și mobile.
+Parametrii care vor fi optimizați sunt: coordonatele MapPoint-urilor selectate de către
+algoritm \(X_i\) și matricile de poziție pentru cadrele mobile \( K_l \). Algoritmul 
+optimizează valorile până când ajunge la o valoare de minim sau pentru un număr de iterații. 
 
 \begin{equation}
 \{\mathbf{X}_i, \mathbf{R}_l, \mathbf{t}_l \mid i \in \mathcal{P}_L, l \in \mathcal{K}_L\} = \arg \min_{\mathbf{X}_i, \mathbf{R}_l, \mathbf{t}_l} \sum_{k \in \mathcal{K}_L \cup \mathcal{K}_F} \sum_{j \in \mathcal{X}_k} \rho(E_{kj})
@@ -767,256 +763,248 @@ optimizeaza valorile pana cand ajunge la o valoare de minim sau pentru un numar 
 E_{kj} = \left\| \mathbf{x}_{j} - K \cdot \left(\mathbf{R}_k \mathbf{X}_j + \mathbf{t}_k\right) \right\|
 \end{equation}
 
-\subsection{Reteaua Neurala FastDepth}
-Retele Neurale Artificiale sunt o tehnica des intalnita in Machine Learning pentru a rezolva 
-sarcini complexe pentru care nu exista solutii algoritmice clar definite sau implementarea acestora 
-este mult prea costisitoare. Conform \cite{GURESEN2011426} si \cite{prince2023understanding} retele neurale definesc o functie nonliniara care gaseste o 
-corespondenta intre un set multivariat de date de intrare \(x\) si un set multivariat de 
-date de iesire \(y\), modificand un set de parametrii $ \phi $, $ f(x, \phi) = y $. Aceasta este
-alcatuita dintr-un numar enorm de elemente de procesare care contin parametrii functiei $ \phi $,
-conectate intre ele intr-o structura de tip graf si dispuse pe straturi. Cele mai importante fiind: stratul de intrare
-si de iesire, unde se stabileste forma generala pe care trebuie o sa respecte datele care vor
-parcurge reteaua si modul in care va arata rezultatul obtinut. Celelalte nivele sunt denumite 
-straturi ascunse. Aceastea fac prelucrarea informatiei primite de la straturile anterioare 
-si o transmit mai departe. Spunem ca o retea neurala invata din datele primite, daca isi 
-modifica parametrii $ \phi $ astfel incat sa reprezinte cu mai multa acuratete corespondenta
-intre datele de intrare \(x\) si cele de iesire \(y\).
-FastDepth\cite{fast} este o arhitectura de retea neurala folosita pentru estima adancimii in imagini. 
-Aceasta primeste o imagine de tip RGB al interiorului unei incaperi si returneaza o matrice
-cu valori in intervalul $0m - 10m$ estimand pentru fiecare pixel in parte distanta de la
-planul de proiectie al imaginii pana la punctul din spatiu surprins de fotografie. Scopul nostru
-este antrenarea unei retele neurale care sa produca o matrice de adancime cu valori cat mai 
-apropiate de distanta reala la care se afla obiectele fata de camera. ORB-SLAM2
-foloseste o camera tip RGBD / Stereo care descrie cu foarte mare acuratete distanta pana intr-un
-anumit punct din spatiu, dar creeaza o matrice rara de valori, suprafetele lucioase sau 
-cele car nu au putut fi clar observate vor avea adancimea 0 pentru a arata ca distanta nu a putut 
-fi corect estimata in pixelii respectivi. Un motiv pentru care retelele
-neurale sunt o alternativa buna este ca ele vor avea o estimare pentru fiecare pixel din imagine.
-Reteaua FastDepth pare sa realizeze o pseudosegmentare a zonelor din imagine, identifica
-conturul obiectelor si atribuie valori ale distantei asemanatoare pentru pixelii ce apartin aceleasi
-entitati. Arhitecturile de mari dimensiuni nu pot fi folosite in timp real 
-fara a utiliza un GPU, dar nu este cazul si pentru arhitectura FastDepth care poate procesa 
-aproximativ 100 de cadre pe secunda. De asemenea consuma o cantitate redusa de memorie,  
-parametrii retelei pot fi stocati intr-un fisier ONNX ce ocupa mai putin de 8 MB, fiind usor
-de integrat intr-un dispozitiv embedded. \\
-Un posibil dezavantaj al acestei arhitecturi este limitarea de 10m, fiind nepotrivit
-de folosit afara, dar ideal pentru un spatiu inchis de mici dimensiuni. Un alt dezavantaj
-este ca valorile aproximate vor avea o acuratete mai slaba decat cele obtinute de camerele
+\subsection{Rețeaua Neurală FastDepth}
+Rețelele Neurale Artificiale sunt o tehnică des întâlnită în Machine Learning pentru a rezolva 
+sarcini complexe pentru care nu există soluții algoritmice clar definite sau implementarea acestora 
+este mult prea costisitoare. Conform\cite{GURESEN2011426} și\cite{prince2023understanding}, rețelele neurale definesc o funcție nonliniară care găsește o 
+corespondență între un set multivariat de date de intrare \(x\) și un set multivariat de 
+date de ieșire \(y\), modificând un set de parametrii $ \phi $, $ f(x, \phi) = y $. Aceasta este
+alcătuită dintr-un număr enorm de elemente de procesare care conțin parametrii funcției $ \phi $,
+conectate între ele într-o structură de tip graf și dispuse pe straturi. Cele mai importante fiind: stratul de intrare
+și de ieșire, unde se stabilește forma generală pe care trebuie să o respecte datele care vor
+parcurge rețeaua și modul în care va arăta rezultatul obținut. Celelalte nivele sunt denumite 
+straturi ascunse. Aceastea fac prelucrarea informației primite de la straturile anterioare 
+și o transmit mai departe. Spunem că o rețea neurală învață din datele primite, dacă își 
+modifică parametrii $ \phi $ astfel încât să reprezinte cu mai multă acuratețe corespondența
+între datele de intrare \(x\) și cele de ieșire \(y\).
+FastDepth\cite{fast} este o arhitectură de rețea neurală folosită pentru a estima adâncimi în imagini. 
+Aceasta primește o imagine de tip RGB a interiorului unei încăperi și returnează o matrice
+cu valori în intervalul $0m - 10m$, estimând pentru fiecare pixel distanța de la
+planul de proiecție al imaginii până la punctul din spațiu surprins de fotografie. Scopul nostru
+este antrenarea unei rețele neurale care să producă o matrice de adâncime cu valori cât mai 
+apropiate de distanța reală la care se află obiectele față de cameră. ORB-SLAM2
+folosește o cameră tip RGBD / Stereo care descrie cu foarte mare acuratețe distanța până într-un
+anumit punct din spațiu, dar creează o matrice rară de valori. Suprafețele lucioase sau 
+cele car nu au putut fi clar observate vor avea adâncimea 0 pentru a arăta că distanța nu a putut 
+fi corect estimată în pixelii respectivi. Un motiv pentru care rețelele
+neurale sunt o alternativă bună este că ele vor avea o estimare a distanței pentru fiecare pixel din imagine.
+Rețeaua FastDepth pare să realizeze o pseudosegmentare a zonelor din imagine, identifică
+conturul obiectelor și atribuie valori ale distanței asemănătoare pentru pixelii ce aparțin aceleași
+entități. Arhitecturile de mari dimensiuni nu pot fi folosite în timp real 
+fără a utiliza un GPU, dar nu este cazul și pentru arhitectura FastDepth care poate procesa 
+aproximativ 100 de cadre pe secundă. De asemenea, consumă o cantitate redusă de memorie, astfel,  
+parametrii rețelei pot fi stocați într-un fișier ONNX ce ocupă mai puțin de 8 MB, fiind ușor
+de integrat într-un dispozitiv embedded. \\
+Un posibil dezavantaj al acestei arhitecturi este limitarea distanței maxime estimate la 10 metri, fiind nepotrivit
+de folosit afară, dar ideal pentru un spațiu închis de mici dimensiuni. Un alt dezavantaj
+este faptul că valorile aproximate vor avea o acuratețe mai slabă decât cele obținute de camerele
 Stereo/RGBD.\\
-Exista mai multe filozii cand vine vorba de modul in care ar trebui sa
-arate arhitectura retelelor neurale si operatiile pe care ar trebui sa le realizeze
+Există mai multe filozofii când vine vorba de modul în care ar trebui să
+arate arhitectura rețelelor neurale și operațiile pe care ar trebui să le realizeze
 fiecare strat. Feed forward neural network a fost printre primele arhitecturi definite. 
-Elementele de procesare sunt dispuse pe straturi, si fiecare strat primeste input-ul de la stratul 
-precedent si transmitea output-ul la stratul imediat urmator. Informatia circula liniar, de la 
-intrarea in retea pana la finalul acesteia. Abordarea s-a dovedit eficienta in situatiile 
-in care era nevoie de retele neurale de mici dimensiuni, cu un numar redus de straturi si 
-parametrii. In momentul in care crestea complexitatea, abordarea de feed forward neural network 
-devenea greu de antrenat si dadea rezultate mai slabe\cite{GURESEN2011426}. Pentru a rezolva aceasta problema 
-au aparut arhitecturile de tip residual network. Acestea au aplicatii in procesarea imaginilor\cite{he2015deepresiduallearningimage},
-unde datele de intrare au dimensiuni mari si este nevoie de multe nivele pentru a extrage
-suficiente informatii. Principiul de functionare este utilizarea unor straturi reziduale 
-denumite si skip connections, in care rezultatul unui strat este salvat si transmis ca data de
-intrare la un alt nivel decat la cel imediat urmator. Abordarea aceasta pastreaza din informatiile initiale ale 
-datelor de intrare in straturile viitoare stabilizand antrenarea. O alta arhitectura des 
-intalnita este cea de encoder-decoder folosita in numeroase aplicatii practice in ceea ce 
-priveste imaginile: sarcini de colorare a imaginilor gri\cite{imageColorization}, reconstructie a imaginilor care 
-contin parti lipsa si de generare de imagini: un exemplu fiind Variational Auto Encoder\cite{Islam2023FastAE}. \\
-Pe langa tipurile de arhitecturi propuse, exista mai multe categorii de straturi in retele neurale.
+Elementele de procesare sunt dispuse pe straturi, și fiecare strat primește input-ul de la stratul 
+precedent și transmite output-ul la stratul imediat următor. Informația circulă liniar, de la 
+intrarea în rețea până la finalul acesteia. Abordarea s-a dovedit eficientă în situațiile 
+în care era nevoie de rețele neurale de mici dimensiuni, cu un număr redus de straturi și 
+parametri. În momentul în care creștea complexitatea, abordarea de feed forward neural network 
+devenea greu de antrenat și dădea rezultate mai slabe\cite{GURESEN2011426}. Pentru a rezolva această problemă 
+au apărut arhitecturile de tip residual network. Acestea au aplicații în procesarea imaginilor\cite{he2015deepresiduallearningimage},
+unde datele de intrare au dimensiuni mari și este nevoie de multe nivele pentru a extrage
+suficiente informații. Principiul de funcționare este utilizarea unor straturi reziduale 
+denumite și skip connections, în care rezultatul unui strat este salvat și transmis ca dată de
+intrare la un alt nivel decât cel imediat următor. Abordarea aceasta pastrează din informațiile inițiale ale 
+datelor de intrare, în straturile viitoare, stabilizând antrenarea. O altă arhitectură des 
+întâlnită este cea de encoder-decoder, folosită în numeroase aplicații practice în ceea ce 
+privește imaginile: sarcini de colorare a imaginilor alb-negru\cite{imageColorization}, reconstrucție a imaginilor care 
+conțin părți lipsă și generarea de imagini folosind Variational Auto Encoder\cite{Islam2023FastAE}. \\
+Pe lângă tipurile de arhitecturi propuse, există mai multe categorii de straturi în rețele neurale.
 Primele folosite erau cele fully connected unde fiecare element de procesare era conectat 
-cu toate celelalte elemente de procesare din stratul urmator. Matematic, operatia poate fi vazuta 
-ca o inmultire de matrici, o operatie costisitoare, iar utilizarea exclusiva a straturilor complet 
-conectate creea o retea neurala incapabila sa reprezinte functii nonliniare, scazand capacitatea de
-generalizare. De cele mai multe ori straturile liniare sunt folosite impreuna cu functii de
-activare nonliniare precum ReLU sau Sigmoid dar in continuare ramane problema numarului mare 
-de parametrii care trebuie antrenati. Din aceasta cauza au fost create straturile convolutionale
-care  folosesc mai putini parametrii si au aplicabilitate in procesarea imaginilor. Principiul
-teoretic pe care se bazeaza este ca pixelii alaturati in imagine au aceeasi semnificatie,
-reprezentand acelasi feature. Operatia de convolutie trebuie realizata pe o zona a imaginii iar
-modificarea parametrilor afecteaza output-ul generat de mai multi pixeli. Se stabileste un kernel,
-o matrice de  mici dimensiuni, in FastDepth folosindu-se kernel-uri de (3, 3), acestea vor stoca
-parametrii \(w_{mn}\) pe care reteaua neurala ii va antrena pentru stratul 
-convolutional. In formula \(h_{ij}\) reprezinta intensitatea pixelului dupa calculul
-operatiei de convolutie, iar \(x_{ij}\) este valoarea intensitatii pixelului de pe coloana i si linia j.  
-Litera \(a\) reprezinta functia de activare folosita iar \(\beta\) este o valoare numerica
-denumita bias. Acesta poate fi modificat in timpul antrenarii si creste
-capacitatea de generalizare a functiei de convolutie\cite{prince2023understanding}.  
+cu toate celelalte elemente de procesare din stratul următor. Matematic, operația poate fi văzută 
+ca o înmulțire de matrici, o operație costisitoare, iar utilizarea exclusivă a straturilor complet 
+conectate creează o rețea neurală incapabilă să reprezinte funcții nonliniare, scăzând capacitatea de
+generalizare. De cele mai multe ori, straturile liniare sunt folosite împreună cu funcții de
+activare nonliniare precum ReLU sau Sigmoid dar în continuare rămâne problema numărului mare 
+de parametri care trebuie antrenați. Din această cauză au fost create straturile convoluționale
+care folosesc mai puțini parametri și au aplicabilitate în procesarea imaginilor. Principiul
+teoretic pe care se bazează este reprezentat de faptul că pixelii alăturați în imagine au aceeași semnificație,
+fiind același feature. Operația de convoluție trebuie realizată pe o zonă a imaginii, iar
+modificarea parametrilor afectează output-ul generat de mai mulți pixeli. Se stabilește un kernel,
+o matrice de  mici dimensiuni, în FastDepth folosindu-se kernel-uri de (3, 3). Acestea vor stoca
+parametrii \(w_{mn}\) pe care rețeaua neurală îi va antrena pentru stratul 
+convoluțional. În formulă, \(h_{ij}\) reprezintă intensitatea pixelului după calculul
+operației de convoluție, iar \(x_{ij}\) este valoarea intensității pixelului de pe coloana i și linia j.  
+Litera \(a\), reprezintă funcția de activare folosită, iar \(\beta\) este o valoare numerică
+denumită bias. Acesta poate fi modificat în timpul antrenării și crește
+capacitatea de generalizare a funcției de convoluție\cite{prince2023understanding}.  
 \begin{equation}
 h_{ij} = a \left[ \beta + \sum_{m=1}^{3} \sum_{n=1}^{3} \omega_{mn} x_{i+m-2, j+n-2} \right]
 \end{equation}
-Stratul de convolutie este in continuare prea costisitor pentru a crea o arhitectura in timp
-real de mari dimensiuni. Presupunem ca avem un vector de intrare pentru un strat de convolutie
-cu dimensiunile \([d_{in}, h, w]\) unde \(d_{in}\) este numarul de canale,  \(h \) inaltimea si \(w\) latimea vectorului.
+Stratul de convoluție este în continuare prea costisitor pentru a crea o arhitectura în timp
+real de mari dimensiuni. Presupunem că avem un vector de intrare pentru un strat de convoluție
+cu dimensiunile \([d_{in}, h, w]\), unde \(d_{in}\) este numărul de canale,  \(h \) înălțimea și \(w\) lățimea vectorului.
 Kernelul folosit are dimensiunile \([k, k, d_{in}, d_{out}]\),
-unde \(d_{out}\) este numarul de canale rezultate in urma convolutiei.
-In total se vor executa $ h \cdot w \cdot d_{in} \cdot d_{out} \cdot k \cdot k$ operatii.
-Pentru  a rezolva aceasta problema a fost creat un strat numit Depthwise Separable Convolutions\cite{sifre2014rigidmotionscatteringtextureclassification}, 
-obtinut prin compunerea a 2 straturi de convolutie, unul numit depthwise convolution,
-iar celalalt pointwise convolution. Aceasta abordare creste viteza de procesare si imbunatateste
-acuratetea in sarcini de clasificare pentru seturi de date precum ImageNet ILSVRC2012. In cazul 
+unde \(d_{out}\) este numărul de canale rezultate în urma convoluției.
+În total se vor executa $ h \cdot w \cdot d_{in} \cdot d_{out} \cdot k \cdot k$ operații.
+Pentru  a rezolva această problemă a fost creat un strat numit Depthwise Separable Convolutions\cite{sifre2014rigidmotionscatteringtextureclassification}, 
+obținut prin compunerea a 2 straturi de convoluție, unul numit depthwise convolution,
+iar celălalt pointwise convolution. Această abordare crește viteza de procesare și îmbunătățește
+acuratețea în sarcini de clasificare pentru seturi de date precum ImageNet ILSVRC2012. În cazul 
 depthwise convolution, fiecare canal al datelor de intrare este procesat de un singur kernel
-al stratului de convolutie. Pointwise convolution uneste printr-o combinatie liniara 
-rezultatul procesarii fiecarui canal. Complexitatea temporala obtinuta astfel este de:
+al stratului de convoluție. Pointwise convolution unește printr-o combinație liniară
+rezultatul procesării fiecărui canal. Complexitatea temporală obținută astfel este de:
 $ h \cdot w \cdot d_{in} \cdot (k^2 + d_{out})$\cite{fast}. \\ 
 
-FastDepth foloseste tehnica de skip connections, straturile finale primind ca date de intrare
-valorile calculate de straturile aflate la inceput, si urmeaza o arhitectura encoder-decoder. 
-Encoder-ul transforma datele de intrare intr-o forma mai compacta asemeni unei operatii de arhivare.
-Aceasta este realizata folosind o alta retea neurala numita Mobile\_Net\cite{howard2017mobilenetsefficientconvolutionalneural} si 
-ulterior Mobile\_Netv2\cite{sandler2019mobilenetv2invertedresidualslinear} 
-care reduce numarul de parametrii si creste viteza de procesare fara a impacta acuratetea. 
-Partea de decoder este alcatuit din 5 straturi de tip depthwise convolution fiecare urmate de o 
-interpolare liniara care dubleaza dimensiunea rezultatului, ultimul strat fiind un 
-pointwise convolution care uneste canalele obtinute si returneaza matricea de adancime. Pentru
-Mobile\_Netv2 exista parametrii preantrenati in libraria Pytorch\cite{paszke2017automatic} pe setul de date ImageNet
-fiind un motiv in plus de a folosi aceasta arhitectura in dezvoltarea FastDepth. 
-Mobile\_Netv2 foloseste atat depthwise convolution cat si pointwise convolution intr-un
-strat numit Inverted Residual, acesta fiind alcatuit din urmatoarele componente unde $ t $ 
-este factorul de multiplicare al numarului de canale, $ s $ este parametrul de stride, determina 
-daca se micsoreaza numarul de canale, $ h, w, d $ sunt dimensiunile matricei de intrare:
+FastDepth folosește tehnica de skip connections, straturile finale primind ca date de intrare
+valorile calculate de straturile aflate la început și urmează o arhitectură encoder-decoder. 
+Encoder-ul transformă datele de intrare într-o formă mai compactă asemenea unei operații de arhivare.
+Prima parte a rețelei este realizată folosind o altă arhitectură numită Mobile\_Net\cite{howard2017mobilenetsefficientconvolutionalneural} și 
+ulterior Mobile\_Netv2\cite{sandler2019mobilenetv2invertedresidualslinear}, 
+care reduce numărul de parametri și crește viteza de procesare fără a impacta acuratețea. 
+Decoder-ul este alcătuit din 5 straturi de tip depthwise convolution, fiecare urmat de o 
+interpolare liniară care dublează dimensiunea ieșirii. Ultimul strat face parte din categoria 
+pointwise convolution. Acesta unește canalele obținute și returnează matricea finală de adâncime. Pentru
+Mobile\_Netv2 există parametri preantrenați în librăria Pytorch\cite{paszke2017automatic}, pe setul de date ImageNet,
+fiind un motiv în plus de a folosi această arhitectură. Rețeaua neurală folosește atât depthwise convolution,
+cât și pointwise convolution într-un strat numit Inverted Residual. Acest bloc este alcătuit din următoarele 
+componente unde $ t $ este factorul de multiplicare a numărului de canale, $ s $ este parametrul de stride, determină 
+dacă se micșorează numărul de canale, $ h, w, d $ sunt dimensiunile matricei de intrare:
 \begin{figure}[htbp] 
   \centering
   \includegraphics[width=1.0\textwidth]{./images/bottleneck_residual_block.png}
-  \caption{Straturile unui bloc de tip Inverted Residual, preluat din\cite{sandler2019mobilenetv2invertedresidualslinear}}
-  \label{fig:bottleneck_residual_block}
+  \caption{Straturile unui bloc de tip Inverted Residual, preluat din\cite{sandler2019mobilenetv2invertedresidualslinear}}\label{fig:bottleneck_residual_block}
 \end{figure}
 % continuare detaliere mobileNet_v2
 % adaugare poze
 
 
 \chapter{Detalii de implementare}
-\section{Limbaje de programare si librarii folosite}
-Implementarea este realizata in C++17. Pentru management-ul librariilor si al codului folosesc
-CMake 3.28.3. Acesta imi permite sa grupez in foldere codul scris de mine si face operatia de 
-linking automat cu binarele pachetelor folosite. Librariile principale sunt OpenCV\cite{itseez2015opencv} 4.9.0, Ceres\cite{CeresSolver} 2.2.0, Eigen 3.4.0, DBoW2\cite{bagofwordslibrary} si ultima versiune de Sophus
-pana la data de ianuarie 2025. In comparatie cu alte librarii care inca mai trec 
-prin diverse update-uri, Sophus a intrat intr-o etapa de mentenanta, dezvoltarea efectiva a 
-acestuia fiind finalizata din iunie 2024. O prima problema pe care am intalnit-o a fost gasirea 
-unei versiuni compatibile de C++ cu toate aceste pachete. Am incercat mai multe variante printre 
-care C++11, C++14, C++17 si C++20. Preferinta mea ar fi fost sa folosesc o versiune cat mai noua
-cu putinta, dar care sa poata fi compatibila cu toate librariile mentionate. C++11 si C++14 nu 
-erau compatibile cu Ceres, versiunea minima pentru aceasta librarie era C++17. C++20  si C++23 nu 
-era compatibil cu Sophus si cu Eigen, iar ambele librarii sunt fundamentale deoarece 
-implementeaza metode puternic optimizate de a lucra cu matrici iar API-ul lor era mai simplu decat
-cel din OpenCV.\@ Singura optiune ramasa a fost C++17 care era incompatibila cu DBoW2. Libraria 
-folosea o versiune mai veche a functiei throw pentru erori. In momentul in care am eliminat aceasta
-directiva, am putut recompila codul ca librarie. Bibliotecile utilizate sunt urmatoarele: \\
-OpenCV este o librarie de computer vision. Contine implementari ale algoritmilor de extragere de
-trasaturi precum FAST, ORB, SIFT, SURF, API-uri pentru procesare video: citirea unui video cadru
-cu cadru, procesarea de imagini: aplicarea de filtre, transformarea in grayscale, eliminarea distorsiunii
-cauzata de camera. Foarte importante sunt structurile ce abstractizeaza matricile si parametrii 
-prin care se indentifica trasaturile: cv::Mat si cv::KeyPoint. Structura KeyPoint este 
-fundamentala pentru implementarea algoritmului deoarece stocheaza numeroase informatii despre zona
-pe care o reprezinta: orientarea acesteia, coordonatele centrului si nivelul la care a fost observat, 
-parametrii de care am avut nevoie in fiecare etapa de procesare a cadrelor. Pe langa aceste 
-lucruri, OpenCV are un modul dedicat pentru citirea parametrilor retelelor neurale din fisierele care 
-urmeaza un format de tip ONNX, fiind o alternativa potrivita daca vreau sa utilizez un model doar 
-pentru sarcini de inferenta.  \\
-Ca librarie de optimizare am avut de ales intre Ceres si g2o\cite{g2oLibrary}. In implementarea oficiala 
-g2o era cel folosit. Motivul principal fiind ca permite abstractizarea parametrilor care 
-trebuie optimizati si a relatiilor dintre acestia sub forma unui graf neorientat. 
-API-ul de g2o permite activarea si dezactivarea anumitor noduri, pentru a face implementarea 
-mai robusta impotriva perechilor de tip outlier, si pentru a putea reintroduce noduri eliminate
-temporar in graful de optimizare. Ceres din pacate nu permite acest lucru. O data create conditiile initiale acestea 
-pot fi dezactivate si nu mai este permisa reutilizarea lor in aceeasi problema de optimizare. La
-finalizarea algoritmului memoria folosita de catre noduri este eliberata. Cu toate acestea, Ceres
-are un API usor de utilizat si are o viteza comparativa cu cel din g2o.\\
-Folosesc libraria Eigen deoarece este mai simplu API-ul de calcul cu matrici decat 
-cel din OpenCV.\@ Pentru a accesa elementele unei matrici in OpenCV se foloseste o referinta la 
-vectorul de date facand accesarea elementelor mult mai nesigura iar verificarea indicelui este 
-facuta la runtime. In cazul matricilor din Eigen, accesarea elementelor si operatiile
-cu matrici sunt verificate la compile time, prevenind astfel erorile inainte de a rula programul. \\
-Sophus este o librarie care imi permite sa lucrez cu algebra de tip Lie. In loc de a vedea
-estimarile pozitiei ca pe niste matrici de $ 4 \times 4 $, le pot vedea ca pe un vector alcatuit din 7 
-elemente. Primii 4 parametrii alcatuiesc un quaternion, aceasta fiind o exprimare vectoriala 
-a unei matrici $ 3 \times 3 $ de rotatie, iar ultimii 3 parametrii reprezinta un vector de translatie.
-Biblioteca implementeaza operatii care imi permit sa lucrez cu acesti vectori, care fac parte 
-dintr-un grup numit \(se(3)\) si garanteaza ca rezultatul obtinut este scalat corespunzator 
-pentru a face parte in continuare din aceeasi categorie. \\
-DBoW2 este o metoda de tip bag of words pentru compararea imaginilor intre ele. Este utilizat
-pentru operatii precum feature matching intre imagini consecutive, relocalizari si recunoastera
-zonelor prin care a trecut pentru a inchide buclele create de mai multe cadre cheie salvate
-in harta. Acesta este alcatuit dintr-o structura de tip arbore. Fiecare nivel este obtinut
-din realizarea unui algoritm de clusterizare a descriptorilor de tip ORB ca de exemplu 
-kmeans++, separarea tuturor descriptorilor in functie de centroizi si reluarea aceleasi
-operatii in fiecare dintre clusterele nou create. Nodurile de tip frunza sunt alcatuite 
-dintr-un singur descriptor. Construirea arborelui se realizeaza intr-o etapa offline. In cazul
-librariei DBoW2, setul de date folosit a fost Bovisa 2008{-}09{-}01. Au fost alese 10K imagini
-iar pentru fiecare cadru in parte extrasi 1000 descriptori ORB.\@ Acestia au fost folositi 
-pentru a crea un arbore de adancimea 6 iar numarul de clustere pe care le creeaza fiecare 
-iteratie a algoritmului kmeans++ este de 10. Pe ultimul strat exista un milion de frunze, si 
-tot aceeasi lungime o va avea si vectorul de feature-uri care va reprezenta o imagine. Fiecare
-descriptor va primi o valoare numerica numita greutate, invers proportionala cu frecventa pe 
-care o are acesta. Cu cat este mai rar un anumit descriptor, cu atat este mai util pentru a 
-diferenta o imagine de multe altele. Scopul principal al librariei este sa primeasca ca data
-de intrare descriptorii ORB ai unei imagini si sa calculeze vectorul sau bag-of-words.
-Vectorul bag-of-words este alcatuit in principal din valori de 0. Fiecare descriptor al 
-imaginii parcurge arborele de la radacina spre frunze, parcurgerea realizandu-se prin 
-calcularea distantei Hamming dintre descriptor si toate nodurile de pe un anumit nivel, 
-si alegerea nodului cu distanta Hamming minima. Nodul frunza la care va ajunge va avea asociat
-un index, in cazul de fata cu valori de la 0 la un milion. La acelasi index va fi modificata
-valoarea din vectorul bag-of-words in valoarea greutatii descriptorului stocat in arbore.
-Apelul de biblioteca returneaza de asemenea un vector de feature-uri in care fiecare element
-este o pereche de forma $ (int, vector\_descriptori) $, primul element este indexul 
-clusterului de la nivelul 4 al arborelui DBOW2, iar cel de-al doilea element reprezinta un 
-vector de descriptori din imaginea curenta care se potrivesc in acelasi cluster. Doua imagini pot
-fi comparate intre ele prin intermediul acestui vector de feature-uri, lucru care va fi detaliat
-in descriera clasei OrbMatcher. In implementarea ORB-SLAM2, nu este practica creearea unui vector
-de tip bag of words cu un milion de elemente, mai ales ca majoritatea valorilor sunt 0, asa ca o
-reducere a dimensionalitatii vectorului ar creste viteza de calcul a sistemului. Din aceasta 
-cauza, compararea descriptorilor se realizeaza doar pana la nivelul 4 in arbore, vectorul bow 
-avand doar 1000 de elemente, iar cel de feature-uri avand acelasi numar de elemente cu numarul de 
+\section{Limbaje de programare și librării folosite}
+Implementarea este realizată în C++17. Pentru management-ul pachetelor și al codului folosesc
+CMake 3.28.3. Librariile principale sunt OpenCV\cite{itseez2015opencv} 4.9.0,
+Ceres\cite{CeresSolver} 2.2.0, Eigen 3.4.0, DBoW2\cite{bagofwordslibrary} și ultima versiune de Sophus
+pănâ la data de ianuarie 2025. În comparație cu alte librării care încă mai au parte de modificări,
+Sophus a intrat într-o etapă de mentenanța, dezvoltarea efectivă a acestuia fiind finalizată din iunie 2024.
+O primă problemă pe care am întâlnit-o a fost găsirea 
+unei versiuni compatibile de C++ cu toate aceste pachete. Am încercat mai multe variante printre 
+care C++11, C++14, C++17, C++20 și C++23. Preferința mea ar fi fost să folosesc o versiune cât mai nouă.
+C++11 si C++14 nu erau compatibile cu Ceres, versiunea minimă pentru care funcționează această librărie
+este C++17. C++20 și C++23 nu erau compatibile cu Sophus și cu Eigen. Utilizarea acestor librării este deosebit 
+de importantă, deoarece implementează metode puternic optimizate pentru a lucra cu matrici.\@ 
+Singura opțiune rămasă este C++17 care este incompatibilă cu DBoW2. Librăria 
+folosește o versiune mai veche a funcției throw pentru erori. În momentul în care am eliminat această
+directivă, am putut recompila codul ca librărie. Voi prezenta în continuare motivele pentru care 
+am ales fiecare librărie. \\
+OpenCV este folosit în computer vision. Conține implementări ale algoritmilor de extragere de
+trăsături precum FAST, ORB, SIFT, SURF, are un API pentru procesare video, numeroase funcții de procesare
+a imaginilor: aplicarea de filtre, transformarea în alb-negru, eliminarea distorsiunii
+cauzate de cameră. Foarte utile sunt clasele care abstractizează matricile și parametrii 
+prin care se indentifică trăsăturile: cv::Mat și cv::KeyPoint. Structura KeyPoint este 
+fundamentală pentru implementarea algoritmului, deoarece stochează numeroase informații despre zona
+pe care o reprezintă: orientarea acesteia, coordonatele centrului și nivelul la care a fost observat. 
+Pe langa aceste lucruri, OpenCV are un modul dedicat pentru citirea parametrilor rețelelor neurale din fișierele care 
+urmează un format de tip ONNX, fiind o alternativă potrivită dacă vreau să utilizez un model doar 
+pentru sarcini de inferență.  \\
+Ca librărie de optimizare, am avut de ales între Ceres și g2o\cite{g2oLibrary}. În implementarea oficială 
+g2o era cel folosit. Motivul principal este că permite abstractizarea parametrilor care 
+trebuie optimizați și a relațiilor dintre aceștia sub forma unui graf neorientat. 
+API-ul de g2o poate activa și dezactiva un nod al problemei de optimizare, pentru a face implementarea 
+mai robustă împotriva perechilor de tip outlier și pentru a putea reintroduce noduri eliminate
+temporar din graful de optimizare în timpul rulării problemei. Ceres din păcate nu permite acest lucru.
+O dată create condițiile inițiale acestea pot fi doar dezactivate și nu mai este permisă reutilizarea lor în 
+aceeași problemă de optimizare. La finalizarea algoritmului, memoria folosită de către noduri este eliberată.
+Cu toate acestea, Ceres are un API ușor de utilizat și are o viteza comparativă cu cel din g2o.\\
+Folosesc librăria Eigen, deoarece este mai simplu API-ul de calcul cu matrici decât 
+cel din OpenCV.\@ Pentru a accesa elementele unei matrici în OpenCV se folosește o referință la 
+vectorul de date, iar verificarea corectitudinii accesării unui element din vector este făcută la runtime.
+În cazul matricilor din Eigen, verificarea operațiilor cu matrici este realizată la compile time, prevenind
+astfel erorile înainte de a rula programul. \\
+Sophus este o librărie care îmi permite să lucrez cu algebra de tip Lie. În loc de a vedea
+estimările poziției ca pe niște matrici de $ 4 \times 4 $, le pot converti într-un vector alcătuit din 7 
+elemente. Primii 4 parametrii reprezintă un quaternion, aceasta fiind o exprimare vectorială 
+a unei matrici $ 3 \times 3 $ de rotație, iar ultimii 3 parametrii alcătuiesc un vector de translatie.
+Biblioteca implementează operații care îmi permit să lucrez cu acești vectori, ei făcând parte 
+dintr-un grup numit \(se(3)\) și garantează că rezultatul obținut este scalat corespunzător 
+pentru a face parte în continuare din aceeași categorie. \\
+DBoW2 este o metodă de tip bag of words pentru compararea imaginilor între ele. Este utilizat
+pentru operații precum feature matching între imagini consecutive, relocalizări și loop closure.
+Librăria folosește o structură de tip arbore. Fiecare nivel este obținut
+din realizarea unui algoritm de clusterizare a descriptorilor de tip ORB, folosind algoritmi precum
+kmeans++. Această împărțire este realizată în mod recursiv, până când adâncimea arborelui atinge nivelul dorit.
+Nodurile de tip frunză sunt alcătuite dintr-un singur descriptor. Construirea arborelui este realizată într-o 
+etapă offline de antrenare. În cazul librăriei DBoW2, setul de date folosit a fost Bovisa 2008{-}09{-}01. 
+Au fost alese 10K imagini, iar pentru fiecare cadru în parte au fost extrași 1000 de descriptori ORB.\@ Aceștia au 
+fost folosiți pentru a crea un arbore de adâncime 6, iar numărul de clustere pe care le creează fiecare 
+iterație a algoritmului kmeans++ este de 10, acesta fiind factorul de branching. Pe ultimul strat, există un milion 
+de frunze și tot aceeași lungime o va avea și vectorul de feature-uri care va reprezenta o imagine. Fiecare
+descriptor va primi o valoare numerică numită greutate, invers proporțională cu frecvența cu care a fost 
+întâlnit descriptorul în setul de date de antrenare. Cu cât este mai rar un anumit descriptor, cu atât este
+mai util pentru a diferenția o imagine. Scopul principal al librăriei este să primească ca dată
+de intrare descriptorii ORB ai unei imagini și să calculeze vectorul său bag-of-words.
+Vectorul bag-of-words este alcătuit în principal din valori de 0. Fiecare descriptor al 
+imaginii parcurge arborele de la radacină spre frunze. Compararea cu un nod, se realizează 
+prin calcularea distanței Hamming dintre descriptor și centroidul clusterului nodului respectiv.
+Parcurgerea se realizează prin compararea descriptorului cu toate nodurile de pe un anumit nivel
+și alegerea nodului cu distanța Hamming minimă. Nodul frunză la care va ajunge va avea asociat
+un index, în cazul de față cu valori de la 0 la un milion. La același index o să fie modificată
+valoarea din vectorul bag-of-words în valoarea greutății descriptorului stocat în arbore.
+Apelul de bibliotecă returnează, de asemenea, un vector de feature-uri în care fiecare element
+este o pereche de forma $ (int, vector\_descriptori) $. Primul element este indexul 
+clusterului de la nivelul 4 al arborelui DBOW2, iar cel de-al doilea element reprezintă un 
+vector de descriptori din imaginea curentă care se potrivesc în același cluster. Două imagini pot
+fi comparate între ele prin intermediul acestui vector de feature-uri, lucru care va fi detaliat
+în descriera clasei OrbMatcher. În implementarea ORB-SLAM2, nu este practică creearea unui vector
+de tip bag of words cu un milion de elemente, mai ales că majoritatea valorilor sunt 0. Astfel,
+reducerea dimensiunii vectorului ar crește viteza de calcul a sistemului. Din această 
+cauză, compararea descriptorilor se realizează doar până la nivelul 4 în arbore. Vectorul bow 
+va avea dimensiunea 1000, iar cel de feature-uri va avea numărul de elemente egal cu cel de 
 descriptori. 
 
-\section{Mediu de lucru si principalele clase}
-Structura de fisiere este una simpla, in folderul radacina se regaseste fisierul de 
+\section{Mediu de lucru și principalele clase}
+Structura de fișiere este una simplă, în folderul rădăcină se regăsește fișierul de 
 CmakeLists.txt care va fi interpretat de utilitarul cmake pentru a genera automat Makefile-ul. 
-Acest Makefile va contine regulile de build si de clean pentru proiect. In fisierul main.cpp
-vor fi initializate componentele si se va putea selecta pe care dintre cele 2 seturi
-de date se va aplica algoritmul. Aceste seturi de date contin de fapt cadrele dintr-un video 
-facut cu o camera RGBD Microsoft Kinetic impreuna cu matricile de adancime si pozitiile acestora
-in spatiu pentru fiecare cadru in parte. Aceste seturi de date sunt suficient de complexe pentru 
-a permite evaluarea functionarii algoritmului de ORB-SLAM2. Tot in main.cpp, se va realiza citirea
-fisierului ORBvoc.txt, acesta contine datele pe care le va folosi clasa ORBVocabulary pentru a
-initializa arborele folosit de libraria DBOW2. \\
-Tot in folderul radacina se regaseste si fisierul fast\_depth.onnx, in care este stocata 
-arhitectura si parametrii retelei neurale FastDepth pentru estimarea adancimii. In folderul de 
-include se afla antetele claselor pe care le voi implementa si in folderul de  src se regaseste 
-codul de C++ ce implementeaza logica programului.
-Am observat ca separarea codului in acest fel este o practica des intalnita in proiectele de mari
-dimensiuni si garanteaza flexibilitate in includirea dependintelor intre fisiere. Algoritmul 
-ORB-SLAM2 este unul complex, depinzand de o multitudine de parametrii care pot influenta acuratetea.
-Cei mai importanti sunt cei corelati cu camera. In fisierul config.yaml se regaseste matricea \(K\), 
-parametrii de distorsiune ai imaginii si alte constante pe care le-am considerat ca fiind niste
-hiperparametrii ai algoritmului. Acestia vor trebui modificati in functie de mediul in care va 
-rula ORB-SLAM2 pentru a garanta functionarea corecta. \\
+Acest Makefile va conține regulile de build și de clean pentru proiect. În fișierul main.cpp
+vor fi inițializate componentele și se va putea selecta pe care dintre cele 2 seturi
+de date se va aplica algoritmul. Aceste seturi de date conțin de fapt cadrele dintr-un video 
+făcut cu o cameră RGBD Microsoft Kinetic, împreună cu matricile de adâncime și pozițiile acestora.
+Aceste seturi de date sunt suficient de complexe pentru a permite evaluarea algoritmului ORB-SLAM2.
+Tot în main.cpp, se va realiza citirea fișierului ORBvoc.txt, acesta conține datele pe care le va
+folosi clasa ORBVocabulary pentru a inițializa arborele folosit de librăria DBOW2. \\
+Tot în folderul rădăcină se regăsește și fișierul fast\_depth.onnx, în care sunt stocate 
+arhitectura și parametrii rețelei neurale FastDepth. În folderul de include, se află antetele claselor
+pe care le voi implementa și în folderul de src se regăsește codul de C++ pentru logica programului.
+Am observat că separarea codului în acest fel este o practică des întâlnită în proiectele de mari
+dimensiuni și garantează flexibilitate în includirea dependințelor între fișiere. Algoritmul 
+ORB-SLAM2 este unul complex, depinzând de o multitudine de parametrii care pot influența acuratețea.
+Cei mai importanti sunt cei corelați cu camera. În fișierul config.yaml se regăsește matricea \(K\), 
+parametrii de distorsiune ai camerei și alte constante pe care le-am considerat ca fiind niște
+hiperparametrii ai algoritmului. Aceștia vor trebui modificați în funcție de mediul în care va 
+rula ORB-SLAM2 pentru a garanta funcționarea corectă. \\
 
-Clasa TumDatasetReader este responsabila de achizitia de date si de scrierea 
-in fisier a traiectoriei pe care o estimeaza algoritmul cadru cu cadru. Achizitia de date 
-presupune citirea din memorie a matricei RGB, convertirea acesteia in grayscale pentru 
-o procesare mai rapida de catre algoritmul ORB si de obtinerea hartii de adancime pentru 
-cadrul respectiv. Acest lucru poate fi realizat in 2 feluri: matricea de distante este citita
-din setul de date TUM RGBD si a fost inregistrata cu o camera RGBD tip Microsoft Kinetic,
-sau se foloseste reteaua neurala FastDepth care estimeaza in timp real distanta pentru
-fiecare pixel din cadrul curent. Imaginea RGB si harta de adancime
-vor fi transmise ca parametrii clasei Tracker. TumDatasetReader stocheaza estimarile 
-pozitiilor camerei pentru fiecare cadru in parte. Cadrele cheie, cele salvate 
-in clasa Map, vor avea matricea de pozitie stocata nealterat in memorie, ele sunt deja relative 
-fata de primul cadru citit. Pentru celelalte cadre, matricea de pozitie salvata in clasa
-TumDatasetReader este relativa la un cadru cheie, de preferat ultimul cadru cheie creat pana
-la citirea imaginii curente. Motivul pentru care se realizeaza salvarea pozitiilor in acest 
-fel, este ca doar cadrele din clasa Map sunt salvate in memorie si pot fi optimizate 
-de catre algoritmul Bundle Adjustment asa ca doar acestea ar trebui sa aiba valoarea lor 
-salvata explicit. \\
+Clasa TumDatasetReader este responsabilă de achiziția de date și de scrierea 
+în fișier a traiectoriei pe care o estimează algoritmul. Achiziția de date 
+presupune citirea din memorie a matricei RGB, convertirea acesteia în format alb-negru pentru 
+o procesare mai rapidă de către algoritmul ORB și obținerea hărții de adâncime pentru 
+cadrul respectiv. Acest lucru poate fi realizat în 2 feluri: matricea de distanțe este citită
+din setul de date TUM RGBD și este înregistrată cu o cameră RGBD tip Microsoft Kinetic,
+sau se folosește rețeaua neurală FastDepth, care estimează în timp real distanța pentru
+fiecare pixel din cadrul curent. Imaginea RGB și harta de adâncime
+o să fie transmise ca parametri clasei Tracker. TumDatasetReader stochează estimările 
+pozițiilor camerei pentru fiecare cadru în parte. Dacă a fost salvat în clasa Map cadrul curent,
+va avea matricea de poziție salvată, nealterată în clasa TumDatasetReader. Pentru celelalte cadre,
+matricea de poziție salvată o să fie relativă la un cadru cheie, de preferat ultimul cadru cheie creat până
+la citirea imaginii curente. Motivul pentru care se realizează stocarea pozițiilor în acest 
+fel, este faptul că doar cadrele din clasa Map sunt salvate în memorie și pot fi optimizate 
+de către algoritmul Bundle Adjustment, astfel, doar acestea ar trebui să aibă valoarea lor 
+salvată explicit. \\
 
-Clasa MapPoint este fundamentala pentru buna functionare a algoritmului ORB-SLAM2. Aceasta este 
-formata cu ajutorul unui KeyPoint si al unui KeyFrame asociat acestuia. In etapa anterioara, 
-am prezentat modul in care se face proiectia coordonatelor unui punct cheie in spatiu, acestea 
-devenind coordonatele globale ale MapPoint-ului pe care il creem. Punctului din spatiu 
-i se asociaza de asemenea descriptorul acelui keypoint care l-a creat, pentru compararea ulterioara 
-cu alte KeyPoint-uri din alte imagini. Un MapPoint are nevoie de un vector de orientare, acesta 
-ajuta in verificarea proprietatii unui MapPoint de a fi sau nu vizibil dintr-un KeyFrame. Pentru a 
-calcula acest vector de orientare prima data se determina coordonatele globale ale centrului camerei
-pentru cadru cheie care a creat acel KeyPoint, acest lucru se realizeaza in felul urmator:
+Clasa MapPoint este fundamentală pentru buna funcționare a algoritmului ORB-SLAM2. Aceasta este 
+formată cu ajutorul unui KeyPoint și al unui KeyFrame asociat acestuia. În etapa anterioară, 
+am prezentat modul în care se face proiecția coordonatelor unui punct cheie în spațiu, obținându-se 
+coordonatele sale globale. Acestuia i se asociază descriptorul keypoint-ului care l-a creat, pentru
+compararea ulterioară cu alte KeyPoint-uri din alte imagini. Un MapPoint are nevoie de un vector de orientare
+pentru a putea verifica dacă un MapPoint este vizibil dintr-un KeyFrame. Pentru a 
+calcula acest vector de orientare, prima dată se determină coordonatele globale ale centrului camerei
+pentru cadrul cheie care a creat acel KeyPoint. Acest lucru se realizează în felul urmator:
 \begin{equation}
     \begin{bmatrix}
         X_{c} \\
@@ -1029,538 +1017,531 @@ pentru cadru cheie care a creat acel KeyPoint, acest lucru se realizeaza in felu
             0 & 1
         \end{bmatrix}
 \end{equation} 
-Normalizarea diferentei intre coordonatele globale ale centrului camerei si ale MapPoint-ului creeaza
-vectorul de orientare. Acesta poate fi modificat, daca se constata ca mai multe cadre observa acelasi
-punct. In situatia respectiva, vectorul de orientare final va fi media aritmetica a celorlalti vectori 
+Normalizarea diferenței între coordonatele globale ale centrului camerei și ale MapPoint-ului creează
+vectorul de orientare. Acesta poate suferi ulterior modificări dacă se constată că mai multe cadre observă același
+punct. În situația respectivă, vectorul de orientare final va fi media aritmetică a celorlalți vectori 
 de orientare individuali.
 
-Clasa Feature, aceasta componenta nu exista in implementarea oficiala a ORB-SLAM, dar am considerat 
-ca utilizarea acesteia ar simplifica codul. Extinde clasa KeyPoint fara a o mosteni explicit,
-are asociata distanta, extrasa din matricea de adancime, descriptorul
-si o valoare de tip boolean care arata daca punctul este monocular sau stereo. Aceasta clasificare
- se obtine prin compararea adancimii cu o valoare foarte apropiata
-de 0. In cazul implementarii mele, daca distanta este mai mica decat $ 1e-2 $, consider ca valoarea
-estimata de camera RGBD ori de reteaua neurala nu este corecta si ca punctul respectiv este
-monocular, altfel consider ca este stereo. Pentru fiecare KeyPoint extras,
-se va crea o instanta a clasei Feature care va fi stocata direct in KeyFrame. Fiecare
-Feature are setat pe null la initilializare o referinta la un obiect 
-de tip MapPoint. Pentru a garanta functionarea in real time a algoritmilor, asocierea (Feature,
- MapPoint) trebuie sa poata fi accesata in $ O(1) $. Vectorul de elemente Feature, impreuna cu o
-structura de tip dictionar unde cheia va fi MapPoint si valoarea de tip Feature, vor face acest
-lucru posibil. Singura problema este ca cele 2 structuri incearca sa 
-reprezinte aceleasi corelatii, in cazul vectorului am indicele unui Feature drept cheie si incerc
-sa accesez MapPoint-ul asociat, iar in cazul dictionarului, am referinta unui MapPoint si incerc sa
-obtin adresa unui Feature. Ambele structuri trebuie sa contina aceleasi perechi, altfel 
-comportamentul algoritmului devine nedefinit. \\
+Clasa Feature nu există în implementarea oficială a ORB-SLAM, dar am considerat 
+că utilizarea acesteia ar simplifica codul. Aceasta extinde clasa KeyPoint fără a o moșteni explicit,
+are asociată distanța extrasă din matricea de adâncime, descriptorul
+și o valoare de tip boolean care arată dacă punctul este monocular sau stereo. Această clasificare
+se obține prin compararea adâncimii cu o valoare foarte apropiată de 0. În cazul implementării mele,
+dacă distanța este mai mică decât $ 1e-2 $, consider că valoarea estimată de camera RGBD ori de rețeaua
+neurală nu este corectă și că punctul respectiv este monocular, altfel, consider că este stereo. Pentru
+fiecare KeyPoint extras, se va crea o instanță a clasei Feature care va fi stocată direct în KeyFrame. 
+Fiecare Feature are setat pe null la inițializare o referință la un obiect de tip MapPoint. Pentru a
+garanta funcționarea în timp real a algoritmilor, asocierea (Feature, MapPoint) trebuie să poată fi accesată
+în $ O(1) $. Vectorul de elemente Feature, împreună cu o structură de tip dicționar unde cheia va fi un MapPoint
+și valoarea un Feature, vor face acest lucru posibil. Singura problemă este că cele 2 structuri încearcă să 
+reprezinte aceleași corelații. În cazul vectorului am indicele unui Feature drept cheie și încerc
+să accesez MapPoint-ul asociat, iar în cazul dicționarului, am referința unui MapPoint și încerc să
+obțin adresa unui Feature. Ambele structuri trebuie să conțină aceleași perechi, altfel comportamentul 
+algoritmului devine nedefinit. \\
 
-Clasa KeyFrame, contine mai multe elemente legate de cadrul curent. Pentru a mentine 
-functionarea sistemului in timp real, trebuie sa stocam in memorie rezultatele calculelor noastre.
-In aceasta clasa se vor regasi matricea de adancime, vectorul de instante ale clasei Feature,
-vectorul de trasaturi calculat de metoda bag-of-words implementata in DBOW2 si cadrul initial, 
-convertit in format grayscale ce va fi folosit ulterior pentru afisarea in timp real a performantelor
-algoritmului. In interiorul constructorului acestei clase sunt mai multe operatii realizate,
-majoritatea necesare pentru a creste eficienta accesarii datelor. De exemplu: vectorul de tip Feature
-in medie contine 1000 de elemente care nu sunt sortate. In situatia in care proiectam un MapPoint in 
-plan ar trebui sa comparam coordonatele proiectiei cu pozitia fiecarui Feature in parte pentru a 
-stabili care este cel mai apropiat. O modalitate de a rezolva acest lucru este segmentarea suprafetei
-in \(K\) zone, in cazul meu am ales $ K = 100$, fiecare reprezentand o portiune din imaginea initiala,
-avand asociate referintele Feature-urilor care se gasesc pe suprafata respectiva. In acest fel,
-in functie de zona in care este proiectat un MapPoint, vom stii ce Feature are o posibilitate
-mare de a corespunde, reducand astfel numarul de comparatii. 
-Considerand ca toate valorile de tip Feature sunt dispuse in mod egal pe suprafata imagini atunci
-complexitatea devine, $ O(N / K) $ unde \(N\) reprezinta numarul de Feature-uri iar \(K\) reprezinta
-numarul de zone in care a fost impartita imaginea. Constructorul este responsabil de initializarea
-structurilor de tip Feature, partitionarea lor in functie de coordonatele in imagine, si de memorarea
-estimarii curente a pozitie camerei si a centrului camerei in coordonate globale. Tot in aceasta 
-clasa se regaseste structura de tip dictionar (MapPoint, Feature), care va fi adaptata pe tot 
-parcursul algoritmului. Alta metoda importanta este: $ get\_vector\_keypoints\_after\_reprojection $.
-Aceasta primeste ca date de intrare coordonatele proiectiei unui MapPoint, valoarea ferestrei 
-de proiectie, si octava minima si maxima. Octavele reprezinta nivelul la care a fost observat 
-un Keypoint in imagine si o estimare grosiera a distantei dintre camera si punctul din spatiu 
-observat. Acesta poate sa aiba valori inte 0 si 7 inclusiv si ne spune de cate ori 
-s-a facut resize la imagine pentru a surprinde o anumita trasatura. De exemplu: daca 
-un Keypoint are valoarea octavei 0, inseamna ca algoritmul a detectat-o in imaginea nemodificata.
-Daca ar fi 1, atunci dimensiunea imagini a fost redusa o singura data cu 0.8 din valoarea initiala 
-si asa mai departe. Feature-ul care are asociat un MapPoint trebuie sa aiba valori ale octavei
-apropiate intre ele. Daca aceasta situatie nu s-ar respecta, ar introduce erori de estimare 
-a distantei, ne asteptam ca Feature-uri corespondente, sa fie aproximate la aceeasi distanta.
-Altfel ar putea inseamna ca cele 2 puncte din spatiu sunt diferite. Daca mediul are o structura 
-simetrica, de exemplu: o sala de clasa cu bancile aliniate una in fata celeilalte, algoritmul 
-ar putea observa 2 colturi ce apartin de 2 mese diferite, daca nu ar avea aceasta separare 
-pe baza octavei, urmatorul cadru care observa aceleasi mese ar putea sa asocieze eronat punctele 
-intre ele, afectand estimarea pozitiei. Fereastra de proiectie reprezinta cat de departe poate 
-sa fie Feature-ul de coordonatele punctului de proiectie ale unui MapPoint pentru a fi considerata
-corecta o asociere intre cele 2 elemente. In functie de dimensiunea ferestrei aceasta poate intersecta 1, 2 sau 4 subsectiuni din cele 100 in care 
-este impartita imaginea. Problema cea mai mare pe care am avut-o cu clasele KeyFrame si MapPoint
-era dependenta circulara. MapPoint-urile aveau nevoie de un KeyFrame si un Feature pentru a fi 
-create si trebuia sa mentina o lista a KeyFrame-urilor care observa MapPoint-ul respectiv.
-In cazul KeyFrame-ului, acesta trebuie sa pastreze referinte asupra tuturor MapPoint-urilor pe 
-care le observa. Pentru a rezolva aceasta problema am folosit o clasa aditionala care face 
-operatii cu cele 2 structuri si am folosit forward declaration.  \\  
+Clasa KeyFrame, conține mai multe elemente legate de cadrul curent. Pentru a menține 
+funcționarea sistemului în timp real, trebuie să stocăm în memorie rezultatele calculelor noastre.
+În această clasă se vor regăsi matricea de adâncime, vectorul de instanțe ale clasei Feature,
+vectorul de trăsături calculat de metoda bag-of-words și cadrul inițial în format alb-negru. 
+În interiorul constructorului acestei clase sunt mai multe operații realizate, majoritatea fiind necesare
+pentru a crește eficiența accesării datelor. De exemplu, vectorul de tip Feature
+în medie conține 1000 de elemente care nu sunt sortate. În situația în care proiectăm un MapPoint în 
+plan, ar trebui să comparăm coordonatele proiecției cu poziția fiecărui Feature în parte pentru a 
+stabili care este cel mai apropiat. O modalitate de a rezolva acest lucru este segmentarea suprafeței
+în \(K\) zone, în cazul meu am ales $ K = 100$, fiecare reprezentând o porțiune din imaginea inițială,
+având asociate referințele Feature-urilor care se găsesc pe suprafața respectivă. În acest fel,
+în funcție de zona în care este proiectat un MapPoint, vom știi ce Feature are o posibilitate
+mare de a corespunde, reducând astfel numărul de comparații.
 
-Clasa Map implementeaza harta pe care o foloseste algoritmul ORB-SLAM2. Aceasta este responsabila
-de stocarea corecta a KeyFrame-urilor, a MapPoint-urilor si rezolva problema dependentei circulare
-a celor 2 clase. Aici am implementate metodele de adaugare/stergere a unui MapPoint dintr-un KeyFrame.
-De asemenea, clasa MapPoint contine referinte la toate KeyFrame-urile care o observa. Aceste 
-referinte sunt adaugate / sterse de catre 2 metode care se regasesc aici. Clasa Map creaza o 
-structura de tip graf ponderat neorientat, in care nodurile sunt reprezentate de KeyFrame-uri. 
-Arcele arata daca exista mai mult de 15 puncte comune intre 2 KeyFrame-uri iar ponderea lor este 
-determinata de numarul de MapPoint-uri comune. Clasa Map realizeaza operatii pe graful de KeyFrame-uri,
-adauga/sterge noduri si face interogari pentru a afla vecinii directi sau cei pe nivel 2. Am ales 
-sa implementez aceasta structura folosind $ std::unordered\_map $. Drept cheie va avea KeyFrame-ul 
-curent iar valoarea returnata de structura de tip dictionar va fi un alt $ std::unordered\_map $, 
-ce va contine toate celelalte KeyFrame-uri cu care este direct conectata dar si ponderea conexiunii.
-In acest fel accesarea vecinilor de ordinul 1 va fi o operatie ce se poate realiza in timp constant.
-Functia $ track\_local\_map $ este folosita de catre clasa Tracking. Aceasta primeste ca date 
-de intrare cadrul curent si ultimul cadru cheie salvat. Nu returneaza nimic, doar incearca 
-sa gaseasca cate un MapPoint pentru Feature-urile care inca nu au fost corelate cu un punct 
-din spatiu. Aceasta operatie este costisitoare si functioneza in felul urmator:
+Considerând că toate valorile de tip Feature sunt dispuse în mod egal pe suprafața imagini, atunci
+complexitatea devine $ O(N / K) $, unde \(N\) reprezintă numărul de Feature-uri, iar \(K\) 
+numărul de zone în care a fost împărțită imaginea. Constructorul este responsabil de inițializarea
+structurilor de tip Feature, partiționarea lor în funcție de coordonatele în imagine, și de memorarea
+estimării curente a poziție camerei și a centrului camerei în coordonate globale. Tot în această 
+clasă se regăsește structura de tip dicționar (MapPoint, Feature), care va fi modificată pe tot 
+parcursul algoritmului. Altă metodă importantă este: $ get\_vector\_keypoints\_after\_reprojection $.
+Aceasta primește ca date de intrare coordonatele proiecției unui MapPoint, valoarea ferestrei 
+de proiecție, și octava minimă și maximă. Octavele reprezintă nivelul la care a fost observat 
+un Keypoint în imagine și creează estimare grosieră a distanței dintre cameră și punctul din spațiu 
+observat. Acesta poate să aibă valori de la 0 la 7 inclusiv și ne spune de câte ori 
+s-a făcut resize la imagine pentru a surprinde o anumită trăsătură. De exemplu, dacă 
+un Keypoint are valoarea octavei 0, înseamnă că algoritmul a detectat-o în imaginea nemodificată.
+Dacă ar fi 1, atunci dimensiunea imagini a fost redusă o singură dată cu 0.8 din valoarea inițială 
+și așa mai departe. Feature-ul care are asociat un MapPoint, trebuie să aibă valori ale octavei
+apropiate între ele. Dacă această condiție nu s-ar respecta, ar introduce erori de estimare 
+a distanței. Ne așteptăm ca Feature-uri corespondente, să fie aproximate la aceeași distanță.
+Altfel, ar putea înseamna că cele 2 puncte din spațiu sunt diferite. Dacă mediul are o structură 
+simetrică, de exemplu o sală de clasă cu băncile aliniate una în fața celeilalte, algoritmul 
+ar putea observa 2 colțuri ce aparțin de 2 mese diferite. Dacă nu ar avea această separare 
+pe baza octavei, următorul cadru care observă aceleași mese ar putea să asocieze eronat punctele 
+între ele, afectând estimarea poziției. Fereastra de proiecție reprezintă cât de departe poate 
+să fie Feature-ul de coordonatele punctului de proiecție ale unui MapPoint pentru a fi considerată
+corectă o asociere între cele 2 elemente. În funcție de dimensiunea ferestrei aceasta poate intersecta 1, 2 sau 4 subsecțiuni din cele 100 în care 
+este împărțită imaginea. Problema cea mai mare pe care am avut-o cu clasele KeyFrame și MapPoint
+era dependența circulară. MapPoint-urile aveau nevoie de un KeyFrame și un Feature pentru a fi 
+create și trebuia menținută o lista a KeyFrame-urilor care observă MapPoint-ul respectiv.
+În cazul KeyFrame-ului, acesta trebuie să păstreze referințe despre toate punctele de tip MapPoint pe 
+care le observă. Pentru a rezolva această problemă am folosit o clasă adițională care face 
+operații cu cele 2 structuri și am folosit forward declaration.  \\  
+
+Clasa Map implementează harta pe care o folosește algoritmul ORB-SLAM2. Aceasta este responsabilă
+de stocarea corectă a KeyFrame-urilor, a MapPoint-urilor și rezolvă problema dependenței circulare
+a celor 2 clase. Aici am implementate metodele de adăugare/ștergere a unui MapPoint dintr-un KeyFrame.
+De asemenea, clasa MapPoint conține referințe la toate KeyFrame-urile care o observă. Aceste 
+referințe sunt adăugate/șterse de către 2 metode care se regăsesc aici. Clasa Map creează o 
+structură de tip graf ponderat neorientat, în care nodurile sunt reprezentate de KeyFrame-uri. 
+Arcele arată dacă există mai mult de 15 puncte comune între 2 KeyFrame-uri, iar ponderea lor este 
+determinată de numărul de MapPoint-uri comune. Clasa Map realizează operații pe graful de KeyFrame-uri,
+adaugă/șterge noduri și face interogări pentru a afla vecinii direcți sau pe cei pe nivel 2. Am ales 
+să implementez această structura folosind $ std::unordered\_map $. Cheia va fi KeyFrame-ul 
+curent, iar valoarea returnată va fi un alt $ std::unordered\_map $. Acesta va conține toate celelalte
+KeyFrame-uri cu care este direct conectată cheia, dar și ponderea conexiunii.
+În acest fel accesarea vecinilor de ordinul 1 va fi o operație ce se poate realiza în timp constant.
+Funcția $ track\_local\_map $ este folosită de către clasa Tracking. Aceasta primește ca date 
+de intrare cadrul curent și ultimul cadru cheie salvat. Nu returnează nimic, doar încearcă 
+să găsească asocieri (Feature, MapPoint) pentru Feature-urile care încă nu au fost corelate cu un punct 
+din spațiu. Această operație este costisitoare și funcționează în felul următor:
 \begin{enumerate}
-    \item sunt cautate toate KeyFrame-urile vecine de gradul 1 si 2 cu ultimul KeyFrame adaugat
-    \item din aceste KeyFrame-uri sunt extrase toate MapPoint-urile observate de catre ele 
-    \item MapPoint-urile sunt proiectate si sunt cautate potriviri pentru Feature-urile
-care inca nu au MapPoint-uri asociate.
+    \item sunt căutate toate KeyFrame-urile vecine de gradul 1 și 2 cu ultimul KeyFrame adăugat
+    \item din aceste KeyFrame-uri sunt extrase toate MapPoint-urile observate de către cadrele cheie 
+    \item MapPoint-urile sunt proiectate în cadrul curent și sunt căutate potriviri pentru Feature-urile
+care încă nu au MapPoint-uri asociate.
 \end{enumerate}
-Pentru a nu fi necesar sa calculam de fiecare data KeyFrame-urile vecine si  
-harta locala de MapPoint-uri, le stochez ca variabile in interiorul clasei Map. Acestea vor 
-fi modificate in momentul in care un KeyFrame este adaugat in harta. Intr-un caz ideal, ar 
-trebui ca pentru fiecare Feature adaugat sa se gaseasca un MapPoint, dar acest lucru rareori 
-se intampla. In situatia in care s-au gasit mai putin de 30 de puncte din spatiu care s-au 
-proiectat corect in imagine, se considera ca a aparut o eroare de urmarire si algoritmul incepe o
-etapa de relocalizare. \\
+Pentru a nu fi necesar să calculam de fiecare dată KeyFrame-urile vecine și  
+harta locală de MapPoint-uri, le stochez ca variabile în interiorul clasei Map. Acestea vor 
+fi modificate în momentul în care un KeyFrame este adăugat în hartă. Într-un caz ideal, ar 
+trebui ca pentru fiecare Feature adăugat să se găsească un MapPoint, dar acest lucru rareori 
+se întâmplă. În situația în care s-au găsit mai putin de 30 de puncte din spațiu care s-au 
+proiectat corect în imagine, se consideră că a aparut o eroare de urmărire și algoritmul începe o
+etapă de relocalizare. \\
 
-Clasa OrbMatcher este responsabila de realizarea urmarii feature-urilor asemanatoare intre 
-cadre consecutive. Inainte de a incepe prezentarea metodelor implementate, voi descrie
-pipeline-ul de procesare al unui punct din spatiu pentru a fi considerat observabil de 
-catre camera. Avem o instanta a obiectului MapPoint $ mp $, daca una dintre operatiile
-prezentate esuaeaza, punctul respectiv este ignorat de catre KeyFrame-ul curent.
+Clasa OrbMatcher este responsabilă de realizarea urmăririi feature-urilor asemănătoare între 
+cadre consecutive. Înainte de a începe prezentarea metodelor implementate, voi descrie
+pipeline-ul de procesare al unui punct din spațiu pentru a fi considerat observabil de 
+către cameră. Avem o instanță a obiectului MapPoint $ mp $, dacă una dintre operațiile
+prezentate nu funcționează, punctul respectiv este ignorat de către KeyFrame-ul curent.
 \begin{enumerate}
-    \item Se proiecteaza coordonatele globale ale $ mp $ in planul imaginii folosind matricea 
-de estimare a pozitiei $ T_{cw} $ si matricea parametrilor camerei $ K $. Se verifica daca 
-coordonatele proiectiei sunt valide pentru imagine.     
-    \item Se calculeaza distanta $ d $ de la centrul camerei la $ mp $. In functie de valoarea 
-octavei stocata in acest MapPoint, se pot estima o limita minima si maxima pentru $ d $. 
-Daca valoarea obtinuta nu se incadreaza in acest interval se considera ca punctul este invalid.
-    \item Cu ajutorul geometriei analitice se obtine ecuatia dreptei care uneste $ mp $ 
-si centrulul camerei. Aceasta dreapta si vectorul de directie al MapPoint-ului,
-trebuie sa creeze un unghi cu o valoare mai mare de 60 de grade pentru a fi considerat $ mp $
-observabil.
+    \item Se proiectează coordonatele globale ale $ mp $ în planul imaginii folosind matricea 
+de estimare a poziției $ T_{cw} $ și matricea parametrilor camerei $ K $. Se verifică dacă 
+coordonatele proiecției sunt valide pentru imagine.     
+    \item Se calculează distanța $ d $ de la centrul camerei la $ mp $. În funcție de valoarea 
+octavei stocată în acest MapPoint, se poate estima o limită minimă și maximă pentru $ d $. 
+Dacă valoarea obținută nu se încadrează în acest interval se consideră ca punctul este invalid.
+    \item Cu ajutorul geometriei analitice se obține ecuația dreptei care unește $ mp $ 
+și centrulul camerei. Această dreaptă și vectorul de direcție al MapPoint-ului
+trebuie să creeze un unghi cu o valoare mai mare de 60 de grade pentru a fi considerat $ mp $ observabil.
 \end{enumerate} 
-Daca aceste 3 verificari au fost realizate cu succes se considera ca punctul poate fi observat
-de catre camera. Exista 2 functii responsabile de asocierile intre cadrele curente, scopul acestora 
-este ca gaseasca corespondente intre Feature-urile din cadrul curent si MapPoint-urile 
-din spatiu. Pentru a se gasi perechea Feature $ f $ si MapPoint $ mp $, trebuie ca
-$ mp $ sa se proiecteze in vecinatatea $ f $ iar descriptorii asociati atat Feature-ului 
-cat si al MapPoint-ului sa aiba distanta Hamming sub un prag, setat in aceasta implementare la 50.     
-O metoda ar fi compararea tuturor Feature-urilor din spatiu, cu totalitatea MapPoint-urilor 
-observate de cadrul curent. Dar aceasta metoda ar fi ineficienta. O alta abordare ar fi separarea
-Feature-urilor in clustere in functie de distanta Hamming a descriptorilor, abordare stabila dar 
-lenta si preferabil de utilizat cand nu ne putem baza pe estimarea matricei de pozitie a cadrului anterior. 
-Iar cealalta abordare o reprezinta clusterizarea in functie de coordonatele in imagine 
-ale Feature-ului. \\ 
-Functie $ match\_frame\_reference\_frame $ implementeaza prima metoda. Aceasta primeste ca 
-parametru 2 vectori de feature-uri calculati de libraria DBoW2, unul asociat cadrului curent, pentru     
-care estimam matricea de pozitie si unul asociat cadrului anterior, pentru care cunoastem deja matricea de pozitie
-si asocierile de tip (Feature, MapPoint). Elementele acestor vectori sunt de tip $ (int, vector\_descriptori) $.
-Daca 2 astfel de perechi au prima valoare egala intre ele, inseamna ca cei 2 vectori de descriptori fac parte din 
-acelasi cluster, conform arborelui din libraria DBOW2. Fiecare descriptor are asociata o instanta a clasei 
-Feature. In cadrul anterior, instanta poate avea sau nu, un MapPoint corespondent. Daca exista acel
-MapPoint se poate proiecta in imagine. Descriptorul intern al MapPoint-ului este comparat cu ceilalti 
-descriptori din acelasi cluster din cadrul curent si se aplica testul de proportionalitate Lowe pentru a
-garanta ca descriptorul cu distanta Hamming minima este cel mai bun.   
-Functia $ match\_consecutive\_frames $ este mai simpla si implementeaza a doua metoda. MapPoint-ul din 
-spatiu este proiectat in imagine si toate Feature-urile dintr-o zona circulara de raza de variabila
-sunt considerati posibili candidati pentru a crea o asociere (Feature, MapPoint). Se calculeaza distanta 
-Hamming intre descriptorul MapPoint-ului si cel al Feature-ului. Iar descriptorul cu distanta minima si 
-mai mica decat un prag setat la 100 este considerat ca fiind cel mai potrivit. Feature-ul asociat acelui
-descriptor, va pastra o referinta a MapPoint-ului. \\
+Dacă aceste 3 verificări au fost realizate cu succes, se consideră că punctul poate fi observat
+de către cameră. Există 2 funcții responsabile de asocierile între imagini. Scopul acestora este
+să găsească corespondențe între Feature-urile din cadrul curent și MapPoint-urile 
+din spațiu. Pentru a se găsi perechea Feature $ f $ și MapPoint $ mp $, trebuie 
+$ mp $ să se proiecteze în vecinătatea lui $ f $, iar descriptorii asociați atât Feature-ului, 
+cât și  MapPoint-ului, să aibă distanța Hamming sub un  prag prestabilit. O metodă ar fi compararea tuturor
+Feature-urilor din spațiu, cu totalitatea MapPoint-urilor observate de cadrul curent. Dar această metodă
+ar fi ineficientă și ar duce la estimări eronate. Separarea Feature-urilor în clustere în funcție de distanța
+Hamming a descriptorilor este o abordare stabilă dar lentă și preferabil de utilizat când nu ne putem baza pe
+estimarea matricei de poziție a cadrului curent. Cealaltă abordare este clusterizarea în funcție de coordonatele
+din imagine ale Feature-ului. \\
+Funcția $ match\_frame\_reference\_frame $ implementează prima metodă. Aceasta primește ca 
+parametrii 2 vectori de feature-uri calculați de librăria DBoW2: unul asociat cadrului curent, pentru     
+care estimăm matricea de poziție și celălalt asociat cadrului anterior și perechilor de tip (Feature, MapPoint).
+Elementele acestor vectori sunt de tip $ (int, vector\_descriptori) $. Dacă 2 astfel de perechi au prima valoare egală,
+ înseamnă că cei 2 vectori de descriptori fac parte din același cluster, conform arborelui din librăria DBOW2.
+Fiecare descriptor are asociată o instanță a clasei Feature. În cadrul anterior, instanța poate avea sau nu, un MapPoint corespondent.
+Dacă există, acel MapPoint se poate proiecta în imagine. Descriptorul intern al MapPoint-ului este comparat cu ceilalți 
+descriptori care fac parte din clusterul cadrului curent. Se aplică testul de proporționalitate Lowe, pentru a
+garanta că descriptorul cu distanța Hamming minimă este cel mai bun. Funcția $ match\_consecutive\_frames $ este mai simplă
+și implementează a doua metodă. MapPoint-ul este proiectat în imagine și toate Feature-urile aflate în apropiere devin
+posibili candidați pentru a crea o asociere (Feature, MapPoint). Se calculează distanța Hamming între descriptorul 
+MapPoint-ului și cel al Feature-ului. Trăsătura din imagine cu distanța minimă și mai mică decât un prag setat la 100, este 
+considerată ca fiind cea mai potrivită. Feature-ul asociat acelui descriptor, vă păstra o referință a MapPoint-ului. \\
 
-Clasa MotionOnlyBA implementeaza in Ceres algoritmul Motion Only Bundle Adjustment,
-primeste ca date de intrare KeyFrame-ul curent si returneaza matricea de pozitie optimizata.
-Libraria lucreaza cu o notiune din C++ numita functori. Acestea sunt clase/structuri pentru
-care s-a facut overload la operatorul $ () $. Clasa BundleError se afla din aceeasi categorie
-si implementeaza functia de eroare obtinuta din proiectarea unui MapPoint si asocierea 
+Clasa MotionOnlyBA implementează în Ceres algoritmul Motion Only Bundle Adjustment,
+primește ca date de intrare KeyFrame-ul curent și returnează matricea de poziție optimizată.
+Librăria lucrează cu o noțiune din C++ numită functori. Acestea sunt clase/structuri pentru
+care s-a făcut overload la operatorul $ () $. Clasa BundleError se află în aceeași categorie
+și implementează funcția de eroare obținută din proiectarea unui MapPoint și asocierea 
 acestuia cu un Feature. Pentru a crea problema de optimizare, clasa ceres::Problem trebuie 
-sa stie care parametrii trebuie optimizati si functia de eroare pe care trebuie sa o minimizeze.
-In cazul acestui algoritm, singurul lucru care va fi modificat este matricea de pozitie a KeyFrame-ului
-pe care o voi converti in forma $ se(3) $, transformand-o intr-un vector de 7 elemente. Iar pentru 
-functia de eroare, nu voi scrie explicit ca este suma erorilor de proiectie. In schimb, voi initializa pentru
-fiecare asociere de tip (Feature, MapPoint) cate un element al clasei BundleError. Algoritmul de 
-optimizare implementat de libraria Ceres, va incerca in mod independent sa reduca valoarea erorii 
-pentru fiecare pereche in parte, modificand pe rand vectorul pozitiei. Exista un motiv pentru 
-care schimb modul in care este exprimata pozitia camerei, matricea de pozitie contine 2 componente:
-matricea de rotatie $ R $ si un vector de translatie $ t $. Pentru $ t $ nu exista restrictii 
-de modificare atata timp cat aceasta nu aduce modificari mari intre pozitiile a doua cadre consecutive,
-orice mod in care ar varia parametrii acestui vector, in continuare semnificatia
-lui de vector de translatie ramane nealterata, in aceasta situatie putem spune ca parametrii 
-sunt alterati de catre libraria Ceres folosind $ EuclidianManifold $, mici modificari bazate pe
-calcularea derivatelor partiale ale acestora din functia de eroare definita in BundleError, asemanator 
-modului in care sunt modificati parametrii in retele neurale. Pentru matricea de rotatie $ R $ nu se 
-mai poate aplica aceeasi logica. Aceasta trebuie sa faca parte din structura de tip grup numit 
-$ SO(3) $, adica sa respecte egalitatea $ R * R^t = R^t * R = I $ si trebuie sa reprezinte o rotatie 
-reala pe cele 3 axe. Alterarea aleatorie a parametrilor ar duce la o matrice invalida. Din aceasta
-cauza, modificarea rotatiei trebuie facuta cu un anumit unghi
-iar acest lucru se poate realiza printr-o inmultire de 2 matrici de rotatie valide. Din pacate nu 
-exista implementare in forma matriceala pentru schimbarea unghiului de rotatie, dar este pentru
-Quaternioni. Din aceasta cauza fac conversia din matrice de pozitie in vector din 
-categoria $ se(3) $, iar pentru primii 4 parametrii asociati rotatiei, optimizarea lor se realizeaza
-folosind $ QuaternionManifold $. Aceasta abordare rezolva problema instabilitatii numerice si 
-garanteaza ca rezultatul operatiei de optimizare este un element valid in $ se(3) $, ce poate fi 
-ulterior convertit in forma matriceala. In functie de categoria din care face parte Feature-ul, 
-acesta este considerat monocular sau stereo. Functia de eroare implementata de clasa BundleError 
-este identica pentru ambele, cu exceptia ca pentru punctele stereo, este verificata si distanta 
-la care se afla punctul fata de valoarea la care a fost estimata de camera RGBD.\@ Pentru a preveni
-instabilitatea cauzata de punctele de tip outlier, functia Huber descrisa in capitolul anterior este
-folosita in calcularea finala a erorii de proiectie. In implementara oficiala realizata de g2o, 
-agloritmul de optimizare este rulat de 4 ori, si dupa fiecare executie sunt eliminate punctele de tip 
-outlier. Experimental, am observat ca etapa de optimizare cadru cu cadru este cea mai costisitoare 
-operatie pe care o realizeaza algoritmul de ORB-SLAM2, executia acesteia de 4 ori, nu creste 
-semnificativ acuratetea si reduce viteza de prelucrarea la aproximativ 5 cadre pe secunda, facandu-l 
-nepotrivit pentru un sistem in timp real. Am observat ca obtin rezultate foarte bune, ruland o singura
-data Motion Only Bundle Adjustment, urmat apoi de o etapa de eliminare a corelatiilor 
-(Feature, MapPoint) de tip outlier. Daca mai putin de 3 asocieri raman, se considera ca algoritmul
-a acumulat prea multe erori in urmarirea cadru cu cadru si trece intr-o stare de relocalizare. \\
+să știe care parametrii trebuie optimizați și funcția de eroare pe care trebuie să o minimizeze.
+În cazul acestui algoritm, singurul lucru care va fi modificat este matricea de poziție a KeyFrame-ului
+pe care o voi converti în forma $ se(3) $, transformând-o într-un vector de 7 elemente. Pentru 
+funcția de eroare, nu voi scrie explicit că este suma erorilor de proiecție. În schimb, voi inițializa pentru
+fiecare asociere de tip (Feature, MapPoint) câte un element al clasei BundleError. Algoritmul de 
+optimizare implementat de librăria Ceres, va încerca în mod independent să reducă valoarea erorii 
+pentru fiecare pereche în parte, modificând vectorul de poziție. Schimbarea modului în care este 
+exprimată poziția camerei nu este aleatorie. Matricea de poziție conține 2 componente:
+matricea de rotație $ R $ și un vector de translație $ t $. Pentru $ t $ nu există restricții 
+de modificare atâta timp cât rezultatul final nu creează modificări mari între pozițiile a două cadre
+consecutive. Oricum ar varia parametrii acestui vector, în continuare semnificația
+lui de vector de translație rămâne neschimbată. În această situație putem spune că parametrii 
+sunt alterați de către librăria Ceres folosind $ EuclidianManifold $, mici modificări bazate pe
+calcularea derivatelor parțiale ale variabilelor din funcția de eroare definită în BundleError, asemănător 
+modului în care sunt modificați parametrii în rețele neurale. Pentru matricea de rotație $ R $ nu se 
+mai poate aplica aceeași logică. Aceasta trebuie să facă parte din structura de tip grup numit 
+$ SO(3) $, adică să respecte egalitatea $ R * R^t = R^t * R = I $ și trebuie să reprezinte o rotație 
+reală pe cele 3 axe. Alterarea aleatorie a parametrilor ar duce la o matrice invalidă. Din aceasta
+cauză, modificarea rotației trebuie făcută cu un anumit unghi,
+iar acest lucru se poate realiza printr-o înmulțire de 2 matrici de rotație valide. Din păcate, nu 
+există implementare în formă matriceala pentru schimbarea unghiului de rotație, dar este pentru
+Quaternioni. Din această cauză realizez conversia din matrice de poziție în vector din 
+categoria $ se(3) $, iar pentru primi 4 parametrii asociați rotației, optimizarea lor se realizează
+folosind $ QuaternionManifold $. Această abordare rezolvă problema instabilității numerice și 
+garantează că rezultatul operației de optimizare este un element valid în $ se(3) $, ce poate fi 
+ulterior convertit în forma matriceală. În funcție de categoria din care face parte Feature-ul, 
+acesta este considerat monocular sau stereo. Funcția de eroare implementată de clasa BundleError 
+este identică pentru ambele, cu excepția faptului că pentru punctele stereo, este verificată și distanța 
+la care se află punctul față de valoarea la care a fost estimat de camera RGBD.\@ Pentru a preveni
+instabilitatea cauzată de punctele de tip outlier, funcția Huber descrisă în capitolul anterior este
+folosită în calcularea finală a erorii de proiecție. În implementarea oficială realizată în g2o, 
+agloritmul de optimizare este rulat de 4 ori și după fiecare execuție sunt eliminate punctele de tip 
+outlier. Experimental, am observat că etapa de optimizare cadru cu cadru este cea mai costisitoare 
+operație pe care o realizează algoritmul de ORB-SLAM2. Execuția acesteia de 4 ori nu crește 
+semnificativ acuratețea și reduce viteza de prelucrarea la aproximativ 5 cadre pe secundă, făcându-l 
+nepotrivit pentru un sistem în timp real. Am observat că obțin rezultate foarte bune, rulând o singură
+dată Motion Only Bundle Adjustment, urmat apoi de o etapă de eliminare a corelațiilor 
+(Feature, MapPoint) de tip outlier. Dacă mai puțin de 3 asocieri rămân, se consideră că algoritmul
+a acumulat prea multe erori în urmărirea cadru cu cadru și trece într-o etapă de relocalizare. \\
 
-Clasa Tracker realizeaza urmarirea traiectoriei cadru cu cadru. Aceasta integreaza 
-fiecare dintre componentele definite anterior, si este responsabila de captarea cadrului curent,
-transformarea acestuia in KeyFrame si luarea deciziei daca va fi salvat in Map pentru a completa 
-harta mediului inconjurator. Pasii urmatori se executa pentru fiecare cadru in parte:
+Clasa Tracker realizează urmărirea traiectoriei cadru cu cadru și integrează 
+fiecare dintre componentele definite anterior. Este responsabilă de captarea cadrului curent,
+transformarea acestuia în KeyFrame și luarea deciziei daca vă fi salvat în Map pentru a completa 
+harta mediului înconjurător. Pașii următori se execută pentru fiecare cadru în parte:
 \begin{enumerate}
-    \item Se creeaza KeyFrame-ul curent.
-    \item Se estimeaza matricea de pozitie pe baza legii de miscare.
-    \item Se realizeaza asocierea intre Feature-urile (puncte 2D) din cadru curent si 
+    \item Se creează KeyFrame-ul curent.
+    \item Se estimează matricea de poziție pe baza legii de mișcare.
+    \item Se realizează asocierea între Feature-urile (puncte 2D) din cadru curent și 
 MapPoint-urile observate de cadru anterior (puncte 3D)
-    \item Pe baza asocierilor respective realizate anterior, se optimiza matricea de pozitie
-a KeyFrame-ului curent, sunt eliminate asocierile de tip outlier
-    \item Este proiectata harta locala pe cadrul curent, si se gasesc noi asocieri 
-(Feature, MapPoint), se executa din nou aceeasi operatie de optimizare Motion Only Bundle Adjustment
-    \item Este evaluat KeyFrame-ul curent, se verifica daca trebuie salvat in clasa Map. 
+    \item Pe baza asocierilor realizate anterior, se optimizează matricea de poziție
+a KeyFrame-ului curent și sunt eliminate asocierile de tip outlier
+    \item Este proiectată harta locală pe cadrul curent, și se găsesc noi asocieri 
+(Feature, MapPoint). Se execută, din nou, aceeași operație de optimizare Motion Only Bundle Adjustment.
+    \item Este evaluat KeyFrame-ul curent, se verifică dacă trebuie salvat în clasa Map. 
 \end{enumerate}
-Cadrul curent si matricea de adancime sunt citite de TumDatasetReader. In imaginea RGB 
-se foloseste ORB pentru a extrage un vector de KeyPoint-uri si un vector de descriptori. 
-Acestea sunt folosite pentru a initializa un obiect de tip KeyFrame. Pentru algoritmul ORB se 
-foloseste o versiune modificata implementata in clasa ORBextractor si este conceputa sa extraga 
-aproximativ 1000 de puncte cheie, acestea fiind distribuite cat mai egal pe suprafata imaginii. 
-Daca un numar foarte mare de keypoint-uri s-ar obtine din aceeasi zona, acuratetea estimarii ar 
-avea de suferit, pixelii din zonele aflate mai aproape de camera se misca cu o viteza mai mare 
-decat cei aflati in departare, daca am considera doar punctele dintr-o anumita in zona in realizarea
-estimarii, am obtinute variatii in miscare prea bruste / lente depenzind de locul unde s-au gasit 
-majoritatea punctelor.  Parametrii setati pentru algoritmul ORB sunt urmatorii: 1000 de feature-uri,
-factorul de scalare al imaginii este 1.2, exista maxim 8 nivele, si algoritmul FAST care face 
-extragerea initiala de KeyPoint-uri sa ia in considerare zona respectiva daca diferenta de intensitate
-intre pixeli este de la 20 in sus. Daca in schimb, zona este slab texturata atunci poate sa seteze
-aceasta diferenta la 7, pentru a garanta ca vor fi gasite feature-uri chiar si in cele mai 
-dezavantajoase zone din imagine. De-a lungul duratei de viata a algoritmului, clasa 
-Tracker pastreaza 4 referinte de tip KeyFrame: cadrul curent care este analizat, 2 cadre imediat 
-anterioare care vor fi folosite la estimarea pozitiei si ultimul cadru referinta care a fost creat.
-Cadrul referinta este ultimul KeyFrame adaugat in Map si indica aproximativ in ce 
-zona se afla camera si care MapPoint-uri ar trebui sa fie vizibile. Cadrele mai vechi care nu au 
-fost salvate in Map au fost sterse pentru a reduce cantitatea de memorie folosita. Pentru ultimul
-KeyFrame creat urmeaza etapa de estimare a pozitiei curente, aceasta se face pe baza legii 
-de miscare, iar valorile matricii vor fi calculate folosindu-ne de cele 2 cadre salvate in Tracker.
-Important aici de observat ca pentru primul cadru citit, pozitia acestuia este matricea identitate
-4*4, acest lucru sugerand ca dispozitivul care inregistreaza mediul considera ca primul KeyFrame
-este chiar originea sistemului de coordonate, iar toate matricile de pozitie viitoare sunt de fapt
-transformari relative fata de origine. Primul KeyFrame va fi salvat intotdeauna in clasa Map si 
-este utilizat pentru a initializa primele puncte de tip MapPoint: pentru toate Feature-urile de 
-tip stereo din imagine, se vor creea puncte in spatiu. Din cauza acestui mod de initializare, 
-ORB-SLAM2 este sensibil pana la aparitia urmatorului cadru cheie, estimarile facute de acesta 
-in prima etapa fiind predispuse la erori. Uneori algoritmul isi pierde orientarea cu totul, fiind
-necesara o etapa de relocalizarea, sau de reluare a executiei acestuia. ORB-SLAM3, implementeaza 
-o metoda mult mai robusta de initializare, generand mai multe harti locale in situatia in care
-urmarirea cadru cu cadru esueaza si le uneste intre ele in momentul in care recunoaste o zona pe 
-care a vizitat-o deja. Dupa ce a fost create KeyFrame-ul si a fost facuta estimarea initiala a 
-pozitiei, clasa OrbMatcher este folosita pentru a gasit corelatii intre Feature-uri si MapPoint-uri.
-Alegerea metodei care indeplineste acest lucru fiind determinata de numarul de KeyFrame-uri 
-create de la ultima relocalizare sau de la adaugarea unui nou cadru cheie in Map. Daca nu se 
-vor gasi minim 15 asocieri, se va considera ca algoritmul si-a pierdut orientarea, altfel, 
-asocierile respective vor fi utlizate de catre MotionOnlyBA pentru a realiza optimizarea pozitiei.
-Perechile de tip outlier vor fi eliminate si noua pozitie a KeyFrame-ului va fi returnata. Daca 
-vor ramane mai putin de 3 asocieri se va considera, din nou, ca algoritmul si-a pierdut orientarea.
-In final, se foloseste clasa Map pentru a proiecta toate punctele din harta locala pe cadrul curent
-iar asocierile gasite vor trece din nou printr-un proces de optimizare. Daca nu se gasesc minim
-50 de perechi (Feature, MapPoint) inseamna ca urmarirea cadrului curent a esuat. Altfel se 
-trece la etapa urmatoare si se va decide daca vom stoca in Map KeyFrame-ul curent. Acest lucru 
-se va intampla daca urmatoarele conditii vor avea loc simultan.    
+Cadrul curent și matricea de adâncime sunt citite de TumDatasetReader. În imaginea RGB 
+se folosește ORB pentru a extrage un vector de KeyPoint-uri și un vector de descriptori. 
+Acestea sunt folosite pentru a inițializa un obiect de tip KeyFrame. Se 
+folosește o versiune modificată pentru algoritmul ORB, implementată în clasa ORBextractor. Aceasta 
+este concepută să extragă aproximativ 1000 de puncte cheie astfel încât să fie distribuite cât mai egal pe suprafața imaginii. 
+Dacă un număr foarte mare de keypoint-uri s-ar obține din aceeași zona, acuratețea estimării ar 
+avea de suferit, pixelii din zonele aflate mai aproape de cameră se mișcă cu o viteza mai mare 
+decât cei aflați în depărtare. Dacă am considera doar punctele dintr-o anumită zonă în realizarea
+estimării, am obține variații în mișcare eronate. Parametrii setați pentru algoritmul ORB sunt următorii: 
+1000 de feature-uri, factorul de scalare al imaginii este 1.2, există maxim 8 nivele și algoritmul FAST care face 
+extragerea inițială de KeyPoint-uri alege o anumită  zonă doar dacă diferența de intensitate
+între pixeli are cel puțin valoarea 20. Când zona aleasă este slab texturată, atunci poate să seteze
+această diferență la 7, pentru a garanta că vor fi găsite feature-uri în mod uniform, pe suprafața imaginii.  Clasa 
+Tracker păstrează 4 referințe de tip KeyFrame: cadrul curent care este analizat, 2 cadre imediat 
+anterioare care vor fi folosite la estimarea poziției și ultimul cadru referință care a fost creat.
+Cadrul referință este ultimul KeyFrame adăugat în Map și indică la nivel aproximativ, în ce 
+zonă se află camera și care MapPoint-uri ar trebui să fie vizibile. Cadrele mai vechi care nu au 
+fost salvate în Map au fost șterse pentru a reduce cantitatea de memorie folosită. Pentru noul
+KeyFrame creat, urmează etapa de estimare a poziției curente, aceasta se face pe baza legii 
+de mișcare, iar valorile matricii vor fi calculate folosindu-ne de cele 2 cadre imediat anterioare salvate în Tracker.
+Important aici de observat este faptul că pentru primul cadru citit, poziția acestuia este matricea identitate
+4*4, acest lucru sugerând că dispozitivul care înregistrează mediul consideră că primul KeyFrame
+este chiar originea sistemului de coordonate, iar toate matricile de poziție viitoare sunt de fapt
+transformări relative față de origine. Primul KeyFrame va fi salvat întotdeauna în clasa Map și 
+este utilizat pentru a inițializa primele puncte de tip MapPoint. Pentru toate Feature-urile de 
+tip stereo din imagine, se vor creea puncte în spatiu. Din cauza acestui mod de inițializare, 
+ORB-SLAM2 este sensibil până la apariția următorului cadru cheie, estimările făcute de acesta 
+în prima etapă fiind predispuse la erori. Uneori algoritmul își pierde orientarea, fiind
+necesară o etapă de relocalizarea sau de reluare a execuției acestuia. ORB-SLAM3 implementează 
+o metodă mult mai robustă de inițializare, generând mai multe hărți locale în situația în care
+urmărirea cadru cu cadru eșuează și le unește între ele în momentul în care recunoaște o zonă pe 
+care a vizitat-o deja. După ce a fost creat KeyFrame-ul și a fost făcută estimarea inițială a 
+poziției, clasa OrbMatcher este folosită pentru a găsi corelații între Feature-uri și MapPoint-uri.
+Alegerea metodei care îndeplinește această sarcină este determinată de numărul de KeyFrame-uri 
+create de la ultima relocalizare sau de la adăugarea unui nou cadru cheie în Map. Dacă nu se 
+vor găsi minim 15 asocieri de tip (Feature, MapPoint), se va considera că algoritmul și-a pierdut orientarea.
+Altfel, etapa de matching a funcționat iar perechile găsite vor fi utlizate de către MotionOnlyBA pentru a realiza optimizarea poziției.
+Perechile de tip outlier vor fi eliminate și noua poziție a KeyFrame-ului va fi returnată. Dacă 
+vor rămâne mai puțin de 3 asocieri se va considera, din nou, că algoritmul și-a pierdut orientarea.
+În final, se folosește clasa Map pentru a proiecta toate punctele din harta locală pe cadrul curent,
+iar asocierile găsite vor trece din nou printr-un proces de optimizare. Dacă nu se găsesc minim
+50 de perechi (Feature, MapPoint), înseamnă că urmărirea cadrului curent a eșuat. Altfel se 
+trece la etapa următoare și se va decide dacă  noul KeyFrame va fi stocat în Map. Acest lucru 
+se va întâmpla dacă următoarele condiții vor avea loc simultan.    
 \begin{enumerate}
-    \item au trecut mai mult de 30 de cadre de la ultimul KeyFrame adaugat in Map
-    \item numarul de MapPoint-uri in cadrul curent este 25\% din numarul urmarit de cadrul de referinta
-    \item cadrul curent are cel putin 70 de Feature-uri de tip stereo, cu distanta dintre centrul
-camerei si punct este mai mica de 3.2 metri si urmareste cel putin 100 de MapPoint-uri
+    \item au trecut mai mult de 30 de cadre de la ultimul KeyFrame adăugat în Map
+    \item numărul de MapPoint-uri în cadrul curent este 25\% din numărul urmărit de cadrul de referință
+    \item cadrul curent are cel puțin 70 de Feature-uri de tip stereo, cu distanța estimată de către matricea de adâncime 
+    ca fiind mai mică de 3.2 metri și urmărește cel puțin 100 de MapPoint-uri
 \end{enumerate}
 
-Clasa LocalMapping este responsabila de optimizarea hartii algoritmului. Aceasta sterge/adauga KeyFrame-uri
-si MapPoint-uri, iar la fiecare cadru cheie nou, realizeaza operatia de Local Bundle 
-Adjustment. Aceasta metoda optimizeaza matricile de pozitie si toate MapPoint-urile vecinilor 
-directi si cei de categoria a doua pentru KeyFrame-ul abia adaugat. In momentul in care 
-thread-ul de Tracking considera ca un nou cadru cheie trebuie de adaugat in harta, se executa
-metoda principala $ local\_map $, aceasta indeplineste urmatoarele operatii:
+Clasa LocalMapping este responsabilă de optimizarea hărții algoritmului. Aceasta șterge/adaugă KeyFrame-uri
+și MapPoint-uri, iar la fiecare cadru cheie nou, realizează operația de Local Bundle 
+Adjustment. Această metodă optimizează matricile de poziție și toate MapPoint-urile vecinilor 
+direcți și cei de categoria a doua pentru KeyFrame-ul abia adăugat. În momentul în care 
+thread-ul de Tracking consideră că un nou cadru cheie trebuie adăugat în hartă, se execută
+metoda principală $ local\_map $. Aceasta îndeplinește următoarele operații:
 \begin{enumerate}
-    \item Creeaza noi MapPoint-uri din primele 100 de Feature-uri de tip stereo, 
-sortate in ordine crescatoare dupa distanta la care se afla acestea de centrul camerei  
-    \item Adauga cadrul curent in graful de KeyFrame-uri stabilind vecinii directi ai
+    \item Creează noi MapPoint-uri din primele 100 de Feature-uri de tip stereo, 
+sortate în ordine crescătoare după distanța la care se află acestea de centrul camerei  
+    \item Adaugă cadrul curent în graful de KeyFrame-uri stabilind vecinii direcți ai
 acestuia 
-    \item Noile MapPoint-uri create sunt adaugate intr-o lista numita $ recently\_added $,
-pentru a iesi din aceasta lista, punctele trebuie sa treaca un test care dovedeste ca 
-nu sunt rezultatul unui Feature eronat detectat de catre algoritmul ORB, si ca pot fi 
-folosite cu incredere
-    \item Se executa operatia de $ culling $, punctele sunt verificate daca sunt valide iar
-daca nu, memoria lor este eliberata.
-    \item Se foloseste operatia de triangulare pentru a crea noi MapPoint-uri din 
-Feature-urile care se potrivesc intre ele si fac parte din cadre cheie diferite.
-    \item Se detecteaza entitatile de tip MapPoint care reprezinta acelasi punct
-din spatiu, iar una dintre referinte este stearsa pentru creste coorenta hartii si 
-a creste ponderea conexiunii dintre KeyFrame-urile adiacente    
-    \item Se executa operatia de KeyFrame culling, se verifica daca informatiile pe 
-care le detine un KeyFrame, adica totalitatea valorilor de tip MapPoint pe care le 
-detine, sunt observate si din alte cadre. Daca peste 90\% din punctele observate de un 
-anumit cadru sunt vizibile si din alte cadre, KeyFrame-ul analizat este considerat redundant
-si memoria lui este eliberata. Acest lucru garanteaza ca graful clasei Map, contine 
-doar cadre esentiale pentru reprezentarea norului de puncte. 
+    \item Noile MapPoint-uri create sunt adăugate într-o lista numită $ recently\_added $.
+Pentru a ieși din această listă, punctele trebuie să treacă un test care dovedește că 
+nu sunt rezultatul unui Feature eronat detectat de către algoritmul ORB, și că pot fi 
+folosite cu încredere
+    \item Se execută operația de $ culling $, punctele sunt verificate dacă sunt valide, iar
+dacă nu, memoria lor este eliberată.
+    \item Se folosește operația de triangulare pentru a crea noi MapPoint-uri din 
+Feature-urile care se potrivesc între ele și fac parte din cadre cheie diferite.
+    \item Se detectează entitățile de tip MapPoint care reprezintă același punct
+din spațiu, iar una dintre referințe este ștearsă pentru a garanta că nu există puncte duplicate. 
+Acest pas reduce dimensiunea hărții, îmbunătățește urmărirea cadru cu cadru și întărește conexiunile
+deja existente între KeyFrame-urile adiacente.    
+    \item Se execută operația de KeyFrame culling, se verifică dacă informațiile pe 
+care le deține un KeyFrame, adică totalitatea valorilor de tip MapPoint asociate lui, sunt observate
+și din alte cadre. Dacă peste 90\% din punctele observate de un anumit cadru sunt vizibile și din 
+alte părți, KeyFrame-ul analizat este considerat redundant și memoria lui este eliberată. Acest
+lucru garantează că structura de graf a clasei Map, conține doar cadre esențiale pentru reprezentarea
+norului de puncte. 
 \end{enumerate}
-In etapa a 4-a se executa operatia de $ culling $, aceasta elimina punctele care nu sunt
-de incredere. Singurele puncte care nu vor trece prin aceasta etapa de verificare sunt
-cele generate de primul KeyFrame, tot primul KeyFrame nu poate fi sters deoarece 
-ar da peste cap sistemul de coordonate local sub care lucreaza ORB-SLAM2. Un punct 
-este considerat de incredere daca din momentul in care a fost creat, el a fost 
-observat in 3 cadre cheie consecutive si daca a fost observat in cel putin 25\% din 
-numarul total de cadre care au trecut de la creearea acestuia. Ambele conditii 
-trebuie sa fie respectate simultan in momentul in care se face verificarea punctului
-respectiv. Politica pe care o urmeaza familia de algoritmi ORB-SLAM este sa genereze 
-multe puncte, fara a impune restrictii, pe care apoi le va supune acestui test de 
-relevanta. \\
+În a patra etapă, se execută operația de $ culling $. Aceasta elimină punctele care nu sunt
+de încredere. Singurele puncte care nu vor trece prin această etapă de verificare sunt
+cele generate de primul KeyFrame. Tot primul KeyFrame nu poate fi șters, deoarece 
+ar da peste cap sistemul de coordonate local pe care îl folosește ORB-SLAM2. Un punct 
+este considerat de încredere dacă din momentul în care a fost creat, el a fost proiectat cu succes  
+ în 3 cadre cheie consecutive și dacă a fost observat în cel puțin 25\% din 
+numărul total de cadre care au trecut de la creearea acestuia. Ambele condiții 
+trebuie să fie respectate simultan în momentul în care se face verificarea punctului
+respectiv. Politica pe care o urmează familia de algoritmi ORB-SLAM este să genereze 
+multe puncte, fară a impune restricții, pe care apoi le vă supune acestui test de 
+relevanță. \\
 
-Ultima clasa este cea de MapDrawer pe care o folosesc pentru a afisa norul de MapPoint-uri,
-cadrul curent analizat si pozitiile cadrelor cheie observate. Folosesc libraria Pangolin si 
-OpenGL pentru desenarea fiecarei structuri, camera urmareste cadrul curent. Interfata grafica 
-scade viteza de procesare a cadrelor dar este o modalitate eficienta de a intelege vizual ce 
-se petrece in algoritm. Implementarea pentru interfata grafica am realizat-o spre final, cand 
-aveam celelalte componente finalizate, lucru care a ingreunat procesul de dezvoltare deoarece 
-lucram cu valori numerice in terminal. Acum daca as reincepe implementarea, interfata grafica ar fi
-printre primele lucruri pe care le-as realiza. Datorita acestei clase am reusit sa gasesc erori in
-modul de constructie al grafului ponderat din clasa Map si al modului in care proiectam punctele 
-in spatiu.
+Ultima clasă este cea de MapDrawer pe care o folosesc pentru a afișa norul de MapPoint-uri,
+cadrul curent analizat și pozițiile cadrelor cheie observate. Folosesc librăria Pangolin și 
+OpenGL pentru desenarea fiecărei structuri, camera urmărește cadrul curent. Interfața grafică 
+scade viteza de procesare a cadrelor, dar este o modalitate eficientă de a înțelege vizual ce 
+se petrece în algoritm. Implementarea pentru interfața grafică am realizat-o spre final, când 
+aveam celelalte componente finalizate, lucru care a îngreunat procesul de dezvoltare, deoarece 
+lucram cu valori numerice în terminal. Acum dacă aș reîncepe implementarea, interfața grafică ar fi
+printre primele lucruri pe care le-aș realiza. Datorită acestei clase am reușit să găsesc erori în
+modul de construcție al grafului ponderat din clasa Map și al modului în care proiectam punctele 
+în spatiu.
 
 \section{Pipeline antrenare FastDepth}
 
-Pentru reteaua Neurala FastDepth pipeline-ul de antrenare a fost scris folosind libraria Pytorch
-iar pentru operatiile de preprocesare folosesc libraria Albumentations. Setul de date pe care 
-am facut antrenarea se numeste Nyu Depthv2 Dataset\cite{nyudataset} si l-am obtinut de pe Kaggle. Rezultatul 
-acestui pipeline trebuie sa fie un fisier de tip ONNX cu valorile parametrilor retelei FastDepth 
-in urma antrenarii pe setul de date. O problema pe care am observat-o la setul de date este ca 
-pentru imaginile de antrenament, adancimile sunt exprimate ca fiind in intervalul $ [0, 255] $, pe cand in setul 
-de date de validare, acestea se afla intre $ [0, 10000] $ reprezentand valorile in milimetrii ale
-distantelor. O limitarea acestui set de date este ca nu poate detecta distante mai mari de 10 metri.
-Dar considerand ca algoritmul trebuie sa functioneze pentru incaperi de mici dimensiuni, consider ca 
-aceasta distanta maxima nu ar trebui sa reprezinte o problema. Pentru antrenare am ales sa urmez lucrarea
-stiintifica\cite{fastdepth} si am setat hiperparametrii:
+Pentru rețeaua Neurală FastDepth pipeline-ul de antrenare a fost scris folosind librăria Pytorch,
+iar pentru operațiile de preprocesare folosesc librăria Albumentations. Setul de date pe care
+am făcut antrenarea se numește Nyu Depthv2 Dataset\cite{nyudataset} și l-am obținut de pe Kaggle. Rezultatul
+acestui pipeline trebuie să fie un fișier de tip ONNX cu valorile parametrilor rețelei FastDepth
+în urma antrenării. O problemă pe care am observat-o la setul de date este că
+pentru imaginile de antrenament, adâncimile sunt exprimate ca fiind în intervalul $ [0, 255] $, pe când în setul
+de date de validare, acestea se află între $ [0, 10000] $ reprezentând valorile în milimetri ale
+distanțelor. O limitare a acestui set de date este că nu poate detecta distanțe mai mari de 10 metri.
+Considerând că algoritmul trebuie să funcționeze pentru încăperi de mici dimensiuni, această limitare nu ar
+trebui să reprezinte o problemă. Pentru antrenare am ales să urmez lucrarea științifică\cite{fastdepth} și am
+setat hiperparametrii:
+
 \begin{itemize}
-    \item Optimizatorul folosit a fost implementarea din Pytorch pentru Stochastic Gradient Descent, 
-torch.SGD, avand un learning rate de $ 1e-3 $, o valoare a momentumului de $ \beta=0.9 $ si
+\item Optimizatorul folosit a fost implementarea din Pytorch pentru Stochastic Gradient Descent,
+torch.SGD, având un learning rate de $ 1e-3 $, o valoare a momentumului de $ \beta=0.9 $ și
 $ weight\_decay=1e-4 $.
-    \item antrenarea s-a realizat pentru 50 de epoci iar durata antrenarii a fost de aproximativ 
-6 ore jumatate. Laptopul pe care am antrenat este un Asus TUF Gaming A15, avand un procesor AMD Ryzen 7 cu o frecventa 
-de 4.2 GHz si placa video NVIDIA GeForce RTX 2060, cu o memorie de 6GB.\@
-    \item Imaginile in setul de date au o dimensiune de $ (3, 460, 640) $. Pentru a creste viteza de procesare
-am modificat dimensiunile la $ (3, 256, 320) $ si am aplicat o functie de normalizare de tip min\_max. Ambele 
-transformari sunt aplicate atat pe setul de date de antrenare cat si pe cel de test.
-    \item un batch de date are dimensiune de 8
-    \item In lucrarea FastDepth functia de pierdere folosita este L1Loss, aceasta fiind suma diferentelor dintre valoarea 
-reala si cea determinata de reteaua neurala in modul. In implementarea mea am ales sa folosesc o functie de pierdere 
-mai robusta conform acestei lucrari stiintifice\cite{lossfunctionidea}. 
+\item Antrenarea s-a realizat pentru 50 de epoci, iar durata antrenării a fost de aproximativ
+6 ore jumătate. Laptopul pe care am antrenat este un Asus TUF Gaming A15, având un procesor AMD Ryzen 7 cu o frecvență
+de 4.2 GHz și placă video NVIDIA GeForce RTX 2060, cu o memorie de 6GB.@
+\item Imaginile în setul de date au o dimensiune de $ (3, 460, 640) $. Pentru a crește viteza de procesare
+am modificat dimensiunile la $ (3, 256, 320) $ și am aplicat o funcție de normalizare de tip min\_max. Ambele
+transformări sunt aplicate atât pe setul de date de antrenare, cât și pe cel de test.
+\item Un batch de date are dimensiunea de 8.
+\item În lucrarea FastDepth, funcția de pierdere folosită este L1Loss, aceasta fiind suma diferențelor dintre valoarea
+reală și cea determinată de rețeaua neurală în modul. În implementarea mea am ales să folosesc o funcție de pierdere
+mai robustă conform acestei lucrări științifice\cite{lossfunctionidea}.
 \end{itemize}
-Acuratetea a fost verificata  prin compararea diferentei relative intre valorile obtinute prin inferenta si cele 
-reale cu un factor $ RELATIVE\_ERROR=0.15 $. Aceasta operatie a fost realizata pentru fiecare pixel in parte, iar
-acuratetea reprezinta procentul de pixeli cu o valoare care se incadreaza in limita impusa de RELATIVE\_ERROR.\@
-Pentru a preveni antrenarea pentru intervale lungi fara a obtine rezultate, am avut 2 metode pe care le-am implementat:
-o strategia de early stopping: in situatia in care valoarea acuratetii nu ar fi crescut pentru 5 epoci antrenarea 
-ar fi fost oprita si o strategie pentru modificarea learning rate-ului in timpul antrenarii. Daca acuratetea nu crestea 
-pentru 3 epoci valoarea parametrului sa fie redusa la 0.3 din valoarea initiala. In practica am observat ca reteaua 
-converge aproape monoton catre o valoare optima. Functia de pierdere primeste ca date de intrare matricea de adancime 
-obtinuta de catre reteaua neurala si matricea cu valori reala din setul de date, denumita groundtruth, si returneaza o valoarea 
-numerica de tip double care exprima cat de departe se afla estimarea noastra de realitate. Ideea antrenarii unei retele 
-neurale este minimizarea acestei valori. Functia de eroare este alcatuita dintr-o combinatie liniara a 
-3 componente diferite\cite{lossfunctionidea}: L1Loss, GradientEdgeLoss si Structural Similarity Loss, formula matematica este:
+
+Acuratețea a fost verificată prin compararea diferenței relative între valorile obținute prin inferență și cele
+reale cu un factor $ RELATIVE\_ERROR=0.15 $. Această operație a fost realizată pentru fiecare pixel în parte, iar
+acuratețea reprezintă procentul de pixeli cu o valoare care se încadrează în limita impusă de RELATIVE\_ERROR.\@
+Pentru a preveni antrenarea pentru intervale lungi fără a obține rezultate, am avut 2 metode pe care le-am implementat:
+o strategie de early stopping și o strategie pentru modificarea learning rate-ului în timpul antrenării. În situația în
+care valoarea acurateții nu ar fi crescut pentru 5 epoci, antrenarea ar fi fost oprită, iar în situația în care nu creștea 
+pentru 3 epoci, valoarea ratei de învățare să fie redusă la 0.3 din valoarea inițială. În practică am observat că rețeaua
+converge aproape monoton către o valoare optimă. Funcția de pierdere primește ca date de intrare matricea de adâncime
+obținută de către rețeaua neurală și matricea cu valori reale din setul de date, denumită groundtruth, și returnează o valoare
+numerică de tip double care exprimă cât de departe se află estimarea noastră de realitate. Ideea antrenării unei rețele
+neurale este minimizarea acestei valori. Funcția de eroare este alcătuită dintr-o combinație liniară a
+3 componente diferite\cite{lossfunctionidea}: L1Loss, GradientEdgeLoss și Structural Similarity Loss, formula matematică este:
 \begin{equation}
-    loss = 0.6 \cdot L1Loss + 0.2 \cdot GradientEdgeLoss + StructuralSimilarityLoss 
-\end{equation}  
-Structural Similary Loss se asigura ca media si distributia standard pe care o urmeaza valorile estimate, se apropie
-de media si distributia standard a matricei groundtruth. In comparatie cu celelalte 2 componente ale functiei de 
-pierdere care sunt aplicate la nivel de pixel, aceasta abstractizeaza rezultatele ca fiind 2 distributii Normale 
-cu parametrii $ \mathcal{N}(\mu, \sigma^2) $ care trebuie sa se suprapuna.                     
-Principiul de functionare pentru GradientEdgeLoss este ca pixeli din regiuni apropiate trebuie sa aiba cam aceleasi 
-valori de estimare ale distantei si ca diferenta intre pixeli adiacenti pe axele x si y, ar trebui sa fie identica
-cu cea din imaginea groundtruth. Aceasta poate fi scrisa in felul urmator, unde $ N $ reprezinta numarul de pixeli din 
-imagine, iar derivata valorilor pixelilor in raport cu axa de coordonate reprezinta diferenta intre matricea imaginii
-initiale si aceeasi matrice avand un rand shiftat la dreapta  pentru axa X notata $ \frac{\partial I}{\partial x} $
-si un rand shiftat vertical pentru axa Y notata $ \frac{\partial I}{\partial y} $.  
+loss = 0.6 \cdot L1Loss + 0.2 \cdot GradientEdgeLoss + StructuralSimilarityLoss
+\end{equation}
+Structural Similarity Loss se asigură că media și distribuția standard pe care o urmează valorile estimate, se apropie
+de media și distribuția standard a matricei groundtruth. În comparație cu celelalte 2 componente ale funcției de
+pierdere care sunt aplicate la nivel de pixel, aceasta abstractizează rezultatele ca fiind 2 distribuții Normale
+cu parametrii $ \mathcal{N}(\mu, \sigma^2) $ care trebuie să se suprapună.
+
+Principiul de funcționare pentru GradientEdgeLoss este că pixeli din regiuni apropiate trebuie să aibă cam aceleași
+valori de estimare ale distanței și că diferența între pixeli adiacenți pe axele x și y, ar trebui să fie identică
+cu cea din imaginea groundtruth. Aceasta poate fi scrisă în felul următor, unde $ N $ reprezintă numărul de pixeli din
+imagine, iar derivata valorilor pixelilor în raport cu axa de coordonate reprezintă diferența între matricea imaginii
+inițiale și aceeași matrice având un rând shiftat la dreapta pentru axa X notată $ \frac{\partial I}{\partial x} $
+și un rând shiftat vertical pentru axa Y notată $ \frac{\partial I}{\partial y} $.
+ 
 \begin{equation}
-    L_{\text{edges}} = \frac{1}{N} \sum_{i=1}^{N} \left( 
-    \left| \frac{\partial I_{\text{pred}}}{\partial x} - \frac{\partial I_{\text{true}}}{\partial x} \right| + 
-    \left| \frac{\partial I_{\text{pred}}}{\partial y} - \frac{\partial I_{\text{true}}}{\partial y} \right|
-    \right)
+{\text{edges}} = \frac{1}{N} \sum{i=1}^{N} \left(
+\left| \frac{\partial I{\text{pred}}}{\partial x} - \frac{\partial I{\text{true}}}{\partial x} \right| +
+\left| \frac{\partial I{\text{pred}}}{\partial y} - \frac{\partial I{\text{true}}}{\partial y} \right|
+\right)
 \end{equation}
 
 \chapter{Evaluare}
 \section{Setul de date TUM RGBD Dataset}
-Setul de date utilizat pentru a realiza evaluarea se numeste TUM RGBD Dataset\cite{tum}. 
-Acesta contine numeroase subseturi, fiecare verificand un aspect diferit al implementarii, 
-ajutand la creearea unui imagini de ansamblu cu privire la robustetea algoritmului in functie 
-de mediu in care se lucreaza si de traiectoria pe care o urmeaza. Cele 2 subseturi pe 
-care le-am considerat potrivite pentru implementarea sunt:
-\begin{itemize}
-    \item Subsetul rgbd\_dataset\_freiburg1\_xyz contine cadrele unui video de 35 de secunde, in care
-traiectoria este in principal alcatuita din translatii, exista foarte putine rotatii fiind
-ideal pentru a verifica daca estimarea pozitiei in spatiu este corect realizata.    
-    \item  Subsetul rgbd\_dataset\_freiburg1\_rpy are 27 de secunde si contine 
-foarte putine translatii. Exista in schimb numeroase schimbari bruste de rotatie care reduc
-acuratetea imaginii captate, testand la maxim capacitatea algoritmului ORB de a extrage 
-feature-uri. Sistemul isi schimba orientarea pe toate cele 3 axe, fiind unul dintre cele
-mai dificile subseturi de date pe care se poate face antrenarea. Algoritmul 
-ORB-SLAM2 este sensibil la operatiile de rotatie, mai ales atunci cand camera isi schimba 
-orientarea catre o zona necunoscuta. Pentru a crea harta zonei respective sunt generate 
-numeroase KeyFrame-uri si MapPoint-uri, pe care algoritmul trebuie sa le filtreze in clasa
-de LocalMapping, lucru care creste complexitatea temporala si spatiala si scade acuratetea
-sistemului.  
-\end{itemize}   
-Videourile sunt realizate 
-cu ajutorul unei camere RGBD Microsoft Kinetic, avand frecventa de 30 de cadre pe secunda, 
-setul de date contine imaginile de tip RGB, hartile de adancime pentru fiecare cadru in parte,
-vectorii de pozitie in forma $ se(3) $, primii 3 parametrii fiind pozitia in spatiu 
-$ (tx, ty, tz) $ iar urmatorii 4 parametrii sunt asociati matricei de rotatie, scrisa sub
-forma de Quaternion, $ (qw, qx, qy, qz) $ si timestamp-urile asociate momentului in care 
-au fost inregistrate fiecare din valorile din setul de date. Cu ajutorul acestor timestammp-uri
-putem crea asocieri de tip (imagine RGB, matrice de adancime, pozitie) pe care le putem 
-transmite algoritmul ORB-SLAM2. Pozitia este considerata ca fiind valoarea ideala, groundtruth,
-si va fi comparata cu rezultatele obtinute. Clasa TumDatasetReader este responsabila de citirea
-datelor si stocarea matricilor de pozitie obtinute pentru fiecare cadru. Dupa parcurgerea 
-intregului set de date, valorile estimate sunt salvate intr-un fisier de tip text unde vor 
-fi comparate cu cele reale.
-\section{Metrici utilizate}
-Algoritmul ORB-SLAM2 scrie intr-un fisier estimarile matricilor de pozitie pentru fiecare 
-cadru in parte. Pentru a realiza comparatia cu datele de tip groundtruth din setul de 
-date, folosesc un pachet din python numit $ evo $, acesta este capabil sa creeze un grafic
-al traiectoriei, permitand astfel o reprezentare vizuala a rezultatelor si o separare a 
-acestora in functie de ceea ce vreau sa evaluez: viteza, translatia sau orientarea. De
-exemplu, figura de mai jos reprezinta variatia translatie pe fiecare dintre cele 3 axe. 
-Cu albastru este valoarea de tip groundtruth iar cu galben este estimarea realizata de 
-implementarea mea pentru algoritmul ORB-SLAM.\@ Rezultatele sunt obtinute pentru subsetul 
-de date rgbd\_dataset\_freiburg1\_xyz, acesta fiind special conceput pentru a testa 
-corectitudinea estimarii translatiei intre cadre.
+Setul de date utilizat pentru a realiza evaluarea se numește TUM RGBD Dataset\cite{tum}.
+Acesta conține numeroase subseturi, fiecare verificând un aspect diferit al implementării,
+ajutând la crearea unei imagini de ansamblu cu privire la robustețea algoritmului în funcție
+de mediul în care se lucrează și de traiectoria pe care o urmează. Cele 2 subseturi pe
+care le-am considerat potrivite pentru implementare sunt:
 
+\begin{itemize}
+\item Subsetul rgbd\_dataset\_freiburg1\_xyz conține cadrele unui video de 35 de secunde, în care
+traiectoria este în principal alcătuită din translații. Există foarte puține rotații, fiind
+ideal pentru a verifica dacă estimarea poziției în spațiu este corect realizată.
+
+\item Subsetul rgbd\_dataset\_freiburg1\_rpy are 27 de secunde și conține
+foarte puține translații. Există în schimb numeroase schimbări bruște de rotație care reduc
+acuratețea imaginii captate, testând la maxim capacitatea algoritmului ORB de a extrage
+feature-uri. Sistemul își schimbă orientarea pe toate cele 3 axe, fiind unul dintre cele
+mai dificile subseturi de date pe care se poate face antrenarea. Algoritmul
+ORB-SLAM2 este sensibil la operațiile de rotație, mai ales atunci când camera își schimbă
+orientarea către o zonă necunoscută. Pentru a crea harta zonei respective sunt generate
+numeroase KeyFrame-uri și MapPoint-uri, pe care algoritmul trebuie să le filtreze în clasa
+de LocalMapping, lucru care crește complexitatea temporală și spațială și scade acuratețea
+sistemului.
+\end{itemize} 
+
+Videourile sunt realizate cu ajutorul unei camere RGBD Microsoft Kinect, având frecvența de
+30 de cadre pe secundă. Setul de date conține imaginile de tip RGB, hărțile de adâncime 
+pentru fiecare cadru în parte, vectorii de poziție în forma $ se(3) $, primii 3 parametri 
+fiind poziția în spațiu $(tx, ty, tz)$, iar următorii 4 parametri sunt asociați matricei 
+de rotație, scrisă sub forma de Quaternion, \$(qw, qx, qy, qz)\$ și timestamp-urile 
+asociate momentului în care au fost înregistrate fiecare din valorile din setul de date.
+Cu ajutorul acestor timestamp-uri putem crea asocieri de tip (imagine RGB, matrice de adâncime,
+poziție) pe care le putem transmite algoritmului ORB-SLAM2. Poziția este considerată ca 
+fiind valoarea ideală, groundtruth și va fi comparată cu rezultatele obținute. Clasa 
+TumDatasetReader este responsabilă de citirea datelor și stocarea matricilor de poziție
+obținute pentru fiecare cadru. După parcurgerea întregului set de date, valorile estimate sunt
+salvate într-un fișier de tip text unde vor fi comparate cu cele reale.
+
+\section{Metrici utilizate}
+Algoritmul ORB-SLAM2 scrie într-un fișier estimările matricilor de poziție pentru fiecare 
+cadru în parte. Pentru a realiza comparația cu valorile de tip groundtruth din setul de 
+date, folosesc un pachet din python numit $ evo $. Acesta este capabil să creeze un grafic
+al traiectoriei, permițând astfel o reprezentare vizuală a rezultatelor pentru viteză, 
+translație și orientare. De exemplu, figura de mai jos reprezintă variația translației pe 
+fiecare dintre cele 3 axe. Cu albastru este valoarea de tip groundtruth, iar cu galben este
+estimarea realizată de implementarea mea pentru algoritmul ORB-SLAM.\@ Rezultatele sunt
+obținute pentru subsetul de date rgbd\_dataset\_freiburg1\_xyz, acesta fiind special
+conceput pentru a testa corectitudinea estimării translației între cadre.
 \begin{figure}[htbp] 
   \centering
   \includegraphics[width=1.0\textwidth]{./images/variate_translatie.png}
-  \caption{Graficul translatiei pe fiecare din cele 3 axe, groundtruth si estimare ORB-SLAM2}
-  \label{fig:exemplu_imagine}
+  \caption{Graficul translației pe fiecare din cele 3 axe, groundtruth și estimare ORB-SLAM2}\label{fig:translatie}
 \end{figure}
-Consider ca o reprezentare grafica in care traiectoria groundtruth se suprapune exact cu
-ceeea ce a obtinut estimarea ORB-SLAM2 poate fi considerata in mod neoficial, o metrica
-pe baza careia sa putem spune daca algoritmul functioneaza corect. Pentru exactitate 
-se poate folosi: APE (Absolute Pose Error), aceasta metrica măsoară distanța euclidiană 
+Consider că o reprezentare grafică în care traiectoria groundtruth se suprapune exact cu
+ceea ce a obținut estimarea ORB-SLAM2 poate fi considerată, în mod neoficial, o metrică
+pe baza căreia putem spune dacă algoritmul funcționează corect. Pentru exactitate 
+se poate folosi: APE (Absolute Pose Error). Această metrică măsoară distanța euclidiană 
 dintre pozițiile estimate și cele reale, la fiecare moment de timp.
-In general valorile scorurilor APE obtinute pentru ambele seturi de date sunt pana in 0.05,
-sugerand ca acuratetea este buna. Alte metrici pe care le folosesc pentru implementarea 
-mea a algoritmului ORB-SLAM2 este numarul de secunde necesar pentru parcurgerea setului de 
-date sau numarul de cadre pe secunda. Numarul de KeyFrame-uri create, in momentul in care 
-sistemul nu mai poate realiza urmarirea cadru cu cadru, acesta insereaza un nou KeyFrame,
-cu cat sunt mai putine KeyFrame-uri noi adaugate, se poate considera ca traiectoria este 
-usor de interpretat si ca sistemul este stabil. O alta metrica este legata de numarul 
-de relocalizari pe care a trebuit sa le faca algoritmul pentru a parcurge setul de date.
-Relocalizarea apare in situatia in care urmarirea cadru cu cadru esueaza si este cautat 
-KeyFrame-ul care seamana cel mai bine cu cadrul curent folosind vectorul de feature-uri 
-calculat de metoda bag-of-words. Ideal, numarul necesar de relocalizari ar trebui sa fie 0.\\
-In cazul rularii implementarii mele pe setul de date rgbd\_dataset\_freiburg1\_xyz acesta 
-dureaza in medie 67 de secude, functionand la aproximativ 15 cadre pe secunda, in medie 
-este nevoie intre 5{-}7 Keyframe-uri noi pentru parcurgerea setului de date. Logica 
-de relocalizare nu este deloc folosita, algoritmul fiind capabil sa realizeze urmarirea
+În general valorile scorurilor APE obținute pentru ambele seturi de date sunt până în 0.05,
+sugerând că acuratețea este bună. Alte metrici sunt: numărul de secunde necesar pentru 
+parcurgerea setului de date sau numărul de cadre pe secundă. Adăugarea unui nou cadru cheie este necesară 
+atunci când clasa Tracker nu mai poate urmări traiectoria corect. Putem considera numărul de KeyFrame-uri 
+ca fiind o metrică pentru estimarea stabilitatii sistemului. O altă metrică este 
+legată de numărul de relocalizări pe care a trebuit să le facă algoritmul pentru a parcurge 
+setul de date. Relocalizarea apare în situația în care urmărirea cadru cu cadru eșuează și 
+este căutat KeyFrame-ul care seamănă cel mai bine cu cadrul curent folosind vectorul de feature-uri 
+calculat de metoda bag-of-words. Ideal, numărul necesar de relocalizări ar trebui să fie 0.\\
+În cazul rulării implementării mele pe setul de date rgbd\_dataset\_freiburg1\_xyz, acesta 
+durează în medie 67 de secunde, funcționând la aproximativ 15 cadre pe secundă. În medie 
+este nevoie între 5{-}7 Keyframe-uri noi pentru parcurgerea setului de date. Logica 
+de relocalizare nu este deloc folosită, algoritmul fiind capabil să realizeze urmărirea
 cadru cu cadru.
-Pe setul de date rgbd\_dataset\_freiburg1\_rpy a durat 73 de secunde, videoul avand 
-27 de secunde, reprezinta aproximativ 10{-}11 cadre pe secunde. Acest lucru se datoreaza 
-numeroaselor operatii de optimizare a hartii pe care trebuie sa le faca algoritmul deoarece 
-sunt adaugate intre 17{-}19 KeyFrame-uri pentru a parcurge intreg setul de date, din cauza 
-miscarilor bruste ale camerei care reduc considerabil claritatea imaginilor extrase.
-In continuare, numarul de relocalizari este 0. Mai jos, am atasat graficul care compara 
-estimarea orientarii pentru fiecare cadru, estimarile fiind descompuse dupa cele 3 dimensiuni
-ale rotatiei. Graficul realizat de algoritmul ORB-SLAM2 pare sa fie shiftat in timp fata 
-de cel real, dar sa aiba aproximativ aceeasi forma cu cel al valorilor de tip groundtruth.
-Consider ca problema poate sa porneasca de la modul in care sunt atasate timestamp-urile 
-pentru fiecare cadru in parte, lucru care nu are legatura directa cu modul in care este
-realizata implementarea, ci cu modul in care setul de date creeaza perechile (imagine RGB, 
-vector pozitie, matrice de adancime).      
-\begin{figure}[htbp] 
+Pe setul de date rgbd\_dataset\_freiburg1\_rpy a durat 73 de secunde, videoul având 
+27 de secunde, iar viteza de procesare a fost de aproximativ 10{-}11 cadre pe secunde. 
+Acest lucru se datorează numeroaselor operații de optimizare a hărții pe care trebuie să
+le facă algoritmul, deoarece sunt adăugate între 17{-}19 KeyFrame-uri pentru a parcurge întreg
+setul de date, din cauza mișcărilor bruste ale camerei care reduc considerabil claritatea 
+imaginilor extrase. În continuare, numărul de relocalizări este 0. Mai jos, am atașat graficul
+care compară estimarea orientării pentru fiecare cadru, estimările fiind descompuse după cele
+3 dimensiuni ale rotației. Graficul realizat de algoritmul ORB-SLAM2 pare să fie shiftat în timp
+față de cel real, dar să aibă aproximativ aceeași formă cu cel al valorilor groundtruth.
+Consider că problema poate să pornească de la modul în care sunt atașate timestamp-urile 
+pentru fiecare cadru în parte, lucru care nu are legătură directă cu modul în care este
+realizată implementarea, ci cu modul în care setul de date creează perechile (imagine RGB, 
+vector poziție, matrice de adâncime).      
+\begin{figure}[htbp]  
   \centering
   \includegraphics[width=1.0\textwidth]{./images/rpy_variatie_orientare.png}
-  \caption{Graficul orientarii pentru setul de date rgbd\_dataset\_freiburg1\_rpy}
-  \label{fig:exemplu_imagine}
+  \caption{Graficul orientării pentru setul de date rgbd\_dataset\_freiburg1\_rpy}\label{fig:orientare}
 \end{figure}
-Am incercat utilizarea retelei neurale FastDepth pentru a estima adancimea in loc de a
-folosi matricea de distante a setului de date TUM RGBD.\@ Pentru a testa arhitectura voi
-lua doar imaginea si vectorul de pozitie simuland astfel o situatie in care sistemul ar avea
-doar o camera RGB.\@ Problema cu aceasta implementare este ca reteaua neurala nu este suficient
-de exacta iar estimarile distantelor intre cadre consecutive in continuare variaza mult. Pentru 
-subsetul de date rgbd\_dataset\_freiburg1\_xyz implementarea intra in etapa de relocalizare
-in medie dupa primele 50{-}60 de cadre procesate. Sistemul este mult prea instabil pentru
-a realiza in mod corect urmarirea cadru cu cadru. \\
-In etapele intiale ale dezvoltarii algoritmului am incercat utilizarea unui video realizat 
-folosind camera telefonului pentru testarea implementarii. Au fost 3 probleme pe care le-am 
-intalnit: nu puteam determina parametrii corecti ai camerei telefonului. Aveam nevoie 
-de distanta focala, de coordonatele centrului imaginii si de parametrii de distorsiune.
-A doua problema o reprezenta lipsa unei matrici de adancime pentru fiecare cadru iar cea de-a
-treia, era lipsa un vector de pozitie pentru fiecare imagine. Chiar 
-si in situatia in care obtineam parametrii camerei telefonului folosind algoritmi implementati
-in OpenCV, in continuare nu puteam fi sigur daca estimarile realizate 
-de mine sunt cele corecte. Din cauza acestor multe probleme, am ajuns la concluzia ca un set 
-de date ar fi o varianta mai potrivita.
+Am încercat utilizarea rețelei neurale FastDepth pentru a estima adâncimea în loc de a
+folosi matricea de distanțe a setului de date TUM RGBD.\@ Pentru a testa arhitectura o să utilizez
+ doar imaginea și vectorul de poziție, simulând astfel o situație în care sistemul ar avea
+doar o cameră RGB.\@ Problema cu această implementare este că rețeaua neurală nu este suficient
+de exactă, iar estimările distanțelor între cadre consecutive în continuare variază mult. Pentru 
+subsetul de date rgbd\_dataset\_freiburg1\_xyz, implementarea intră în etapa de relocalizare
+în medie după primele 50{-}60 de cadre procesate. Sistemul este mult prea instabil pentru
+a realiza în mod corect urmărirea cadru cu cadru. \\
+În etapele inițiale ale dezvoltării algoritmului am încercat utilizarea unui video realizat 
+folosind camera telefonului pentru testarea implementării. Au fost 3 probleme pe care le-am 
+întâlnit. Prima problemă este faptul că nu puteam determina parametrii corecți ai camerei telefonului. Aveam nevoie 
+de distanța focală, de coordonatele centrului imaginii și de parametrii de distorsiune.
+A doua problemă o reprezenta lipsa unei matrici de adâncime pentru fiecare cadru, iar cea de-a
+treia, era lipsa unui vector de poziție pentru fiecare imagine. Chiar 
+și în situația în care obțineam parametrii camerei telefonului folosind algoritmi implementați
+în OpenCV, în continuare nu puteam fi sigur dacă estimările realizate de mine sunt cele corecte.
+Din cauza acestor multe probleme, am ajuns la concluzia că un set de date ar fi o variantă mai potrivită.
 
 \chapter{Concluzii}
-O problema pe care am avut-o in testarea algoritmului a fost ca nu am putut face 
-functionala implementarea initiala a ORB-SLAM2, exista conflicte intre versiunile de
-biblioteci Eigen si g2o. Versiunea de Eigen folosita la momentul respectiv nu mai 
-exista acum in repo-ul oficial si eu nu am reusit sa o accesez pentru a testa.\\ 
-Libraria Ceres este usor de folosit pentru problemele de optimizare non-liniare, 
-consider ca cel mai mare plus pe care il aduce lucrarea mea este ca am cea mai 
-completa implementare a algoritmului Bundle Adjustment in aceasta librarie la 
-care se adauga o logica de filtrare a punctelor de tip outlier si are caz 
-separat de folosire atat pentru punctele monoculare cat si pentru cele stereo.   
-In plus am adus optimizari la codul oficial pentru ORB-SLAM2: implementarea lor 
-nu elibereaza absolut deloc memoria pentru MapPoint-urile si KeyFrame-urile 
-considerate invalide, eu am rezolvat aceasta problema, extinzand durata pentru 
-care poate rula algoritmul si facandu-l potrivit pentru sistemele embedded.
-De asemenea, in implementarea oficiala nu este folosita nicio structura de tip
-dictionar, clasele principale folosite au parametrii de stare care isi modifica
-valoarea la fiecare cadru, functiile avand efecte laterale care genereaza erori 
-greu de urmarit si corectat. In total am scris 4030 de linii de cod in C++ si 
-am modificat codul pentru numeroase functii, facandu-l mai usor de inteles si 
-mentinut. ORB-SLAM2 indeplineste 3 functii: urmarirea cadru cu cadru, corectarea 
-erorilor, si inchiderea buclelor. Etapa de inchidere a buclelor nu am reusit sa o 
+O problemă pe care am avut-o în testarea algoritmului a fost că nu am putut face 
+funcțională implementarea inițială a ORB-SLAM2. Există conflicte între versiunile de
+biblioteci Eigen și g2o. Versiunea de Eigen folosită la momentul respectiv nu mai 
+există acum în repository-ul oficial de Github.\\ 
+Librăria Ceres este ușor de folosit pentru problemele de optimizare non-liniare, astfel,
+consider că cel mai mare plus pe care îl aduce lucrarea mea este faptul că am cea mai 
+completă implementare a algoritmului Bundle Adjustment în această librărie, la 
+care se adaugă o logică de filtrare a punctelor de tip outlier. Aceasta are caz 
+separat de folosire atât pentru punctele monoculare, cât și pentru cele stereo.   
+În plus, am adus optimizări la codul oficial pentru ORB-SLAM2 legate de faptul că implementarea lor 
+nu eliberează absolut deloc memoria pentru MapPoint-urile și KeyFrame-urile 
+considerate invalide. Eu am rezolvat această problemă, extinzând durata pentru 
+care poate rula algoritmul și făcându-l potrivit pentru sistemele embedded cu o memorie redusă.
+De asemenea, în implementarea oficială nu este folosită nicio structură de tip
+dicționar. Clasele principale folosite au parametri de stare care își modifică
+valoarea la fiecare cadru, funcțiile având efecte laterale care generează erori 
+greu de urmărit și corectat. În total am scris 4030 de linii de cod în C++ și 
+am modificat codul pentru numeroase funcții, codebase-ul meu fiind de aproximativ 3 ori 
+mai mic decât cel al implementării oficiale.  ORB-SLAM2 îndeplinește 3 funcții: urmărirea 
+cadru cu cadru, corectarea 
+erorilor, și închiderea buclelor. Etapa de închidere a buclelor nu am reușit să o 
 implementez din cauza apropierii termenului de predare, cu toate acestea, algoritmul
-obtine in continuare rezultate bune pentru subseturile de date alese. \\
-In ciuda faptului ca utilizarea unei retele neurale pentru a inlocui o camera 
-RGBD nu a functionat asa cum am crezut initial, algoritmul devine instabil si 
-isi pierde complet orientarea dupa primele 50 de cadre, consider ca o retea 
-neurala precum FastDepth poate fi folosita in estimarea adancimii pentru 
-punctele care au avut atribuita distanta 0 de catre camera tip RGBD.\@   
-O directie viitoare ar fi utilizarea unui sistem care combina cele 2 
-abordari. Separarea straturilor convolutionale in depthwise si pointwise s-a dovedit
-a fi o tehnica buna pentru a creste viteza arhitecturii astfel incat sa poata fi
-folosita in timp real. \\
-Un lucru pe care il regret este ca nu am utilizat o interfata grafica inca de la 
-primele etape, pentru a detecta erorile in timpul dezvoltarii algoritmului. Desi scorul
-calculat de APE este o metrica buna pentru a vedea cat de bine se potrivesc 2 
-estimari ale pozitiei unui cadru, o simpla valoare numerica nu este suficient
-pentru a avea o privire generala asupra modului in care functioneaza implementarea. \\
-Ca directii viitoare, ma gandeam sa utilizez arhitecturi de retele neurale pentru
-sarcini bine delimitate, cum ar fi extragerea de feature-uri sau gasirea de corelatii
-de tip (Feature, MapPoint), adaugarea unui modul de object detection si a unui 
-algoritm de planificare de trasee, pentru a indeplini sarcini simple de gasire 
-a unor obiecte de mici dimensiuni. Pana acum algoritmul a folosit doar metode
+obține în continuare rezultate bune pentru subseturile de date alese. \\
+În ciuda faptului că utilizarea unei rețele neurale pentru a înlocui o cameră 
+RGBD nu a funcționat așa cum am crezut inițial, algoritmul devine instabil și 
+își pierde complet orientarea după primele 50 de cadre, consider că o rețea 
+neurală precum FastDepth poate fi folosită în estimarea adâncimii pentru 
+punctele care au avut atribuită distanța 0 de către camera tip RGBD.\@   
+O direcție viitoare ar fi utilizarea unui sistem care combină cele 2 
+abordări. Separarea straturilor convolutionale în depthwise și pointwise s-a dovedit
+a fi o tehnică bună pentru a crește viteza arhitecturii astfel încât să poată fi
+folosită în timp real. \\
+Un lucru pe care îl regret este că nu am utilizat o interfață grafica încă de la 
+primele etape pentru a detecta erorile în timpul dezvoltării algoritmului. Deși scorul
+calculat de APE este o metrică bună pentru a vedea cât de bine se potrivesc 2 
+estimări ale poziției unui cadru, o simplă valoare numerică nu este suficientă
+pentru a avea o privire generală asupra modului în care funcționează implementarea. \\
+Ca direcții viitoare, aș dori să utilizez arhitecturi de rețele neurale pentru
+sarcini bine delimitate, cum ar fi extragerea de feature-uri sau găsirea de corelații
+de tip (Feature, MapPoint). Adăugarea unui modul de object detection și a unui 
+algoritm de planificare de trasee, pentru a îndeplini sarcini simple de găsire 
+a unor obiecte de mici dimensiuni. Până acum algoritmul a folosit doar metode
 clasice, ORB pentru extragere de feature-uri, Brute Force pentru 
-matching, bag-of-words pentru relocalizare. Acum, consider ca directia pe care ar
-trebui sa o urmeze aceasta clasa de algoritmi de tip SLAM este una in care 
-tehnici de Machine Learning sunt folosite pentru a creste viteza si poate 
-acuratetea operatiilor. Aceasta fiind si directia incurajata de lucrarile ce 
-fac parte din state of the art pana la momentul curent.
-
+feature matching, bag-of-words pentru relocalizare. Astfel, acum consider că direcția pe care ar
+trebui să o urmeze această clasă de algoritmi de tip SLAM este una în care 
+tehnicile de Machine Learning sunt folosite pentru a crește viteza și poate 
+acuratețea operațiilor. Aceasta fiind și direcția încurajată de lucrările ce 
+fac parte din state of the art până la momentul curent.
+ 
 \printbibliography
 \end{document}

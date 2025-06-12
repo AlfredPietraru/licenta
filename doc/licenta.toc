@@ -6,27 +6,27 @@
 \contentsline {section}{\numberline {1.4}Soluția propusă}{2}{section.1.4}%
 \contentsline {section}{\numberline {1.5}Rezultatele obținute}{2}{section.1.5}%
 \contentsline {section}{\numberline {1.6}Structura lucrării}{2}{section.1.6}%
-\contentsline {chapter}{\numberline {2}Cerințe și Motivație}{4}{chapter.2}%
-\contentsline {section}{\numberline {2.1}Motivație}{4}{section.2.1}%
-\contentsline {section}{\numberline {2.2}Cerințe Funcționale și Nonfuncționale}{5}{section.2.2}%
-\contentsline {chapter}{\numberline {3}Studiu de piață}{6}{chapter.3}%
-\contentsline {section}{\numberline {3.1}State of the art Visual SLAM}{6}{section.3.1}%
-\contentsline {chapter}{\numberline {4}Soluție propusă}{10}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Achiziția datelor}{11}{section.4.1}%
-\contentsline {section}{\numberline {4.2}Extragerea trăsăturilor}{12}{section.4.2}%
-\contentsline {section}{\numberline {4.3}Harta punctelor din spatiu}{14}{section.4.3}%
-\contentsline {section}{\numberline {4.4}Asociere puncte din spațiu cu feature-uri ORB}{15}{section.4.4}%
-\contentsline {section}{\numberline {4.5}Optimizarea Estimării Poziției Inițiale}{16}{section.4.5}%
-\contentsline {subsection}{\numberline {4.5.1}Proiectarea unui MapPoint în planul imaginii}{17}{subsection.4.5.1}%
-\contentsline {subsection}{\numberline {4.5.2}Motion Only Bundle Adjustment}{18}{subsection.4.5.2}%
-\contentsline {section}{\numberline {4.6}Crearea unui cadru cheie}{19}{section.4.6}%
-\contentsline {subsection}{\numberline {4.6.1}Optimizare harta locala}{19}{subsection.4.6.1}%
-\contentsline {subsection}{\numberline {4.6.2}Reteaua Neurala FastDepth}{21}{subsection.4.6.2}%
-\contentsline {chapter}{\numberline {5}Detalii de implementare}{26}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Limbaje de programare si librarii folosite}{26}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Mediu de lucru si principalele clase}{28}{section.5.2}%
-\contentsline {section}{\numberline {5.3}Pipeline antrenare FastDepth}{40}{section.5.3}%
-\contentsline {chapter}{\numberline {6}Evaluare}{42}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Setul de date TUM RGBD Dataset}{42}{section.6.1}%
-\contentsline {section}{\numberline {6.2}Metrici utilizate}{43}{section.6.2}%
-\contentsline {chapter}{\numberline {7}Concluzii}{46}{chapter.7}%
+\contentsline {chapter}{\numberline {2}Cerințe și Motivație}{3}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Motivație}{3}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Cerințe Funcționale și Nonfuncționale}{4}{section.2.2}%
+\contentsline {chapter}{\numberline {3}Studiu de piață}{5}{chapter.3}%
+\contentsline {section}{\numberline {3.1}State of the art Visual SLAM}{5}{section.3.1}%
+\contentsline {chapter}{\numberline {4}Soluție propusă}{8}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Achiziția datelor}{9}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Extragerea trăsăturilor}{10}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Harta punctelor din spațiu}{12}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Asociere puncte din spațiu cu feature-uri ORB}{13}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Optimizarea Estimării Poziției Inițiale}{14}{section.4.5}%
+\contentsline {subsection}{\numberline {4.5.1}Proiectarea unui MapPoint în planul imaginii}{15}{subsection.4.5.1}%
+\contentsline {subsection}{\numberline {4.5.2}Motion Only Bundle Adjustment}{16}{subsection.4.5.2}%
+\contentsline {section}{\numberline {4.6}Crearea unui cadru cheie}{17}{section.4.6}%
+\contentsline {subsection}{\numberline {4.6.1}Optimizare hartă locală}{17}{subsection.4.6.1}%
+\contentsline {subsection}{\numberline {4.6.2}Rețeaua Neurală FastDepth}{19}{subsection.4.6.2}%
+\contentsline {chapter}{\numberline {5}Detalii de implementare}{24}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Limbaje de programare și librării folosite}{24}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Mediu de lucru și principalele clase}{26}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Pipeline antrenare FastDepth}{38}{section.5.3}%
+\contentsline {chapter}{\numberline {6}Evaluare}{41}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Setul de date TUM RGBD Dataset}{41}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Metrici utilizate}{42}{section.6.2}%
+\contentsline {chapter}{\numberline {7}Concluzii}{45}{chapter.7}%
