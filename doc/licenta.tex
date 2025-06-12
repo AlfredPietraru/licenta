@@ -364,7 +364,7 @@ al valorilor de intrare și de ieșire asociate acestora.
 % AICI
 \begin{figure}[htbp] 
   \centering
-  \includegraphics[width=1.0\textwidth]{./images/slam_uml.jpeg}
+  \includegraphics[width=1.0\textwidth]{./images/slam_uml.jpg}
   \caption{Diagrama UML de activități a întregului sistem}\label{fig:slam_uml_fig}
 \end{figure}
  
@@ -865,14 +865,14 @@ interpolare liniară care dublează dimensiunea ieșirii. Ultimul strat face par
 pointwise convolution. Acesta unește canalele obținute și returnează matricea finală de adâncime. Pentru
 Mobile\_Netv2 există parametri preantrenați în librăria Pytorch\cite{paszke2017automatic}, pe setul de date ImageNet,
 fiind un motiv în plus de a folosi această arhitectură. Rețeaua neurală folosește atât depthwise convolution,
-cât și pointwise convolution într-un strat numit Inverted Residual. Acest bloc este alcătuit din următoarele 
-componente unde $ t $ este factorul de multiplicare a numărului de canale, $ s $ este parametrul de stride, determină 
-dacă se micșorează numărul de canale, $ h, w, d $ sunt dimensiunile matricei de intrare:
-\begin{figure}[htbp] 
-  \centering
-  \includegraphics[width=1.0\textwidth]{./images/bottleneck_residual_block.png}
-  \caption{Straturile unui bloc de tip Inverted Residual, preluat din\cite{sandler2019mobilenetv2invertedresidualslinear}}\label{fig:bottleneck_residual_block}
-\end{figure}
+% cât și pointwise convolution într-un strat numit Inverted Residual. Acest bloc este alcătuit din următoarele 
+% componente unde $ t $ este factorul de multiplicare a numărului de canale, $ s $ este parametrul de stride, determină 
+% dacă se micșorează numărul de canale, $ h, w, d $ sunt dimensiunile matricei de intrare:
+% \begin{figure}[htbp] 
+%   \centering
+%   \includegraphics[width=1.0\textwidth]{./images/bottleneck_residual_block.png}
+%   \caption{Straturile unui bloc de tip Inverted Residual, preluat din\cite{sandler2019mobilenetv2invertedresidualslinear}}\label{fig:bottleneck_residual_block}
+% \end{figure}
 % continuare detaliere mobileNet_v2
 % adaugare poze
 
@@ -1347,7 +1347,7 @@ am modificat dimensiunile la $ (3, 256, 320) $ și am aplicat o funcție de norm
 transformări sunt aplicate atât pe setul de date de antrenare, cât și pe cel de test.
 \item Un batch de date are dimensiunea de 8.
 \item În lucrarea FastDepth, funcția de pierdere folosită este L1Loss, aceasta fiind suma diferențelor dintre valoarea
-reală și cea determinată de rețeaua neurală în modul. În implementarea mea am ales să folosesc o funcție de pierdere
+reală și cea determinată de rețeaua neurală în modul. Am ales să folosesc o funcție de pierdere
 mai robustă conform acestei lucrări științifice\cite{lossfunctionidea}.
 \end{itemize}
 

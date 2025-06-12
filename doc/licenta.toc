@@ -22,11 +22,11 @@
 \contentsline {section}{\numberline {4.6}Crearea unui cadru cheie}{17}{section.4.6}%
 \contentsline {subsection}{\numberline {4.6.1}Optimizare hartă locală}{17}{subsection.4.6.1}%
 \contentsline {subsection}{\numberline {4.6.2}Rețeaua Neurală FastDepth}{19}{subsection.4.6.2}%
-\contentsline {chapter}{\numberline {5}Detalii de implementare}{24}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Limbaje de programare și librării folosite}{24}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Mediu de lucru și principalele clase}{26}{section.5.2}%
-\contentsline {section}{\numberline {5.3}Pipeline antrenare FastDepth}{38}{section.5.3}%
-\contentsline {chapter}{\numberline {6}Evaluare}{41}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Setul de date TUM RGBD Dataset}{41}{section.6.1}%
-\contentsline {section}{\numberline {6.2}Metrici utilizate}{42}{section.6.2}%
-\contentsline {chapter}{\numberline {7}Concluzii}{45}{chapter.7}%
+\contentsline {chapter}{\numberline {5}Detalii de implementare}{23}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Limbaje de programare și librării folosite}{23}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Mediu de lucru și principalele clase}{25}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Pipeline antrenare FastDepth}{37}{section.5.3}%
+\contentsline {chapter}{\numberline {6}Evaluare}{39}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Setul de date TUM RGBD Dataset}{39}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Metrici utilizate}{40}{section.6.2}%
+\contentsline {chapter}{\numberline {7}Concluzii}{43}{chapter.7}%
