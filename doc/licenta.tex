@@ -666,22 +666,22 @@ Această componentă primește ca date de intrare absolut toate informațiile pr
 până acum pentru cadrul curent: imaginea de tip rgb, matricea de adâncime, punctele cheie,
 descriptorii, asocierile (feature, MapPoint) și matricea estimării poziției. 
 Toate acestea vor alcătui împreună un cadru cheie care va fi salvat în memorie.
-Salvarea pozițiilor cadrelor anterioare ne poate ajuta în 2 feluri. Putem folosi 2 
-cadre anterioare pentru a estima poziția celui care urmează bazându-ne pe legea inerției. 
-O dată începută deplasarea camerei într-o anumită directie, este foarte 
-probabil ca aceea miscare să fie menținută și la următorul cadru. Fie \(T_{cw}\) matricea de 
-poziție pentru cadrul la care vrem să estimăm deplasarea, iar \(T_{cw1}, T_{cw2} \) matricile 
-de poziție a celor 2 cadre imediat predecesoare. Formula de estimare a poziției curente este:
+Salvarea pozițiilor cadrelor anterioare poate ajuta în 2 feluri. Două cadre anterioare pot 
+estima poziția celui care urmează folosindu-se legea inerției. O dată începută deplasarea 
+camerei într-o anumită directie, este foarte probabil ca aceea mișcare să fie menținută și 
+la următorul cadru. Fie \(T_{cw}\) matricea de poziție pentru cadrul la care vrem să estimăm
+deplasarea, iar \(T_{cw1}, T_{cw2} \) matricile de poziție a celor 2 cadre imediat predecesoare.
+Formula de estimare a poziției curente este:
 
 \begin{equation}
 \mathbf{T_{cw}} = \mathbf{T_{cw1}} \cdot \left( \mathbf{T_{cw2}}^{-1} \cdot \mathbf{T_{cw1}} \right)
 \end{equation} 
 
-Al doilea motiv pentru care avem nevoie de cadre cheie este recreearea mediului și a traseului parcus.
-Încercam să salvăm numărul minim de cadre necesare pentru a reproduce harta de MapPoint-uri a mediului
-înconjurător. Un cadru cheie nou (KeyFrame) aduce cu sine MapPoint-uri noi, extrase din feature-urile
+Al doilea caz de utilizare al cadrelor cheie este cel de recreeare al mediului și al traseului parcus.
+Numărul minim de cadre necesare este salvat pentru a reproduce harta de MapPoint-uri a mediului
+înconjurător. Un cadru cheie nou (KeyFrame) aduce cu sine MapPoint-uri noi, extrase din caracteristicile
 găsite în imaginea respectivă. Funcționarea corectă a urmăririi cadru cu cadru, este determinată de numărul de 
-MapPoint-uri găsite în imaginea curentă în comparatie cu un cadru de referintă. În momentul 
+MapPoint-uri găsite în imaginea curentă în comparație cu un cadru de referintă. În momentul 
 în care numărul de puncte cheie găsite în cadrul curent scade sub un anumit prag, știm că este
 necesară salvarea acestuia și creearea unor noi MapPoint-uri pentru a stabiliza urmărirea. 
 
@@ -935,38 +935,33 @@ este o pereche de forma $ (int, vector\_descriptori) $. Primul element este inde
 clusterului de la nivelul 4 al arborelui DBOW2, iar cel de-al doilea element reprezintă un 
 vector de descriptori din imaginea curentă care se potrivesc în același cluster. Două imagini pot
 fi comparate între ele prin intermediul acestui vector de feature-uri, lucru care va fi detaliat
-în descriera clasei OrbMatcher. În implementarea ORB-SLAM2, nu este practică creearea unui vector
-de tip bag of words cu un milion de elemente, mai ales că majoritatea valorilor sunt 0. Astfel,
-reducerea dimensiunii vectorului ar crește viteza de calcul a sistemului. Din această 
-cauză, compararea descriptorilor se realizează doar până la nivelul 4 în arbore. Vectorul bow 
-va avea dimensiunea 1000, iar cel de feature-uri va avea numărul de elemente egal cu cel de 
-descriptori. 
+în descriera clasei OrbMatcher. În implementarea ORB-SLAM2, vectorul bow va avea dimensiunea 1000,
+iar cel de feature-uri va avea numărul de elemente egal cu cel de descriptori.
 
 \section{Mediu de lucru și principalele clase}
 \subsection{Structura proiectului și fișiere de configurare}
-Structura de fișiere este una simplă, în folderul rădăcină se regăsește fișierul de 
-CmakeLists.txt care va fi interpretat de utilitarul cmake pentru a genera automat Makefile-ul. 
+În folderul rădăcină se regăsește fișierul de CmakeLists.txt care va fi interpretat de utilitarul
+cmake pentru a genera automat Makefile-ul. 
 Acest Makefile va conține regulile de build și de clean pentru proiect. În fișierul main.cpp
 vor fi inițializate componentele și se va putea selecta pe care dintre cele 2 seturi
 de date se va aplica algoritmul. Aceste seturi de date conțin de fapt cadrele dintr-un video 
 făcut cu o cameră RGBD Microsoft Kinetic, împreună cu matricile de adâncime și pozițiile acestora.
-Aceste seturi de date sunt suficient de complexe pentru a permite evaluarea algoritmului ORB-SLAM2.
 Tot în main.cpp, se va realiza citirea fișierului ORBvoc.txt, acesta conține datele pe care le va
 folosi clasa ORBVocabulary pentru a inițializa arborele folosit de biblioteca DBOW2. \\
 Tot în folderul rădăcină se regăsește și fișierul fast\_depth.onnx, în care sunt stocate 
 arhitectura și parametrii rețelei neurale FastDepth. În folderul de include, se află antetele claselor
 pe care le voi implementa și în folderul de src se regăsește codul de C++ pentru logica programului.
 Am observat că separarea codului în acest fel este o practică des întâlnită în proiectele de mari
-dimensiuni și garantează flexibilitate în includirea dependințelor între fișiere. Algoritmul 
+dimensiuni și garantează flexibilitate în includirea dependențelor între fișiere. Algoritmul 
 ORB-SLAM2 este unul complex, depinzând de o multitudine de parametrii care pot influența acuratețea.
 Cei mai importanti sunt cei corelați cu camera. În fișierul config.yaml se regăsește matricea \(K\), 
 parametrii de distorsiune ai camerei și alte constante pe care le-am considerat ca fiind niște
 hiperparametrii ai algoritmului. Aceștia vor trebui modificați în funcție de mediul în care va 
-rula ORB-SLAM2 pentru a garanta funcționarea corectă. Următoarea diagramă UML descrie principalele 
-clase si interactiunea intre ele.
+rula ORB-SLAM2 pentru a garanta funcționarea corectă. Diagrama UML de mai jos ilustrează clasele
+principale și relațiile de dependență dintre acestea.
 \begin{figure}[htbp] 
   \centering
-  \includegraphics[width=1.0\textwidth]{./images/diagrama_uml_clase_slam.png}
+  \includegraphics[width=1.0\textwidth]{./images/uml_SLAM.png}
   \caption{Diagrama UML pe clase pentru implementarea ORB-SLAM2}\label{fig:diagrama_clase}
 \end{figure}
 
@@ -1531,14 +1526,13 @@ ORB-SLAM2 are o structură modulară, iar fiecare componentă poate fi îmbunăt
 în mod independent. Există 2 direcții de dezvoltare: optimizarea operațiilor 
 realizate deja de către algoritm și adăugarea unor noi module care să crească 
 complexitatea sarcinilor pe care le poate indeplini sistemul. Câteva modificări 
-care se încadrează în prima categorie ar fi: primul, înlocuirea algoritmului ORB cu 
-o rețea neurală care să realizeze extragerea și asocierea între caracteristici. 
-Al doilea, camera RGBD / Stereo pentru estimarea distanței ar putea fi utilizată impreună cu 
-arhitectura FastDepth pentru a completa valorile lipsă ale hărții de adâncime.
-Al treilea, utilizarea unei alte biblioteci care să realizeze sarcini de detectare a buclelor
-în traiectorie. Chiar dacă DBoW2 este rapid și robust, totuși obține rezultate 
-slabe în medii complet necunoscute și necesită și o etapă de antrenare separată a
-arborelui de detecție de caracteristici. Pentru a crește complexitatea sistemului ar putea
+care se încadrează în prima categorie ar putea include: înlocuirea algoritmului 
+ORB cu o rețea neuronală care să se ocupe de extragerea și asocierea caracteristicilor,
+utilizarea unei camere RGBD sau Stereo împreună cu arhitectura FastDepth pentru completarea
+valorilor lipsă din harta de adâncime și înlocuirea bibliotecii folosite pentru detectarea 
+buclelor în traiectorie cu una alternativă. Chiar dacă DBoW2 este rapid și robust, totuși 
+obține rezultate slabe în medii complet necunoscute și necesită și o etapă de antrenare separată
+a arborelui de detecție de caracteristici. Pentru a crește complexitatea sistemului ar putea
 fi integrat un modul responsabil de planificarea traseului prin mediu și de alegerea 
 acțiunilor pe care le va realiza agentul în zone complet necunoscute. Arhitectura 
 Mobile\_Netv2 s-a dovedid deja o opțiune potrivită pentru un sistem în timp real. 

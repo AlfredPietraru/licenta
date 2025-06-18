@@ -25,10 +25,10 @@
 \contentsline {section}{\numberline {5.1}Limbaje de programare și biblioteci folosite}{23}{section.5.1}%
 \contentsline {section}{\numberline {5.2}Mediu de lucru și principalele clase}{25}{section.5.2}%
 \contentsline {subsection}{\numberline {5.2.1}Structura proiectului și fișiere de configurare}{25}{subsection.5.2.1}%
-\contentsline {subsection}{\numberline {5.2.2}Clase Suport pentru Tracker și LocalMapping}{26}{subsection.5.2.2}%
+\contentsline {subsection}{\numberline {5.2.2}Clase Suport pentru Tracker și LocalMapping}{27}{subsection.5.2.2}%
 \contentsline {subsection}{\numberline {5.2.3}Clasa Tracker}{34}{subsection.5.2.3}%
 \contentsline {subsection}{\numberline {5.2.4}Clasa LocalMapping}{36}{subsection.5.2.4}%
-\contentsline {section}{\numberline {5.3}Pipeline antrenare FastDepth}{38}{section.5.3}%
+\contentsline {section}{\numberline {5.3}Pipeline antrenare FastDepth}{37}{section.5.3}%
 \contentsline {chapter}{\numberline {6}Evaluare}{40}{chapter.6}%
 \contentsline {section}{\numberline {6.1}Setul de date TUM RGBD Dataset}{40}{section.6.1}%
 \contentsline {section}{\numberline {6.2}Metrici utilizate}{41}{section.6.2}%
