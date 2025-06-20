@@ -46,13 +46,14 @@ DEPARTAMENTUL DE CALCULATOARE\\}
 \newcommand{\AdvisorRO}{Coordonator științific:}
 \newcommand{\BucRO}{BUCUREȘTI}
   
+\include{1_abstract}
 \newcommand{\UniTextEN}{NATIONAL UNIVERSITY OF SCIENCE AND TECHNOLOGY POLITEHNICA BUCHAREST \\[\HeaderLineSpace]
 FACULTY OF AUTOMATIC CONTROL AND COMPUTERS \\[\HeaderLineSpace]
 COMPUTER SCIENCE AND ENGINEERING DEPARTMENT\\}
 \newcommand{\DiplomaEN}{DIPLOMA PROJECT}
 \newcommand{\AdvisorEN}{Thesis advisor:}
 \newcommand{\BucEN}{BUCHAREST}
-\newcommand{\ProjectTitleRO}{Orientare in Spatiu folosind ORB-SLAM}
+\newcommand{\ProjectTitleRO}{Orientare în Spațiu folosind ORB-SLAM}
 \newcommand{\ProjectTitleEN}{Spatial Orientation using ORB-SLAM}
 
 \newcommand{\frontPage}[6]{
@@ -88,14 +89,22 @@ COMPUTER SCIENCE AND ENGINEERING DEPARTMENT\\}
 \linespread{1.5}
 \setlength\parindent{0pt}
 \setlength\parskip{8pt}
-\include{1_abstract}
 \begin{document}
 \frontPageRO{}
 \frontPageEN{}
+
+\clearpage
+\pagestyle{empty}
 \begingroup
 \linespread{1}
 \tableofcontents
 \endgroup
+\clearpage
+\pagestyle{plain}
+
+\pagenumbering{arabic}
+\setcounter{page}{1} 
+
 \AbstractPage{}
 \chapter{Introducere}
 \section{Context}
