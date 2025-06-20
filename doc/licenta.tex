@@ -30,9 +30,7 @@
 \usepackage{enumitem}
 \usepackage{placeins}
 \setlist{noitemsep}
-
 \usepackage{fancyhdr}
-\pagestyle{empty}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt}
 \lhead{}\chead{}\rhead{}
@@ -47,7 +45,7 @@ DEPARTAMENTUL DE CALCULATOARE\\}
 \newcommand{\DiplomaRO}{PROIECT DE DIPLOMA}
 \newcommand{\AdvisorRO}{Coordonator științific:}
 \newcommand{\BucRO}{BUCUREȘTI}
- 
+  
 \newcommand{\UniTextEN}{NATIONAL UNIVERSITY OF SCIENCE AND TECHNOLOGY POLITEHNICA BUCHAREST \\[\HeaderLineSpace]
 FACULTY OF AUTOMATIC CONTROL AND COMPUTERS \\[\HeaderLineSpace]
 COMPUTER SCIENCE AND ENGINEERING DEPARTMENT\\}
@@ -144,12 +142,12 @@ prezintă rezultate bune în medii indoor și că poate funcționa în timp real
 avut rezultatele bune, algoritmul fiind capabil să funcționeze pentru maxim 50 de cadre.  
 
 \section{Structura lucrării}
-Lucrarea este structurată în mai multe capitole. Introducerea oferă contextul lucrării și definește problema abordată, obiectivele și soluția propusă. Capitolul 2 descrie 
-cerințele funcționale, nonfuncționale și motivația.
-Capitolul 3 realizează un studiu de piață asupra metodelor curente, separându-le in trei
-categorii. Capitolul 4 descrie la nivel conceptual soluția propusă: algoritmii folosiți și componentele logice.
-Capitolul 5 detaliază modul în care este realizată evaluarea și rezultatele obținute.
-Ultimul capitol prezintă impresii personale despre acest proiect, lucruri pe 
+Lucrarea este structurată în mai multe capitole. Introducerea oferă contextul lucrării și definește
+problema abordată, obiectivele și soluția propusă. Capitolul 2 descrie cerințele funcționale, 
+nonfuncționale și motivația. Capitolul 3 realizează un studiu de piață asupra metodelor curente, 
+separându-le in trei categorii. Capitolul 4 descrie la nivel conceptual soluția propusă: algoritmii
+folosiți și componentele logice. Capitolul 5 detaliază modul în care este realizată evaluarea și 
+rezultatele obținute. Ultimul capitol prezintă impresii personale despre acest proiect, lucruri pe 
 care le-aș putea îmbunătăți, problemele întâlnite și direcțiile viitoare. 
 
 \chapter{Cerințe și Motivație}
@@ -287,8 +285,8 @@ de SLAM, procesând peste 100 de cadre pe secundă pe un CPU.\@ Totuși, acesta 
 puncte de slabă calitate care nu pot fi refolosite, nu există capacitate de relocalizare și 
 este dificil de extins. Așadar, acesta ar putea fi considerat a doua cea mai bună opțiune după ORB-SLAM2.\\
 
-În ciuda faptului că algoritmul ORB-SLAM2 a aparut în 2017, acesta rămâne în continuare 
-un etalon, cu multe posibilități de extindere. Îndeplinește cu succes toate cerințele funcționale 
+Algoritmul ORB-SLAM2 a aparut în 2017, cu toate acesta, rămâne în continuare 
+un etalon. Îndeplinește cu succes toate cerințele funcționale 
 și nonfuncționale pe care sistemul ar trebui să le aibă: poate fi folosit în real time,
 implementarea procesând aproximativ 15 cadre pe secundă, creează o hartă a mediului înconjurător
 pe care o poate optimiza, are capacitate de relocalizare și corectează erorile de estimare
@@ -432,8 +430,7 @@ zonă selectată de un keypoint, aceasta având o dimensiune prestabilită de $ 
 despre care se știe că au varianță mare și grad de corelație scăzut între ei.
 \end{enumerate}   
 
-În cazul algoritmul FAST-9, 
-cifra 9 vine de la diametrul ferestrei circulare în care se face compararea între valoarea 
+În cazul algoritmul FAST-9, cifra 9 vine de la diametrul ferestrei circulare în care se face compararea între valoarea 
 intensitații pixelului și centru. Acest algoritm primește ca parametru imaginea și pragul 
 pe care trebuie să îl depășească diferența de intensitate între pixeli pentru a fi considerat
 un keypoint. De cele mai multe ori, informația dată de keypoint-uri este redundantă, pentru
@@ -691,20 +688,20 @@ harta trebuie să adăugam noi puncte de tip MapPoint și noi KeyFrame-uri în e
 pentru a valida conexiunile care deja exista. Modul în care sunt create și șterse 
 punctele urmează o abordare numită survival of the fittest. La fiecare nou KeyFrame 
 adăugat, sunt create aproximativ 100 de noi MapPoint-uri și sunt inserate în hartă. Acestea
-vor fi supuse unui test care o să evalueze cât de ușor sunt observate feature-urile pe care
+vor fi supuse unui test care o să evalueze cât de ușor sunt observate caracteristicile pe care
 le reprezintă. Din punct de vedere matematic, un MapPoint este observat de un KeyFrame
 dacă proiecția acestuia în imagine este un vector valid în sistemul de coordonate 
 al KeyFrame-ului respectiv. Cu cât mai multe Keyframe-uri observă același MapPoint,
 cu atât mai stabil este punctul respectiv din spațiu. Într-un caz ideal, ar trebui ca
 orice MapPoint creat să fie stabil. De cele mai multe ori nu se întâmplă acest lucru din
-cauza erorilor de feature matching. Astfel, doar cele mai evidente feature-uri rămân 
+cauza erorilor de feature matching. Astfel, doar cele mai evidente caracteristici rămân 
 salvate în hartă până la finalul algoritmului. Scopul acestei componente este adăugarea 
 KeyFrame-urilor noi, eliminarea celor redundante și testarea stabilității tuturor MapPoint-urilor
 create. Pentru a salva Keyframe-ul curent în hartă, următoarele operații trebuie urmate:
 \begin{enumerate}
-    \item Folosind harta de adâncime, sunt selectate cele mai apropiate \( N \) feature-uri 
+    \item Folosind harta de adâncime, sunt selectate cele mai apropiate \( N \) caracteristici 
     care nu au un MapPoint asociat și au valoarea adâncimii mai mare ca 0.
-    Coordonatele acestor feature-uri sunt proiectate în spaîiu pentru a obîine noi MapPoint-uri.      
+    Coordonatele acestor caracteristici sunt proiectate în spaîiu pentru a obîine noi MapPoint-uri.      
     \item KeyFrame-ul curent este comparat cu alte cadre cheie, pentru a vedea cu cine împarte 
     cele mai multe puncte comune. Keyframe-urile sunt stocate în hartă într-o structură de tip 
     graf neorientat unde nodurile sunt cadrele cheie, iar arcele sunt numărul de MapPoint-uri comune 
@@ -918,7 +915,7 @@ etapă offline de antrenare. În cazul bibliotecii DBoW2, setul de date folosit 
 Au fost alese 10K imagini, iar pentru fiecare cadru în parte au fost extrași 1000 de descriptori ORB.\@ Aceștia au 
 fost folosiți pentru a crea un arbore de adâncime 6, iar numărul de clustere pe care le creează fiecare 
 iterație a algoritmului kmeans++ este de 10, acesta fiind factorul de branching. Pe ultimul strat, există un milion 
-de frunze și tot aceeași lungime o va avea și vectorul de feature-uri care va reprezenta o imagine. Fiecare
+de frunze și tot aceeași lungime o va avea și vectorul de caracteristici care va reprezenta o imagine. Fiecare
 descriptor va primi o valoare numerică numită greutate, invers proporțională cu frecvența cu care a fost 
 întâlnit descriptorul în setul de date de antrenare. Cu cât este mai rar un anumit descriptor, cu atât este
 mai util pentru a diferenția o imagine. Scopul principal al bibliotecii este să primească ca dată
@@ -930,13 +927,13 @@ Parcurgerea se realizează prin compararea descriptorului cu toate nodurile de p
 și alegerea nodului cu distanța Hamming minimă. Nodul frunză la care va ajunge va avea asociat
 un index, în cazul de față cu valori de la 0 la un milion. La același index o să fie modificată
 valoarea din vectorul bag-of-words în valoarea greutății descriptorului stocat în arbore.
-Apelul de bibliotecă returnează, de asemenea, un vector de feature-uri în care fiecare element
+Apelul de bibliotecă returnează, de asemenea, un vector de caracteristici în care fiecare element
 este o pereche de forma $ (int, vector\_descriptori) $. Primul element este indexul 
 clusterului de la nivelul 4 al arborelui DBOW2, iar cel de-al doilea element reprezintă un 
 vector de descriptori din imaginea curentă care se potrivesc în același cluster. Două imagini pot
-fi comparate între ele prin intermediul acestui vector de feature-uri, lucru care va fi detaliat
+fi comparate între ele prin intermediul acestui vector de caracteristici, lucru care va fi detaliat
 în descriera clasei OrbMatcher. În implementarea ORB-SLAM2, vectorul bow va avea dimensiunea 1000,
-iar cel de feature-uri va avea numărul de elemente egal cu cel de descriptori.
+iar cel de caracteristici va avea numărul de elemente egal cu cel de descriptori.
 
 \section{Mediu de lucru și principalele clase}
 \subsection{Structura proiectului și fișiere de configurare}
