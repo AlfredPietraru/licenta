@@ -25,7 +25,6 @@ rgbd_dataset_freiburg1_rpy/rgb.txt
 rgbd_dataset_freiburg1_rpy/venv
 
 
-
 rgbd_dataset_freiburg1_rpy.tgz
 rgbd_dataset_freiburg1_xyz.tgz
 rgbd_dataset_freiburg1_xyz/depth
@@ -46,7 +45,6 @@ rgbd_dataset_freiburg1_floor/rgb.txt
 rgbd_dataset_freiburg1_floor/venv
 
 3rdparty
-ORBvoc.txt
 ORBvoc.txt.tar.gz
 DBow3
 DBoW2
@@ -65,4 +63,5 @@ doc/TODO
 doc/licenta.bcf
 doc/licenta.run.xml
 doc/licenta.toc
+ORBvoc.txt
 
