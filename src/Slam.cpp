@@ -53,10 +53,10 @@ void SLAM::run_slam_systems() {
             auto end = high_resolution_clock::now();
             total_local_mapping_duration += duration_cast<milliseconds>(end - start).count();
         }
-        if (reader->idx == 500) {
-            cv::imshow("iei", depth);
-            cv::waitKey(0);
-        }
+        // if (reader->idx == 500) {
+        //     cv::imshow("iei", depth);
+        //     cv::waitKey(0);
+        // }
         reader->store_entry(kf);
         reader->increase_idx();
         drawer->run(kf, frame);
